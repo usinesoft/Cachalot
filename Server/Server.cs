@@ -1,0 +1,303 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Client;
+using Client.ChannelInterface;
+using Client.Core;
+using Client.Messages;
+using Client.Profiling;
+using Client.Tools;
+using Server.Persistence;
+
+namespace Server
+{
+    public class Server
+    {
+        private readonly string _workingDirectory;
+
+        private enum ServerMode
+        {
+            Normal,
+            DuringDumpImport,
+            ReadOnly
+        }
+
+
+        private ServerMode Mode { get; set; }
+
+        private bool IsPersistent { get; }
+
+        private DataContainer _dataContainer;
+        
+        private readonly Profiler _serverProfiler = new Profiler();
+
+        private IServerChannel _channel;
+
+
+        private DateTime _startTime;
+        private PersistenceEngine _persistenceEngine;
+
+        public Server(ServerConfig config, bool isPersistent = false, string workingDirectory = null)
+        {
+            _workingDirectory = workingDirectory;
+            IsPersistent = isPersistent;
+            _dataContainer = new DataContainer(config, _serverProfiler);
+        }
+
+        public IServerChannel Channel
+        {
+            private get => _channel;
+            set
+            {
+                if (_channel != null)
+                    _channel.RequestReceived -= HandleRequestReceived;
+
+                _channel = value;
+
+                _channel.RequestReceived += HandleRequestReceived;
+            }
+        }
+        
+        /// <summary>
+        ///     This call comes from different threads
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void HandleRequestReceived(object sender, RequestEventArgs e)
+        {
+            
+                if (e.Request is ImportDumpRequest importRequest)
+                {
+                    ManageImportRequest(importRequest, e.Client);
+                }
+                else if (e.Request is StopRequest stopRequest)
+                {
+                    
+                    ServerLog.LogWarning("stop request received");
+                    OnStopRequired();
+                    
+                }
+                else if (e.Request is SwitchModeRequest switchModeRequest)
+                {
+                    Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
+                    e.Client.SendResponse(new NullResponse());
+                }
+                else if (e.Request is DropRequest)
+                {
+                    try
+                    {
+                        ServerLog.LogWarning("drop request received");
+                        ManageDropRequest();
+                        ServerLog.LogWarning("all data was deleted");
+                        e.Client.SendResponse(new NullResponse());
+                    }
+                    catch (Exception exception)
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(exception));
+                    }
+                }
+                else
+                {
+                    if (Mode == ServerMode.DuringDumpImport)
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(
+                            new NotSupportedException("Database is not available while restoring data from dump")));
+                        return;
+                    }
+
+                    if (Mode == ServerMode.ReadOnly && e.Request is DataRequest dataRequest &&
+                        dataRequest.AccessType == DataAccessType.Write)
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(
+                            new NotSupportedException("Database is in read-only mode")));
+                        return;
+                    }
+
+                    //as the data container does not have access to the channel
+                    //let it know how many connections are active 
+                    var activeConnections = Channel.Connections;
+                    _dataContainer.ActiveConnections = activeConnections;
+                    _dataContainer.StartTime = _startTime;
+
+                
+                    _dataContainer.DispatchRequest(e.Request, e.Client);
+                }
+            
+        }
+
+      
+
+        private void ManageDropRequest()
+        {
+            Mode = ServerMode.ReadOnly;
+            _persistenceEngine.Stop();
+
+            // delete persistent data
+            _persistenceEngine.StoreDataForRollback();
+
+            // delete data from memory
+            _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+            _persistenceEngine.Container = _dataContainer;
+            _dataContainer.PersistenceEngine = _persistenceEngine;
+
+            _persistenceEngine.LightStart();
+
+            _dataContainer.StartProcessingClientRequests();
+
+
+            _persistenceEngine.DeleteRollbackData();
+            Mode = ServerMode.Normal;
+        }
+
+        private void ManageImportRequest(ImportDumpRequest importRequest, IClient client)
+        {
+            try
+            {
+                ServerLog.LogInfo($"begin import dump stage {importRequest.Stage} on shard {importRequest.ShardIndex}");
+
+                switch (importRequest.Stage)
+                {
+                    case 0:
+
+                        Mode = ServerMode.DuringDumpImport;
+                        _persistenceEngine.Stop();
+                        _dataContainer.Stop(); // this will wait for pending activity
+                        _persistenceEngine.StoreDataForRollback();
+                        break;
+
+                    case 1:
+
+                        using (var storage = new ReliableStorage(new NullObjectProcessor(), _workingDirectory))
+                        {
+                            // first copy the schema and reinitialize data stores
+                            var path = DumpHelper.NormalizeDumpPath(importRequest.Path);
+
+                            var dataPath = _workingDirectory != null
+                                ? Path.Combine(_workingDirectory, Constants.DataPath)
+                                : Constants.DataPath;
+                            File.Copy(Path.Combine(path, Constants.SchemaFileName),
+                                Path.Combine(dataPath, Constants.SchemaFileName));
+
+                            _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+                            _persistenceEngine.Container = _dataContainer;
+                            _dataContainer.PersistenceEngine = _persistenceEngine;
+
+                            // reinitialize data container                          
+                            _dataContainer.LoadSchema(Path.Combine(dataPath, Constants.SchemaFileName));
+
+
+                            // schema needs to be updated because the dump contains a single instance (the one for shard 0) so the 
+                            // ShardIndex may be incorrect
+                            _dataContainer.ShardIndex = importRequest.ShardIndex;
+                            var schema = _dataContainer.GenerateSchema();
+                            _persistenceEngine?.UpdateSchema(schema);
+
+                            // fill the in-memory data stores
+                            Parallel.ForEach(_dataContainer.DataStores.Values,
+                                store => store.LoadFromDump(path, importRequest.ShardIndex));
+
+                            // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
+                            foreach (var dataStore in _dataContainer.DataStores.Values)
+                            foreach (var item in dataStore.DataByPrimaryKey)
+                            {
+                                var itemData =
+                                    SerializationHelper.ObjectToBytes(item.Value, SerializationMode.ProtocolBuffers,
+                                        dataStore.TypeDescription);
+
+                                storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
+                            }
+
+                            // import the sequences
+
+                            var sequenceFile = $"sequence_{importRequest.ShardIndex:D3}.json";
+
+                            _dataContainer.LoadSequence(Path.Combine(path, sequenceFile));
+                            File.Copy(Path.Combine(path, sequenceFile),
+                                Path.Combine(dataPath, Constants.SequenceFileName));
+                        }
+
+                        break;
+                    case 2: // all good
+                        _persistenceEngine.LightStart();
+
+                        _dataContainer.StartProcessingClientRequests();
+
+                        _persistenceEngine.DeleteRollbackData();
+                        Mode = ServerMode.Normal;
+                        break;
+
+                    case 3: // something bad happened. Rollback
+                        _persistenceEngine.RollbackData();
+
+                        _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+                        _persistenceEngine.Container = _dataContainer;
+                        _dataContainer.PersistenceEngine = _persistenceEngine;
+
+                        _persistenceEngine.Start();
+
+                        Mode = ServerMode.Normal;
+
+                        _dataContainer.StartProcessingClientRequests();
+
+                        break;
+
+                    default:
+                        client.SendResponse(new ExceptionResponse(
+                            new NotSupportedException(
+                                $"Illegal value {importRequest.Stage} for parameter stage in import request")));
+                        return;
+                }
+
+                ServerLog.LogInfo(
+                    $"end successful import dump stage {importRequest.Stage} on shard {importRequest.ShardIndex}");
+                client.SendResponse(new NullResponse());
+            }
+            catch (AggregateException e)
+            {
+                ServerLog.LogError(
+                    $"end  import dump stage {importRequest.Stage} on shard {importRequest.ShardIndex} with exception {e.Message}");
+                client.SendResponse(new ExceptionResponse(e.InnerException));
+            }
+            catch (Exception e)
+            {
+                client.SendResponse(new ExceptionResponse(e));
+            }
+        }
+
+        public event EventHandler<EventArgs> StopRequired; 
+
+        public void Start()
+        {
+            Dbg.Trace("starting server");
+
+            _serverProfiler.IsActive = true;
+            _startTime = DateTime.Now;
+
+
+            if (IsPersistent)
+            {
+                Dbg.Trace("starting persistence engine");
+                _persistenceEngine = new PersistenceEngine(_dataContainer, _workingDirectory);
+                _dataContainer.PersistenceEngine = _persistenceEngine;
+
+                _persistenceEngine.Start();
+            }
+
+            _dataContainer.StartProcessingClientRequests();
+        }
+
+        public void Stop()
+        {
+            _dataContainer.Stop();
+
+            _persistenceEngine?.Stop();
+
+            Dbg.Trace("SERVER STOPPED");
+        }
+
+        protected virtual void OnStopRequired()
+        {
+            StopRequired?.Invoke(this, EventArgs.Empty);
+        }
+    }
+}

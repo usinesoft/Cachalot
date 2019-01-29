@@ -38,7 +38,7 @@
     <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>console_48px.ico</ApplicationIcon>
+    <ApplicationIcon>console.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -117,6 +117,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="cachalot.ico" />
+    <Content Include="console.ico" />
     <Content Include="console_48px.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -8,7 +8,7 @@ A powerful LINQ provider is available. As well as an administration console.
 It can also be used as an abvanced, transactional, distributed cache with unique features.
 Much more detail in the next sections but…
 
-##S how me some code first
+## Show me some code first
 
 Let’s prepare our business objects for database storage.
 We start with a toy web site which allows to rent homes between individuals.

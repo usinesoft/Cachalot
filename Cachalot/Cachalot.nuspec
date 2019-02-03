@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>Cachalot.Client</id>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <title>Client for Cachalot DB (fastest transactional database for .net)</title>
     <authors>Dan Ionescu</authors>
     <owners>USINESOFT</owners>
     <licenseUrl>https://github.com/usinesoft/Cachalot/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/usinesoft/Cachalot</projectUrl>
-    <iconUrl>https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png</iconUrl>
+    <iconUrl>https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Fastest transactional database for .NET applications</description>
     <releaseNotes>Improved packaging and documentation</releaseNotes>
@@ -16,10 +16,10 @@
     <tags>cachealot cachalot nosql database transactional fast dotnet distributed cache</tags>
     <dependencies>
       <group>
-        <dependency id="Newtonsoft.Json" version="10.0" />
-        <dependency id="Remotion.Linq" version="2.0" />
-        <dependency id="protobuf-net" version="2.0" />
-        <dependency id="SharpZipLib" version="1.0" />
+        <dependency id="Newtonsoft.Json" version="12.0.1" />
+        <dependency id="Remotion.Linq" version="2.2.0" />
+        <dependency id="protobuf-net" version="2.4.0" />
+        <dependency id="SharpZipLib" version="1.1.0" />
       </group>      
     </dependencies>
   </metadata>

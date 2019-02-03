@@ -10,11 +10,14 @@
     <Company>USINESOFT</Company>
     <Description>Fastest transactional database for dotnet applications. It can also be used as a very powerful distributed cache</Description>
     <Copyright>USINESOFT</Copyright>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="protobuf-net" Version="2.4.0" />
     <PackageReference Include="Remotion.Linq" Version="2.2.0" />
+    <PackageReference Include="SharpZipLib" Version="1.1.0" />
   </ItemGroup>
 
   <ItemGroup>

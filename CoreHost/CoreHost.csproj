@@ -7,6 +7,10 @@
     <ApplicationIcon>cachalot.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\bin\Release\</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Channel\Channel.csproj" />
     <ProjectReference Include="..\Client\Client.csproj" />

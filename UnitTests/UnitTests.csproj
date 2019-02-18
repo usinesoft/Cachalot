@@ -144,6 +144,9 @@
   <ItemGroup>
     <None Include="cachealot.snk" />
     <None Include="packages.config" />
+    <None Include="readme.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="run_tests.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -30,6 +30,9 @@ namespace UnitTests
             [Index(KeyDataType.IntKey)]
             public DateTime ValueDate{ get; set; }
 
+            [Index(KeyDataType.IntKey)]
+            public DateTimeOffset AnotherDate { get; set; }
+
 
             [Index(KeyDataType.IntKey)]
             public DateTime LastUpdate{ get; set; }
@@ -73,6 +76,7 @@ namespace UnitTests
             var testObj = new AllKindsOfProperties
             {
                 ValueDate = today,
+                AnotherDate = today.AddDays(1),
                 LastUpdate = now,
                 Nominal = 156.32,
                 Quantity = 35,
@@ -90,6 +94,12 @@ namespace UnitTests
             var lval = CachedObject.JTokenToLong(valueDate);
 
             Assert.AreEqual(today.Ticks, lval);
+
+            var anotherDate = jo.Property("AnotherDate");
+
+            lval = CachedObject.JTokenToLong(anotherDate);
+
+            Assert.AreEqual(today.AddDays(1).Ticks, lval);
 
             lval = CachedObject.JTokenToLong(jo.Property("LastUpdate"));
 

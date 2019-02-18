@@ -26,6 +26,10 @@ namespace Client.Interface
             if (srcType == typeof(decimal)) return new DecimalConverter();
 
             if (srcType == typeof(DateTime)) return new DateTimeConverter();
+
+            if (srcType == typeof(DateTimeOffset)) return new DateTimeOffsetConverter();
+
+
             return null;
         }
     }

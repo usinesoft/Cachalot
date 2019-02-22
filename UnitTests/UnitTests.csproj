@@ -130,7 +130,6 @@
     <Content Include="CacheClientConfig.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CacheUnitTests.csproj" />
     <Content Include="inprocess_config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

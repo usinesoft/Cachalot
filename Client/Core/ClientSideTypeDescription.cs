@@ -25,6 +25,8 @@ namespace Client.Core
 
         private readonly List<ClientSideKeyInfo> _uniqueKeyFields;
 
+        private readonly List<ClientSideKeyInfo> _fullTextIndexed;
+
         /// <summary>
         ///     Private constructor (to prevent direct instantiation)
         ///     It can be instantiated by the factory method
@@ -34,6 +36,7 @@ namespace Client.Core
             _uniqueKeyFields = new List<ClientSideKeyInfo>();
             _indexFields = new List<ClientSideKeyInfo>();
             _listFields = new List<ClientSideKeyInfo>();
+            _fullTextIndexed = new List<ClientSideKeyInfo>();
         }
 
         /// <summary>
@@ -82,6 +85,8 @@ namespace Client.Core
 
         public bool UseCompression { get; private set; }
 
+        public List<ClientSideKeyInfo> FullTextIndexed => _fullTextIndexed;
+
 
         /// <summary>
         ///     Not only a generic version. It also prepares the protobuf serializers which prevents race condition issues during
@@ -128,6 +133,9 @@ namespace Client.Core
             foreach (var info in props)
             {
                 var key = new ClientSideKeyInfo(info);
+
+                if(key.IndexedAsFulltext)
+                    result.FullTextIndexed.Add(key);
 
                 if (key.KeyType == KeyType.None)
                     continue;

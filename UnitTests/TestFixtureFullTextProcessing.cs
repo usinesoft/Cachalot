@@ -22,10 +22,35 @@ namespace UnitTests
             // accents and double letters are ignored
             tokens = tokenizer.TokenizeOneLine("café commerce");
             Assert.AreEqual(2, tokens.Count);
-            Assert.AreEqual("cafe", tokens[0].Text);
-            Assert.AreEqual("comerce", tokens[1].Text);
+            Assert.AreEqual("cafe", tokens[0].NormalizedText);
+            Assert.AreEqual("comerce", tokens[1].NormalizedText);
             
 
+        }
+
+
+
+        [Test]
+        public void Tokenize_if_casing_changed_inside_a_word()
+        {
+            var tokenizer = new Tokenizer();
+
+            var tokens = tokenizer.TokenizeOneLine("camelCase");
+
+            Assert.AreEqual(2, tokens.Count);
+            Assert.AreEqual("camel", tokens[0].NormalizedText);
+            Assert.AreEqual("case", tokens[1].NormalizedText);
+
+            tokens = tokenizer.TokenizeOneLine("PascalCase");
+
+            Assert.AreEqual(2, tokens.Count);
+            Assert.AreEqual("pascal", tokens[0].NormalizedText);
+            Assert.AreEqual("case", tokens[1].NormalizedText);
+
+            tokens = tokenizer.TokenizeOneLine("some PascalCase and #camelCase");
+
+            Assert.AreEqual(7, tokens.Count);
+            
         }
 
 
@@ -44,9 +69,9 @@ namespace UnitTests
 
             Assert.AreEqual(6, tokens.Count);
             
-            Assert.AreEqual("a", tokens[0].Text);
+            Assert.AreEqual("a", tokens[0].NormalizedText);
 
-            Assert.AreEqual("#", tokens[1].Text);
+            Assert.AreEqual("#", tokens[1].NormalizedText);
 
             Assert.AreEqual(CharClass.Symbol, tokens[1].TokenType);
 
@@ -54,9 +79,9 @@ namespace UnitTests
 
             Assert.AreEqual(5, tokens.Count);
 
-            Assert.AreEqual("+", tokens[1].Text);
+            Assert.AreEqual("+", tokens[1].NormalizedText);
 
-            Assert.AreEqual("<=", tokens[3].Text);
+            Assert.AreEqual("<=", tokens[3].NormalizedText);
 
         }
 

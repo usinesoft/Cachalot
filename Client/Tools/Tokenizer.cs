@@ -10,14 +10,12 @@ namespace Client.Tools
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CharClass GetCharClass(char ch)
         {
-            if (ch >= 'a' && ch <= 'z') return CharClass.Letter;
+            if (char.IsLetter(ch)) return CharClass.Letter;
+            
+            if (char.IsDigit(ch)) return CharClass.Digit;
 
-            if (ch >= 'A' && ch <= 'Z') return CharClass.Letter;
-
-            if (ch >= '0' && ch <= '9') return CharClass.Digit;
-
-            if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') return CharClass.Whitespace;
-
+            if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
+            
             return CharClass.Symbol;
         }
 
@@ -48,18 +46,30 @@ namespace Client.Tools
         }
 
 
+        private enum Casing
+        {
+            Upper,
+            Lower,
+            None
+        }
+
+
+        string Normalize(string original)
+        {
+            var after = RemoveDiacritics(original);
+            after = after.ToLower();
+            return  RemoveDoubleChars(after);
+        }
+
         public IList<Token> TokenizeOneLine(string input)
         {
-            input = RemoveDiacritics(input);
-            input = RemoveDoubleChars(input);
-            input = input.ToLower();
-
+            
             var result = new List<Token>(1000);
 
 
             var previousSplitPosition = 0;
             var previousType = CharClass.Start;
-
+            var previousCasing = Casing.None;
 
             for (var i = 0; i < input.Length; i++)
             {
@@ -67,13 +77,19 @@ namespace Client.Tools
 
                 var currentType = GetCharClass(current);
 
-                if (currentType != previousType)
+                var currentCasing = char.IsUpper(current) ? Casing.Upper : Casing.Lower;
+
+                if (currentType != previousType || currentType == previousType &&
+                    (currentType == CharClass.Letter) & (currentCasing == Casing.Upper) &&
+                    previousCasing == Casing.Lower
+                ) // the second condition is used to tokenize camelCase or PascalCase strings
                 {
                     if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
                     {
                         var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
                         result.Add(new Token
                         {
+                            NormalizedText = Normalize(text),
                             Text = text,
                             TokenType = previousType
                         });
@@ -83,6 +99,8 @@ namespace Client.Tools
 
                     previousSplitPosition = i;
                 }
+
+                previousCasing = currentCasing;
             }
 
             if (previousType != CharClass.Whitespace)
@@ -90,6 +108,7 @@ namespace Client.Tools
                 var text = input.Substring(previousSplitPosition, input.Length - previousSplitPosition);
                 result.Add(new Token
                 {
+                    NormalizedText = Normalize(text),
                     Text = text,
                     TokenType = previousType
                 });

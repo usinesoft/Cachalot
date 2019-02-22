@@ -34,6 +34,8 @@ namespace Client.Core
         /// </summary>
         private readonly PropertyInfo _propertyInfo;
 
+        public bool IndexedAsFulltext { get; private set; }
+
         /// <summary>
         ///     Build from PropertyInfo
         ///     The complementary information is stored as custom attributes
@@ -42,6 +44,14 @@ namespace Client.Core
         public ClientSideKeyInfo(PropertyInfo propertyInfo)
         {
             _propertyInfo = propertyInfo;
+
+            var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true).FirstOrDefault();
+
+            if (fullText != null)
+            {
+                IndexedAsFulltext = true;
+            }
+
 
             //check if primary key
             var attributes = propertyInfo.GetCustomAttributes(typeof(PrimaryKeyAttribute), true);

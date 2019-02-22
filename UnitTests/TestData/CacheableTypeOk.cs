@@ -29,7 +29,7 @@ namespace UnitTests.TestData
             _indexKeyDate = indexKeyDate;
             _indexKeyValue = indexKeyValue;
         }
-
+        
         [PrimaryKey(KeyDataType.IntKey)]
         public int PrimaryKey
         {
@@ -44,6 +44,7 @@ namespace UnitTests.TestData
             set { _uniqueKey = value; }
         }
 
+        [FullTextIndexation]
         [Index(KeyDataType.StringKey)]
         public string IndexKeyFolder
         {
@@ -57,6 +58,10 @@ namespace UnitTests.TestData
             get { return _indexKeyDate; }
             set { _indexKeyDate = value; }
         }
+
+
+        [FullTextIndexation]
+        public string Comment { get; set; }
 
 
         public string ObjectData

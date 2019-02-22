@@ -56,6 +56,9 @@ namespace UnitTests
             Assert.AreEqual(typeDescription.UniqueKeysCount, 1);
 
             Assert.AreEqual(typeDescription.IndexCount, 4);
+            Assert.AreEqual(typeDescription.FullTextIndexed.Count, 2);
+
+
         }
 
         [Test]

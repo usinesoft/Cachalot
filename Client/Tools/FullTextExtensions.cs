@@ -6,7 +6,7 @@ namespace Client.Tools
     {
         public static void Merge(this Token @this, Token other)
         {
-            @this.Text = @this.Text + other.Text;
+            @this.NormalizedText = @this.NormalizedText + other.NormalizedText;
         }
 
         public static IList<Token> PostProcessSymbols(this IList<Token> tokens)
@@ -22,9 +22,9 @@ namespace Client.Tools
                 }
                 else if (token.TokenType == CharClass.Symbol)
                 {
-                    if (token.Text.Length == 1 && usefulSymbols.Contains(token.Text[0]))
+                    if (token.NormalizedText.Length == 1 && usefulSymbols.Contains(token.NormalizedText[0]))
                         result.Add(token);
-                    else if (token.Text.Length > 1) result.Add(token);
+                    else if (token.NormalizedText.Length > 1) result.Add(token);
                 }
                 else if (token.TokenType == CharClass.Digit)
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,6 +32,9 @@ namespace Client.Core
         [ProtoMember(5)] private byte[] _objectData;
         [ProtoMember(3)] private KeyValue[] _uniqueKeys;
         [ProtoMember(7)] private bool _useCompression;
+
+        [ProtoMember(9)] private string[] _fullText;
+
 
 
         /// <summary>
@@ -129,6 +133,8 @@ namespace Client.Core
 
         public bool UseCompression => _useCompression;
 
+        public string[] FullText => _fullText;
+
         public bool MatchOneOf(ISet<KeyValue> values)
         {
             var indexType = values.First().KeyType;
@@ -192,6 +198,19 @@ namespace Client.Core
             }
 
             result._listIndexKeys = listKeys.ToArray();
+
+
+            // process full text
+            var lines = new List<string>();
+
+            foreach (var fulltext in typeDescription.FullTextIndexed)
+            {
+                lines.AddRange(fulltext.GetStringValues(instance));                
+            }
+
+            result._fullText= lines.ToArray();
+
+
 
             result._objectData =
                 SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsTypeDescription);
@@ -300,6 +319,36 @@ namespace Client.Core
 
             result._listIndexKeys = listValues.ToArray();
 
+            // process full text
+            var lines = new List<string>();
+
+            foreach (var fulltext in typeDescription.FullText)
+            {
+                var jKey = jObject.Property(fulltext.Name);
+                if (jKey.Value.Type == JTokenType.Array)
+                {
+                    foreach (var jToken in jKey.Value.Children())
+                    {
+                        var child = (JObject) jToken;
+
+                        foreach (var jToken1 in child.Children())
+                        {
+                            var field = (JProperty) jToken1;
+                            if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
+                            {
+                                lines.Add((string)field);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    lines.Add((string)jKey);
+                }
+                
+            }
+
+            result._fullText = lines.ToArray();
 
             using (var output = new MemoryStream())
             {

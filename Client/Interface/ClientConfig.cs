@@ -199,8 +199,11 @@ namespace Client.Interface
                             var orderedIndex = StringFromXpath(propertyNode, "@ordered");
                             var ordered = orderedIndex.ToUpper() == "TRUE";
 
+                            var fullText = StringFromXpath(propertyNode, "@fullTextIndexed");
+                            var fullTextIndexed = fullText.ToUpper() == "TRUE";
 
-                            typeDescription.Add(propertyName, keyType, dataType, ordered);
+
+                            typeDescription.Add(propertyName, keyType, dataType, ordered, fullTextIndexed);
                         }
 
                     TypeDescriptions.Add(typeName, typeDescription);

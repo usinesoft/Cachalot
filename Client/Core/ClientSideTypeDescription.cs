@@ -25,8 +25,6 @@ namespace Client.Core
 
         private readonly List<ClientSideKeyInfo> _uniqueKeyFields;
 
-        private readonly List<ClientSideKeyInfo> _fullTextIndexed;
-
         /// <summary>
         ///     Private constructor (to prevent direct instantiation)
         ///     It can be instantiated by the factory method
@@ -36,7 +34,7 @@ namespace Client.Core
             _uniqueKeyFields = new List<ClientSideKeyInfo>();
             _indexFields = new List<ClientSideKeyInfo>();
             _listFields = new List<ClientSideKeyInfo>();
-            _fullTextIndexed = new List<ClientSideKeyInfo>();
+            FullTextIndexed = new List<ClientSideKeyInfo>();
         }
 
         /// <summary>
@@ -85,7 +83,7 @@ namespace Client.Core
 
         public bool UseCompression { get; private set; }
 
-        public List<ClientSideKeyInfo> FullTextIndexed => _fullTextIndexed;
+        public List<ClientSideKeyInfo> FullTextIndexed { get; }
 
 
         /// <summary>

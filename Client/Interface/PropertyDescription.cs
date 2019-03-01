@@ -1,7 +1,7 @@
 namespace Client.Interface
 {
     /// <summary>
-    ///     Explicite description of a property from a cacheable type
+    ///     Explicit description of a property from a cacheable type
     /// </summary>
     public class PropertyDescription
     {
@@ -11,29 +11,25 @@ namespace Client.Interface
         {
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="keyType"></param>
-        /// <param name="keyDataType"></param>
-        public PropertyDescription(string propertyName, KeyType keyType, KeyDataType keyDataType)
-            : this(propertyName, keyType, keyDataType, false)
-        {
-        }
 
         /// <summary>
         /// </summary>
         /// <param name="propertyName"></param>
         /// <param name="keyType"></param>
         /// <param name="keyDataType"></param>
-        /// <param name="order"></param>
-        public PropertyDescription(string propertyName, KeyType keyType, KeyDataType keyDataType, bool order)
+        /// <param name="ordered"></param>
+        /// <param name="fullTextIndexed"></param>
+        public PropertyDescription(string propertyName, KeyType keyType, KeyDataType keyDataType, bool ordered,
+            bool fullTextIndexed)
         {
             PropertyName = propertyName;
-            Ordered = order;
+            Ordered = ordered;
             KeyType = keyType;
             KeyDataType = keyDataType;
+            FullTextIndexed = fullTextIndexed;
         }
+
+        public bool FullTextIndexed { get; set; }
 
         /// <summary>
         ///     Case sensitive name of the property in the type
@@ -51,7 +47,7 @@ namespace Client.Interface
         public KeyType KeyType { get; set; }
 
         /// <summary>
-        ///     The keys are allways stored internally as string or long
+        ///     The keys are always stored internally as string or long
         /// </summary>
         public KeyDataType KeyDataType { get; set; }
     }

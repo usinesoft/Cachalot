@@ -45,6 +45,7 @@ namespace Client.Core
         {
             _propertyInfo = propertyInfo;
 
+            // full text indexation can be applied to any type of key or event to non indexed properties
             var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true).FirstOrDefault();
 
             if (fullText != null)
@@ -119,12 +120,13 @@ namespace Client.Core
             KeyType = propertyDescription.KeyType;
             _keyDataType = propertyDescription.KeyDataType;
             _isOrdered = propertyDescription.Ordered;
+            IndexedAsFulltext = propertyDescription.FullTextIndexed;
         }
 
         /// <summary>
         ///     Return a serializable, light version <see cref="KeyInfo" />
         /// </summary>
-        public KeyInfo AsKeyInfo => new KeyInfo(_keyDataType, KeyType, _propertyInfo.Name, _isOrdered);
+        public KeyInfo AsKeyInfo => new KeyInfo(_keyDataType, KeyType, _propertyInfo.Name, _isOrdered, IndexedAsFulltext);
 
         /// <summary>
         ///     int or string
@@ -238,6 +240,40 @@ namespace Client.Core
                 throw new NotSupportedException($"Property {_propertyInfo.Name} can not be converted to IEnumerable");
 
             return (from object value in values select KeyInfo.ValueToKeyValue(value, AsKeyInfo)).ToList();
+        }
+
+        /// <summary>
+        /// Used for full text indexation
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <returns></returns>
+        public IList<string> GetStringValues(object instance)
+        {
+
+            List<string> result = new List<string>();
+
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+
+            if (_propertyInfo.GetValue(instance, null) is string text) // string is also an IEnumerable but we do not want to be processed as a collection
+            {
+                result.Add(text);
+            }
+            else if (_propertyInfo.GetValue(instance, null) is IEnumerable values)
+            {
+                foreach (var value in values)
+                {
+                    result.Add(value.ToString());
+                }
+            }
+            else
+            {
+                result.Add(_propertyInfo.GetValue(instance).ToString());
+            }
+
+
+            return result;
         }
     }
 }

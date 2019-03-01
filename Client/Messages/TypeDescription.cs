@@ -30,6 +30,8 @@ namespace Client.Messages
 
         [ProtoMember(2)] private List<KeyInfo> _uniqueKeyFields;
 
+        [ProtoMember(5)] private List<KeyInfo> _fullText;
+
 
         // ReSharper disable once UnusedMember.Global
         /// <summary>
@@ -63,6 +65,14 @@ namespace Client.Messages
             TypeName = description.TypeName;
 
             UseCompression = description.UseCompression;
+
+            _fullText = new List<KeyInfo>();
+            foreach (var fullTextIndex in description.FullTextIndexed)
+            {
+                FullText.Add(fullTextIndex.AsKeyInfo);   
+            }
+
+
         }
 
         /// <summary>
@@ -100,6 +110,11 @@ namespace Client.Messages
 
 
         [ProtoMember(8)] public bool UseCompression { get; set; }
+
+        public List<KeyInfo> FullText
+        {
+            get { return _fullText; }
+        }
 
         /// <summary>
         /// </summary>

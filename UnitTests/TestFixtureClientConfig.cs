@@ -208,7 +208,10 @@ namespace UnitTests
             Assert.AreEqual(cfg.Servers.Count, 3);
             Assert.AreEqual(cfg.Servers[0].Port, 4567);
             Assert.AreEqual(cfg.Servers[0].Host, "localhost");
-            
+
+            var desc2 = cfg.TypeDescriptions["UnitTests.TestData.Quote"];
+            Assert.AreEqual(1, desc2.Keys.Values.Count(p=>p.FullTextIndexed));
+
         }
     }
 }

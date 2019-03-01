@@ -83,6 +83,7 @@
     <Compile Include="TestData\Events\NegotiatedProductEvent.cs" />
     <Compile Include="TestData\Events\ProductEvent.cs" />
     <Compile Include="TestData\FatPerson.cs" />
+    <Compile Include="TestData\Home.cs" />
     <Compile Include="TestData\Instruments\AssetClass.cs" />
     <Compile Include="TestData\Instruments\EquityOption.cs" />
     <Compile Include="TestData\Instruments\IProduct.cs" />

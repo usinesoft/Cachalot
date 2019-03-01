@@ -28,7 +28,7 @@
             <property name="FixingDates" dataType="int" keyType="list" ordered="false"/>
         </type>
         <type fullName="UnitTests.TestData.Quote" assembly="UnitTests">
-            <property name="Name" dataType="string" keyType="primary" ordered="false"/>
+            <property name="Name" dataType="string" keyType="primary" ordered="false" fullTextIndexed ="true"/>
             <property name="RefSet" dataType="string" keyType="index" ordered="false"/>            
             <property name="Date" dataType="int" keyType="index" ordered="true"/>            
             <property name="QuoteType" dataType="int" keyType="index" ordered="true"/>            

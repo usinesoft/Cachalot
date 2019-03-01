@@ -28,35 +28,25 @@ namespace Client.Messages
         {
         }
 
+
         /// <summary>
         ///     Public constructor for non ordered keys
         /// </summary>
         /// <param name="keyDataType"> </param>
         /// <param name="keyType"> </param>
         /// <param name="name"> </param>
-        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name)
-        {
-            KeyDataType = keyDataType;
-            KeyType = keyType;
-            Name = name;
-        }
-
-
-        /// <summary>
-        ///     Public constructor(can be used for ordered keys)
-        /// </summary>
-        /// <param name="keyDataType"> </param>
-        /// <param name="keyType"> </param>
-        /// <param name="name"> </param>
-        /// <param name="isOrdered"> </param>
-        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered)
+        /// <param name="isOrdered"></param>
+        /// <param name="isFullText"></param>
+        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered = false, bool isFullText = false)
         {
             KeyDataType = keyDataType;
             KeyType = keyType;
             Name = name;
             IsOrdered = isOrdered;
+            IsFullTextIndexed = isFullText;
         }
 
+        
 
         /// <summary>
         ///     Copy constructor
@@ -65,10 +55,12 @@ namespace Client.Messages
         public KeyInfo(KeyInfo right)
         {
             if (right == null) throw new ArgumentNullException(nameof(right));
+
             KeyDataType = right.KeyDataType;
             IsOrdered = right.IsOrdered;
             KeyType = right.KeyType;
             Name = right.Name;
+            IsFullTextIndexed = right.IsFullTextIndexed;
         }
 
         /// <summary>
@@ -94,6 +86,9 @@ namespace Client.Messages
         /// </summary>
         [ProtoMember(4)]
         public bool IsOrdered { get; set; }
+
+        [ProtoMember(5)]
+        public bool IsFullTextIndexed { get; set; }
 
         public bool Equals(KeyInfo keyInfo)
         {
@@ -144,7 +139,7 @@ namespace Client.Messages
         public override string ToString()
         {
             return
-                $"| {Name,25} | {KeyType,15} | {KeyDataType,10} | {IsOrdered,10} |";
+                $"| {Name,25} | {KeyType,15} | {KeyDataType,10} | {IsOrdered,10} |{IsFullTextIndexed,10} |";
         }
 
 

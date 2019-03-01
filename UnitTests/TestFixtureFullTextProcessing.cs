@@ -1,6 +1,9 @@
 ﻿using System.Linq;
+using Client.Core;
+using Client.Messages;
 using Client.Tools;
 using NUnit.Framework;
+using UnitTests.TestData;
 
 namespace UnitTests
 {
@@ -82,6 +85,39 @@ namespace UnitTests
             Assert.AreEqual("+", tokens[1].NormalizedText);
 
             Assert.AreEqual("<=", tokens[3].NormalizedText);
+
+        }
+
+
+
+
+        [Test]
+        public void Pack_object_with_full_text_indexed_properties()
+        {
+            var description = ClientSideTypeDescription.RegisterType<Home>();
+
+            Assert.AreEqual(3, description.FullTextIndexed.Count);
+            var home = new Home
+            {
+                Address = "14 rue du chien qui fume", Bathrooms = 2, Rooms = 4, PriceInEuros = 200, CountryCode = "FR",
+                Comments =
+                {
+                    new Comment{Text = "Wonderful place"},
+                    new Comment{Text = "Very nice apartment"}
+                }
+            };
+
+            var packed = CachedObject.Pack(home);
+
+            Assert.AreEqual(4, packed.FullText.Length);
+            Assert.IsTrue(packed.FullText.Any(t=>t.Contains("chien qui fume")));
+
+            // now pack the same object as json
+            var json = SerializationHelper.ObjectToJson(home, description.AsTypeDescription);
+
+            var packed2 = CachedObject.PackJson(json, description.AsTypeDescription);
+            Assert.AreEqual(4, packed2.FullText.Length);
+            Assert.IsTrue(packed2.FullText.Any(t => t.Contains("chien qui fume")));
 
         }
 

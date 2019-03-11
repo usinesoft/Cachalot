@@ -17,11 +17,10 @@ namespace Client.Core
     /// </summary>
     public class ClientSideTypeDescription
     {
+        
         private readonly List<ClientSideKeyInfo> _indexFields;
-        private readonly List<ClientSideKeyInfo> _listFields;
 
-        private readonly Dictionary<string, PropertyDescription> _propertyDescriptionByName =
-            new Dictionary<string, PropertyDescription>();
+        private readonly List<ClientSideKeyInfo> _listFields;
 
         private readonly List<ClientSideKeyInfo> _uniqueKeyFields;
 
@@ -32,8 +31,11 @@ namespace Client.Core
         private ClientSideTypeDescription()
         {
             _uniqueKeyFields = new List<ClientSideKeyInfo>();
+
             _indexFields = new List<ClientSideKeyInfo>();
+
             _listFields = new List<ClientSideKeyInfo>();
+
             FullTextIndexed = new List<ClientSideKeyInfo>();
         }
 
@@ -41,7 +43,7 @@ namespace Client.Core
         ///     Convert to a serializable form that can be used without any static dependency to
         ///     the original type
         /// </summary>
-        public TypeDescription AsTypeDescription => new TypeDescription(this);
+        public TypeDescription AsTypeDescription => _typeDescriptionCached;
 
         /// <summary>
         ///     The one and only primary key
@@ -81,7 +83,15 @@ namespace Client.Core
         public string TypeName { get; private set; }
 
 
-        public bool UseCompression { get; private set; }
+        public bool UseCompression
+        {
+            get => _useCompression;
+            internal set
+            {
+                _useCompression = value;
+                _typeDescriptionCached.UseCompression = true;
+            }
+        }
 
         public List<ClientSideKeyInfo> FullTextIndexed { get; }
 
@@ -96,6 +106,10 @@ namespace Client.Core
         {
             return RegisterType(typeof(T));
         }
+
+
+        private TypeDescription _typeDescriptionCached;
+        private bool _useCompression;
 
         /// <summary>
         ///     Factory method used to create a precompiled type description.
@@ -122,7 +136,7 @@ namespace Client.Core
 
             var result = new ClientSideTypeDescription
             {
-                UseCompression = useCompression,
+                _useCompression = useCompression,
                 TypeName = type.Name,
                 FullTypeName = type.FullName
             };
@@ -132,7 +146,7 @@ namespace Client.Core
             {
                 var key = new ClientSideKeyInfo(info);
 
-                if(key.IndexedAsFulltext)
+                if (key.IndexedAsFulltext)
                     result.FullTextIndexed.Add(key);
 
                 if (key.KeyType == KeyType.None)
@@ -146,31 +160,18 @@ namespace Client.Core
                     result._indexFields.Add(key);
                 else if (key.KeyType == KeyType.ListIndex)
                     result._listFields.Add(key);
-
-
-                var propertyDescription = new PropertyDescription
-                {
-                    PropertyName = key.Name,
-                    KeyDataType = key.KeyDataType,
-                    KeyType = key.KeyType,
-                    Ordered = key.IsOrdered
-                };
-
-                result._propertyDescriptionByName[key.Name] = propertyDescription;
             }
 
             //check if the newly registered type is valid
             if (result.PrimaryKeyField == null)
                 throw new NotSupportedException($"No primary key defined for type {type}");
+            
+
+            result._typeDescriptionCached = new TypeDescription(result);
 
             return result;
         }
 
-
-        public PropertyDescription GetPropertyDescription(string name)
-        {
-            return _propertyDescriptionByName[name];
-        }
 
         /// <summary>
         ///     Factory method used to create a precompiled type description.
@@ -194,7 +195,7 @@ namespace Client.Core
             {
                 TypeName = type.Name,
                 FullTypeName = type.FullName,
-                UseCompression = typeDescription.UseCompression
+                _useCompression = typeDescription.UseCompression
             };
 
             var props = type.GetProperties();
@@ -203,8 +204,6 @@ namespace Client.Core
                 if (typeDescription.Keys.ContainsKey(info.Name))
                 {
                     var propertyDescription = typeDescription.Keys[info.Name];
-
-                    result._propertyDescriptionByName[info.Name] = propertyDescription;
 
                     var key = new ClientSideKeyInfo(info, propertyDescription);
 
@@ -224,6 +223,8 @@ namespace Client.Core
             //check if the newly registered type is valid
             if (result.PrimaryKeyField == null)
                 throw new NotSupportedException($"no primary key defined for type {type}");
+
+            result._typeDescriptionCached = new TypeDescription(result);
 
             return result;
         }

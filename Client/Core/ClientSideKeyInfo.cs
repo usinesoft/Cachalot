@@ -3,10 +3,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Client.Interface;
 using Client.Messages;
+using Client.Tools;
 
 #endregion
 
@@ -34,7 +38,12 @@ namespace Client.Core
         /// </summary>
         private readonly PropertyInfo _propertyInfo;
 
-        public bool IndexedAsFulltext { get; private set; }
+        public bool IndexedAsFulltext { get; }
+
+        private Func<object, object> Getter { get; }
+
+        private readonly KeyInfo _keyInfoCache;
+        
 
         /// <summary>
         ///     Build from PropertyInfo
@@ -43,64 +52,79 @@ namespace Client.Core
         /// <param name="propertyInfo"> </param>
         public ClientSideKeyInfo(PropertyInfo propertyInfo)
         {
-            _propertyInfo = propertyInfo;
 
-            // full text indexation can be applied to any type of key or event to non indexed properties
-            var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true).FirstOrDefault();
-
-            if (fullText != null)
+            try
             {
-                IndexedAsFulltext = true;
-            }
+                _propertyInfo = propertyInfo;
 
+                Getter = _propertyInfo.CompileGetter();
 
-            //check if primary key
-            var attributes = propertyInfo.GetCustomAttributes(typeof(PrimaryKeyAttribute), true);
-            if (attributes.Length == 1)
-            {
-                KeyType = KeyType.Primary;
-                if (attributes[0] is PrimaryKeyAttribute attr)
-                    _keyDataType = attr.KeyDataType;
+                // full text indexation can be applied to any type of key or event to non indexed properties
+                var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true).FirstOrDefault();
 
-                return;
-            }
-
-            //check if unique key
-            attributes = propertyInfo.GetCustomAttributes(typeof(KeyAttribute), true);
-            if (attributes.Length == 1)
-            {
-                KeyType = KeyType.Unique;
-                if (attributes[0] is KeyAttribute attr)
-                    _keyDataType = attr.KeyDataType;
-
-                return;
-            }
-
-            //check if index
-            attributes = propertyInfo.GetCustomAttributes(typeof(IndexAttribute), true);
-            if (attributes.Length > 0)
-            {
-                // Index attribute may be applied to scalar types or collections
-
-                if (propertyInfo.PropertyType == typeof(string))
-                    // the string is IEnumerable but it should be treated as scalar
-                    KeyType = KeyType.ScalarIndex;
-                else
-                    KeyType = typeof(IEnumerable).IsAssignableFrom(propertyInfo.PropertyType)
-                        ? KeyType.ListIndex
-                        : KeyType.ScalarIndex;
-
-
-                if (attributes[0] is IndexAttribute attr)
+                if (fullText != null)
                 {
-                    _keyDataType = attr.KeyDataType;
-                    _isOrdered = attr.Ordered;
+                    IndexedAsFulltext = true;
                 }
 
-                return;
-            }
 
-            KeyType = KeyType.None;
+                //check if primary key
+                var attributes = propertyInfo.GetCustomAttributes(typeof(PrimaryKeyAttribute), true);
+                if (attributes.Length == 1)
+                {
+                    KeyType = KeyType.Primary;
+                    if (attributes[0] is PrimaryKeyAttribute attr)
+                        _keyDataType = attr.KeyDataType;
+
+                    
+                    return;
+                }
+
+                //check if unique key
+                attributes = propertyInfo.GetCustomAttributes(typeof(KeyAttribute), true);
+                if (attributes.Length == 1)
+                {
+                    KeyType = KeyType.Unique;
+                    if (attributes[0] is KeyAttribute attr)
+                        _keyDataType = attr.KeyDataType;
+
+                    
+                    return;
+                }
+
+                //check if index
+                attributes = propertyInfo.GetCustomAttributes(typeof(IndexAttribute), true);
+                if (attributes.Length > 0)
+                {
+                    // Index attribute may be applied to scalar types or collections
+
+                    if (propertyInfo.PropertyType == typeof(string))
+                        // the string is IEnumerable but it should be treated as scalar
+                        KeyType = KeyType.ScalarIndex;
+                    else
+                        KeyType = typeof(IEnumerable).IsAssignableFrom(propertyInfo.PropertyType)
+                            ? KeyType.ListIndex
+                            : KeyType.ScalarIndex;
+
+
+                    if (attributes[0] is IndexAttribute attr)
+                    {
+                        _keyDataType = attr.KeyDataType;
+                        _isOrdered = attr.Ordered;
+                    }
+                    
+
+                    return;
+                }
+
+                KeyType = KeyType.None;
+
+                
+            }
+            finally
+            {
+                _keyInfoCache = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
+            }
         }
 
         /// <summary>
@@ -116,17 +140,20 @@ namespace Client.Core
 
             _propertyInfo = propertyInfo;
 
+            Getter = _propertyInfo.CompileGetter();
 
             KeyType = propertyDescription.KeyType;
             _keyDataType = propertyDescription.KeyDataType;
             _isOrdered = propertyDescription.Ordered;
             IndexedAsFulltext = propertyDescription.FullTextIndexed;
+
+            _keyInfoCache = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
         }
 
         /// <summary>
         ///     Return a serializable, light version <see cref="KeyInfo" />
         /// </summary>
-        public KeyInfo AsKeyInfo => new KeyInfo(_keyDataType, KeyType, _propertyInfo.Name, _isOrdered, IndexedAsFulltext);
+        public KeyInfo AsKeyInfo => _keyInfoCache;
 
         /// <summary>
         ///     int or string
@@ -141,12 +168,17 @@ namespace Client.Core
         /// <summary>
         ///     Name of the key (unique for a cacheable type)
         /// </summary>
-        public string Name => _propertyInfo.Name;
+        public string Name => Info.Name;
 
         /// <summary>
         ///     if true order operators can be used for this key
         /// </summary>
         public bool IsOrdered => _isOrdered;
+
+        /// <summary>
+        ///     description of the underlying property
+        /// </summary>
+        public PropertyInfo Info => _propertyInfo;
 
         /// <summary>
         ///     Equals from <see cref="IEquatable{T}" />
@@ -158,7 +190,7 @@ namespace Client.Core
         {
             if (keyInfo == null)
                 return false;
-            if (!Equals(_propertyInfo, keyInfo._propertyInfo))
+            if (!Equals(Info, keyInfo.Info))
                 return false;
             if (!Equals(KeyType, keyInfo.KeyType))
                 return false;
@@ -202,7 +234,7 @@ namespace Client.Core
 
         public override int GetHashCode()
         {
-            var result = _propertyInfo.GetHashCode();
+            var result = Info.GetHashCode();
             result = 29 * result + KeyType.GetHashCode();
             result = 29 * result + _keyDataType.GetHashCode();
             return result;
@@ -218,10 +250,13 @@ namespace Client.Core
         /// </returns>
         public KeyValue GetValue(object instance)
         {
+            //TODO use precompiled accessors
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            var value = _propertyInfo.GetValue(instance, null);
+            //var value = Getter(instance);
+
+            var value = Info.GetValue(instance, null);
 
             return KeyInfo.ValueToKeyValue(value, AsKeyInfo);
         }
@@ -236,8 +271,8 @@ namespace Client.Core
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
-            if (!(_propertyInfo.GetValue(instance, null) is IEnumerable values))
-                throw new NotSupportedException($"Property {_propertyInfo.Name} can not be converted to IEnumerable");
+            if (!(Info.GetValue(instance, null) is IEnumerable values))
+                throw new NotSupportedException($"Property {Info.Name} can not be converted to IEnumerable");
 
             return (from object value in values select KeyInfo.ValueToKeyValue(value, AsKeyInfo)).ToList();
         }
@@ -256,24 +291,90 @@ namespace Client.Core
                 throw new ArgumentNullException(nameof(instance));
 
 
-            if (_propertyInfo.GetValue(instance, null) is string text) // string is also an IEnumerable but we do not want to be processed as a collection
+            if (Info.GetValue(instance, null) is string text) // string is also an IEnumerable but we do not want to be processed as a collection
             {
                 result.Add(text);
             }
-            else if (_propertyInfo.GetValue(instance, null) is IEnumerable values)
+            else if (Info.GetValue(instance, null) is IEnumerable values)
             {
                 foreach (var value in values)
                 {
-                    result.Add(value.ToString());
+                    result.AddRange(ToStrings(value));
                 }
             }
             else
             {
-                result.Add(_propertyInfo.GetValue(instance).ToString());
+                var val = Info.GetValue(instance);
+                if (val != null)
+                {
+                    result.AddRange(ToStrings(val));
+                }
+                
             }
 
 
             return result;
         }
+
+
+        
+
+
+        /// <summary>
+        /// Used for full text indexation
+        /// </summary>
+        static readonly Dictionary<Type, List<Func<object, object>>> StringGetterCache = new Dictionary<Type, List<Func<object, object>>>();
+
+
+        /// <summary>
+        /// Generate precompiled getters for a type. This will avoid using reflection for each call
+        /// </summary>
+        /// <param name="type"></param>
+        private static void GenerateAccessorsForType(Type type)
+        {
+            var accessors = new List<Func<object, object>>();
+            foreach (var property in type.GetProperties())
+            {
+                if (property.PropertyType == typeof(string))
+                {
+                    accessors.Add(property.CompileGetter());                    
+                }
+            }
+
+            StringGetterCache[type] = accessors;
+        }
+
+
+        /// <summary>
+        /// Return a list off all the values of string properties
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <returns></returns>
+        static IList<string> ToStrings(object instance)
+        {
+
+            var result = new List<string>();
+            var type = instance.GetType();
+
+            if (!StringGetterCache.ContainsKey(type))
+            {
+                GenerateAccessorsForType(type);
+            }
+
+            foreach (var accessor in StringGetterCache[type])
+            {
+                var val = accessor(instance);
+                if (val != null)
+                {
+                    result.Add(val as string);
+                }
+                
+            }
+
+            return result;
+        }
     }
+
+
+ 
 }

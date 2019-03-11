@@ -1,6 +1,6 @@
 {
   "IsPersistent": true,
   "ClusterName": "test",
-  "TcpPort": 6666,
-  "DataPath": "root" 
+  "TcpPort": 4848,
+  "DataPath": "root/4848" 
 }

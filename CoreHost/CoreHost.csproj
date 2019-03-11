@@ -12,6 +12,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="data\**" />
+    <Compile Remove="logs\**" />
+    <Compile Remove="root\**" />
+    <EmbeddedResource Remove="data\**" />
+    <EmbeddedResource Remove="logs\**" />
+    <EmbeddedResource Remove="root\**" />
+    <None Remove="data\**" />
+    <None Remove="logs\**" />
+    <None Remove="root\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Channel\Channel.csproj" />
     <ProjectReference Include="..\Client\Client.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
@@ -21,7 +33,28 @@
     <None Update="node_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="node_config_4848.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="node_config_4851.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="node_config_4852.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="readme.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="start4852.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="start4851.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="start4848.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="start.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

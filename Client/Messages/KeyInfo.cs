@@ -139,7 +139,7 @@ namespace Client.Messages
         public override string ToString()
         {
             return
-                $"| {Name,25} | {KeyType,15} | {KeyDataType,10} | {IsOrdered,10} |{IsFullTextIndexed,10} |";
+                $"| {Name,25} | {KeyType,13} | {KeyDataType,9} | {IsOrdered,8} |{IsFullTextIndexed,8} |";
         }
 
 

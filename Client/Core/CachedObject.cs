@@ -325,6 +325,10 @@ namespace Client.Core
             foreach (var fulltext in typeDescription.FullText)
             {
                 var jKey = jObject.Property(fulltext.Name);
+
+                if (jKey == null)
+                    continue;
+
                 if (jKey.Value.Type == JTokenType.Array)
                 {
                     foreach (var jToken in jKey.Value.Children())
@@ -354,17 +358,17 @@ namespace Client.Core
             {
                 if (typeDescription.UseCompression)
                 {
-                    var outZStream = new GZipOutputStream(output);
-                    var writer = new BinaryWriter(outZStream);
-                    writer.Write(json);
-
+                    var outZStream = new GZipOutputStream(output){IsStreamOwner = false};
+                    var encoded = Encoding.UTF8.GetBytes(json);
+                    outZStream.Write(encoded, 0, encoded.Length);
+              
                     outZStream.Flush();
-                    outZStream.Finish();
+                   
                 }
                 else
                 {
-                    var writer = new BinaryWriter(output);
-                    writer.Write(json);
+                    var encoded = Encoding.UTF8.GetBytes(json);
+                    output.Write(encoded, 0, encoded.Length);              
                 }
 
 
@@ -380,7 +384,7 @@ namespace Client.Core
 
         public static CachedObject Pack(object obj, TypeDescription description)
         {
-            var json = SerializationHelper.ObjectToJson(obj, description);
+            var json = SerializationHelper.ObjectToJson(obj);
             return PackJson(json, description);
         }
 

@@ -15,7 +15,8 @@ namespace UnitTests
         [SetUp]
         public void SetUp()
         {
-            File.Delete(Path.Combine(Constants.DataPath, TransactionLog.LogFileName));
+            if(File.Exists(Path.Combine(Constants.DataPath, TransactionLog.LogFileName)))
+                File.Delete(Path.Combine(Constants.DataPath, TransactionLog.LogFileName));
         }
 
         [Test]

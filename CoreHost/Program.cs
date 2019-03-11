@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using Host;
-using Host.HostServices;
-using Host.HostServices.Logger;
+﻿using System.Threading;
 
 namespace CoreHost
 {
@@ -10,12 +6,20 @@ namespace CoreHost
     {
         static void Main(string[] args)
         {
-           
+
+            string instance = null;
+            // an instance-name can be specified
+            // 
+            if (args.Length == 1)
+            {
+                instance = args[0].Trim().ToLower();
+            }
+
             var stopEvent = new ManualResetEvent(false);
             
-            var service = new HostedService(HostServices.Log, stopEvent);
+            var service = new HostedService(HostServices.HostServices.Log, stopEvent);
             
-            service.Start();
+            service.Start(instance);
 
             stopEvent.WaitOne();
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json;
@@ -171,9 +172,10 @@ namespace UnitTests
                 Nominal = 156.32,
                 Quantity = 35,
                 InstrumentName = "IRS",
+                AnotherDate = now, 
                 AreYouSure = Fuzzy.Maybe,
                 IsDeleted = true,
-                Tags = {"news", "science", "space"},
+                Tags = {"news", "science", "space", "διξ"},
                 Languages = {"en", "de", "fr"}
             };
 
@@ -183,7 +185,7 @@ namespace UnitTests
 
             var packed1 = CachedObject.Pack(testObj);
 
-            var json = SerializationHelper.ObjectToJson(testObj, typeDescription);
+            var json = SerializationHelper.ObjectToJson(testObj);
 
             var packed2 = CachedObject.PackJson(json, typeDescription);
 
@@ -198,7 +200,12 @@ namespace UnitTests
             CollectionAssert.AreEqual(packed1.IndexKeys, packed2.IndexKeys);
             CollectionAssert.AreEqual(packed1.ListIndexKeys, packed2.ListIndexKeys);
 
+            var json1 = Encoding.UTF8.GetString(packed1.ObjectData);
+            var json2 = Encoding.UTF8.GetString(packed2.ObjectData);
+
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
+
+            
 
         }
 

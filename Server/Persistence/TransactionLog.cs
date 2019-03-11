@@ -49,11 +49,14 @@ namespace Server.Persistence
             if (workingDirectory == null)
             {
                 LogFilePath = Path.Combine(Constants.DataPath, LogFileName);
+                WorkinDir = Constants.DataPath;
             }
             else
             {
                 var dir = Path.Combine(workingDirectory, Constants.DataPath);
                 LogFilePath = Path.Combine(dir, LogFileName);
+
+                WorkinDir = workingDirectory;
             }
 
 
@@ -72,6 +75,8 @@ namespace Server.Persistence
                 }
             }
         }
+
+        public string WorkinDir { get; }
 
         private string LogFilePath { get; }
 
@@ -384,7 +389,7 @@ namespace Server.Persistence
 
         private void CreateNewLog()
         {
-            if (!Directory.Exists(Constants.DataPath)) Directory.CreateDirectory(Constants.DataPath);
+            if (!Directory.Exists(WorkinDir)) Directory.CreateDirectory(WorkinDir);
 
             _transactionLog = new FileStream(LogFilePath, FileMode.CreateNew);
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using Server;
 
-namespace Host.HostServices.Logger
+namespace CoreHost.HostServices.Logger
 {
 
     /// <summary>
@@ -21,7 +21,7 @@ namespace Host.HostServices.Logger
 
         private static readonly int MaxFilesToKeep = 2;
 
-        private static readonly string LogDirectory = "logs";
+        private static string _logDirectory = "logs";
 
         readonly Queue<Item> _messageQueue = new Queue<Item>(MaxMessagesInQueue);
 
@@ -84,7 +84,7 @@ namespace Host.HostServices.Logger
         /// </summary>
         void DoHouseKeeping()
         {
-            var logFiles = Directory.EnumerateFiles(LogDirectory, "*.log").ToList().OrderBy(n => n).ToList();
+            var logFiles = Directory.EnumerateFiles(_logDirectory, "*.log").ToList().OrderBy(n => n).ToList();
             if (logFiles.Count > MaxFilesToKeep)
             {
                 for (int i = 0; i < logFiles.Count - MaxFilesToKeep; i++)
@@ -94,11 +94,13 @@ namespace Host.HostServices.Logger
             }
         }
 
-        public void Start()
+        public void Start(string path)
         {
-            if (!Directory.Exists(LogDirectory))
+            _logDirectory = path != null ? Path.Combine(path, "logs") : "logs";
+
+            if (!Directory.Exists(_logDirectory))
             {
-                Directory.CreateDirectory(LogDirectory);
+                Directory.CreateDirectory(_logDirectory);
             }
 
 
@@ -113,7 +115,7 @@ namespace Host.HostServices.Logger
 
                     string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
 
-                    _writer = new StreamWriter(Path.Combine(LogDirectory, fileName), true);
+                    _writer = new StreamWriter(Path.Combine(_logDirectory, fileName), true);
 
                     List<Item> newItems = new List<Item>();
 

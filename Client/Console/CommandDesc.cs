@@ -46,7 +46,7 @@ namespace Client.Console
                     foreach (var keyValuePair in serverInfo.KnownTypesByFullName)
                         if (tableName.ToUpper() == keyValuePair.Value.TypeName.ToUpper())
                         {
-                            logTypeInfo(keyValuePair.Value, false);
+                            LogTypeInfo(keyValuePair.Value, false);
                             break;
                         }
                 }
@@ -111,14 +111,15 @@ namespace Client.Console
         }
 
 
-        protected static void logTypeInfo(TypeDescription desc, bool detailed)
+        protected static void LogTypeInfo(TypeDescription desc, bool detailed)
         {
             Logger.Write("");
             Logger.Write("{0} ({1})", desc.TypeName.ToUpper(), desc.FullTypeName);
             Logger.Write("-------------------------------------------------------------------------");
-            var header = string.Format("| {0,25} | {1,15} | {2,10} | {3,10} |", "property", "index type",
+            var header = string.Format("| {0,25} | {1,15} | {2,8} | {3,8} | {4,8} |", "property", "index type",
                 "data type",
-                "ordered");
+                "ordered",
+                "full text");
 
             Logger.Write(header);
             Logger.Write("-------------------------------------------------------------------------");

@@ -1,13 +1,15 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
+using Channel;
+using Client.Core;
+using Host;
+using Newtonsoft.Json;
 using Server;
 using Server.Persistence;
-using Client.Core;
-using Channel;
-using Newtonsoft.Json;
 
-namespace Host
+namespace CoreHost
 {
     public class HostedService
     {
@@ -25,55 +27,70 @@ namespace Host
         }
 
 
-        public bool Start()
+        public bool Start(string instance)
         {
-            HostServices.HostServices.Start();
-
-            Log.LogInfo("----------------------------------------------------------");
-            
             
             try
             {
 
-                int port = Constants.DefaultPort;
+                string configFile = Constants.NodeConfigFileName;
 
-                if (File.Exists(Constants.NodeConfigFileName))
+                if (instance != null)
                 {
+                    var baseName = configFile.Split('.').FirstOrDefault();
+                    configFile = $"{baseName}_{instance}.json";
+                }
+
+                var port = Constants.DefaultPort;
+                var persistent = true;
+                string dataPath = null;
+
+                if (File.Exists(configFile))
                     try
                     {
-                        var nodeConfig = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(new JsonTextReader(new StringReader(File.ReadAllText(Constants.NodeConfigFileName))));
+                        var nodeConfig = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(
+                            new JsonTextReader(new StringReader(File.ReadAllText(configFile))));
                         port = nodeConfig.TcpPort;
+                        persistent = nodeConfig.IsPersistent;
+                        dataPath = nodeConfig.DataPath;
+
+                        HostServices.HostServices.Start(dataPath);
+
+                        Log.LogInfo("----------------------------------------------------------");
+                        Log.LogInfo($"Reading configuration file {configFile} ");
 
                     }
                     catch (Exception e)
                     {
-                        Log.LogError($"Error reading configuration file {Constants.NodeConfigFileName} : {e.Message}");
+                        Log.LogError($"Error reading configuration file {configFile} : {e.Message}");
                     }
-                }
                 else
                 {
-                    Log.LogWarning($"Configuration file {Constants.NodeConfigFileName} not found. Using defaults");
+                    HostServices.HostServices.Start(dataPath);
+                    Log.LogWarning($"Configuration file {configFile} not found. Using defaults");
                 }
-                _cacheServer = new Server.Server(new ServerConfig(), true);
+                    
+
+                _cacheServer = new Server.Server(new ServerConfig(), persistent, dataPath);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
-                _listener.Init(port); 
+                _listener.Init(port);
                 _listener.Start();
 
+                var persistentDescription = persistent ? dataPath ?? Constants.DataPath : " NO";
+                Console.Title = $"Cachalot Core on port {port} persistent = {persistentDescription}";
 
-                Log.LogInfo("Starting hosted service on port " + port);
+                Log.LogInfo($"Starting hosted service on port {port} persistent = {persistentDescription}" );
 
                 _cacheServer.StopRequired += (sender, args) =>
                 {
-
                     HostServices.HostServices.Stop();
                     Stop();
 
                     _stopEvent.Set();
                 };
                 _cacheServer.Start();
-
             }
             catch (Exception e)
             {
@@ -93,7 +110,7 @@ namespace Host
 
             _listener.Stop();
 
-           _cacheServer.Stop();
+            _cacheServer.Stop();
 
             Log.LogInfo("Service stopped successfully");
 

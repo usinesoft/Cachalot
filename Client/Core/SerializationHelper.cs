@@ -1,16 +1,12 @@
 #region
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Client.Messages;
 using ICSharpCode.SharpZipLib.GZip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using ProtoBuf;
 
 #endregion
@@ -38,17 +34,14 @@ namespace Client.Core
         }
 
 
-        public static JsonSerializerSettings JsonSettings(TypeDescription typeDescription = null)
+        private static JsonSerializerSettings JsonSettings()
         {
             return new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.Objects,
-                //DateFormatString = "yyyy-MM-dd",
+                TypeNameHandling = TypeNameHandling.Objects,                
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore
-
-                //ContractResolver = new WritablePropertiesOnlyResolver(typeDescription)
+                DefaultValueHandling = DefaultValueHandling.Ignore                
             };
         }
 
@@ -56,39 +49,48 @@ namespace Client.Core
         public static TItem ObjectFromStream<TItem>(Stream stream, SerializationMode mode, bool compress)
 
         {
-            if (mode == SerializationMode.Json)
+            if (mode != SerializationMode.Json)
+                return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
+            
+            
+            JsonTextReader reader;
+            if (compress)
             {
-                BinaryReader reader;
-                if (compress)
-                {
-                    var zInStream = new GZipInputStream(stream);
-                    reader = new BinaryReader(zInStream);
-                    return JsonConvert.DeserializeObject<TItem>(reader.ReadString(), JsonSettings());
-                }
-
-                reader = new BinaryReader(stream);
-                return JsonConvert.DeserializeObject<TItem>(reader.ReadString(), JsonSettings());
+                var zInStream = new GZipInputStream(stream);                    
+                reader = new JsonTextReader(new StreamReader(zInStream));
+                    
+                return Serializer.Deserialize<TItem>(reader);
             }
 
-            return Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
+                
+            reader = new JsonTextReader(new StreamReader(stream));
+            return Serializer.Deserialize<TItem>(reader);
+
         }
 
 
         public static string AsJson(this CachedObject obj)
         {
-            var stream = new MemoryStream(obj.ObjectData);
+            
 
             if (obj.UseCompression)
+            {
+               
+                var stream = new MemoryStream(obj.ObjectData);               
                 using (var zInStream = new GZipInputStream(stream))
                 {
-                    var reader = new BinaryReader(zInStream);
-                    var json = reader.ReadString();
+                    var stream2 = new MemoryStream(obj.ObjectData);
+                    zInStream.CopyTo(stream2);
+                    
+                    var json = Encoding.UTF8.GetString(stream2.ToArray());
+
                     return JToken.Parse(json).ToString(Formatting.Indented);
                 }
+            }
 
             {
-                var reader = new BinaryReader(stream);
-                var json = reader.ReadString();
+                var json = Encoding.UTF8.GetString(obj.ObjectData);
+
                 return JToken.Parse(json).ToString(Formatting.Indented);
             }
         }
@@ -97,56 +99,43 @@ namespace Client.Core
         {
             var stream = new MemoryStream(bytes);
 
-
+            
             if (mode == SerializationMode.Json)
             {
-                string json;
-
-                if (compress)
-                {
-                    using (var zInStream = new GZipInputStream(stream))
-                    {
-                        var reader = new BinaryReader(zInStream);
-                        json = reader.ReadString();
-                    }
-                }
-                else
-                {
-                    var reader = new BinaryReader(stream);
-                    json = reader.ReadString();
-                }
-
-
-                return JsonConvert.DeserializeObject<TItem>(json, JsonSettings());
+                return ObjectFromStream<TItem>(stream, mode, compress);
             }
 
-            return Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
+            return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
         }
+
+        static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
 
         public static void ObjectToStream<TItem>(TItem obj, Stream stream, SerializationMode mode, bool compress)
         {
             if (mode == SerializationMode.Json)
             {
-                var json = JsonConvert.SerializeObject(obj, JsonSettings());
-
+                
                 if (compress)
                 {
-                    var outZStream = new GZipOutputStream(stream);
-                    var writer = new BinaryWriter(outZStream);
-                    writer.Write(json);
 
-                    outZStream.Flush();
-                    outZStream.Finish();
+                    using (var outZStream = new GZipOutputStream(stream){IsStreamOwner = false})
+                    {
+                        var writer = new JsonTextWriter(new StreamWriter(outZStream));
+                        Serializer.Serialize(writer, obj);
+                        writer.Flush();                        
+                    }
+                    
                 }
                 else
-                {
-                    var writer = new BinaryWriter(stream);
-                    writer.Write(json);
+                {                    
+                    var writer = new JsonTextWriter(new StreamWriter(stream));
+                    Serializer.Serialize(writer, obj);
+                    writer.Flush();
                 }
             }
             else
             {
-                Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Fixed32);
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Fixed32);
             }
         }
 
@@ -154,31 +143,16 @@ namespace Client.Core
         {
             using (var output = new MemoryStream())
             {
+               
                 if (mode == SerializationMode.Json)
                 {
-                    var json = ObjectToJson(obj, typeDescription);
 
-                    if (typeDescription.UseCompression)
-                    {
-                        using (var outZStream = new GZipOutputStream(output))
-                        {
-                            var writer = new BinaryWriter(outZStream);
-                            writer.Write(json);
-                            outZStream.Flush();
-                            outZStream.Finish();
-                        }
-                    }
-                    else
-                    {
-                        var writer = new BinaryWriter(output);
-                        writer.Write(json);
-                    }
+                    ObjectToStream(obj, output, mode, typeDescription.UseCompression);
                 }
                 else
                 {
-                    Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
+                    ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
                 }
-
 
                 return output.ToArray();
             }
@@ -192,65 +166,19 @@ namespace Client.Core
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
         /// <param name="obj"></param>
-        /// <param name="typeDescription"></param>
         /// <returns></returns>
-        public static string ObjectToJson<TItem>(TItem obj, TypeDescription typeDescription)
+        public static string ObjectToJson<TItem>(TItem obj)
         {
-            return JsonConvert.SerializeObject(obj, JsonSettings(typeDescription));
+            return JsonConvert.SerializeObject(obj, JsonSettings());
         }
 
-        /// <summary>
-        ///     Serialize an object as human readable json. Enums are converted to string. output is indented
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public static string SerializeFormatedJson<T>(T item)
-        {
-            var sb = new StringBuilder();
-
-            FormattedSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), item);
-
-            return sb.ToString();
-        }
+        
 
         public static T DeserializeJson<T>(string json)
         {
             return FormattedSerializer.Deserialize<T>(new JsonTextReader(new StringReader(json)));
         }
 
-        /// <summary>
-        ///     Properties resolver for the Json serializer
-        ///     It selects only writable proparties and readonly properties that are indexed
-        /// </summary>
-        private class WritablePropertiesOnlyResolver : DefaultContractResolver
-        {
-            private readonly Dictionary<Type, List<JsonProperty>> _propertiesCache =
-                new Dictionary<Type, List<JsonProperty>>();
-
-            private readonly TypeDescription _tyeDescription;
-
-
-            public WritablePropertiesOnlyResolver(TypeDescription tyeDescription)
-            {
-                _tyeDescription = tyeDescription;
-            }
-
-            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
-            {
-                lock (_propertiesCache)
-                {
-                    var props = base.CreateProperties(type, memberSerialization);
-
-                    if (_propertiesCache.TryGetValue(type, out var properties)) return properties;
-
-                    properties = props.Where(p =>
-                        p.Writable || _tyeDescription != null && _tyeDescription.IsIndexed(p.PropertyName)).ToList();
-                    _propertiesCache[type] = properties;
-
-                    return properties;
-                }
-            }
-        }
+       
     }
 }

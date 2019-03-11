@@ -1,9 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using Client.Core;
-using Client.Messages;
 using Client.Tools;
 using NUnit.Framework;
 using UnitTests.TestData;
+// ReSharper disable NotAccessedVariable
 
 namespace UnitTests
 {
@@ -102,22 +104,98 @@ namespace UnitTests
                 Address = "14 rue du chien qui fume", Bathrooms = 2, Rooms = 4, PriceInEuros = 200, CountryCode = "FR",
                 Comments =
                 {
-                    new Comment{Text = "Wonderful place"},
+                    new Comment{Text = "Wonderful place", User = "foo"},
                     new Comment{Text = "Very nice apartment"}
                 }
             };
 
             var packed = CachedObject.Pack(home);
 
-            Assert.AreEqual(4, packed.FullText.Length);
+            Assert.AreEqual(5, packed.FullText.Length);
             Assert.IsTrue(packed.FullText.Any(t=>t.Contains("chien qui fume")));
 
             // now pack the same object as json
-            var json = SerializationHelper.ObjectToJson(home, description.AsTypeDescription);
+            var json = SerializationHelper.ObjectToJson(home);
 
             var packed2 = CachedObject.PackJson(json, description.AsTypeDescription);
-            Assert.AreEqual(4, packed2.FullText.Length);
+            Assert.AreEqual(5, packed2.FullText.Length);
             Assert.IsTrue(packed2.FullText.Any(t => t.Contains("chien qui fume")));
+
+        }
+
+
+        [Test]
+        public void Test_packing_performance()
+        {
+            var home = new Home
+            {
+                Address = "14 rue du chien qui fume",
+                Bathrooms = 2,
+                Rooms = 4,
+                PriceInEuros = 200,
+                CountryCode = "FR",
+                Comments =
+                {
+                    new Comment{Text = "Wonderful place", User = "foo"},
+                    new Comment{Text = "Very nice apartment"}
+                }
+            };
+
+
+            var desc = ClientSideTypeDescription.RegisterType<Home>();
+            const int objects = 10_000;
+
+            {
+
+                // warm up
+                             
+                var unused = CachedObject.Pack(home, desc);
+                var reloaded = CachedObject.Unpack<Home>(unused);
+
+
+                var watch = new Stopwatch();
+                
+                watch.Start();
+
+                for (int i = 0; i < objects; i++)
+                {
+                    var packed = CachedObject.Pack(home, desc);
+                    reloaded = CachedObject.Unpack<Home>(unused);
+                }
+
+                watch.Stop();
+
+
+                Console.WriteLine($"Packing + unpacking {objects} objects took {watch.ElapsedMilliseconds} ms");
+            }
+
+            
+            {
+
+                // warm up
+
+                desc.UseCompression = true;
+
+                var unused = CachedObject.Pack(home, desc);
+                var reloaded = CachedObject.Unpack<Home>(unused);
+
+                var watch = new Stopwatch();
+                
+                watch.Start();
+
+                for (int i = 0; i < objects; i++)
+                {
+                    var packed = CachedObject.Pack(home, desc);
+                    reloaded = CachedObject.Unpack<Home>(unused);
+                }
+
+                watch.Stop();
+
+
+                Console.WriteLine($"Packing + unpacking {objects} objects with compression took {watch.ElapsedMilliseconds} ms");
+            }
+
+
 
         }
 

@@ -6,7 +6,6 @@ using System.Text;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
-using ICSharpCode.SharpZipLib.GZip;
 using Newtonsoft.Json.Linq;
 
 namespace Client.Tools
@@ -112,26 +111,10 @@ namespace Client.Tools
 
             foreach (var cachedObject in objects)
             {
-                var data = cachedObject.ObjectData;
+                
+                string json = cachedObject.AsJson();
 
-                var stream = new MemoryStream(data);
-
-                string json;
-
-                if (typeDescription.UseCompression)
-                {
-                    using (var zInStream = new GZipInputStream(stream))
-                    {
-                        var reader = new BinaryReader(zInStream);
-                        json = reader.ReadString();
-                    }
-                }
-                else
-                {
-                    var reader = new BinaryReader(stream);
-                    json = reader.ReadString();
-                }
-
+                
                 sb.Append(json);
                 sb.AppendLine();
                 sb.AppendLine("\\-"); // separator which is illegal in json
@@ -163,7 +146,7 @@ namespace Client.Tools
 
         /// <summary>
         ///     Dumps are stored as subdirectories like "2018-02-15"
-        ///     If a subdirectory is is specified take it as is. Otherwise take the most recent subdirectory
+        ///     If a sub directory is is specified take it as is. Otherwise take the most recent sub directory
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>

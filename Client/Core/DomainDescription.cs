@@ -24,7 +24,7 @@ namespace Client.Core
     public class DomainDescription
     {
         /// <summary>
-        ///     The data coresponding to each <see cref="KeyValue" /> is fully available in the cache
+        ///     The data corresponding to each <see cref="KeyValue" /> is fully available in the cache
         ///     Indexed by key name to speed up the evaluation of query completeness and indexed by <see cref="KeyValue" />
         ///     to speed up Domain merge and subtraction
         /// </summary>

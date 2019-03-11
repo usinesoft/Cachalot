@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using CoreHost.HostServices.Logger;
 using Server;
-using Host.HostServices.Logger;
 
-namespace Host.HostServices
+namespace CoreHost.HostServices
 {
 
     /// <summary>
@@ -22,12 +22,12 @@ namespace Host.HostServices
         }
 
        
-        public static void Start()
+        public static void Start(string dataPath)
         {
             if (_started) throw new NotSupportedException("Can start only once");
 
 
-            ((FastLogger)Log).Start();
+            ((FastLogger)Log).Start(dataPath);
 
 
             _started = true;

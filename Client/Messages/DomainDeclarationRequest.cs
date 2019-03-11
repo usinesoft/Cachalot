@@ -10,7 +10,7 @@ namespace Client.Messages
     public class DomainDeclarationRequest : DataRequest
     {
         /// <summary>
-        ///     Add to, remove from or set the curret domain description
+        ///     Add to, remove from or set the current domain description
         /// </summary>
         [ProtoMember(1)] private readonly DomainDeclarationAction _action = DomainDeclarationAction.Add;
 

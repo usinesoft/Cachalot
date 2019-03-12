@@ -150,6 +150,7 @@ namespace UnitTests
                 // warm up
                              
                 var unused = CachedObject.Pack(home, desc);
+                var json = unused.AsJson();
                 var reloaded = CachedObject.Unpack<Home>(unused);
 
 

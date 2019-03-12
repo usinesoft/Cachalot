@@ -189,5 +189,39 @@ namespace UnitTests
 
 
         }
+
+
+        [Test]
+        public void Dump_different_types_of_objects()
+        {
+            using (var connector = new Connector(_config))
+            {
+                connector.AdminInterface().DropDatabase();
+
+                var ids = connector.GenerateUniqueIds("home_id", 100);
+
+                var list = new List<Home>();
+                for (int i = 0; i < 100; i++)
+                {
+                    var home = new Home
+                    {
+                        Id = ids[i],
+                        Town = "Paris",
+                        CountryCode = "FR",
+                        Address = "rue des malheurs",
+                        Bathrooms = 1,
+                        Rooms = 2
+                    };
+                    list.Add(home);
+                }
+
+                var homes = connector.DataSource<Home>();
+                homes.PutMany(list);
+
+                connector.AdminInterface().Dump("dump");
+            }
+
+
+        }
     }
 }

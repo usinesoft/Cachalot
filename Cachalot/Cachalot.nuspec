@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Cachalot.Client</id>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <title>Client for Cachalot DB (fastest transactional database for .net)</title>
     <authors>Dan Ionescu</authors>
     <owners>USINESOFT</owners>
@@ -11,7 +11,7 @@
     <iconUrl>https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Fastest transactional database for .NET applications</description>
-    <releaseNotes>Support for DateTimeOffset as index.Improved packaging and documentation</releaseNotes>
+    <releaseNotes>Faster object packing</releaseNotes>
     <copyright>Copyright USINESOFT 2012-2019</copyright>
     <tags>cachealot cachalot nosql database transactional fast dotnet distributed cache</tags>
     <dependencies>

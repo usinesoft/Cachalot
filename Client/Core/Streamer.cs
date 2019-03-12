@@ -69,28 +69,6 @@ namespace Client.Core
             writer.Flush();
         }
 
-        /// <summary>
-        ///     Stream one <see cref="CachedObject" />
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="cachedObject"></param>
-        public static void ToStream(Stream stream, CachedObject cachedObject)
-        {
-            var bufferedStream = new BufferedStream(stream);
-            var writer = new BinaryWriter(bufferedStream);
-
-            const int itemCount = 1;
-            writer.Write(itemCount);
-
-            var dataSize = cachedObject.ObjectData.Length;
-            writer.Write(false);
-            writer.Write(cachedObject.UseCompression);
-            writer.Write(dataSize);
-
-            writer.Write(cachedObject.ObjectData);
-
-            writer.Flush();
-        }
 
         /// <summary>
         ///     Stream a collection of generic objects. Do not use for <see cref="CachedObject" />

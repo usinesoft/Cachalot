@@ -179,7 +179,7 @@ namespace BookingMarketplace
             // check they are all identical
             if (hashset.Count != pids.Length)
             {
-                throw  new NotSupportedException("ids are not unique");
+                throw new NotSupportedException("ids are not unique");
             }
 
 
@@ -268,7 +268,7 @@ namespace BookingMarketplace
 
             properties.DeleteMany(p =>
                         p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
-                    
+
             watch.Stop();
 
 
@@ -278,28 +278,6 @@ namespace BookingMarketplace
 
         }
 
-        //private static void MoneyTransfer(Connector connector, Account sourceAccount, Account targetAccount, decimal amount)
-        //{
-
-        //    sourceAccount.Balance -= amount;
-        //    targetAccount.Balance += amount;
-
-        //    var tids = connector.GenerateUniqueIds("transaction_id", 1);
-        //    var transfer = new Transaction
-        //    {
-        //        Id = tids[0],
-        //        SourceAccount = sourceAccount.Id,
-        //        TargetAccount = targetAccount.Id,
-        //        TransferedAmount = amount
-        //    };
-
-        //    var transaction = connector.BeginTransaction();
-        //    transaction.Put(sourceAccount);
-        //    transaction.Put(targetAccount);
-        //    transaction.Put(transfer);
-
-        //    // this is where the two stage transaction happens
-        //    transaction.Commit();
-        //}
+       
     }
 }

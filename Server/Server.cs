@@ -130,22 +130,28 @@ namespace Server
         private void ManageDropRequest()
         {
             Mode = ServerMode.ReadOnly;
-            _persistenceEngine.Stop();
+            _persistenceEngine?.Stop();
 
             // delete persistent data
-            _persistenceEngine.StoreDataForRollback();
+            _persistenceEngine?.StoreDataForRollback();
 
             // delete data from memory
             _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
-            _persistenceEngine.Container = _dataContainer;
+
+            if (_persistenceEngine != null)
+            {
+                _persistenceEngine.Container = _dataContainer;
+            }
+            
+
             _dataContainer.PersistenceEngine = _persistenceEngine;
 
-            _persistenceEngine.LightStart();
+            _persistenceEngine?.LightStart();
 
             _dataContainer.StartProcessingClientRequests();
 
 
-            _persistenceEngine.DeleteRollbackData();
+            _persistenceEngine?.DeleteRollbackData();
             Mode = ServerMode.Normal;
         }
 

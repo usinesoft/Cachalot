@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Host
+﻿namespace Host
 {
     public class NodeConfig
     {
@@ -13,5 +7,6 @@ namespace Host
         public int TcpPort { get; set; }
 
         public string ClusterName { get; set; }
+        public string DataPath { get; set; }
     }
 }

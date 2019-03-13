@@ -8,7 +8,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>..\bin\Release\</OutputPath>
+    <OutputPath>..\bin\Release\DotnetCoreServer\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin\Release\DotnetCoreServer\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,8 +46,11 @@
     <None Update="node_config_4852.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="readme.md">
+    <None Update="readme.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="readme.md">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="start4852.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

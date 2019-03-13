@@ -93,8 +93,17 @@ namespace Accounts
             }
 
 
+            var tids = Enumerable.Range(0, TestIterations).ToArray();
 
-            var tids = connector.GenerateUniqueIds("transfer_id", TestIterations);
+            try
+            {
+                tids = connector.GenerateUniqueIds("transfer_id", TestIterations);
+            }
+            catch (Exception)
+            {
+                // ignore (means testing with non persistent server)
+            }
+            
 
             var rand = new Random();
 

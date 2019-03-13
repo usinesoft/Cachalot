@@ -35,13 +35,18 @@ namespace Host
             {
 
                 int port = Constants.DefaultPort;
+                bool persistent = true;
+                string dataPath = null;
 
                 if (File.Exists(Constants.NodeConfigFileName))
                 {
                     try
                     {
                         var nodeConfig = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(new JsonTextReader(new StringReader(File.ReadAllText(Constants.NodeConfigFileName))));
+
                         port = nodeConfig.TcpPort;
+                        persistent = nodeConfig.IsPersistent;
+                        dataPath = nodeConfig.DataPath;
 
                     }
                     catch (Exception e)
@@ -53,17 +58,20 @@ namespace Host
                 {
                     Log.LogWarning($"Configuration file {Constants.NodeConfigFileName} not found. Using defaults");
                 }
-                _cacheServer = new Server.Server(new ServerConfig(), true);
+                _cacheServer = new Server.Server(new ServerConfig(), persistent, dataPath);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
                 _listener.Init(port); 
                 _listener.Start();
 
+                var persistentDescription = persistent ? dataPath ?? Constants.DataPath : " NO";
 
-                Log.LogInfo("Starting hosted service on port " + port);
+                Log.LogInfo($"Starting Cachalot server on port {port}  persistent {persistentDescription}");
 
-                //TODO _cacheServer.HostControl = hostControl;
+                Console.Title = $"Cachalot server on port {port} persistent = {persistentDescription}";
+                
+                
                 _cacheServer.Start();
 
             }

@@ -1,0 +1,1 @@
+dotnet CoreHost.dll cache_only

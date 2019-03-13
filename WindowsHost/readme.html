@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Cachalot DB</title>
+</head>
+<body>
+
+    <p><img src="https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true" alt="logo" /></p>
+<h1 id="cachalot-db">Cachalot DB</h1>
+<p>Full documentation can be found <a href="https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf">here&gt;&gt;</a></p>
+<h1 id="running-cachalot-server">Running Cachalot server</h1>
+<p><strong>Cachalot.exe</strong> is a classic dotnet (4.6.1) executable, hosting a cachalot server with logging facility
+It can be run as a console application or a windows service
+Type <strong>cachalot --help</strong> to display all available options</p>
+<p>It uses the configuration file <strong>node_config.json</strong>
+Example of configuration file</p>
+<pre><code class="language-java">{
+  &quot;IsPersistent&quot;: true,  
+  &quot;ClusterName&quot;: &quot;test&quot;,   
+  &quot;TcpPort&quot;: 6666,    
+  &quot;DataPath&quot;: &quot;root&quot; 
+}
+</code></pre>
+<ul>
+<li><strong>IsPersistent</strong> = true means it works as a detabase, otherwise it is only a cache</li>
+<li><strong>ClusterName</strong>, for monitoring only</li>
+<li><strong>TcpPort</strong> on the same machine each node should use a different one</li>
+<li><strong>DataPath</strong> is used only in database mode: the directory containg persistent data and logs. Multiple instances on the same machine should use different values</li>
+</ul>
+
+
+</body>
+</html>

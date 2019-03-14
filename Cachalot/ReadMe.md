@@ -1,5 +1,5 @@
-﻿![logo](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true) 
-# Cachalot DB  
+﻿![logo](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true)  Cachalot DB  
+===========================================================================================================
 Full documentation can be found [here>>](https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf)
 
 Cachalot Client 

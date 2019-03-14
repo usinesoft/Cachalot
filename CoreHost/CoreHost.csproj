@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\bin\Release\DotnetCoreServer\</OutputPath>
+    <OutputPath>..\bin\Debug\DotnetCoreServer\netcoreapp2.1\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

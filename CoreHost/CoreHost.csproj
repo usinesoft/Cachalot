@@ -52,6 +52,9 @@
     <None Update="readme.md">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
+    <None Update="publish.cmd">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
     <None Update="start4852.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

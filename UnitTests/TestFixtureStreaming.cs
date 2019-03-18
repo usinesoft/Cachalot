@@ -372,8 +372,11 @@ namespace UnitTests
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                object reloaded = Streamer.FromStream<CacheableTypeOk>(stream);
-                Assert.IsTrue(reloaded is CacheableTypeOk);
+                var reloaded = Streamer.FromStream<CachedObject>(stream);
+                var original = CachedObject.Unpack<CacheableTypeOk>(reloaded);
+
+
+                Assert.IsTrue(original is CacheableTypeOk);
             }
         }
 

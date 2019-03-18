@@ -57,7 +57,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -85,13 +85,7 @@
     <None Include="..\AccountsCore\readme.md">
       <Link>readme.md</Link>
     </None>
-    <None Include="Accounts_TemporaryKey.pfx" />
     <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Cachalot.Client">
-      <Version>1.0.8</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\AccountsCore\readme.html">
@@ -115,6 +109,11 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Cachalot.Client">
+      <Version>1.0.8</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

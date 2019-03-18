@@ -14,13 +14,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cachalot.Client" Version="1.0.8" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="run_booking.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cachalot.Client" Version="1.0.8" />
+  </ItemGroup>
+
 
 </Project>

@@ -35,8 +35,7 @@ namespace Channel
         {
             try
             {
-                var client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}};
-                
+                var client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}, NoDelay = true};
 
                 client.Connect (_address, _port);
                 

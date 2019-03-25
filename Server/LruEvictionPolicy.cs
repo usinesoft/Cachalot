@@ -17,16 +17,10 @@ namespace Server
             _evictionQueue.EvictionCount = evictionCount;
         }
 
-        public override bool IsEvictionRequired
-        {
-            get { return _evictionQueue.EvictionRequired; }
-        }
+        public override bool IsEvictionRequired => _evictionQueue.EvictionRequired;
 
 
-        public override EvictionType Type
-        {
-            get { return EvictionType.LessRecentlyUsed; }
-        }
+        public override EvictionType Type => EvictionType.LessRecentlyUsed;
 
         public override void Clear()
         {

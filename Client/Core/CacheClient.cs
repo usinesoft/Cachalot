@@ -543,7 +543,7 @@ namespace Client.Core
 
         public void DeclareDataFullyLoaded<TItemType>(bool isFullyLoaded)
         {
-            DeclareDomain(new DomainDescription(typeof(TItemType)) {IsFullyLoaded = true}, DomainDeclarationAction.Set);
+            DeclareDomain(new DomainDescription(OrQuery.Empty<TItemType>(), isFullyLoaded));
         }
 
 
@@ -880,13 +880,16 @@ namespace Client.Core
         ///     <seealso cref="DomainDescription" /> <seealso cref="DomainDeclarationAction" />
         /// </summary>
         /// <param name="domain">data description</param>
-        /// <param name="action">add to, remove from or replace current data description</param>
-        public void DeclareDomain(DomainDescription domain, DomainDeclarationAction action)
+        
+        public void DeclareDomain(DomainDescription domain)
         {
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
 
-            var request = new DomainDeclarationRequest(domain, action);
+            if(domain.DescriptionAsQuery.TypeName == null)
+                throw new ArgumentNullException(nameof(domain), "TypeName not specified");
+
+            var request = new DomainDeclarationRequest(domain);
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)

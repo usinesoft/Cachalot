@@ -93,7 +93,19 @@ namespace UnitTests
 
                 // disable the monitoring
                 QueryExecutor.Probe(null);
-                
+
+                QueryExecutor.Probe(query =>
+                {
+                    Assert.AreEqual(true, query.OnlyIfComplete);
+
+                    Console.WriteLine(query);
+                });
+
+                result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+
+                // disable the monitoring
+                QueryExecutor.Probe(null);
+
             }
         }
 

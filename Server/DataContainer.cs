@@ -750,8 +750,7 @@ namespace Server
                         FullTypeName = dataStore.TypeDescription.FullTypeName,
                         AvailableData =
                             dataStore.DomainDescription ??
-                            new DomainDescription(
-                                dataStore.TypeDescription.FullTypeName),
+                            new DomainDescription(null),
                         DataCompression = dataStore.TypeDescription.UseCompression,
 
                         HitCount = dataStore.HitCount,

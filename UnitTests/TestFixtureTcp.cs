@@ -78,10 +78,12 @@ namespace UnitTests
 
             var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
             _client.Put(item2);
+            
+            var atomic = builder.MakeAtomicQuery("IndexKeyFolder", "aaa");
 
-            var domainDeclaration = new DomainDescription(typeof(CacheableTypeOk));
-            domainDeclaration.AddOrReplace(builder.MakeAtomicQuery("IndexKeyFolder", "aaa"));
-            _client.DeclareDomain(domainDeclaration, DomainDeclarationAction.Set);
+            var domainDeclaration = new DomainDescription(new OrQuery(typeof(CacheableTypeOk)){Elements = { new AndQuery{Elements = { atomic}}}});
+
+            _client.DeclareDomain(domainDeclaration);
 
             var eval = _client.EvalQuery(builder.GetManyWhere("IndexKeyFolder == aaa"));
             Assert.IsTrue(eval.Key); //domain is complete

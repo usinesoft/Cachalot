@@ -18,6 +18,10 @@ namespace Client.Queries
     [ProtoContract]
     public class OrQuery : Query
     {
+
+        public static OrQuery Empty<T>() => new OrQuery(typeof(T).FullName);
+
+
         [ProtoMember(1)] private readonly List<AndQuery> _elements;
         [ProtoMember(2)] private readonly string _typeName;
 
@@ -69,18 +73,18 @@ namespace Client.Queries
         public int Skip { get; set; }
 
         [ProtoMember(4)] public string FullTextSearch { get; set; }
+        [ProtoMember(5)] public bool OnlyIfComplete { get; set; }
 
-        /// <summary>
-        ///     This query is a subset if all contained <see cref="AndQuery" /> are subsets
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <returns></returns>
-        public bool IsSubsetOf(DomainDescription domain)
+
+        public bool IsSubsetOf(OrQuery query)
         {
-            if (domain.IsFullyLoaded)
-                return true;
 
-            return _elements.All(query => query.IsSubsetOf(domain));
+            if (query.IsEmpty())
+            {
+                return true;
+            }
+                
+            return _elements.All(q => query.Elements.Any(q.IsSubsetOf));
         }
 
         public override string ToString()
@@ -91,6 +95,10 @@ namespace Client.Queries
             {
                 var result = _elements[0].ToString();
                 if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
+
+                if (OnlyIfComplete)
+                    result += " + Only if complete ";
+
                 return result;
             }
 
@@ -103,6 +111,9 @@ namespace Client.Queries
             }
 
             if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
+
+            if (OnlyIfComplete)
+                sb.Append(" + Only if complete ");
 
             return sb.ToString();
         }

@@ -905,13 +905,8 @@ namespace Server
 
                     
                     else if (dataRequest is DomainDeclarationRequest domainRequest)
-                    {
-                        if (domainRequest.Action == DomainDeclarationAction.Set)
-                            DomainDescription = domainRequest.Description;
-                        else if (domainRequest.Action == DomainDeclarationAction.Add)
-                            DomainDescription.Add(domainRequest.Description);
-                        else if (domainRequest.Action == DomainDeclarationAction.Remove)
-                            DomainDescription.Remove(domainRequest.Description);
+                    {                        
+                            DomainDescription = domainRequest.Description;                        
                     }
 
 
@@ -975,7 +970,7 @@ namespace Server
                                 var completeDataAvailable = false;
 
                                 if (_domainDescription != null)
-                                    completeDataAvailable = query.IsSubsetOf(_domainDescription);
+                                    completeDataAvailable = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
 
                                 requestDescription = query.ToString();
                                 processedItems = count;

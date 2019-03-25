@@ -165,6 +165,11 @@ namespace Cachalot.Linq
 
             }
 
+            if (resultOperator is OnlyIfAvailableResultOperator)
+            {                
+                RootExpression.OnlyIfComplete = true;
+            }
+
             base.VisitResultOperator(resultOperator, queryModel, index);
         }
 

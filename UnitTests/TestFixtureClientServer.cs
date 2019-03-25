@@ -160,27 +160,15 @@ namespace UnitTests
             Assert.IsFalse(evalResult.Key);
             Assert.AreEqual(evalResult.Value, 2);
 
-            var description = new DomainDescription(typeof(CacheableTypeOk)) {IsFullyLoaded = true};
+            var description = new DomainDescription(OrQuery.Empty<CacheableTypeOk>());
 
             //describe the domain as complete
-            _client.DeclareDomain(description, DomainDeclarationAction.Set);
+            _client.DeclareDomain(description);
             evalResult = _client.EvalQuery(builder.GetMany("IndexKeyFolder=aaa"));
             Assert.IsTrue(evalResult.Key);
             Assert.AreEqual(evalResult.Value, 2);
 
-            //remove the completeness declaration
-            _client.DeclareDomain(description, DomainDeclarationAction.Remove);
-            evalResult = _client.EvalQuery(builder.GetMany("IndexKeyFolder=aaa"));
-            Assert.IsFalse(evalResult.Key);
-
-            description.AddOrReplace(builder.MakeAtomicQuery("IndexKeyFolder", "aaa"));
-            _client.DeclareDomain(description, DomainDeclarationAction.Add);
-            evalResult = _client.EvalQuery(builder.GetMany("IndexKeyFolder=aaa"));
-            Assert.IsTrue(evalResult.Key);
-
-            _client.DeclareDomain(description, DomainDeclarationAction.Remove);
-            evalResult = _client.EvalQuery(builder.GetMany("IndexKeyFolder=aaa"));
-            Assert.IsFalse(evalResult.Key);
+            
         }
 
         [Test]

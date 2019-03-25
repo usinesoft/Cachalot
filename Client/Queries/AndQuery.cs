@@ -1,5 +1,6 @@
 #region
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -44,20 +45,8 @@ namespace Client.Queries
             return new AndQuery {_elements = new List<AtomicQuery>(Elements.Select(e => e.Clone()))};
         }
 
-        /// <summary>
-        ///     This query is a subset of a domain if at least one of the contained atomic queries is a subset
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <returns></returns>
-        public bool IsSubsetOf(DomainDescription domain)
-        {
-            if (domain.IsFullyLoaded)
-                return true;
-
-            return _elements.Any(query => query.IsSubsetOf(domain));
-        }
-
-
+        
+        
         public override string ToString()
         {
             if (_elements.Count == 0)
@@ -80,6 +69,11 @@ namespace Client.Queries
         public override bool Match(CachedObject item)
         {
             return Elements.All(t => t.Match(item));
+        }
+
+        public bool IsSubsetOf(AndQuery query)
+        {
+            return query.Elements.All(e => _elements.Any(q => q.IsSubsetOf(e)));
         }
     }
 }

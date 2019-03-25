@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Client.Core;
+using Client.Messages;
 using Client.Queries;
 
 #endregion
@@ -277,5 +278,13 @@ namespace Client.Interface
         bool TryAdd<T>(T item);
 
         void UpdateIf<T>(T newValue, OrQuery testAsQuery);
+
+        /// <summary>
+        ///     Declare a subset of data as being fully available in the cache.<br />
+        ///     Used by loader components to declare data preloaded in the cache.
+        ///     <seealso cref="DomainDescription" /> 
+        /// </summary>
+        /// <param name="domain">data description</param>        
+        void DeclareDomain(DomainDescription domain);
     }
 }

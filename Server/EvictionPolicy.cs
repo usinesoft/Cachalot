@@ -15,10 +15,7 @@ namespace Server
         /// <summary>
         /// Returns true if items need to be removed from the cache
         /// </summary>
-        public virtual bool IsEvictionRequired
-        {
-            get { return false; }
-        }
+        public virtual bool IsEvictionRequired => false;
 
 
         public virtual void AddItem(CachedObject item)

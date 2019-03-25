@@ -25,7 +25,7 @@ namespace Client.Queries
         [ProtoMember(3)] private QueryOperator _operator;
 
         /// <summary>
-        ///     Parameterless constructor used for serialization
+        ///     Parameter-less constructor used for serialization
         /// </summary>
         public AtomicQuery()
         {
@@ -92,7 +92,7 @@ namespace Client.Queries
                     if (Value2 < Value)
                         return false;
 
-                    // the two values must belog to the same index
+                    // the two values must belong to the same index
                     if (Value.KeyName != Value2.KeyName)
                         return false;
                 }
@@ -252,7 +252,7 @@ namespace Client.Queries
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
-        private bool IsSubsetOf(AtomicQuery query)
+        public bool IsSubsetOf(AtomicQuery query)
         {
             var rightOperator = query.Operator;
 
@@ -292,20 +292,8 @@ namespace Client.Queries
             }
         }
 
-        /// <summary>
-        ///     Check if the this query is a subset of a <see cref="DomainDescription" />
-        ///     A domain describes the available data as a list of atomic queries considered as separated by an OR operator
-        /// </summary>
-        /// <param name="domain"></param>
-        /// <returns></returns>
-        public bool IsSubsetOf(DomainDescription domain)
-        {
-            if (domain.IsFullyLoaded)
-                return true;
-
-            return domain.GetCompleteQueriesByKey(Value.KeyName).Any(IsSubsetOf);
-        }
-
+        
+        
         public override string ToString()
         {
             var result = IndexName;

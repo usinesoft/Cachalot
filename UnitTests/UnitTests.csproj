@@ -74,6 +74,7 @@
     <Compile Include="SlowProviderPool.cs" />
     <Compile Include="SomeResource.cs" />
     <Compile Include="StringLogger.cs" />
+    <Compile Include="Subdomains.cs" />
     <Compile Include="TestData\CacheableTypeKo.cs" />
     <Compile Include="TestData\CacheableTypeOk.cs" />
     <Compile Include="TestData\CloneExtensions.cs" />
@@ -104,7 +105,6 @@
     <Compile Include="TestFixtureClientServerWithCommandLine.cs" />
     <Compile Include="TestFixtureCommandLine.cs" />
     <Compile Include="TestFixtureDataStore.cs" />
-    <Compile Include="TestFixtureDomains.cs" />
     <Compile Include="TestFixtureEviction.cs" />
     <Compile Include="TestFixtureEvictionQueue.cs" />
     <Compile Include="TestFixtureFullTextProcessing.cs" />

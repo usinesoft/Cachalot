@@ -470,6 +470,11 @@ namespace Client.Core
             CacheClients[node].UpdateIf(newValue, testAsQuery);
         }
 
+        public void DeclareDomain(DomainDescription domain)
+        {
+            Parallel.ForEach(CacheClients, client => DeclareDomain(domain));
+        }
+
         public void Dispose()
         {
             foreach (var client in CacheClients) client.Dispose();

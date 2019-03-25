@@ -9,12 +9,8 @@ namespace Client.Messages
     [ProtoContract]
     public class DomainDeclarationRequest : DataRequest
     {
-        /// <summary>
-        ///     Add to, remove from or set the current domain description
-        /// </summary>
-        [ProtoMember(1)] private readonly DomainDeclarationAction _action = DomainDeclarationAction.Add;
-
-        [ProtoMember(2)] private DomainDescription _description;
+      
+        [ProtoMember(1)] private readonly DomainDescription _description;
 
         /// <summary>
         ///     For serialization only
@@ -26,22 +22,14 @@ namespace Client.Messages
         /// <summary>
         ///     Create a new request for the specified type. The domain description will be empty
         /// </summary>
-        public DomainDeclarationRequest(DomainDescription description, DomainDeclarationAction action)
-            : base(DataAccessType.Write, description.FullTypeName)
-        {
-            _action = action;
+        public DomainDeclarationRequest(DomainDescription description)
+            : base(DataAccessType.Write, description.DescriptionAsQuery.TypeName)
+        {            
             _description = description;
         }
 
-        public DomainDescription Description
-        {
-            get => _description;
-            set => _description = value;
-        }
+        public DomainDescription Description => _description;
 
-        /// <summary>
-        ///     Add to, remove from or set the curret domain description
-        /// </summary>
-        public DomainDeclarationAction Action => _action;
+        public override string FullTypeName => Description.DescriptionAsQuery.TypeName;
     }
 }

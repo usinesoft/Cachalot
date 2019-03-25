@@ -6,6 +6,7 @@ using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
+using JetBrains.Annotations;
 using Remotion.Linq;
 using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
 using Remotion.Linq.Parsing.Structure;
@@ -26,6 +27,9 @@ namespace Cachalot.Linq
 
             customNodeTypeRegistry.Register(FullTextSearchExpressionNode.SupportedMethods,
                 typeof(FullTextSearchExpressionNode));
+
+            customNodeTypeRegistry.Register(OnlyIfCompleteExpressionNode.SupportedMethods,
+                typeof(OnlyIfCompleteExpressionNode));
 
             //This creates all the default node types
             var nodeTypeProvider = ExpressionTreeParser.CreateDefaultNodeTypeProvider();
@@ -62,6 +66,38 @@ namespace Cachalot.Linq
         public DataSource(IQueryProvider provider, Expression expression)
             : base(provider, expression)
         {
+        }
+
+
+        /// <summary>
+        /// Mostly useful in distributed cache mode without persistence. Declare a subset of the data as being fully loaded into the cache
+        /// Any expression that can be used for querying is valid here
+        /// </summary>
+        /// <param name="domainDefinition"></param>
+        /// <param name="humanReadableDescription">Optional description of the loaded domain</param>
+        public void DeclareLoadedDomain([NotNull] Expression<Func<T, bool>> domainDefinition, string humanReadableDescription = null)
+        {
+            if (domainDefinition == null) throw new ArgumentNullException(nameof(domainDefinition));
+
+
+            var query = PredicateToQuery(domainDefinition);
+
+            var domain = new DomainDescription(query, false, humanReadableDescription);
+
+            _client.DeclareDomain(domain);
+        }
+
+
+        /// <summary>
+        /// Mostly useful in distributed cache mode without persistence. Declare all instances of a given type as being available
+        /// Usually called after the cache is fed. This will enable "get many" operations 
+        /// </summary>        
+        public void DeclareFullyLoaded(bool fullyLoaded = true)
+        {
+            
+            var domain = new DomainDescription(OrQuery.Empty<T>(), fullyLoaded);
+
+            _client.DeclareDomain(domain);
         }
 
 

@@ -72,6 +72,8 @@ namespace Client.Core
         public bool IsFullyLoaded { get; }
 
 
+        public bool IsEmpty => IsFullyLoaded == false && ( DescriptionAsQuery == null || DescriptionAsQuery.IsEmpty());
+
         public override string ToString()
         {
             return IsFullyLoaded

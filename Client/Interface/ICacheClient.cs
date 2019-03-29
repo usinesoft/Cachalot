@@ -279,6 +279,8 @@ namespace Client.Interface
 
         void UpdateIf<T>(T newValue, OrQuery testAsQuery);
 
+        #region cache only methods
+
         /// <summary>
         ///     Declare a subset of data as being fully available in the cache.<br />
         ///     Used by loader components to declare data preloaded in the cache.
@@ -286,5 +288,18 @@ namespace Client.Interface
         /// </summary>
         /// <param name="domain">data description</param>        
         void DeclareDomain(DomainDescription domain);
+
+
+        /// <summary>
+        /// Activate eviction for a type name. If EvictionType.Lru is used when the limit is reached
+        /// the less recently used <paramref name="itemsToRemove"/> items will be evicted
+        /// </summary>
+        /// <param name="fullTypeName"></param>
+        /// <param name="evictionType"></param>
+        /// <param name="limit"></param>
+        /// <param name="itemsToRemove"></param>
+        void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove);
+
+        #endregion
     }
 }

@@ -877,7 +877,7 @@ namespace Client.Core
         /// <summary>
         ///     Declare a subset of data as being fully available in the cache.<br />
         ///     Used by loader components to declare data preloaded in the cache.
-        ///     <seealso cref="DomainDescription" /> <seealso cref="DomainDeclarationAction" />
+        ///     <seealso cref="DomainDescription" /> 
         /// </summary>
         /// <param name="domain">data description</param>
         
@@ -890,6 +890,23 @@ namespace Client.Core
                 throw new ArgumentNullException(nameof(domain), "TypeName not specified");
 
             var request = new DomainDeclarationRequest(domain);
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fullTypeName"></param>
+        /// <param name="evictionType"></param>
+        /// <param name="limit"></param>
+        /// <param name="itemsToRemove"></param>
+        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
+        {
+            var request = new EvictionSetupRequest(fullTypeName, evictionType, limit, itemsToRemove);
+
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)

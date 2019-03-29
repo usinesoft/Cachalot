@@ -34,7 +34,7 @@ namespace Server
 
         public override IList<CachedObject> DoEviction()
         {
-            return _evictionQueue.GO();
+            return _evictionQueue.Go();
         }
 
         public override void Touch(CachedObject item)

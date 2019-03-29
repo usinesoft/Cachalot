@@ -510,6 +510,23 @@ namespace Server
 
             if (dataRequest.AccessType == DataAccessType.Write)
             {
+                if (dataRequest is DomainDeclarationRequest)
+                {
+                    if (PersistenceEngine != null)
+                    {
+                        throw new NotSupportedException("Domain declaration can only be used in cache mode (without persistence)");
+                    }
+                }
+
+                if (dataRequest is EvictionSetupRequest)
+                {
+                    if (PersistenceEngine != null)
+                    {
+                        throw new NotSupportedException("Eviction can only be used in cache mode (without persistence)");
+                    }
+                }
+
+
                 if (dataStore.Lock.TryEnterWriteLock(-1))
                     try
                     {

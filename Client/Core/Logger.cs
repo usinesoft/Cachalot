@@ -67,7 +67,7 @@ namespace Client.Core
 
         /// <summary>
         ///     Write an information message using format string
-        ///     Allways write to console. If file logging is active also write to file
+        ///     Always write to console. If file logging is active also write to file
         /// </summary>
         /// <param name="format"></param>
         /// <param name="parameters"></param>

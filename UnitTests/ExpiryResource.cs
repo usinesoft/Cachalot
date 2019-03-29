@@ -3,7 +3,7 @@ using System;
 namespace UnitTests
 {
     /// <summary>
-    /// Simulates a resource which expires. Sometimes randomly, allways after N usages
+    /// Simulates a resource which expires. Sometimes randomly, always after N usages
     /// </summary>
     class ExpiryResource
     {

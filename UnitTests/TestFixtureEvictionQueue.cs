@@ -32,14 +32,14 @@ namespace UnitTests
 
             Assert.IsTrue(queue.EvictionRequired);
             Assert.AreEqual(queue.Count, 10000);
-            ICollection<CachedObject> evicted = queue.GO();
+            ICollection<CachedObject> evicted = queue.Go();
 
             //should have removed 100 more than ( 10000 - 1000 )
             Assert.AreEqual(queue.Count, 900);
             Assert.IsFalse(queue.EvictionRequired);
             Assert.AreEqual(evicted.Count, 9100);
             //asking for eviction when bellow maximum capacity will not remove any item
-            evicted = queue.GO();
+            evicted = queue.Go();
             Assert.AreEqual(evicted.Count, 0);
         }
 
@@ -77,7 +77,7 @@ namespace UnitTests
             //items in queue now: 0 1 2 3 4 5 6 7 8 9 
 
             Assert.IsTrue(queue.EvictionRequired);
-            IList<CachedObject> evicted = queue.GO();
+            IList<CachedObject> evicted = queue.Go();
 
             //items in queue: 3 4 5 6 7 8 9 
 
@@ -93,7 +93,7 @@ namespace UnitTests
             //items in queue: 5 6 7 8 9 3 4
 
             queue.Capacity = 7;
-            evicted = queue.GO();
+            evicted = queue.Go();
 
             Assert.AreEqual(evicted.Count, 2);
 
@@ -125,7 +125,7 @@ namespace UnitTests
 
             //items in queue now: 1 3 4 5 6 7 8 9 
             Assert.IsTrue(queue.EvictionRequired);
-            IList<CachedObject> evicted = queue.GO();
+            IList<CachedObject> evicted = queue.Go();
 
             //items in queue now: 5 6 7 8 9 
 

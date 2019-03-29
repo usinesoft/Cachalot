@@ -70,7 +70,7 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Mostly useful in distributed cache mode without persistence. Declare a subset of the data as being fully loaded into the cache
+        /// Only used in cache-only mode (no persistence). Declare a subset of the data as being fully loaded into the cache
         /// Any expression that can be used for querying is valid here
         /// </summary>
         /// <param name="domainDefinition"></param>
@@ -85,6 +85,25 @@ namespace Cachalot.Linq
             var domain = new DomainDescription(query, false, humanReadableDescription);
 
             _client.DeclareDomain(domain);
+        }
+
+
+        /// <summary>
+        /// Only used in cache-only mode (no persistence). Can activate Less Recently Used eviction for a data type.
+        /// When the <paramref name="limit"/> is reached the less recently used  <paramref name="itemsToRemove"/> items are evicted
+        /// </summary>
+        /// <param name="evictionType"></param>
+        /// <param name="limit"></param>
+        /// <param name="itemsToRemove"></param>
+        public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100)
+        {
+            if (evictionType == EvictionType.LessRecentlyUsed && limit == 0)
+            {
+                throw new ArgumentException("If LRU eviction is used, a positive limit must be specified");
+            }
+
+            _client.ConfigEviction(typeof(T).FullName, evictionType, limit, itemsToRemove);
+
         }
 
 

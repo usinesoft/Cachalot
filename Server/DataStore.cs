@@ -119,7 +119,7 @@ namespace Server
 
         public long Count => Interlocked.Read(ref _count);
 
-        public EvictionPolicy EvictionPolicy { get; }
+        public EvictionPolicy EvictionPolicy { get; set; }
 
         public Profiler Profiler { private get; set; }
 
@@ -472,6 +472,12 @@ namespace Server
             Dbg.Trace($"begin InternalFind with query {query}");
 
             var dataIsComplete = _domainDescription != null && _domainDescription.IsFullyLoaded;
+
+            if (!dataIsComplete && _domainDescription != null && !_domainDescription.DescriptionAsQuery.IsEmpty())
+            {
+                dataIsComplete = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
+            }
+
 
             if (onlyIfComplete && !dataIsComplete)
                 throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
@@ -905,10 +911,26 @@ namespace Server
 
                     
                     else if (dataRequest is DomainDeclarationRequest domainRequest)
-                    {                        
-                            DomainDescription = domainRequest.Description;                        
+                    {
+                        if (EvictionPolicy.Type != EvictionType.None)
+                        {
+                            throw new NotSupportedException("Can not make a domain declaration for a type if eviction is active");
+                        }
+
+                        DomainDescription = domainRequest.Description;                        
                     }
 
+                    else if (dataRequest is EvictionSetupRequest evictionSetup)
+                    {
+                        if (DomainDescription != null && !DomainDescription.IsEmpty)
+                        {
+                            throw new NotSupportedException("Can not activate eviction on a type with a domain declaration");
+                        }
+
+                        EvictionPolicy =  evictionSetup.Type == EvictionType.LessRecentlyUsed
+                            ? new LruEvictionPolicy(evictionSetup.Limit, evictionSetup.ItemsToEvict)
+                            : (EvictionPolicy)new NullEvictionPolicy();
+                    }
 
                     //for internal requests (EvictionRequest) the client is not assigned
                     if (client != null)
@@ -928,7 +950,7 @@ namespace Server
                     if (dataRequest is GetRequest getRequest1)
                     {
                         var query = getRequest1.Query;
-                        var result = InternalGetMany(query, getRequest1.OnlyIfComplete);
+                        var result = InternalGetMany(query, query.OnlyIfComplete);
 
 
                         requestDescription = "\n       --> " + query;

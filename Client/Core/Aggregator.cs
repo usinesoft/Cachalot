@@ -472,7 +472,30 @@ namespace Client.Core
 
         public void DeclareDomain(DomainDescription domain)
         {
-            Parallel.ForEach(CacheClients, client => DeclareDomain(domain));
+            try
+            {
+                Parallel.ForEach(CacheClients, client => client.DeclareDomain(domain));
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
+        }
+
+        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
+        {
+            try
+            {
+
+                // the limit is global to the cluster
+                var limitByNode = limit / CacheClients.Count + 1;
+
+                Parallel.ForEach(CacheClients, client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, itemsToRemove));
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
         }
 
         public void Dispose()

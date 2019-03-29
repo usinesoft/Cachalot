@@ -13,11 +13,6 @@ namespace Client.Interface
         /// <summary>
         ///     LRU eviction policy
         /// </summary>
-        LessRecentlyUsed,
-
-        /// <summary>
-        ///     Custom eviction policy (using an external plugin)
-        /// </summary>
-        Custom
+        LessRecentlyUsed
     }
 }

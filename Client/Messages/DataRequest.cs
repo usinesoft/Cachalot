@@ -1,3 +1,4 @@
+using System;
 using Client.ChannelInterface;
 using Client.Core;
 using ProtoBuf;
@@ -17,6 +18,7 @@ namespace Client.Messages
     [ProtoInclude(609, typeof(PutRequest))]
     [ProtoInclude(610, typeof(RemoveManyRequest))]
     [ProtoInclude(611, typeof(RemoveRequest))]
+    [ProtoInclude(612, typeof(EvictionSetupRequest))]
     public abstract class DataRequest : Request
     {
         [ProtoMember(1)] private readonly DataAccessType _accessType;

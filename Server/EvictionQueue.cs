@@ -7,7 +7,7 @@ namespace Server
     /// <summary>
     /// Mixed data structure. Can be used both as linked list and dictionary
     /// Used to manage the eviction priority for cached items
-    /// The eviction candidates are at the begining of the list
+    /// The eviction candidates are at the beginning of the list
     /// If an item is used it is moved at the end of the list
     /// </summary>
     public class EvictionQueue
@@ -18,16 +18,6 @@ namespace Server
 
         readonly object _syncRoot = new object();
 
-        /// <summary>
-        /// Maximum capacity (if more items are added) eviction is needed
-        /// </summary>
-        private int _capacity;
-
-        /// <summary>
-        /// The quanity of items evicted 
-        /// </summary>
-        private int _evictionCount;
-
         public EvictionQueue()
         {
             _cachedObjectsByKey = new Dictionary<KeyValue, LinkedListNode<CachedObject>>();
@@ -37,24 +27,22 @@ namespace Server
         /// <summary>
         /// When eviction is needed <see cref="EvictionCount"/> items are removed
         /// </summary>
-        public int EvictionCount
-        {
-            get { return _evictionCount; }
-            set { _evictionCount = value; }
-        }
+        public int EvictionCount { get; set; }
 
         /// <summary>
         /// Maximum capacity (if more items are added) eviction is needed
         /// </summary>
-        public int Capacity
-        {
-            get { return _capacity; }
-            set { _capacity = value; }
-        }
+        public int Capacity { get; set; }
 
         public int Count
         {
-            get { return _cachedObjectsByKey.Count; }
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _cachedObjectsByKey.Count;
+                }
+            }
         }
 
         public bool EvictionRequired
@@ -70,8 +58,11 @@ namespace Server
 
         public void Clear()
         {
-            _cachedObjectsByKey.Clear();
-            _queue.Clear();
+            lock (_syncRoot)
+            {
+                _cachedObjectsByKey.Clear();
+                _queue.Clear();
+            }
         }
 
         /// <summary>
@@ -81,7 +72,7 @@ namespace Server
         /// <param name="newItem"></param>
         public void AddNew(CachedObject newItem)
         {
-            if (newItem == null) throw new ArgumentNullException("newItem");
+            if (newItem == null) throw new ArgumentNullException(nameof(newItem));
 
             lock (_syncRoot)
             {
@@ -97,16 +88,16 @@ namespace Server
         /// Proceed to eviction (the first <see cref="EvictionCount"/> items will be removed
         /// </summary>
         /// <returns>The items removed</returns>
-        public IList<CachedObject> GO()
+        public IList<CachedObject> Go()
         {
-            List<CachedObject> result = new List<CachedObject>(_evictionCount);
+            List<CachedObject> result = new List<CachedObject>(EvictionCount);
             lock (_syncRoot)
             {
                 int currentCount = 0;
                 LinkedListNode<CachedObject> node = _queue.First;
 
                 //remove more the Capacity - Count to avoit the eviction to be triggered for each added item
-                int itemsToRemove = Count - Capacity + _evictionCount;
+                int itemsToRemove = Count - Capacity + EvictionCount;
                 if (itemsToRemove <= 0)
                     return result;
 
@@ -133,7 +124,7 @@ namespace Server
         /// <param name="itemToRemove"></param>
         public void TryRemove(CachedObject itemToRemove)
         {
-            if (itemToRemove == null) throw new ArgumentNullException("itemToRemove");
+            if (itemToRemove == null) throw new ArgumentNullException(nameof(itemToRemove));
 
             lock (_syncRoot)
             {
@@ -153,7 +144,7 @@ namespace Server
         /// <param name="item"></param>
         public void Touch(CachedObject item)
         {
-            if (item == null) throw new ArgumentNullException("item");
+            if (item == null) throw new ArgumentNullException(nameof(item));
 
             lock (_syncRoot)
             {

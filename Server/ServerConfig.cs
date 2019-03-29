@@ -18,10 +18,7 @@ namespace Server
             new Dictionary<string, ServerDatastoreConfig>();
 
 
-        public IDictionary<string, ServerDatastoreConfig> ConfigByType
-        {
-            get { return _configByType; }
-        }
+        public IDictionary<string, ServerDatastoreConfig> ConfigByType => _configByType;
 
         public int TcpPort { get; set; } = 4488;
 
@@ -36,25 +33,25 @@ namespace Server
             XmlDocument doc = new XmlDocument();
             doc.Load(fileName);
 
-            string tcpPort = stringFromXpath(doc.DocumentElement, "//tcp/port");
+            string tcpPort = StringFromXpath(doc.DocumentElement, "//tcp/port");
             config.TcpPort = int.Parse(tcpPort);
 
             XmlNodeList dataStoreConfigs = doc.SelectNodes("//datastore");
             foreach (XmlNode node in dataStoreConfigs)
             {
                 ServerDatastoreConfig cfg = new ServerDatastoreConfig();
-                cfg.FullTypeName = stringFromXpath(node, "@typename");
+                cfg.FullTypeName = StringFromXpath(node, "@typename");
 
-                string threads = stringFromXpath(node, "threads");
+                string threads = StringFromXpath(node, "threads");
                 cfg.Threads = int.Parse(threads);
 
-                string eviction = stringFromXpath(node, "eviction/@type");
+                string eviction = StringFromXpath(node, "eviction/@type");
                 if (eviction == "LRU")
                 {
                     cfg.Eviction.Type = EvictionType.LessRecentlyUsed;
-                    string limit = stringFromXpath(node, "eviction/lruLimit");
+                    string limit = StringFromXpath(node, "eviction/lruLimit");
                     cfg.Eviction.LruMaxItems = int.Parse(limit);
-                    string count = stringFromXpath(node, "eviction/lruEvictionCount");
+                    string count = StringFromXpath(node, "eviction/lruEvictionCount");
                     cfg.Eviction.LruEvictionCount = int.Parse(count);
                 }
 
@@ -64,7 +61,7 @@ namespace Server
             return config;
         }
 
-        private static string stringFromXpath(XmlNode element, string xpath)
+        private static string StringFromXpath(XmlNode element, string xpath)
         {
             XmlNode node = element.SelectSingleNode(xpath);
             if (node != null) return node.InnerText;

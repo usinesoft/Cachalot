@@ -98,6 +98,7 @@
     <Compile Include="TestData\Trade.cs" />
     <Compile Include="TestData\TradeLike.cs" />
     <Compile Include="TestFixtureAdminInterface.cs" />
+    <Compile Include="TestFixtureAdvancedCacheWithMultipleNodes.cs" />
     <Compile Include="TestFixtureCacheableObject.cs" />
     <Compile Include="TestFixtureCacheableType.cs" />
     <Compile Include="TestFixtureClientConfig.cs" />

@@ -62,7 +62,7 @@ namespace UnitTests
         }
 
         [Test]
-        public void HashcodesOfKeysAreAllwaysPositive()
+        public void HashcodesOfKeysAreAlwaysPositive()
         {
             var hash = new KeyValue("66666", new KeyInfo(KeyDataType.StringKey, KeyType.Primary, "test")).GetHashCode();
 

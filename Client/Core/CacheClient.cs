@@ -504,7 +504,7 @@ namespace Client.Core
 
             var query = builder.GetOne(value);
 
-            var result = InternalGetMany<TItemType>(query, false);
+            var result = InternalGetMany<TItemType>(query);
 
             return result.FirstOrDefault();
         }
@@ -521,15 +521,11 @@ namespace Client.Core
 
             var query = builder.GetOne(keyName, value);
 
-            var result = InternalGetMany<TItemType>(query, false);
+            var result = InternalGetMany<TItemType>(query);
 
             return result.FirstOrDefault();
         }
 
-        public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query, bool onlyIfFullyLoaded)
-        {
-            return InternalGetMany<TItemType>(query, onlyIfFullyLoaded);
-        }
 
         /// <summary>
         ///     Remove an item from the cache.
@@ -955,9 +951,9 @@ namespace Client.Core
             return concreteResponse;
         }
 
-        private IEnumerable<TItemType> InternalGetMany<TItemType>(OrQuery query, bool onlyIfComplete)
-        {
-            var request = new GetRequest(query) {OnlyIfComplete = onlyIfComplete};
+        private IEnumerable<TItemType> InternalGetMany<TItemType>(OrQuery query)
+        {            
+            var request = new GetRequest(query);
 
             return Channel.SendStreamRequest<TItemType>(request);
         }
@@ -971,40 +967,26 @@ namespace Client.Core
         /// <returns></returns>
         public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
         {
-            return InternalGetMany<TItemType>(query, false);
+            return InternalGetMany<TItemType>(query);
         }
 
-        /// <summary>
-        ///     Retrieve multiple objects using a list of binary expressions. (considered as bound by an AND operator)
-        /// </summary>
-        /// <typeparam name="TItemType"></typeparam>
-        /// <param name="binaryExpressions"></param>
-        /// <returns></returns>
-        public IEnumerable<TItemType> GetMany<TItemType>(params string[] binaryExpressions)
-        {
-            var builder = new QueryBuilder(typeof(TItemType));
-
-            var query = builder.GetMany(binaryExpressions);
-
-            return InternalGetMany<TItemType>(query, false);
-        }
+        
 
         /// <summary>
         ///     Retrieve multiple objects using a WHERE-like query string
         ///     a=1, b = XXX is equivalent to WHERE a=1 AND b=XXX
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
-        /// <param name="sqlLike"></param>
-        /// <param name="onlyIfFullyLoaded"> </param>
+        /// <param name="sqlLike"></param>        
         /// <returns></returns>
-        public IEnumerable<TItemType> GetManyWhere<TItemType>(string sqlLike, bool onlyIfFullyLoaded = false)
+        public IEnumerable<TItemType> GetManyWhere<TItemType>(string sqlLike)
 
         {
             var builder = new QueryBuilder(typeof(TItemType));
 
             var query = builder.GetManyWhere(sqlLike);
 
-            return InternalGetMany<TItemType>(query, onlyIfFullyLoaded);
+            return InternalGetMany<TItemType>(query);
         }
 
         /// <summary>
@@ -1028,82 +1010,10 @@ namespace Client.Core
         }
 
 
-        /// <summary>
-        ///     Run a query asynchronously.The caller is not blocked and a delegate is called each type an item
-        ///     is received. The code of the delegate is executed in a different thread
-        /// </summary>
-        /// <typeparam name="TItemType">Concrete type of the object</typeparam>
-        /// <param name="query"></param>
-        /// <param name="dataHandler">Delegate called each time an item is received</param>
-        /// <param name="exceptionHandler">Delegate called if an exception is raised</param>
-        public void AsyncGetMany<TItemType>(OrQuery query, DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            ThreadPool.QueueUserWorkItem(delegate
-            {
-                var request = new GetRequest(query);
-                Channel.SendStreamRequest(request, dataHandler, exceptionHandler);
-            });
-        }
+       
 
-
-        /// <summary>
-        ///     This method is useful when you need to load a set of objects from which a subset is cached
-        ///     The objects which are not available in cache are returned synchronously as a list of primary keys, so they can be
-        ///     retrieved from an external
-        ///     data source (database) and the cached elements are returned asynchronously
-        /// </summary>
-        /// <typeparam name="TItemType"></typeparam>
-        /// <param name="primaryKeys">list of items to be searched in cache (as list of primary keys)</param>
-        /// <param name="dataHandler"></param>
-        /// <param name="exceptionHandler"></param>
-        /// <returns>The list of the primary keys for elements which are not cached</returns>
-        public IList<KeyValue> GetAvailableItems<TItemType>(IEnumerable<KeyValue> primaryKeys,
-            DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            return GetAvailableItems(primaryKeys, null, dataHandler, exceptionHandler);
-        }
-
-        /// <summary>
-        ///     This method is useful when you need to load a set of objects from which a subset is cached
-        ///     The objects which are not available in cache are returned synchronously as a list of primary keys, so they can be
-        ///     retrieved from an external
-        ///     data source (database) and the cached elements are returned asynchronously
-        ///     Supplementary constraints may be specified for the objects as a <see cref="Query" />
-        /// </summary>
-        /// <typeparam name="TItemType"></typeparam>
-        /// <param name="primaryKeys">list of items to be searched in cache (as list of primary keys)</param>
-        /// <param name="moreCriteria">specifies more constraints of the objects</param>
-        /// <param name="dataHandler"></param>
-        /// <param name="exceptionHandler"></param>
-        /// <returns>The list of the primary keys for elements which are not cached</returns>
-        public IList<KeyValue> GetAvailableItems<TItemType>(IEnumerable<KeyValue> primaryKeys, Query moreCriteria,
-            DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            var request = new GetAvailableRequest(typeof(TItemType));
-
-            foreach (var key in primaryKeys) request.PrimaryKeys.Add(key);
-
-
-            request.MoreCriteria = moreCriteria;
-
-            var session = Channel.BeginSession();
-            Channel.PushRequest(session, request);
-
-            object header = Channel.GetOneObject<List<KeyValue>>(session);
-            var missingItems = (List<KeyValue>) header ?? new List<KeyValue>();
-
-
-            ThreadPool.QueueUserWorkItem(delegate
-            {
-                Channel.GetStreamedCollection(session, dataHandler, exceptionHandler);
-                Channel.EndSession(session);
-            });
-
-            return missingItems;
-        }
+        
+        
 
         #region IDisposable Members
 

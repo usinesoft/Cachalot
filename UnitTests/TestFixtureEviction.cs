@@ -76,7 +76,8 @@ namespace UnitTests
             }
 
             //reload all items
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+           
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
 
             var itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
@@ -94,7 +95,7 @@ namespace UnitTests
                 _client.Put(item);
             }
 
-            itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)
 
           
@@ -136,7 +137,7 @@ namespace UnitTests
             _client.PutMany(itemsToPut, false);
 
             //reload all items
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
         }
 
@@ -152,7 +153,7 @@ namespace UnitTests
                 _client.Put(item);
             }
 
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             var itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 

@@ -165,8 +165,11 @@ namespace UnitTests
                 Assert.AreEqual(tradesFromXxx.Count, 2);
 
 
+                var q = qb.GetMany("Folder=XXX");
+                q.OnlyIfComplete = true;
+
                 Assert.Throws<CacheException>(() =>
-                    client.GetMany<Trade>(qb.GetManyWhere("Folder=XXX"), true).ToList());
+                    client.GetMany<Trade>(q).ToList());
 
 
                 client.DeclareDataFullyLoaded<Trade>(true);

@@ -78,7 +78,10 @@ namespace CoreHost
                 _listener.Init(port);
                 _listener.Start();
 
-                var persistentDescription = persistent ? dataPath ?? Constants.DataPath : " NO";
+                var fullDataPath =  Path.GetFullPath(dataPath ?? Constants.DataPath);
+
+                var persistentDescription = persistent ? fullDataPath: " NO";
+
                 Console.Title = $"Cachalot Core on port {port} persistent = {persistentDescription}";
 
                 Log.LogInfo($"Starting hosted service on port {port} persistent = {persistentDescription}" );

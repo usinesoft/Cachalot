@@ -92,7 +92,7 @@ namespace UnitTests
             Assert.IsNull(itemNull);
 
             //reload both items by folder name
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 2);
 
             //change the folder of the first item and put it back into the cache
@@ -100,11 +100,11 @@ namespace UnitTests
             _client.Put(item1);
 
             //now it should be only one item left in aaa
-            itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 1);
 
             //get both of them again by date
-            IList<CacheableTypeOk> allItems = _client.GetMany<CacheableTypeOk>($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}").ToList();
+            IList<CacheableTypeOk> allItems = _client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}").ToList();
             Assert.AreEqual(allItems.Count, 2);
 
             var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
@@ -203,7 +203,7 @@ namespace UnitTests
                 {
                     //reload both items by folder name
                     IList<CacheableTypeOk> items =
-                        _client.GetMany<CacheableTypeOk>("IndexKeyValue < 1700")
+                        _client.GetManyWhere<CacheableTypeOk>("IndexKeyValue < 1700")
                             .ToList();
                     Assert.AreEqual(items.Count, 200);
 
@@ -259,104 +259,8 @@ namespace UnitTests
             }
         }
 
-        [Test]
-        public void StreamAvailableObjects()
-        {
-            //add two new items
-            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
-
-            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
-
-            //ask for items 1 2 3 4 (1 2 should be returned and 3 4 not found)
-            var items = new List<KeyValue>
-            {
-                new KeyValue(1,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(2,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(3,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(4,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey"))
-            };
-
-            var wait = new ManualResetEvent(false);
-            var found = new List<CacheableTypeOk>();
-            var notFound = _client.GetAvailableItems(items,
-                delegate(CacheableTypeOk item, int currentItem, int totalItems)
-                {
-                    found.Add(item);
-                    if (currentItem == totalItems)
-                        wait.Set();
-                }, delegate { });
-
-            wait.WaitOne();
-            Assert.AreEqual(notFound.Count, 2);
-            Assert.AreEqual(notFound[0], 3);
-            Assert.AreEqual(notFound[1], 4);
-            Assert.AreEqual(found.Count, 2);
-            Assert.AreEqual(found[0].PrimaryKey, 1);
-            Assert.AreEqual(found[1].PrimaryKey, 2);
-        }
-
-        [Test]
-        public void StreamAvailableObjectsWithCriteria()
-        {
-            //add two new items
-            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
-
-            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
-
-            var item3 = new CacheableTypeOk(3, 1003, "bbb", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item3);
-
-            //ask for items 1 2 3 4 (1 2 should be returned and 3 4 not found)
-            var items = new List<KeyValue>
-            {
-                new KeyValue(1,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(2,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(3,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(4,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey"))
-            };
-
-            var builder = new QueryBuilder(typeof(CacheableTypeOk));
-            Query folderIsAaa = builder.MakeAtomicQuery("IndexKeyFolder", "aaa");
-
-            var wait = new ManualResetEvent(false);
-            var found = new List<CacheableTypeOk>();
-            var notFound = _client.GetAvailableItems(items, folderIsAaa,
-                delegate(CacheableTypeOk item, int currentItem, int totalItems)
-                {
-                    found.Add(item);
-                    if (currentItem == totalItems)
-                        wait.Set();
-                }, delegate { });
-
-            wait.WaitOne();
-            Assert.AreEqual(notFound.Count, 2);
-            Assert.AreEqual(notFound[0], 3);
-            Assert.AreEqual(notFound[1], 4);
-            Assert.AreEqual(found.Count, 2);
-            Assert.AreEqual(found[0].PrimaryKey, 1);
-            Assert.AreEqual(found[1].PrimaryKey, 2);
-        }
-
+        
+       
         [Test]
         public void Truncate()
         {
@@ -367,7 +271,7 @@ namespace UnitTests
             var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
             _client.Put(item2);
 
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 2);
 
             var desc = _client.GetServerDescription();

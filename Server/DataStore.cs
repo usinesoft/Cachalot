@@ -158,13 +158,7 @@ namespace Server
             if (!excludeFromEviction)
                 EvictionPolicy.AddItem(cachedObject);
 
-            if (EvictionPolicy.IsEvictionRequired)
-            {
-                
-                var toRemove = EvictionPolicy.DoEviction();
-                _eviction = new EvictionRequest(TypeDescription.FullTypeName, toRemove);
-                
-            }
+           
         }
 
 
@@ -471,16 +465,21 @@ namespace Server
         {
             Dbg.Trace($"begin InternalFind with query {query}");
 
-            var dataIsComplete = _domainDescription != null && _domainDescription.IsFullyLoaded;
 
-            if (!dataIsComplete && _domainDescription != null && !_domainDescription.DescriptionAsQuery.IsEmpty())
+            if (onlyIfComplete)
             {
-                dataIsComplete = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
+                var dataIsComplete = _domainDescription != null && _domainDescription.IsFullyLoaded;
+
+                if (!dataIsComplete && _domainDescription != null && !_domainDescription.DescriptionAsQuery.IsEmpty())
+                {
+                    dataIsComplete = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
+                }
+
+
+                if (onlyIfComplete && !dataIsComplete)
+                    throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
             }
-
-
-            if (onlyIfComplete && !dataIsComplete)
-                throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
+           
 
             var result = new List<CachedObject>();
 
@@ -738,13 +737,17 @@ namespace Server
                 else
                 {
                     foreach (var cachedObject in toUpdate)
-                    {
-                        EvictionPolicy.Touch(cachedObject);
+                    {                        
                         InternalUpdate(cachedObject);
                     }
                 }
 
+                foreach (var cachedObject in toUpdate)
+                {
+                    EvictionPolicy.Touch(cachedObject);                    
+                }
 
+                
                 Dbg.Trace($"end InternalPutMany with {items.Count} object");
             }
         }
@@ -754,32 +757,34 @@ namespace Server
             new Dictionary<string, List<CachedObject>>();
 
 
-        private void ProcessEvictionRequest(EvictionRequest evictionRequest)
+        private void ProcessEviction()
         {
-            var toRemove = evictionRequest.ItemsToRemove;
 
-            foreach (var item in toRemove)
+            if (EvictionPolicy.IsEvictionRequired)
             {
-                InternalRemoveByPrimaryKey(item.PrimaryKey);
-                Interlocked.Decrement(ref _count);
+
+                var itemsToEvict = EvictionPolicy.DoEviction();
+                
+                foreach (var item in itemsToEvict)
+                {
+                    InternalRemoveByPrimaryKey(item.PrimaryKey);
+                    Interlocked.Decrement(ref _count);
+                }
+
+                var requestDescription = string.Empty;
+
+                var processedItems = itemsToEvict.Count;
+                var requestType = "EVICTION";
+
+                ServerLog.AddEntry(new ServerLogEntry(0, requestType, requestDescription,
+                    processedItems));
             }
-
-            var requestDescription = string.Empty;
-
-            var processedItems = evictionRequest.ItemsToRemove.Count;
-            var requestType = "EVICTION";
-
-            ServerLog.AddEntry(new ServerLogEntry(0, requestType, requestDescription,
-                processedItems));
         }
 
-        private EvictionRequest _eviction;
-
+        
         internal void ProcessRequest(DataRequest dataRequest, IClient client, Action<Transaction> persistTransaction)
         {
-
-            _eviction = null;
-
+            
             var requestDescription = "";
             var processedItems = 0;
             var requestType = "UNKNOWN";
@@ -932,10 +937,10 @@ namespace Server
                             : (EvictionPolicy)new NullEvictionPolicy();
                     }
 
-                    //for internal requests (EvictionRequest) the client is not assigned
+                    
                     if (client != null)
                     {
-                        if (!insideTransaction) // in inside a transaction the response is sent by the higher level
+                        if (!insideTransaction) // if inside a transaction the response is sent by the higher level
                         {
                             if (toSend == null)
                                 toSend = new NullResponse();
@@ -978,8 +983,7 @@ namespace Server
                             requestDescription = query.ToString();
                             processedItems = result.Count;
                             requestType = "SELECT";
-
-                            //TODO  apply streaming threshold for get many
+                            
                             client.SendManyGeneric(result);
                         }
                         else
@@ -1049,13 +1053,9 @@ namespace Server
 
                 ServerLog.AddEntry(new ServerLogEntry(data.TotalTimeMiliseconds, requestType, requestDescription,
                     processedItems));
-
-                // if eviction request have been generated, process them after the data requests
-                if (_eviction != null)
-                {
-                    ProcessEvictionRequest(_eviction);
-                    _eviction = null;
-                }
+                
+                ProcessEviction();
+                
             }
         }
 

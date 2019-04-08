@@ -204,7 +204,7 @@ namespace UnitTests
 
                 var count = trades.Count();
                 Assert.LessOrEqual(count, 50);
-
+                
                 // check that eviction is triggered by PUT MANY operations
                 var list = new List<Trade>();
                 for (int i = 100; i < 200; i++)

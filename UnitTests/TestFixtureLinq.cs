@@ -101,7 +101,14 @@ namespace UnitTests
                     Console.WriteLine(query);
                 });
 
-                result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+                try
+                {
+                    result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+                }
+                catch (Exception )
+                {
+                    // ignore exception
+                }
 
                 // disable the monitoring
                 QueryExecutor.Probe(null);
@@ -157,7 +164,7 @@ namespace UnitTests
                     Assert.AreEqual(3, list.Count);
                 }
 
-                // with convertors (dates are internally concverted to ints
+                // with convertors (dates are internally converted to ints
                 {
                     var dates = new[] {DateTime.Today};
                     var list = dataSource.Where(t => dates.Contains(t.ValueDate)).ToList();

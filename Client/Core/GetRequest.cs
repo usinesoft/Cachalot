@@ -28,6 +28,5 @@ namespace Client.Core
 
         public OrQuery Query => _query;
 
-        [ProtoMember(2)] public bool OnlyIfComplete { get; set; }
     }
 }

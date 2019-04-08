@@ -488,9 +488,10 @@ namespace Client.Core
             {
 
                 // the limit is global to the cluster
-                var limitByNode = limit / CacheClients.Count + 1;
+                var limitByNode = limit / CacheClients.Count;
+                var removeByNode = itemsToRemove / CacheClients.Count + 1;
 
-                Parallel.ForEach(CacheClients, client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, itemsToRemove));
+                Parallel.ForEach(CacheClients, client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, removeByNode));
             }
             catch (AggregateException e)
             {
@@ -914,7 +915,7 @@ namespace Client.Core
             var primaryKey = query.Elements[0].Elements[0].Value;
             var node = WhichNode(primaryKey);
 
-            var result = CacheClients[node].GetMany<TItemType>(query, false);
+            var result = CacheClients[node].GetMany<TItemType>(query);
 
             return result.FirstOrDefault();
         }
@@ -940,42 +941,6 @@ namespace Client.Core
             return result;
         }
 
-        //public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query, bool onlyIfFullyLoaded = false)
-
-        //{
-        //    var queue = new BlockingCollection<TItemType>(100000);
-
-        //    try
-        //    {
-        //        Task.Factory.StartNew(() =>
-        //        {
-        //            try
-        //            {
-        //                Parallel.ForEach(CacheClients, client =>
-        //                {
-        //                    var resultsFromThisNode = client.GetMany<TItemType>(query);
-
-        //                    foreach (var item in resultsFromThisNode) queue.Add(item);
-        //                });
-        //            }
-        //            catch (AggregateException e)
-        //            {
-        //                if (e.InnerException != null) throw e.InnerException;
-        //            }
-        //            finally
-        //            {
-        //                queue.CompleteAdding();
-        //            }
-        //        });
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        if (e.InnerException != null) throw e.InnerException;
-        //    }
-
-        //    return queue.GetConsumingEnumerable();
-        //}
-
 
         /// <summary>
         ///     In some cases we need the order of returned elements to be stable between calls.
@@ -983,14 +948,12 @@ namespace Client.Core
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
         /// <param name="query"></param>
-        /// <param name="onlyIfFullyLoaded"></param>
         /// <returns></returns>
-        public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query, bool onlyIfFullyLoaded = false)
+        public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
 
         {
             var clientResults = new IEnumerator<TItemType>[CacheClients.Count];
-
-
+            
             try
             {
                 Parallel.ForEach(CacheClients, client =>

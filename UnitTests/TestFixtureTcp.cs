@@ -99,7 +99,7 @@ namespace UnitTests
 
             //reload both items by folder name
             IList<CacheableTypeOk> itemsInAaa =
-                new List<CacheableTypeOk>(_client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa"));
+                new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa"));
             Assert.AreEqual(itemsInAaa.Count, 2);
 
             //change the folder of the first item and put it back into the cache
@@ -107,12 +107,12 @@ namespace UnitTests
             _client.Put(item1);
 
             //now it should be only one item left in aaa
-            itemsInAaa = new List<CacheableTypeOk>(_client.GetMany<CacheableTypeOk>("IndexKeyFolder == aaa"));
+            itemsInAaa = new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa"));
             Assert.AreEqual(itemsInAaa.Count, 1);
 
             //get both of them again by date
             IList<CacheableTypeOk> allItems =
-                new List<CacheableTypeOk>(_client.GetMany<CacheableTypeOk>($"IndexKeyDate ==  {new DateTime(2010, 10, 10).Ticks}"));
+                new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate ==  {new DateTime(2010, 10, 10).Ticks}"));
             Assert.AreEqual(allItems.Count, 2);
 
             //get both of them using an In query
@@ -200,7 +200,7 @@ namespace UnitTests
                     //reload both items by folder name
                     IList<CacheableTypeOk> items =
                         new List<CacheableTypeOk>(
-                            client.GetMany<CacheableTypeOk>("IndexKeyValue < 1700"));
+                            client.GetManyWhere<CacheableTypeOk>("IndexKeyValue < 1700"));
                     Assert.AreEqual(items.Count, 200);
 
                     _requestsFinished.Release();
@@ -227,7 +227,7 @@ namespace UnitTests
                     //reload both items by folder name
                     IList<CacheableTypeOk> items =
                         new List<CacheableTypeOk>(
-                            _client.GetMany<CacheableTypeOk>("IndexKeyValue < 1700"));
+                            _client.GetManyWhere<CacheableTypeOk>("IndexKeyValue < 1700"));
                     Assert.AreEqual(items.Count, 200);
 
                     _requestsFinished.Release();
@@ -242,102 +242,6 @@ namespace UnitTests
         }
 
 
-        [Test]
-        public void StreamAvailableObjects()
-        {
-            //add two new items
-            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
-
-            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
-
-            //ask for items 1 2 3 4 (1 2 should be returned and 3 4 not found)
-            var items = new List<KeyValue>
-            {
-                new KeyValue(1,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(2,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(3,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey")),
-                new KeyValue(4,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Primary,
-                        "PrimaryKey"))
-            };
-
-            var wait = new ManualResetEvent(false);
-            var found = new List<CacheableTypeOk>();
-            var notFound = _client.GetAvailableItems(items,
-                delegate(CacheableTypeOk item, int currentItem, int totalItems)
-                {
-                    found.Add(item);
-                    if (currentItem == totalItems)
-                        wait.Set();
-                }, delegate { });
-
-            wait.WaitOne();
-            Assert.AreEqual(notFound.Count, 2);
-            Assert.AreEqual(notFound[0], 3);
-            Assert.AreEqual(notFound[1], 4);
-            Assert.AreEqual(found.Count, 2);
-            Assert.AreEqual(found[0].PrimaryKey, 1);
-            Assert.AreEqual(found[1].PrimaryKey, 2);
-        }
-
-        
-
-        [Test]
-        public void TestWithDataCompression()
-        {
-            //test with a type using protocol buffers
-            var persons = new List<FatPerson>(113);
-            for (int i = 0; i < 113; i++)
-            {
-                var person = new FatPerson(i, "dan", "ionescu");
-                persons.Add(person);
-            }
-
-            _client.FeedMany(persons, true);
-            //var personsReloaded = _client.GetMany<FatPerson>(p => p.First == "dan").ToList();
-            //Assert.AreEqual(personsReloaded.Count, 113);
-            //Assert.AreEqual(personsReloaded[0].Id, 0);
-            //Assert.AreEqual(personsReloaded[0].First, "dan");
-            //Assert.AreEqual(personsReloaded[0].Last, "ionescu");
-
-            var p3 = _client.GetOne<FatPerson>(3);
-            Assert.IsNotNull(p3);
-            Assert.AreEqual(p3.Id, 3);
-
-            _client.Remove<FatPerson>(3);
-            //personsReloaded = _client.GetManyWhere<FatPerson>("first==dan").ToList();
-            //Assert.AreEqual(personsReloaded.Count, 112);
-
-
-            var querySet = new List<KeyValue>
-            {
-                new KeyValue(0, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "Id")),
-                new KeyValue(1, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "Id")),
-                new KeyValue(2, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "Id")),
-                new KeyValue(3, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "Id")),
-                new KeyValue(4, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "Id"))
-            };
-
-            long found = 0;
-
-            var missing = _client.GetAvailableItems<FatPerson>(querySet, delegate { Interlocked.Increment(ref found); },
-                delegate { Assert.Fail("exception response from server"); });
-
-            while (Interlocked.Read(ref found) < 4)
-            {
-                Thread.Sleep(10);
-            }
-
-            Assert.AreEqual(missing.Count, 1);
-            Assert.AreEqual(missing[0].ToString(), "#3");
-        }
+      
     }
 }

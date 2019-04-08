@@ -161,14 +161,9 @@ namespace Client.Interface
         ///     To create a valid <see cref="OrQuery" /> use a <see cref="QueryBuilder" />.
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
-        /// <param name="query"></param>
-        /// <param name="onlyIfFullyLoaded">
-        ///     If true, return a collection only if all the data is preloaded into the cache. Otherwise throw an exception. If it
-        ///     returns an empty collection,
-        ///     data is complete, but no item matches the criteria
-        /// </param>
+        /// <param name="query"></param>                        
         /// <returns></returns>
-        IEnumerable<TItemType> GetMany<TItemType>(OrQuery query, bool onlyIfFullyLoaded = false);
+        IEnumerable<TItemType> GetMany<TItemType>(OrQuery query);
 
 
         /// <summary>

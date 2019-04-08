@@ -244,22 +244,7 @@ namespace UnitTests
             //sync get
             _client.GetMany<TradeLike>(query).ToList();
 
-
-            //async get
-            {
-                var evt = new ManualResetEvent(false);
-
-                var itemCount = 0;
-                _client.AsyncGetMany(query, delegate(TradeLike like, int item, int total)
-                {
-                    itemCount++;
-                    if (item == total) evt.Set();
-                }, delegate { });
-                evt.WaitOne();
-
-                Console.WriteLine("Found {0} objects", itemCount);
-            }
-
+            
             //select 
             _logger.Reset();
             var cmd = _parser.Parse("select TRADELIKE where Nominal < 500");
@@ -286,40 +271,5 @@ namespace UnitTests
             
         }
 
-        [Test]
-        public void StreamAvailableObjects()
-        {
-            //add two new items
-            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
-
-            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
-
-            //ask for items 1 2 3 4 (1 2 should be returned and 3 4 not found)
-            var items = new List<KeyValue>();
-            items.Add(new KeyValue(1, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "PrimaryKey")));
-            items.Add(new KeyValue(2, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "PrimaryKey")));
-            items.Add(new KeyValue(3, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "PrimaryKey")));
-            items.Add(new KeyValue(4, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "PrimaryKey")));
-
-            var wait = new ManualResetEvent(false);
-            var found = new List<CacheableTypeOk>();
-            var notFound = _client.GetAvailableItems(items,
-                delegate(CacheableTypeOk item, int currentItem, int totalItems)
-                {
-                    found.Add(item);
-                    if (currentItem == totalItems)
-                        wait.Set();
-                }, delegate { });
-
-            wait.WaitOne();
-            Assert.AreEqual(notFound.Count, 2);
-            Assert.AreEqual(notFound[0], 3);
-            Assert.AreEqual(notFound[1], 4);
-            Assert.AreEqual(found.Count, 2);
-            Assert.AreEqual(found[0].PrimaryKey, 1);
-            Assert.AreEqual(found[1].PrimaryKey, 2);
-        }
     }
 }

@@ -8,12 +8,67 @@ using Channel;
 using Client;
 using Client.Interface;
 using NUnit.Framework;
-using UnitTests.TestData.Instruments;
+using UnitTests.TestData;
 using UnitTests.TestData.Events;
 using ServerConfig = Server.ServerConfig;
+using Trade = UnitTests.TestData.Instruments.Trade;
 
 namespace UnitTests
 {
+    public class TradeProvider
+    {
+        private Connector _connector;
+
+        
+        public void Startup(ClientConfig config)
+        {
+            _connector = new Connector(config);
+
+            var trades = _connector.DataSource<Trade>();
+
+            // remove 500 items every time the limit of 500_000 is reached
+            trades.ConfigEviction(EvictionType.LessRecentlyUsed, 500_000, 500);
+        }
+
+
+        public Trade GetTrade(int id)
+        {
+            var trades = _connector.DataSource<Trade>();
+            var fromCache = trades[id];
+
+            if (fromCache != null)
+            {
+                LastOneWasFromCache = true;
+                return fromCache;
+            }
+
+            var trade = GetTradeFromDatabase(id);
+            trades.Put(trade);
+
+            LastOneWasFromCache = false;
+            return trade;
+        }
+
+
+        public void Shutdown()
+        {
+            _connector.Dispose();
+        }
+
+
+        private Trade GetTradeFromDatabase(int id)
+        {
+            return new Trade{Id = id, ContractId = $"TRD-{id}"};
+        }
+
+
+        public bool LastOneWasFromCache { get; set; }
+
+
+    }
+
+
+
     [TestFixture]
     public class TestFixtureAdvancedCacheWithMultipleNodes
     {
@@ -185,6 +240,65 @@ namespace UnitTests
                 
         }
 
+        [Test]
+        public void Domain_declaration_example()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var homes = connector.DataSource<Home>();
+
+                homes.Put(new Home{ Id = 1, CountryCode = "FR", PriceInEuros = 150, Town = "Paris", Rooms = 3, Bathrooms = 1});
+                homes.Put(new Home{ Id = 2, CountryCode = "FR", PriceInEuros = 250, Town = "Paris", Rooms = 5, Bathrooms = 2});
+                homes.Put(new Home{ Id = 3, CountryCode = "FR", PriceInEuros = 100, Town = "Nice", Rooms = 1, Bathrooms = 1});
+                homes.Put(new Home{ Id = 4, CountryCode = "FR", PriceInEuros = 150, Town = "Nice", Rooms = 2, Bathrooms = 1});
+
+                homes.DeclareLoadedDomain(h=>h.Town == "Paris" || h.Town == "Nice");
+
+                // this one can be served from cache
+                var result = homes.Where(h => h.Town == "Paris" && h.Rooms >= 2).OnlyIfComplete().ToList();
+
+                Assert.AreEqual(2, result.Count);
+
+                // this one too
+                result = homes.Where(h => h.Town == "Nice" && h.Rooms == 2).OnlyIfComplete().ToList();
+
+                Assert.AreEqual(1, result.Count);
+
+                // this one thrown an exception as the query is not a subset of the domain
+                Assert.Throws<CacheException>(() =>                    
+                        result = homes.Where(h => h.CountryCode == "FR" && h.Rooms == 2).OnlyIfComplete().ToList()
+                    );
+
+
+                var trades = connector.DataSource<Trade>();
+
+                trades.Put(new Trade{Id = 1, ContractId = "SWAP-001", Counterparty = "BNP", TradeDate = DateTime.Today, MaturityDate = DateTime.Today});
+                trades.Put(new Trade{Id = 2, ContractId = "SWAP-002", Counterparty = "GOLDMAN", TradeDate = DateTime.Today.AddDays(-1), MaturityDate = DateTime.Today.AddDays(100) });
+                trades.Put(new Trade{Id = 3, ContractId = "SWAP-003", Counterparty = "BNP", TradeDate = DateTime.Today.AddDays(-2), MaturityDate = DateTime.Today.AddDays(50), IsDestroyed = true});
+                trades.Put(new Trade{Id = 4, ContractId = "SWAP-004", Counterparty = "MLINCH", TradeDate = DateTime.Today.AddDays(-3), MaturityDate = DateTime.Today.AddDays(15) });
+
+
+                var oneYearAgo = DateTime.Today.AddYears(-1);
+                var today = DateTime.Today;
+
+                trades.DeclareLoadedDomain(t=>t.MaturityDate >= today || t.TradeDate > oneYearAgo);
+
+                // this one can be served from cache
+                var res =trades.Where(t=>t.IsDestroyed == false && t.TradeDate == DateTime.Today.AddDays(-1)).OnlyIfComplete().ToList();
+                Assert.AreEqual(1, res.Count);
+
+                // this one too
+                res = trades.Where(t => t.IsDestroyed == false && t.MaturityDate == DateTime.Today).OnlyIfComplete().ToList();
+                Assert.AreEqual(1, res.Count);
+
+                // this one thrown an exception as the query is not a subset of the domain
+                Assert.Throws<CacheException>(() =>
+                        res = trades.Where(t => t.IsDestroyed == false && t.Portfolio == "SW-EUR").OnlyIfComplete().ToList()
+                );
+
+            }
+
+        }
 
         [Test]
         public void Test_lru_eviction()
@@ -219,6 +333,32 @@ namespace UnitTests
                 count = trades.Count();
                 Assert.LessOrEqual(count, 50);
 
+            }
+        }
+
+
+        [Test]
+        public void Test_trade_provider()
+        {
+            var provider = new TradeProvider();
+
+            try
+            {
+                provider.Startup(_clientConfig);
+
+                var trade = provider.GetTrade(11);
+
+                Assert.IsNotNull(trade);
+                Assert.IsFalse(provider.LastOneWasFromCache);
+
+                trade = provider.GetTrade(11);
+
+                Assert.IsNotNull(trade);
+                Assert.IsTrue(provider.LastOneWasFromCache);
+            }
+            finally
+            {
+                provider.Shutdown();    
             }
         }
 

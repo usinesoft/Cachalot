@@ -27,6 +27,9 @@ namespace UnitTests.TestData.Instruments
         public DateTime ValueDate { get; set; }
 
         [Index(KeyDataType.IntKey, true)]
+        public DateTime MaturityDate { get; set; }
+
+        [Index(KeyDataType.IntKey, true)]
         public DateTime Timestamp { get; set; }
 
         [Index(KeyDataType.StringKey)]

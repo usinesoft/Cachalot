@@ -1,1 +1,1 @@
-dotnet publish -c release -o ..\..\bin\Release\DemoClients\Accounts\netcoreapp2.1\
+dotnet publish -c release -o ..\..\bin\Release\DemoClients\BookingMarketplace\netcoreapp2.1\

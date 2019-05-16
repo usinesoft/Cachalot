@@ -999,7 +999,18 @@ namespace Client.Core
         {
             var description = RegisterTypeIfNeeded(typeof(TItemType)).AsTypeDescription;
 
-            var request = new RemoveRequest(typeof(TItemType), description.MakePrimaryKeyValue(primaryKeyValue));
+            KeyValue primaryKey = null;
+
+            if (primaryKeyValue is KeyValue kv)
+            {
+                primaryKey = kv;
+            }
+            else
+            {
+                primaryKey = description.MakePrimaryKeyValue(primaryKeyValue);
+            }
+
+            var request = new RemoveRequest(typeof(TItemType), primaryKey);
 
 
             var response = Channel.SendRequest(request);

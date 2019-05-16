@@ -7,7 +7,7 @@ namespace UnitTests.TestData.Events
 {
     public abstract class ProductEvent
     {
-        [PrimaryKey(KeyDataType.StringKey)]
+        [PrimaryKey(KeyDataType.IntKey)]
         public int EventId { get; set; }
 
         [Index(KeyDataType.StringKey)]

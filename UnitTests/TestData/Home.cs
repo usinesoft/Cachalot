@@ -14,6 +14,7 @@ namespace UnitTests.TestData
         [Index(KeyDataType.StringKey)]
         public string CountryCode { get; set; }
 
+        [FullTextIndexation]
         [Index(KeyDataType.StringKey)]
         public string Town { get; set; }
         

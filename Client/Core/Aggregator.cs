@@ -998,9 +998,19 @@ namespace Client.Core
         {
             var builder = new QueryBuilder(typeof(TItemType));
 
-            var pk = builder.MakePrimaryKeyValue(primaryKeyValue);
+            KeyValue primaryKey = null;
 
-            var node = WhichNode(pk);
+            if (primaryKeyValue is KeyValue kv)
+            {
+                primaryKey = kv;
+            }
+            else
+            {
+                primaryKey = builder.MakePrimaryKeyValue(primaryKeyValue);
+            }
+
+            
+            var node = WhichNode(primaryKey);
 
 
             CacheClients[node].Remove<TItemType>(primaryKeyValue);

@@ -9,6 +9,7 @@ using Channel;
 using Client;
 using Client.Interface;
 using NUnit.Framework;
+using UnitTests.TestData;
 using UnitTests.TestData.Events;
 using ServerConfig = Server.ServerConfig;
 
@@ -203,10 +204,112 @@ namespace UnitTests
 
 
 
-                // switch back to reaswrite mode and now it should work
+                // switch back to read-write mode and now it should work
                 connector.AdminInterface().ReadOnlyMode(true);
 
                 dataSource.Put(new FixingEvent(1, "AXA", 150, "EQ-256"));
+            }
+        }
+
+
+        [Test]
+        public void Full_text_search()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<Home>();
+
+                dataSource.PutMany(new[]
+                {
+                    new Home{Id = 10, Address = "14 rue de le pompe", Town = "Paris", Comments = new List<Comment>
+                    {
+                        new Comment{Text = "close to the metro"},
+                        new Comment{Text = "beautiful view"},
+                    }},
+                    
+                    new Home{Id = 20, Address = "10 rue du chien qui fume", Town = "Nice",  Comments = new List<Comment>
+                    {
+                        new Comment{Text = "close to the metro"},
+                        new Comment{Text = "ps4"},
+                    }}
+                });
+
+
+                var result1 = dataSource.FullTextSearch("rue de la pompe").ToList();
+                Assert.AreEqual(2, result1.Count);
+                Assert.AreEqual(10, result1.First().Id);
+
+                var result2 = dataSource.FullTextSearch("close metro").ToList();
+                Assert.AreEqual(2, result2.Count);
+
+                result2 = dataSource.FullTextSearch("close metro").Take(1).ToList();
+                Assert.AreEqual(1, result2.Count);
+
+                var result3 = dataSource.FullTextSearch("close metro ps4").ToList();
+                Assert.AreEqual(2, result3.Count);
+                Assert.AreEqual(20, result3.First().Id, "the best match was not returned first");
+
+                result3 = dataSource.FullTextSearch("close metro ps").ToList();
+                Assert.AreEqual(2, result3.Count);
+                Assert.AreEqual(20, result3.First().Id, "the best match was not the first returned");
+
+                var result4 = dataSource.FullTextSearch("blah blah paris").ToList();
+                Assert.AreEqual(1, result4.Count);
+                Assert.AreEqual(10, result4.First().Id);
+
+                //  this last one should be found by pure "same document" strategy
+                result3 = dataSource.FullTextSearch("metro ps").ToList();
+                Assert.AreEqual(2, result3.Count);
+                Assert.AreEqual(20, result3.First().Id, "the best match was not the first returned");
+
+                // search single token
+                result3 = dataSource.FullTextSearch("ps").ToList();
+                Assert.AreEqual(1, result3.Count);
+                Assert.AreEqual(20, result3.Single().Id, "only one object should be returned");
+
+                // search unknown token
+                var result5 = dataSource.FullTextSearch("blah").ToList();
+                Assert.AreEqual(0, result5.Count);
+               
+            }
+
+            StopServers();
+            StartServers();
+
+            // check that full text search still works after restart
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var homes = connector.DataSource<Home>();
+
+                var result1 = homes.FullTextSearch("rue de la pompe").ToList();
+                Assert.AreEqual(2, result1.Count);
+                Assert.AreEqual(10, result1.First().Id);
+
+                var updated = new Home
+                {
+                    Id = 20, Address = "10 rue du chien qui fume", Town = "Nice", Comments = new List<Comment>
+                    {
+                        new Comment {Text = "close to the metro"},
+                        new Comment {Text = "4k tv"},
+                    }
+                };
+
+                homes.Put(updated);
+
+                // as the object was updated this query will return no result
+                var result = homes.FullTextSearch("ps").ToList();
+                Assert.AreEqual(0, result.Count);
+
+                result = homes.FullTextSearch("4k").ToList();
+                Assert.AreEqual(1, result.Count);
+                Assert.AreEqual(20, result.Single().Id, "newly updated object not found");
+
+                // now delete the object. The full-text search should not return the previous result any more
+                homes.Delete(updated);
+                result = homes.FullTextSearch("4k").ToList();
+                Assert.AreEqual(0, result.Count);
+
             }
         }
 

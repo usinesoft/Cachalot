@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Client.Tools;
 
-namespace Client.Tools
+namespace Server.FullTextSearch
 {
     public class Tokenizer
     {
@@ -112,6 +114,20 @@ namespace Client.Tools
                     Text = text,
                     TokenType = previousType
                 });
+            }
+
+
+            return result;
+        }
+
+        public IList<TokenizedLine> Tokenize(IEnumerable<string> input)
+        {
+            var result = new List<TokenizedLine>();
+
+            foreach (var line in input)
+            {
+                var one = TokenizeOneLine(line);
+                result.Add(new TokenizedLine{Tokens = one.Select(t=> t.NormalizedText).ToList()});
             }
 
 

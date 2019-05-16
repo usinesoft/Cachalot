@@ -4,6 +4,7 @@ using System.Linq;
 using Client.Core;
 using Client.Tools;
 using NUnit.Framework;
+using Server.FullTextSearch;
 using UnitTests.TestData;
 // ReSharper disable NotAccessedVariable
 
@@ -98,7 +99,7 @@ namespace UnitTests
         {
             var description = ClientSideTypeDescription.RegisterType<Home>();
 
-            Assert.AreEqual(3, description.FullTextIndexed.Count);
+            Assert.AreEqual(4, description.FullTextIndexed.Count);
             var home = new Home
             {
                 Address = "14 rue du chien qui fume", Bathrooms = 2, Rooms = 4, PriceInEuros = 200, CountryCode = "FR",

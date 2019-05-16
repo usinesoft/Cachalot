@@ -20,7 +20,7 @@ namespace Server.Persistence
         public void Process(byte[] data)
         {            
             var item = SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers,
-                false);
+                false); // the json itself may be compressed, but the persisted object is never compressed
 
             Dbg.Trace($"processing persistent object {data.Length} bytes {item}");
 

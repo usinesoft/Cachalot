@@ -13,6 +13,7 @@ using Client.Messages;
 using Client.Profiling;
 using Client.Queries;
 using Client.Tools;
+using Server.FullTextSearch;
 using Server.Persistence;
 
 #endregion
@@ -33,7 +34,7 @@ namespace Server
         private readonly Dictionary<string, IndexBase> _dataByIndexKey;
 
         /// <summary>
-        ///     object by primary key
+        ///     Object by primary key
         /// </summary>
         private readonly Dictionary<KeyValue, CachedObject> _dataByPrimaryKey;
 
@@ -47,6 +48,7 @@ namespace Server
         /// </summary>
         private readonly ThreadLocal<ExecutionPlan> _lastExecutionPlan = new ThreadLocal<ExecutionPlan>();
 
+        private FullTextIndex _fullTextIndex;
 
         
         private long _count;
@@ -95,13 +97,18 @@ namespace Server
 
 
             // list indexed fields
-
             foreach (var indexField in typeDescription.ListFields)
             {
                 var index = IndexFactory.CreateIndex(indexField);
                 _dataByIndexKey.Add(indexField.Name, index);
             }
 
+
+            // create the full-text index if required
+            if (typeDescription.FullText.Count > 0)
+            {
+                _fullTextIndex = new FullTextIndex();
+            }
             
         }
 
@@ -192,6 +199,13 @@ namespace Server
 
             foreach (var index in _dataByIndexKey)
                 index.Value.Put(cachedObject);
+
+
+            if (cachedObject.FullText != null && cachedObject.FullText.Length > 0)
+            {
+                _fullTextIndex.IndexDocument(cachedObject.FullText, cachedObject.PrimaryKey);
+            }
+            
         }
 
 
@@ -231,6 +245,7 @@ namespace Server
             foreach (var index in _dataByIndexKey)
                 index.Value.RemoveOne(toRemove);
 
+            _fullTextIndex?.DeleteDocument(primary);
 
             return toRemove;
         }
@@ -307,6 +322,9 @@ namespace Server
                 if (toRemove.UniqueKeys != null)
                     foreach (var uniqueKey in toRemove.UniqueKeys)
                         _dataByUniqueKey[uniqueKey.KeyName].Remove(uniqueKey);
+
+                // if present remove it from the full-text index
+                _fullTextIndex?.DeleteDocument(item.PrimaryKey);
             }
 
 
@@ -460,6 +478,12 @@ namespace Server
             return result;
         }
 
+        private IList<CachedObject> FullTextSearch(string query, int maxElements)
+        {
+            var result = _fullTextIndex.SearchBestDocuments(query, maxElements);
+
+            return result.Select(r => _dataByPrimaryKey[r.PrimaryKey]).ToList();
+        }
 
         private IList<CachedObject> InternalFind(OrQuery query, bool onlyIfComplete = false)
         {
@@ -483,16 +507,23 @@ namespace Server
 
             var result = new List<CachedObject>();
 
-            // if empty query return all
+            // if empty query return all, unless there is a full-text query
             if (query.Elements.Count == 0)
             {
-                Dbg.Trace($"InternalFind with empty query: return all {query.TypeName}");
+                if (string.IsNullOrWhiteSpace(query.FullTextSearch))
+                {
+                    Dbg.Trace($"InternalFind with empty query: return all {query.TypeName}");
 
-                result.AddRange(query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values);
+                    result.AddRange(query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values);
 
-                Dbg.Trace($"end InternalFind returned {result.Count} ");
+                    Dbg.Trace($"end InternalFind returned {result.Count} ");
 
-                return result;
+                    return result;
+                }
+                else // pure full-text search
+                {
+                    return FullTextSearch(query.FullTextSearch, query.Take);
+                }
             }
 
             var take = query.Take;

@@ -76,6 +76,8 @@ namespace Client.Queries
         [ProtoMember(5)] public bool OnlyIfComplete { get; set; }
 
 
+        public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
+
         public bool IsSubsetOf(OrQuery query)
         {
 

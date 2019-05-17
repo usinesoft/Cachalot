@@ -80,38 +80,45 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
-                var trades = connector.DataSource<Trade>();
-
-                QueryExecutor.Probe(query =>
-                {
-                    Assert.AreEqual("something funny", query.FullTextSearch);
-
-                    Console.WriteLine(query);
-                });
-                
-                var result = trades.Where(t=>t.Folder == "TF").FullTextSearch("something funny").ToList();
-
-                // disable the monitoring
-                QueryExecutor.Probe(null);
-
-                QueryExecutor.Probe(query =>
-                {
-                    Assert.AreEqual(true, query.OnlyIfComplete);
-
-                    Console.WriteLine(query);
-                });
-
                 try
                 {
-                    result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+                    var trades = connector.DataSource<Trade>();
+
+                    QueryExecutor.Probe(query =>
+                    {
+                        Assert.AreEqual("something funny", query.FullTextSearch);
+
+                        Console.WriteLine(query);
+                    });
+                
+                    var result = trades.Where(t=>t.Folder == "TF").FullTextSearch("something funny").ToList();
+
+                    // disable the monitoring
+                    QueryExecutor.Probe(null);
+
+                    QueryExecutor.Probe(query =>
+                    {
+                        Assert.AreEqual(true, query.OnlyIfComplete);
+
+                        Console.WriteLine(query);
+                    });
+
+                    try
+                    {
+                        result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+                    }
+                    catch (Exception )
+                    {
+                        // ignore exception
+                    }
                 }
-                catch (Exception )
+                finally
                 {
-                    // ignore exception
+                    // disable the monitoring
+                    QueryExecutor.Probe(null);    
                 }
 
-                // disable the monitoring
-                QueryExecutor.Probe(null);
+                
 
             }
         }

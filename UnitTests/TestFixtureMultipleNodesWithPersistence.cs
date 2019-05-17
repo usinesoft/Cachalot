@@ -314,6 +314,45 @@ namespace UnitTests
         }
 
         [Test]
+        public void Mixed_search()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<Home>();
+
+                dataSource.PutMany(new[]
+                {
+                    new Home{Id = 10, Address = "14 rue de le pompe", Town = "Paris", CountryCode = "FR", Comments = new List<Comment>
+                    {
+                        new Comment{Text = "close to the metro"},
+                        new Comment{Text = "beautiful view"},
+                    }},
+                    
+                    new Home{Id = 20, Address = "10 rue du chien qui fume", Town = "Nice",  CountryCode = "FR", Comments = new List<Comment>
+                    {
+                        new Comment{Text = "close to the metro"},
+                        new Comment{Text = "ps4"},
+                    }}
+                });
+                
+                var result = dataSource.Where(h=>h.Town == "Paris").FullTextSearch("close metro").ToList();
+                Assert.AreEqual(1, result.Count);
+
+                var result1 = dataSource.Where(h=>h.CountryCode == "FR").FullTextSearch("close metro").ToList();
+                Assert.AreEqual(2, result1.Count);
+
+                var result3 = dataSource.Where(h=>h.CountryCode == "FR").FullTextSearch("ps4").ToList();
+                Assert.AreEqual(1, result3.Count);
+
+                var result4 = dataSource.Where(h=>h.CountryCode == "FR").FullTextSearch("close metro ps").ToList();
+                Assert.AreEqual(2, result4.Count);
+                Assert.AreEqual(20, result4.First().Id, "should be ordered by the full-text score");
+               
+            }
+            
+        }
+
+        [Test]
         public void Delete_many_and_restart()
         {
             using (var connector = new Connector(_clientConfig))

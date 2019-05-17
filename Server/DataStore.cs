@@ -505,35 +505,78 @@ namespace Server
             }
            
 
-            var result = new List<CachedObject>();
+            
 
             // if empty query return all, unless there is a full-text query
-            if (query.Elements.Count == 0)
+            if (query.IsEmpty())
             {
-                if (string.IsNullOrWhiteSpace(query.FullTextSearch))
+                if (!query.IsFullTextQuery)
                 {
                     Dbg.Trace($"InternalFind with empty query: return all {query.TypeName}");
 
-                    result.AddRange(query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values);
+                    return (query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values).ToList();
 
-                    Dbg.Trace($"end InternalFind returned {result.Count} ");
+                    
+                }
 
-                    return result;
-                }
-                else // pure full-text search
-                {
-                    return FullTextSearch(query.FullTextSearch, query.Take);
-                }
+                // pure full-text search
+                return FullTextSearch(query.FullTextSearch, query.Take);
             }
 
+            var structuredResult = new HashSet<CachedObject>();
+
+            // ignore full-text queries if no full-text index
+            if (!query.IsFullTextQuery || _fullTextIndex == null)
+            {
+                InternalStructuredFind(query, structuredResult);
+
+                return structuredResult.ToList();
+            }
+
+            // mixed query: full-text + structured
+            // we return the intersection of the structured search and full-text search ordered by full-text score
+            IList<CachedObject> ftResult = null;
+
+            Parallel.Invoke(
+                () =>
+                {
+                    InternalStructuredFind(query, structuredResult);
+                }, 
+                () =>
+                {
+                    ftResult = FullTextSearch(query.FullTextSearch, query.Take);
+                });
+
+            var result = new List<CachedObject>();
+
+            foreach (var cachedObject in ftResult)
+            {
+                if (structuredResult.Contains(cachedObject))
+                {
+                    result.Add(cachedObject);
+                }
+            }
+            
+            Dbg.Trace($"end InternalFind returned {result.Count} ");
+
+            return result;
+        }
+
+        private void InternalStructuredFind(OrQuery query, HashSet<CachedObject> result)
+        {
             var take = query.Take;
 
             var remaining = take;
             foreach (var andQuery in query.Elements)
+            {
                 // 0 means no limit
                 if (take > 0)
                 {
-                    result.AddRange(InternalFind(andQuery, remaining));
+                    foreach (var item in InternalFind(andQuery, remaining))
+                    {
+                        result.Add(item);
+                    }
+                    
                     if (result.Count < remaining)
                         remaining = take - result.Count;
                     else
@@ -541,13 +584,14 @@ namespace Server
                 }
                 else
                 {
-                    result.AddRange(InternalFind(andQuery));
+                    foreach (var item in InternalFind(andQuery, remaining))
+                    {
+                        result.Add(item);
+                    }
+                    
                 }
-
-
-            Dbg.Trace($"end InternalFind returned {result.Count} ");
-
-            return result;
+            }
+                
         }
 
         /// <summary>

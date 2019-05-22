@@ -263,6 +263,37 @@ namespace AdminConsole.Commands
                     }
                 }
             }
+            else if (Parse(command, "(^SEARCH)\\s+([a-zA-Z0-9\\.]+)\\s+(.+)", atoms))
+            {
+                result = new CommandSearch {CmdType = CommandType.Search};
+
+                if (atoms.Count != 3)
+                {
+                    Logger.WriteEror("Invalid syntax for SEARCH. Type HELP SEARCH for more information");
+                }
+                else
+                {
+                    result.Params.Add(atoms[1]); //table
+                    result.Params.Add(atoms[2]); //query
+
+                    try
+                    {
+                        var typeDescription = GetTypeDescriptionByName(atoms[1]);
+                        var builder = new QueryBuilder(typeDescription);
+
+                        var ftQuery = atoms[2];
+                        
+                        result.Query = builder.GetMany();
+                        result.Query.FullTextSearch = ftQuery;
+                        result.Success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteEror("Invalid full-text search request. Type HELP SEARCH for more information",
+                            ex.Message);
+                    }
+                }
+            }
             else if (Parse(command, "(^DELETE\\s+FROM|DELETE)\\s+(.+)\\s+(WHERE)\\s+(.+)", atoms))
             {
                 result = new CommandDelete {CmdType = CommandType.Delete};

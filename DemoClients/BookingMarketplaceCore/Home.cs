@@ -13,9 +13,11 @@ namespace BookingMarketplace
         [Index(KeyDataType.StringKey)]
         public string CountryCode { get; set; }
 
+        [FullTextIndexation]
         [Index(KeyDataType.StringKey)]
         public string Town { get; set; }
         
+        [FullTextIndexation]
         public string Adress { get; set; }
 
         public string Owner { get; set; }
@@ -35,5 +37,24 @@ namespace BookingMarketplace
 
         [Index(KeyDataType.IntKey)]
         public List<DateTime> AvailableDates { get; set; } = new List<DateTime>(); 
+    
+        [FullTextIndexation]
+        public List<Comment> Comments { get; set; } = new List<Comment>(); 
+    }
+
+
+    public class Comment
+    {
+        public DateTime Date { get; set; }
+
+        public string User { get; set; }
+
+        public string Text { get; set; }
+
+
+        public override string ToString()
+        {
+            return Text;
+        }
     }
 }

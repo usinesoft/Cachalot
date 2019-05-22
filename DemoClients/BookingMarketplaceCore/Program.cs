@@ -37,7 +37,7 @@ namespace BookingMarketplace
             // one in ten is available today, one in 100 is available tomorrow
 
             
-            for (var i = 0; i < ids.Length; i++)
+            for (var i = 0; i < ids.Length - 3; i++)
             {
                 var availableDates = new List<DateTime>();
                 if (i % 10 == 0)
@@ -64,6 +64,59 @@ namespace BookingMarketplace
 
                 result.Add(property);
             }
+
+            // manually add some items for full-text search testing
+            var h1 = new Home
+            {
+                Id = ids[ids.Length - 3],
+                Adress = "14 rue de la mort qui tue",
+                Bathrooms = rand.Next(1,4),
+                CountryCode = "FR",
+                PriceInEuros = rand.Next(50, 300),
+                Rooms = rand.Next(1,5),
+                Town = "Paris",
+                Comments = new List<Comment>
+                {
+                    new Comment{Text="beautiful view"},
+                    new Comment{Text="close to the metro"},
+                }
+            };
+
+            var h2 = new Home
+            {
+                Id = ids[ids.Length - 2],
+                Adress = "15 allée de l'amour",
+                Bathrooms = rand.Next(1,4),
+                CountryCode = "FR",
+                PriceInEuros = rand.Next(50, 300),
+                Rooms = rand.Next(1,5),
+                Town = "Paris",
+                Comments = new List<Comment>
+                {
+                    new Comment{Text="ps4"},
+                    new Comment{Text="close to the metro"},
+                }
+            };
+
+            var h3 = new Home
+            {
+                Id = ids[ids.Length - 1],
+                Adress = "156 db du gral Le Clerc",
+                Bathrooms = rand.Next(1,4),
+                CountryCode = "FR",
+                PriceInEuros = rand.Next(50, 300),
+                Rooms = rand.Next(1,5),
+                Town = "Nice",
+                Comments = new List<Comment>
+                {
+                    new Comment{Text="wonderful sea view"},
+                    new Comment{Text="close to beach"},
+                }
+            };
+
+            result.Add(h1);
+            result.Add(h2);
+            result.Add(h3);
 
             return result;
         }
@@ -275,6 +328,55 @@ namespace BookingMarketplace
             Console.WriteLine(
                 $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
 
+
+            Console.WriteLine("Full text search:");
+
+            
+            watch.Reset();
+            watch.Start();
+
+            IList<Home> result1 = new List<Home>();
+            for (var i = 0; i < 10; i++)
+                result1 = properties.FullTextSearch("Nice beach").ToList();
+
+            watch.Stop();
+
+            Console.WriteLine(
+                $"Select {result1.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+
+            Console.WriteLine(
+                $"bast match:  {result1.First().Id}");
+
+
+            watch.Reset();
+            watch.Start();
+
+            IList<Home> result2 = new List<Home>();
+            for (var i = 0; i < 10; i++)
+                result2 = properties.FullTextSearch("close metro").ToList();
+
+            watch.Stop();
+
+            Console.WriteLine(
+                $"Select {result2.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+
+            Console.WriteLine(
+                $"bast match:  {result2.First().Id}");
+
+            watch.Reset();
+            watch.Start();
+
+            IList<Home> result3 = new List<Home>();
+            for (var i = 0; i < 10; i++)
+                result3 = properties.FullTextSearch("rue de la mort").Take(10).ToList();
+
+            watch.Stop();
+
+            Console.WriteLine(
+                $"Select {result3.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+
+            Console.WriteLine(
+                $"bast match:  {result3.First().Id}");
 
         }
 

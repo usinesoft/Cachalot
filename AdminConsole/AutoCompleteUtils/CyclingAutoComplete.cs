@@ -30,7 +30,8 @@ namespace AdminConsole.AutoCompleteUtils
             "readwrite",
             "truncate",
             "last",
-            "import"
+            "import",
+            "search"
         };
 
         private readonly char[] _tokenDelimiters = { ' ', ',' };
@@ -77,6 +78,11 @@ namespace AdminConsole.AutoCompleteUtils
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
                     }
                     else if (part1 == "truncate")
+                    {
+                        _autoCompleteList =
+                            AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
+                    }
+                    else if (part1 == "search")
                     {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
@@ -158,7 +164,7 @@ namespace AdminConsole.AutoCompleteUtils
                         }
 
                         
-                        var beforelastSeperator = line.Substring(0, line.Length - toComplete.Length);
+                        var beforeLastSeperator = line.Substring(0, line.Length - toComplete.Length);
 
                         if (typeDescription != null)
                         {
@@ -168,7 +174,7 @@ namespace AdminConsole.AutoCompleteUtils
                             allFields.Add(typeDescription.PrimaryKeyField);
 
                             _autoCompleteList =
-                                AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(beforelastSeperator, "", toComplete, allFields.Select(f=>f.Name.ToLower()).ToList());
+                                AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(beforeLastSeperator, "", toComplete, allFields.Select(f=>f.Name.ToLower()).ToList());
 
                         }
                         

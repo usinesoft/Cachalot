@@ -62,6 +62,7 @@ namespace AdminConsole.Commands
                 Logger.Write("RECREATE  : restore data saved with the DUMP command (number of nodes changed)");
                 Logger.Write("IMPORT    : import data from an external json file");
                 Logger.Write("LAST      : display information on the last actions executed by the server");
+                Logger.Write("SEARCH    : perform full-text search");
                 Logger.Write("");
                 Logger.Write("Type HELP <command> for detailed information");
             }
@@ -83,6 +84,10 @@ namespace AdminConsole.Commands
                         DisplayQueryHelp();
                         Logger.Write( "If INTO is used the data is saved as a json array in an external file");
                         break;
+                    case "SEARCH":
+                        Logger.Write("SEARCH <table> whatever you want");                        
+                        Logger.Write( "Perform full-text search on a given table");
+                        break;
                     case "DELETE":
                         Logger.Write( "DELETE <table> WHERE <query>");
                         DisplayQueryHelp();
@@ -90,7 +95,7 @@ namespace AdminConsole.Commands
                         break;
                     case "LAST":
                         Logger.Write("LAST <number> ");
-                        Logger.Write("Exmple: last 10  = displays the most recent 10 actions on the server");
+                        Logger.Write("Example: last 10  = displays the most recent 10 actions on the server");
                         Logger.Write("Information includes server execution time and execution plan");
                         break;
                     case "TRUNCATE":
@@ -99,15 +104,15 @@ namespace AdminConsole.Commands
 
                     case "DUMP":
                         Logger.Write("DUMP <existent directory> ");
-                        Logger.Write("Saves all data in an external directory. The directory is usualy a network share ");
+                        Logger.Write("Saves all data in an external directory. The directory is usually a network share ");
                         Logger.Write("It must be visible by ALL the servers");
-                        Logger.Write("A subdirectory named yyyy-mm-dd will be created for the current date");
+                        Logger.Write("A sub-directory named yyyy-mm-dd will be created for the current date");
                         break;
 
 
                     case "RESTORE":
                         Logger.Write("RESTORE <existent directory> ");
-                        Logger.Write("Import data from a dump. The directory is usualy a network share ");
+                        Logger.Write("Import data from a dump. The directory is usually a network share ");
                         Logger.Write("It must be visible by ALL the servers");
                         Logger.Write("If the path contains yyyy-mm-dd this backup will be used. Otherwise the last one is restored");
                         Logger.Write("This method can be used ONLY if the number of nodes has not changed");

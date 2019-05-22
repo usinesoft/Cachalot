@@ -242,6 +242,8 @@ namespace Server.FullTextSearch
                 () => { sameDocResult = SameDocumentFind(query); }
             );
 
+            
+
 
             var mergedResult = new Dictionary<LinePointer, double>(sameLineResult);
 
@@ -346,7 +348,9 @@ namespace Server.FullTextSearch
 
             }
 
-            return result;
+            var maxScore = result.Max(p => p.Value);
+
+            return result.Where(p=>p.Value > maxScore / 100).ToDictionary(p=>p.Key, p=>p.Value);
         }
 
 
@@ -406,8 +410,9 @@ namespace Server.FullTextSearch
                 }
             }
 
+            var maxScore = result.Max( p => scores[p]);
             
-            return result.ToDictionary(p => p, p => scores[p]);
+            return result.Where(p=>scores[p] > maxScore / 100).ToDictionary(p => p, p => scores[p]);
         }
     }
 

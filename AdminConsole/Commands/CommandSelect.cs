@@ -84,7 +84,7 @@ namespace AdminConsole.Commands
                 if (listResult != null)
                     count = listResult.Count;
 
-                Logger.Write("Found {0} items. The call took {1} miliseconds", count,
+                Logger.Write("Found {0} items. The call took {1} milliseconds", count,
                     profilerResult.TotalTimeMiliseconds);
             }
 

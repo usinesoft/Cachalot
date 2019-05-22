@@ -56,11 +56,11 @@ namespace AdminConsole.Commands
         Connect,
         Restore,
         Recreate,
-        Restart,
         Stop,
         ReadOnly,
         ReadWrite,
         Drop,
-        Import
+        Import,
+        Search
     }
 }

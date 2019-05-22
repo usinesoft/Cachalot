@@ -72,6 +72,7 @@
     <Compile Include="Commands\CommandReadWrite.cs" />
     <Compile Include="Commands\CommandRecreate.cs" />
     <Compile Include="Commands\CommandRestore.cs" />
+    <Compile Include="Commands\CommandSearch.cs" />
     <Compile Include="Commands\CommandSelect.cs" />
     <Compile Include="Commands\CommandStop.cs" />
     <Compile Include="Commands\CommandType.cs" />

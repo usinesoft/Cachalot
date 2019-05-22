@@ -335,17 +335,22 @@ namespace Client.Queries
         public OrQuery GetMany(params string[] binaryExpressions)
         {
             var query = new OrQuery(_typeDescription.FullTypeName);
-            var andQuery = new AndQuery();
-            query.Elements.Add(andQuery);
 
-            foreach (var expression in binaryExpressions)
+            if (binaryExpressions.Length > 0)
             {
-                var q = StringToQuery(expression);
-                andQuery.Elements.Add(q);
+                var andQuery = new AndQuery();
+                query.Elements.Add(andQuery);
+
+                foreach (var expression in binaryExpressions)
+                {
+                    var q = StringToQuery(expression);
+                    andQuery.Elements.Add(q);
+                }
+
+
+                QueryHelper.OptimizeQuery(query);
             }
-
-
-            QueryHelper.OptimizeQuery(query);
+            
 
             return query;
         }

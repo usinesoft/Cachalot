@@ -262,6 +262,7 @@ namespace Server
             foreach (var index in _dataByIndexKey)
                 index.Value.Clear();
 
+            _fullTextIndex?.Clear();
 
             Interlocked.Exchange(ref _updateCount, 0);
             Interlocked.Exchange(ref _readCount, 0);

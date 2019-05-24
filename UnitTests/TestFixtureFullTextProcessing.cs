@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Client.Core;
@@ -199,6 +200,39 @@ namespace UnitTests
 
 
 
+        }
+
+        
+        [Test]
+        public void Compute_ordered_multiplier()
+        {
+            
+            var multiplier1 = FullTextIndex.ComputeBonusIfOrderIsPreserved("a b c", "b c a");
+            var multiplier2 = FullTextIndex.ComputeBonusIfOrderIsPreserved("a b c", "c b a");
+
+            Assert.IsTrue(multiplier1 > multiplier2 );
+            Assert.AreEqual(1, multiplier2); // no multiplier as the order is not preserved
+
+            var multiplier3 = FullTextIndex.ComputeBonusIfOrderIsPreserved("nice evening", "nice evening");
+            var multiplier4 = FullTextIndex.ComputeBonusIfOrderIsPreserved("nice evening", "it was a nice evening");
+
+            Assert.AreEqual(multiplier3, multiplier4);
+            Assert.IsTrue(multiplier3 > 1 );
+            
+            var multiplier5 = FullTextIndex.ComputeBonusIfOrderIsPreserved("nice and happy evening", "nice evening");
+            var multiplier6 = FullTextIndex.ComputeBonusIfOrderIsPreserved("nice evening", "nice and happy evening");
+            
+            Assert.IsTrue(multiplier6 > multiplier5 );
+            Assert.IsTrue(multiplier5 > 1 );
+
+            var multiplier7 = FullTextIndex.ComputeBonusIfOrderIsPreserved("nice view close beach", "nice view and close to the beach");
+            Assert.IsTrue(multiplier7 > 10 * 3 );
+
+            var multiplier8 = FullTextIndex.ComputeBonusIfOrderIsPreserved("c++", "c++");
+            var multiplier9 = FullTextIndex.ComputeBonusIfOrderIsPreserved("c++", "+c");           
+
+            Assert.IsTrue(multiplier8 > 1);
+            Assert.AreEqual(1, multiplier9); // no multiplier as the order is not preserved
         }
 
     }

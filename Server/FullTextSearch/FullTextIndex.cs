@@ -10,6 +10,13 @@ namespace Server.FullTextSearch
 {
     public class FullTextIndex
     {
+
+        /// <summary>
+        /// A function that allows to retrieve the text of the original line pointed by a line pointer
+        /// If provided, it is used for finer score computing (order of tokens inside the line is taken into account)
+        /// </summary>
+        public Func<LinePointer, string> LineProvider { get; set; }
+
         private class ScoreByPointer
         {
             private readonly Dictionary<LinePointer, double> _scoreByPointer = new Dictionary<LinePointer, double>();
@@ -84,6 +91,86 @@ namespace Server.FullTextSearch
             if (maxCapacity != 0) MaxCapacity = maxCapacity;
         }
 
+
+        /// <summary>
+        /// Compute a score bonus (a multiplier to be applied on the previously computed score) if the order of tokens is preserved between
+        /// the query and the found line. Exact sequences give a bigger bonus
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        public static double ComputeBonusIfOrderIsPreserved(string query, string line)
+        {
+            var tokenizer = new Tokenizer();
+
+            var first = tokenizer.TokenizeOneLine(query);
+            var second = tokenizer.TokenizeOneLine(line);
+
+
+            // index in query --> index in line or -1 if correspondent token not found
+            var indexes = new List<KeyValuePair<int, int>>();
+            
+            int index1 = 0;
+            foreach (var token in first)
+            {
+                int index2 = -1;
+
+                for (int i = 0; i < second.Count; i++)
+                {
+                    if (second[i].NormalizedText == token.NormalizedText)
+                    {
+                        index2 = i;
+                        break;                        
+                    }
+                }
+
+                indexes.Add(new KeyValuePair<int, int>(index1, index2));
+
+                index1++;
+            }
+
+            // make the indexes in the second sequence 0 based
+            var min = indexes.Min(p=>p.Value >= 0 ? p.Value:0);
+            indexes = indexes.Where(p=>p.Value >= 0).Select(p=>new KeyValuePair<int, int>(p.Key, p.Value - min)).ToList();
+
+            double scoreMultiplier = 1;
+            for (int i = 1; i < indexes.Count; i++)
+            {
+                var prev1 = indexes[i - 1].Key;
+                var curr1 = indexes[i].Key;
+                
+                var distance1 =  curr1 - prev1;
+
+                var prev2 = indexes[i - 1].Value;
+                var curr2 = indexes[i].Value;
+                
+                var distance2 =  curr2 - prev2;
+
+
+                if (distance1 == distance2)
+                {
+                    scoreMultiplier *= 10;
+                }
+                else if (distance2 - distance1 == 1)
+                {
+                    scoreMultiplier *= 5;
+                }
+                else if (distance2 - distance1 == 2)
+                {
+                    scoreMultiplier *= 3;
+                }
+                else if(distance2 > 0)// still apply a bonus because order is preserved 
+                {
+                    scoreMultiplier *= 2;
+                }
+
+                
+                
+            }
+
+
+            return scoreMultiplier;
+        }
 
         /// <summary>
         ///     Add a tokenized line to the full-text index
@@ -242,8 +329,19 @@ namespace Server.FullTextSearch
                 () => { sameDocResult = SameDocumentFind(query); }
             );
 
-            
 
+            // if the original text is available improve score calculation by taking into account tokens order
+            if (LineProvider != null)
+            {
+
+                sameLineResult = sameLineResult.ToDictionary(r => r.Key, r =>
+                {
+                    var line = LineProvider(r.Key);
+                    var multiplier = ComputeBonusIfOrderIsPreserved(query, line);
+                    return r.Value * multiplier;
+                });
+                
+            }
 
             var mergedResult = new Dictionary<LinePointer, double>(sameLineResult);
 
@@ -334,10 +432,11 @@ namespace Server.FullTextSearch
                 if (positions.Count != 0)
                 {
                     score = Math.Log10((double) Entries / positions.Count);                    
+                    foreach (var pointer in positions) 
+                        scores[pointer] += score;
                 }
 
-                foreach (var pointer in positions) 
-                    scores[pointer] += score;
+                
                 
             }
 
@@ -346,6 +445,11 @@ namespace Server.FullTextSearch
                 
                 result[pair.Key] = scores[pair.Key] *= SameLineMultiplier * foundTokens;
 
+            }
+
+            if (result.Count == 0)
+            {
+                return result;
             }
 
             var maxScore = result.Max(p => p.Value);
@@ -408,6 +512,12 @@ namespace Server.FullTextSearch
                 {
                     scores[linePointer] *= tokens * SameDocumentMultiplier;
                 }
+            }
+
+
+            if (result.Count == 0)
+            {
+                return result.ToDictionary(p => p, p => scores[p]);
             }
 
             var maxScore = result.Max( p => scores[p]);

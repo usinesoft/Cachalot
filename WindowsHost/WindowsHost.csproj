@@ -142,7 +142,6 @@
   <ItemGroup>
     <Compile Include="HostServices\HostServices.cs" />
     <Compile Include="HostServices\Logger\FastLogger.cs" />
-    <Compile Include="NodeConfig.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="HostedService.cs" />

@@ -24,7 +24,7 @@ namespace UnitTests
             _typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsTypeDescription;
 
 
-            _dataStore = new DataStore(_typeDescription, new NullEvictionPolicy());
+            _dataStore = new DataStore(_typeDescription, new NullEvictionPolicy(), new NodeConfig());
             
         }
 

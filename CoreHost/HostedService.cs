@@ -4,12 +4,11 @@ using System.Linq;
 using System.Threading;
 using Channel;
 using Client.Core;
-using Host;
 using Newtonsoft.Json;
 using Server;
 using Server.Persistence;
 
-namespace CoreHost
+namespace Host
 {
     public class HostedService
     {
@@ -41,20 +40,18 @@ namespace CoreHost
                     configFile = $"{baseName}_{instance}.json";
                 }
 
-                var port = Constants.DefaultPort;
-                var persistent = true;
-                string dataPath = null;
+                
+                var nodeConfig = new NodeConfig{TcpPort = Constants.DefaultPort, IsPersistent = true};
 
                 if (File.Exists(configFile))
                     try
                     {
-                        var nodeConfig = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(
+                        var configFromFile = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(
                             new JsonTextReader(new StringReader(File.ReadAllText(configFile))));
-                        port = nodeConfig.TcpPort;
-                        persistent = nodeConfig.IsPersistent;
-                        dataPath = nodeConfig.DataPath;
 
-                        HostServices.HostServices.Start(dataPath);
+                        nodeConfig = configFromFile;
+
+                        CoreHost.HostServices.HostServices.Start(configFromFile.DataPath);
 
                         Log.LogInfo("----------------------------------------------------------");
                         Log.LogInfo($"Reading configuration file {configFile} ");
@@ -66,29 +63,29 @@ namespace CoreHost
                     }
                 else
                 {
-                    HostServices.HostServices.Start(dataPath);
+                    CoreHost.HostServices.HostServices.Start(nodeConfig.DataPath);
                     Log.LogWarning($"Configuration file {configFile} not found. Using defaults");
                 }
                     
 
-                _cacheServer = new Server.Server(new ServerConfig(), persistent, dataPath);
+                _cacheServer = new Server.Server(nodeConfig);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
-                _listener.Init(port);
+                _listener.Init(nodeConfig.TcpPort);
                 _listener.Start();
 
-                var fullDataPath =  Path.GetFullPath(dataPath ?? Constants.DataPath);
+                var fullDataPath =  Path.GetFullPath(nodeConfig.DataPath ?? Constants.DataPath);
 
-                var persistentDescription = persistent ? fullDataPath: " NO";
+                var persistentDescription = nodeConfig.IsPersistent ? fullDataPath: " NO";
 
-                Console.Title = $"Cachalot Core on port {port} persistent = {persistentDescription}";
+                Console.Title = $"Cachalot Core on port {nodeConfig.TcpPort} persistent = {persistentDescription}";
 
-                Log.LogInfo($"Starting hosted service on port {port} persistent = {persistentDescription}" );
+                Log.LogInfo($"Starting hosted service on port {nodeConfig.TcpPort} persistent = {persistentDescription}" );
 
                 _cacheServer.StopRequired += (sender, args) =>
                 {
-                    HostServices.HostServices.Stop();
+                    CoreHost.HostServices.HostServices.Stop();
                     Stop();
 
                     _stopEvent.Set();
@@ -118,7 +115,7 @@ namespace CoreHost
             Log.LogInfo("Service stopped successfully");
 
             // stop this after last log
-            HostServices.HostServices.Stop();
+            CoreHost.HostServices.HostServices.Stop();
 
 
             return true;

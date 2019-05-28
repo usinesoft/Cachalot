@@ -4,8 +4,8 @@ using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
-using ServerConfig = Server.ServerConfig;
 
 namespace UnitTests
 {
@@ -34,7 +34,7 @@ namespace UnitTests
             var client = new CacheClient();
             InProcessChannel channel = new InProcessChannel();
             client.Channel = channel;
-            Server.Server server = new Server.Server(new ServerConfig()) {Channel = channel};
+            Server.Server server = new Server.Server(new NodeConfig()) {Channel = channel};
             server.Start();
 
 

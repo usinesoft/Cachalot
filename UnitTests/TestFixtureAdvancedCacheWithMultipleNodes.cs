@@ -8,9 +8,9 @@ using Channel;
 using Client;
 using Client.Interface;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
 using UnitTests.TestData.Events;
-using ServerConfig = Server.ServerConfig;
 using Trade = UnitTests.TestData.Instruments.Trade;
 
 namespace UnitTests
@@ -127,7 +127,7 @@ namespace UnitTests
             for (var i = 0; i < serverCount; i++)
             {
                 var serverInfo = new ServerInfo { Channel = new TcpServerChannel() };
-                serverInfo.Server = new Server.Server(new ServerConfig()) { Channel = serverInfo.Channel }; // start non-persistent server
+                serverInfo.Server = new Server.Server(new NodeConfig()) { Channel = serverInfo.Channel }; // start non-persistent server
                 serverInfo.Port = serverInfo.Channel.Init(); // get the dynamically allocated ports
                 serverInfo.Channel.Start();
                 serverInfo.Server.Start();

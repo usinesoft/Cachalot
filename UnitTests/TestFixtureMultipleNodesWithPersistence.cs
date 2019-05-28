@@ -9,9 +9,10 @@ using Channel;
 using Client;
 using Client.Interface;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
 using UnitTests.TestData.Events;
-using ServerConfig = Server.ServerConfig;
+
 
 namespace UnitTests
 {
@@ -94,8 +95,9 @@ namespace UnitTests
             for (var i = 0; i < serverCount; i++)
             {
                 var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
+                var nodeConfig = new NodeConfig{IsPersistent = true, DataPath = $"server{i:D2}"};
                 serverInfo.Server =
-                    new Server.Server(new ServerConfig(), true, $"server{i:D2}") {Channel = serverInfo.Channel};
+                    new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
                 serverInfo.Port = serverInfo.Channel.Init();
                 serverInfo.Channel.Start();
                 serverInfo.Server.Start();

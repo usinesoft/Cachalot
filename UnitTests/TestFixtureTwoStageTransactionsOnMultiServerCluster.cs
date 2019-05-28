@@ -10,8 +10,8 @@ using Client;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData.MoneyTransfer;
-using ServerConfig = Server.ServerConfig;
 
 // ReSharper disable AccessToModifiedClosure
 
@@ -96,8 +96,11 @@ namespace UnitTests
             for (var i = 0; i < serverCount; i++)
             {
                 var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
+                var nodeConfig = new NodeConfig{IsPersistent = true, DataPath = $"server{i:D2}"};
+                
                 serverInfo.Server =
-                    new Server.Server(new ServerConfig(), true, $"server{i:D2}") {Channel = serverInfo.Channel};
+                    new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
+
                 serverInfo.Port = serverInfo.Channel.Init();
                 serverInfo.Channel.Start();
                 serverInfo.Server.Start();

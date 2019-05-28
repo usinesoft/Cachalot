@@ -1,6 +1,7 @@
 ﻿using System.Threading;
+using CoreHost;
 
-namespace CoreHost
+namespace Host
 {
     class Program
     {
@@ -17,7 +18,7 @@ namespace CoreHost
 
             var stopEvent = new ManualResetEvent(false);
             
-            var service = new HostedService(HostServices.HostServices.Log, stopEvent);
+            var service = new HostedService(CoreHost.HostServices.HostServices.Log, stopEvent);
             
             service.Start(instance);
 

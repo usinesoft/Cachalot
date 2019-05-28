@@ -8,7 +8,7 @@ using Client.Interface;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
-using ServerConfig = Server.ServerConfig;
+
 
 #endregion
 
@@ -24,17 +24,8 @@ namespace UnitTests
             var channel = new InProcessChannel();
             _client.Channel = channel;
 
-            var cfg = new ServerConfig();
-            var cfgDatastore = new ServerDatastoreConfig
-            {
-                Eviction =
-                    new EvictionPolicyConfig(
-                        EvictionType.LessRecentlyUsed, 100, 10),
-                FullTypeName = typeof(CacheableTypeOk).FullName
-            };
-            //activate eviction when more than 100 items in cache (evict 10 items)
-            cfg.ConfigByType.Add(cfgDatastore.FullTypeName, cfgDatastore);
-            _server = new Server.Server(cfg) {Channel = channel};
+           
+            _server = new Server.Server(new NodeConfig()) {Channel = channel};
             _server.Start();
 
             _client.RegisterTypeIfNeeded(typeof(CacheableTypeOk));
@@ -53,6 +44,7 @@ namespace UnitTests
         [Test]
         public void EvictionLimitIsReached()
         {
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
             var desc = _client.GetServerDescription();
             Assert.IsNotNull(desc);
             Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
@@ -111,6 +103,7 @@ namespace UnitTests
         [Test]
         public void EvictionLimitIsReachedUsingPutMany()
         {
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
             var desc = _client.GetServerDescription();
             Assert.IsNotNull(desc);
             Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
@@ -144,6 +137,8 @@ namespace UnitTests
         [Test]
         public void ExcludedItemsAreNotEvicted()
         {
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
+
             var itemNotToBeEvicted = new CacheableTypeOk(0, 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             _client.Put(itemNotToBeEvicted, true);
 

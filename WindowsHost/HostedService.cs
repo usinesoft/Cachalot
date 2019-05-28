@@ -34,19 +34,20 @@ namespace Host
             try
             {
 
-                int port = Constants.DefaultPort;
-                bool persistent = true;
-                string dataPath = null;
+                
+                var nodeConfig = new NodeConfig
+                {
+                    TcpPort = Constants.DefaultPort,
+                    IsPersistent = true
+                };
 
                 if (File.Exists(Constants.NodeConfigFileName))
                 {
                     try
                     {
-                        var nodeConfig = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(new JsonTextReader(new StringReader(File.ReadAllText(Constants.NodeConfigFileName))));
+                        var configFromFile = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(new JsonTextReader(new StringReader(File.ReadAllText(Constants.NodeConfigFileName))));
 
-                        port = nodeConfig.TcpPort;
-                        persistent = nodeConfig.IsPersistent;
-                        dataPath = nodeConfig.DataPath;
+                        nodeConfig = configFromFile;
 
                     }
                     catch (Exception e)
@@ -58,20 +59,20 @@ namespace Host
                 {
                     Log.LogWarning($"Configuration file {Constants.NodeConfigFileName} not found. Using defaults");
                 }
-                _cacheServer = new Server.Server(new ServerConfig(), persistent, dataPath);
+                _cacheServer = new Server.Server( nodeConfig);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
-                _listener.Init(port); 
+                _listener.Init(nodeConfig.TcpPort); 
                 _listener.Start();
 
-                var fullDataPath = Path.GetFullPath(dataPath ?? Constants.DataPath);
+                var fullDataPath = Path.GetFullPath(nodeConfig.DataPath ?? Constants.DataPath);
 
-                var persistentDescription = persistent ? fullDataPath : " NO";
+                var persistentDescription = nodeConfig.IsPersistent ? fullDataPath : " NO";
                 
-                Log.LogInfo($"Starting Cachalot server on port {port}  persistent {persistentDescription}");
+                Log.LogInfo($"Starting Cachalot server on port {nodeConfig.TcpPort}  persistent {persistentDescription}");
 
-                Console.Title = $"Cachalot server on port {port} persistent = {persistentDescription}";
+                Console.Title = $"Cachalot server on port {nodeConfig.TcpPort} persistent = {persistentDescription}";
                 
                 
                 _cacheServer.Start();

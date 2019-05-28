@@ -8,11 +8,11 @@ using System.Threading;
 using Channel;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
-using ServerConfig = Server.ServerConfig;
+
 
 #endregion
 
@@ -29,7 +29,7 @@ namespace UnitTests
             _client.Channel = channel;
 
 
-            _server = new Server.Server(new ServerConfig()) {Channel = channel};
+            _server = new Server.Server(new NodeConfig()) {Channel = channel};
             _server.Start();
 
             _client.RegisterTypeIfNeeded(typeof(CacheableTypeOk));

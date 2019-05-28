@@ -35,6 +35,11 @@ namespace Client.Core
 
         [ProtoMember(9)] private string[] _fullText;
 
+        /// <summary>
+        /// Stores the id of the operation that changed this object. This id is unique for each node and can be used for nodes resynchronization 
+        /// </summary>
+        [ProtoMember(10)]
+        public long ChangeNo { get; set; }
 
 
         /// <summary>

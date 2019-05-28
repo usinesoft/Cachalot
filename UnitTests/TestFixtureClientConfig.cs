@@ -9,8 +9,9 @@ using Client.Core;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
-using ServerConfig = Server.ServerConfig;
+
 
 #endregion
 
@@ -24,7 +25,7 @@ namespace UnitTests
         {
             _serverChannel = new TcpServerChannel();
 
-            _server = new Server.Server(new ServerConfig()) {Channel = _serverChannel};
+            _server = new Server.Server(new NodeConfig()) {Channel = _serverChannel};
             _serverPort = _serverChannel.Init();
             _serverChannel.Start();
             _server.Start();

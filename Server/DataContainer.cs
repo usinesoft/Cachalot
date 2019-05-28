@@ -27,6 +27,8 @@ namespace Server
     /// </summary>
     public class DataContainer
     {
+        private readonly NodeConfig _config;
+
         /// <summary>
         ///     <see cref="DataStore" /> by TypeDescription
         /// </summary>
@@ -49,8 +51,9 @@ namespace Server
         
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
-        public DataContainer(ServerConfig config, Profiler profiler)
+        public DataContainer(Profiler profiler, NodeConfig config)
         {
+            _config = config;
             Profiler = profiler;
 
             _dataStores = new Dictionary<string, DataStore>();
@@ -58,12 +61,6 @@ namespace Server
 
             _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
             _jsonSerializer.Converters.Add(new StringEnumConverter());
-
-
-            Config = config;
-            Config = config;
-
-           
             
         }
 
@@ -85,8 +82,7 @@ namespace Server
         public long ActiveConnections { private get; set; }
 
         public DateTime StartTime { private get; set; }
-
-        public ServerConfig Config { get; }
+        
 
         private Profiler Profiler { get; }
 
@@ -291,10 +287,11 @@ namespace Server
             var types = typesToPut.Union(typesToDelete).Distinct();
 
 
+            var typeList = types.ToList();
             try
             {
 
-                foreach (var type in types)
+                foreach (var type in typeList)
                     if (!DataStores[type].Lock.TryEnterWriteLock(Constants.DelayForLock))
                     {
                         throw new CacheException("Failed to acquire write locks for single-stage transaction",
@@ -355,7 +352,7 @@ namespace Server
             finally
             {
                 // release acquired locks
-                foreach (var type in types)
+                foreach (var type in typeList)
                     if (DataStores[type].Lock.IsWriteLockHeld)
                         DataStores[type].Lock.ExitWriteLock();
                 
@@ -469,14 +466,9 @@ namespace Server
                 PersistenceEngine?.UpdateSchema(GenerateSchema());
 
 
-                var cfg = Config.ConfigByType.ContainsKey(typeDescription.FullTypeName)
-                    ? Config.ConfigByType[typeDescription.FullTypeName]
-                    : new ServerDatastoreConfig();
-
-                var evictionPolicy = EvictionPolicyFactory.CreateEvictionPolicy(cfg.Eviction);
-
+                
                 var newDataStore =
-                    new DataStore(typeDescription, evictionPolicy);
+                    new DataStore(typeDescription, new NullEvictionPolicy(), _config);
 
 
                 Dbg.CheckThat(Profiler != null);

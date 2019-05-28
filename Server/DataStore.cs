@@ -26,6 +26,7 @@ namespace Server
     /// </summary>
     public class DataStore
     {
+        
         public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace Server
         /// </summary>
         private readonly ThreadLocal<ExecutionPlan> _lastExecutionPlan = new ThreadLocal<ExecutionPlan>();
 
-        private FullTextIndex _fullTextIndex;
+        private readonly FullTextIndex _fullTextIndex;
 
         
         private long _count;
@@ -69,8 +70,10 @@ namespace Server
         /// </summary>
         /// <param name="typeDescription"></param>
         /// <param name="evictionPolicy"></param>
-        public DataStore(TypeDescription typeDescription, EvictionPolicy evictionPolicy)
+        /// <param name="config"></param>
+        public DataStore(TypeDescription typeDescription, EvictionPolicy evictionPolicy, NodeConfig config)
         {
+            
             TypeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
 
             EvictionPolicy = evictionPolicy ?? throw new ArgumentNullException(nameof(evictionPolicy));
@@ -107,7 +110,7 @@ namespace Server
             // create the full-text index if required
             if (typeDescription.FullText.Count > 0)
             {
-                _fullTextIndex = new FullTextIndex();
+                _fullTextIndex = new FullTextIndex(config.FullTextConfig);
             }
             
         }
@@ -501,7 +504,7 @@ namespace Server
                 }
 
 
-                if (onlyIfComplete && !dataIsComplete)
+                if (!dataIsComplete)
                     throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
             }
            
@@ -963,6 +966,7 @@ namespace Server
                             
 
                             var items = _dataByPrimaryKey.Count;
+                            
                             InternalTruncate();
                             requestDescription = string.Format(TypeDescription.TypeName.ToUpper());
                             processedItems = items;

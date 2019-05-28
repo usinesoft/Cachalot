@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Channel;
 using Client.Core;
 using Client.Interface;
-using ServerConfig = Server.ServerConfig;
+using Server;
 
 // ReSharper disable AssignNullToNotNullAttribute
 
@@ -54,7 +54,7 @@ namespace Cachalot.Linq
 
         /// <summary>
         ///     Generate <paramref name="quantity" /> unique identifiers
-        ///     They are guaranteed to be unique but they are not necesary in a contiguous range
+        ///     They are guaranteed to be unique but they are not necessary in a contiguous range
         /// </summary>
         /// <param name="generatorName">name of the generator</param>
         /// <param name="quantity">number of unique ids to generate</param>
@@ -72,7 +72,7 @@ namespace Cachalot.Linq
                     var channel = new InProcessChannel();
                     Client = new CacheClient {Channel = channel};
 
-                    _server = new Server.Server(new ServerConfig(), config.IsPersistent) {Channel = channel};
+                    _server = new Server.Server(new NodeConfig{IsPersistent = config.IsPersistent}) {Channel = channel};
 
                     _server.Start();
                 }

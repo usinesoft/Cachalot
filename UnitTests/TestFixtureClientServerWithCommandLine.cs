@@ -5,17 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 using AdminConsole.Commands;
 using Channel;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
 using Client.Queries;
 using Client.Tools;
 using NUnit.Framework;
+using Server;
 using UnitTests.TestData;
-using ServerConfig = Server.ServerConfig;
+
 
 #endregion
 
@@ -30,7 +29,7 @@ namespace UnitTests
             _client = new CacheClient();
             var channel = new InProcessChannel();
             _client.Channel = channel;
-            _server = new Server.Server(new ServerConfig()) {Channel = channel};
+            _server = new Server.Server(new NodeConfig()) {Channel = channel};
             _server.Start();
 
             _client.RegisterTypeIfNeeded(typeof(CacheableTypeOk));

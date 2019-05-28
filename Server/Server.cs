@@ -13,8 +13,7 @@ namespace Server
 {
     public class Server
     {
-        private readonly string _workingDirectory;
-
+        
         private enum ServerMode
         {
             Normal,
@@ -24,9 +23,7 @@ namespace Server
 
 
         private ServerMode Mode { get; set; }
-
-        private bool IsPersistent { get; }
-
+        
         private DataContainer _dataContainer;
         
         private readonly Profiler _serverProfiler = new Profiler();
@@ -36,12 +33,14 @@ namespace Server
 
         private DateTime _startTime;
         private PersistenceEngine _persistenceEngine;
+        private readonly NodeConfig _config;
 
-        public Server(ServerConfig config, bool isPersistent = false, string workingDirectory = null)
+        public Server(NodeConfig config)
         {
-            _workingDirectory = workingDirectory;
-            IsPersistent = isPersistent;
-            _dataContainer = new DataContainer(config, _serverProfiler);
+            
+            _dataContainer = new DataContainer(_serverProfiler, config);
+
+            _config = config;
         }
 
         public IServerChannel Channel
@@ -70,7 +69,7 @@ namespace Server
                 {
                     ManageImportRequest(importRequest, e.Client);
                 }
-                else if (e.Request is StopRequest stopRequest)
+                else if (e.Request is StopRequest)
                 {
                     
                     ServerLog.LogWarning("stop request received");
@@ -136,7 +135,7 @@ namespace Server
             _persistenceEngine?.StoreDataForRollback();
 
             // delete data from memory
-            _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+            _dataContainer = new DataContainer(_serverProfiler, _config);
 
             if (_persistenceEngine != null)
             {
@@ -173,18 +172,18 @@ namespace Server
 
                     case 1:
 
-                        using (var storage = new ReliableStorage(new NullObjectProcessor(), _workingDirectory))
+                        using (var storage = new ReliableStorage(new NullObjectProcessor(), _config.DataPath))
                         {
                             // first copy the schema and reinitialize data stores
                             var path = DumpHelper.NormalizeDumpPath(importRequest.Path);
 
-                            var dataPath = _workingDirectory != null
-                                ? Path.Combine(_workingDirectory, Constants.DataPath)
+                            var dataPath = _config.DataPath != null
+                                ? Path.Combine(_config.DataPath, Constants.DataPath)
                                 : Constants.DataPath;
                             File.Copy(Path.Combine(path, Constants.SchemaFileName),
                                 Path.Combine(dataPath, Constants.SchemaFileName));
 
-                            _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+                            _dataContainer = new DataContainer(_serverProfiler, _config);
                             _persistenceEngine.Container = _dataContainer;
                             _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -235,7 +234,7 @@ namespace Server
                     case 3: // something bad happened. Rollback
                         _persistenceEngine.RollbackData();
 
-                        _dataContainer = new DataContainer(new ServerConfig(), _serverProfiler);
+                        _dataContainer = new DataContainer(_serverProfiler, _config);
                         _persistenceEngine.Container = _dataContainer;
                         _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -280,10 +279,10 @@ namespace Server
             _startTime = DateTime.Now;
 
 
-            if (IsPersistent)
+            if (_config.IsPersistent)
             {
                 Dbg.Trace("starting persistence engine");
-                _persistenceEngine = new PersistenceEngine(_dataContainer, _workingDirectory);
+                _persistenceEngine = new PersistenceEngine(_dataContainer, _config.DataPath);
                 _dataContainer.PersistenceEngine = _persistenceEngine;
 
                 _persistenceEngine.Start();

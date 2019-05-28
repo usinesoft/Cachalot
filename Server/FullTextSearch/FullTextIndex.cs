@@ -10,6 +10,7 @@ namespace Server.FullTextSearch
 {
     public class FullTextIndex
     {
+        private readonly FullTextConfig _ftConfig;
 
         /// <summary>
         /// A function that allows to retrieve the text of the original line pointed by a line pointer
@@ -42,8 +43,7 @@ namespace Server.FullTextSearch
         {
             Entries = 0;
             IgnoredTokens = 0;
-            MaxCapacity = 10_000_000;
-
+            
             PositionsByToken.Clear();
             PositionsByDocument.Clear();
         }
@@ -59,15 +59,7 @@ namespace Server.FullTextSearch
         /// </summary>
         private static readonly int SameDocumentMultiplier = 100;
 
-        /// <summary>
-        ///     Maximum entries in the index
-        /// </summary>
-        private int MaxCapacity { get; set; } = 10_000_000;
-
-        /// <summary>
-        ///     Maximum of tokens that can be deleted wile trying to limit the entries (the most frequent ones will be deleted)
-        /// </summary>
-        private int MaxTokensToIgnore { get; } = 100;
+     
 
         public int Entries { get; private set; }
 
@@ -86,9 +78,15 @@ namespace Server.FullTextSearch
         private Dictionary<KeyValue, List<LinePointer>> PositionsByDocument { get; } =
             new Dictionary<KeyValue, List<LinePointer>>();
 
-        public FullTextIndex(int maxCapacity = 0)
+        public FullTextIndex(FullTextConfig ftConfig)
         {
-            if (maxCapacity != 0) MaxCapacity = maxCapacity;
+            _ftConfig = ftConfig ?? new FullTextConfig();
+
+            var tokensToIgnore = _ftConfig.TokensToIgnore ?? new List<string>();
+            foreach (var token in tokensToIgnore)
+            {
+                IgnoreToken(token);
+            }
         }
 
 
@@ -163,13 +161,22 @@ namespace Server.FullTextSearch
                 {
                     scoreMultiplier *= 2;
                 }
-
-                
-                
+ 
             }
 
 
             return scoreMultiplier;
+        }
+
+
+        bool NeedsCleanup()
+        {
+            var ignoredTokensLimitWasNotReached =
+                _ftConfig.MaxTokensToIgnore == 0 || IgnoredTokens < _ftConfig.MaxTokensToIgnore;
+
+            var tooManyEntries = _ftConfig.MaxIndexedTokens != 0 && Entries > _ftConfig.MaxIndexedTokens;
+
+            return tooManyEntries && ignoredTokensLimitWasNotReached;
         }
 
         /// <summary>
@@ -208,7 +215,7 @@ namespace Server.FullTextSearch
 
             // Remove the most frequent (less discriminant) tokens in the index if the index is too big
             // Limit the entries in the index: try to limit to MaxCapacity but without removing more than MaxTokensToIgnore tokens
-            if (IgnoredTokens < MaxTokensToIgnore && Entries > MaxCapacity)
+            if (NeedsCleanup())
             {
                 string mostFrequentToken = null;
 
@@ -222,16 +229,20 @@ namespace Server.FullTextSearch
                     }
 
                 Debug.Assert(mostFrequentToken != null);
-
-
-                // leave an empty list. This will indicate that this token is not indexed any more
-                var pointers = PositionsByToken[mostFrequentToken];
-                pointers.Clear();
+                
+                IgnoreToken(mostFrequentToken);
+                
 
                 Entries = Entries - maxFrequency;
 
                 IgnoredTokens++;
             }
+        }
+
+        private void IgnoreToken(string toIgnore)
+        {
+            // adding an empty collection means this token must not be indexed (either explicitly specified in the config or removed if the maximum index size is reached)
+            PositionsByToken[toIgnore] = new HashSet<LinePointer>();
         }
 
 
@@ -428,10 +439,9 @@ namespace Server.FullTextSearch
                     tokens.Add(tk);
                 }
 
-                double score = 0;
                 if (positions.Count != 0)
                 {
-                    score = Math.Log10((double) Entries / positions.Count);                    
+                    var score = Math.Log10((double) Entries / positions.Count);
                     foreach (var pointer in positions) 
                         scores[pointer] += score;
                 }

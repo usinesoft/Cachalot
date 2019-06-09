@@ -8,17 +8,11 @@ namespace AdminConsole.Commands
     {
         internal override ICacheClient TryExecute(ICacheClient client)
         {
-            if (!CanExecute)
-            {
-                return client;
-            }
+            if (!CanExecute) return client;
 
             if (Params.Count != 1)
-            {
                 Logger.CommandLogger.WriteError("please specify a json file to import");
-            }
             else
-            {
                 try
                 {
                     client.Import(Params[0]);
@@ -27,9 +21,7 @@ namespace AdminConsole.Commands
                 catch (Exception e)
                 {
                     Logger.WriteEror("error importing  data:" + e.Message);
-
                 }
-            }
 
             return client;
         }

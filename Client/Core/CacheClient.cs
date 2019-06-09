@@ -80,17 +80,6 @@ namespace Client.Core
                     exResponse.CallStack);
         }
 
-        public void ResyncUniqueIds(IDictionary<string, int> newValues)
-        {
-            var request = new ResyncUniqueIdsRequest(new Dictionary<string, int>(newValues), ShardIndex, ShardsCount);
-
-            var response = Channel.SendRequest(request);
-
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while resyncing unique id generators", exResponse.Message,
-                    exResponse.CallStack);
-        }
-
         public int[] GenerateUniqueIds(string generatorName, int quantity = 1)
         {
             var request = new GenerateUniqueIdsRequest(quantity, generatorName.ToLower(), ShardIndex, ShardsCount);
@@ -790,6 +779,67 @@ namespace Client.Core
 
 
         /// <summary>
+        ///     Declare a subset of data as being fully available in the cache.<br />
+        ///     Used by loader components to declare data preloaded in the cache.
+        ///     <seealso cref="DomainDescription" />
+        /// </summary>
+        /// <param name="domain">data description</param>
+        public void DeclareDomain(DomainDescription domain)
+        {
+            if (domain == null)
+                throw new ArgumentNullException(nameof(domain));
+
+            if (domain.DescriptionAsQuery.TypeName == null)
+                throw new ArgumentNullException(nameof(domain), "TypeName not specified");
+
+            var request = new DomainDeclarationRequest(domain);
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="fullTypeName"></param>
+        /// <param name="evictionType"></param>
+        /// <param name="limit"></param>
+        /// <param name="itemsToRemove"></param>
+        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
+        {
+            var request = new EvictionSetupRequest(fullTypeName, evictionType, limit, itemsToRemove);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
+        }
+
+        /// <summary>
+        ///     Retrieve multiple objects using a precompiled query.<br />
+        ///     To create a valid <see cref="OrQuery" /> use a <see cref="QueryBuilder" />.
+        /// </summary>
+        /// <typeparam name="TItemType"></typeparam>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
+        {
+            return InternalGetMany<TItemType>(query);
+        }
+
+        public void ResyncUniqueIds(IDictionary<string, int> newValues)
+        {
+            var request = new ResyncUniqueIdsRequest(new Dictionary<string, int>(newValues), ShardIndex, ShardsCount);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while resyncing unique id generators", exResponse.Message,
+                    exResponse.CallStack);
+        }
+
+
+        /// <summary>
         ///     First stage of dump files import. The server is switched to admin mode and data files are moved to allow rollback
         /// </summary>
         /// <param name="path"></param>
@@ -871,46 +921,6 @@ namespace Client.Core
 
 
         /// <summary>
-        ///     Declare a subset of data as being fully available in the cache.<br />
-        ///     Used by loader components to declare data preloaded in the cache.
-        ///     <seealso cref="DomainDescription" /> 
-        /// </summary>
-        /// <param name="domain">data description</param>
-        
-        public void DeclareDomain(DomainDescription domain)
-        {
-            if (domain == null)
-                throw new ArgumentNullException(nameof(domain));
-
-            if(domain.DescriptionAsQuery.TypeName == null)
-                throw new ArgumentNullException(nameof(domain), "TypeName not specified");
-
-            var request = new DomainDeclarationRequest(domain);
-            var response = Channel.SendRequest(request);
-
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="fullTypeName"></param>
-        /// <param name="evictionType"></param>
-        /// <param name="limit"></param>
-        /// <param name="itemsToRemove"></param>
-        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
-        {
-            var request = new EvictionSetupRequest(fullTypeName, evictionType, limit, itemsToRemove);
-
-            var response = Channel.SendRequest(request);
-
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
-        }
-
-
-        /// <summary>
         ///     Get all known type descriptions from the server. Used by generic clients (like cache monitoring tools)
         ///     to produce queries without having dependencies to the .NET type.
         /// </summary>
@@ -952,32 +962,22 @@ namespace Client.Core
         }
 
         private IEnumerable<TItemType> InternalGetMany<TItemType>(OrQuery query)
-        {            
+        {
             var request = new GetRequest(query);
+
+            if(query.IsFullTextQuery)
+                return Channel.SendStreamRequest<TItemType>(request);
 
             return Channel.SendStreamRequest<TItemType>(request);
         }
 
-        /// <summary>
-        ///     Retrieve multiple objects using a precompiled query.<br />
-        ///     To create a valid <see cref="OrQuery" /> use a <see cref="QueryBuilder" />.
-        /// </summary>
-        /// <typeparam name="TItemType"></typeparam>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
-        {
-            return InternalGetMany<TItemType>(query);
-        }
-
-        
 
         /// <summary>
         ///     Retrieve multiple objects using a WHERE-like query string
         ///     a=1, b = XXX is equivalent to WHERE a=1 AND b=XXX
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
-        /// <param name="sqlLike"></param>        
+        /// <param name="sqlLike"></param>
         /// <returns></returns>
         public IEnumerable<TItemType> GetManyWhere<TItemType>(string sqlLike)
 
@@ -1002,13 +1002,9 @@ namespace Client.Core
             KeyValue primaryKey = null;
 
             if (primaryKeyValue is KeyValue kv)
-            {
                 primaryKey = kv;
-            }
             else
-            {
                 primaryKey = description.MakePrimaryKeyValue(primaryKeyValue);
-            }
 
             var request = new RemoveRequest(typeof(TItemType), primaryKey);
 
@@ -1020,11 +1016,6 @@ namespace Client.Core
                     exResponse.CallStack);
         }
 
-
-       
-
-        
-        
 
         #region IDisposable Members
 

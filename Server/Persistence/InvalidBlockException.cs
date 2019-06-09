@@ -2,14 +2,14 @@
 
 namespace Server.Persistence
 {
-    public class InvalidBlockException:Exception
+    public class InvalidBlockException : Exception
     {
         public InvalidBlockException(long offset)
         {
             Offset = offset;
         }
 
-        public long Offset { get; private set; }
+        public long Offset { get; }
 
         public bool HashKo { get; set; }
         public bool BeginMarkerKo { get; set; }

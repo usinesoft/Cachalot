@@ -9,35 +9,57 @@ namespace Server.Persistence
 {
     public class PersistenceEngine
     {
-        ReliableStorage _storage;
+        private readonly object _schemaSync = new object();
+        private readonly object _sequenceSync = new object();
+
+
+        private volatile bool _shouldContinue = true;
 
         private Thread _singleConsumer;
+        private ReliableStorage _storage;
+
+        public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null)
+        {
+            Container = dataContainer;
+            WorkingDirectory = workingDirectory;
+
+            SchemaFilePath = Path.Combine(DataPath, Constants.SchemaFileName);
+            SequenceFilePath = Path.Combine(DataPath, Constants.SequenceFileName);
+        }
 
         private TransactionLog TransactionLog { get; set; }
 
 
-        private volatile bool _shouldContinue = true;
-        
+        private string DataPath => WorkingDirectory != null
+            ? Path.Combine(WorkingDirectory, Constants.DataPath)
+            : Constants.DataPath;
+
+        private string RollbackDataPath => WorkingDirectory != null
+            ? Path.Combine(WorkingDirectory, Constants.RollbackDataPath)
+            : Constants.RollbackDataPath;
+
+        private string SchemaFilePath { get; }
+        private string SequenceFilePath { get; }
+
+        public DataContainer Container { get; set; }
+        public string WorkingDirectory { get; }
+
 
         public void WaitForPendingTransactions()
         {
             Dbg.Trace($"{TransactionLog.PendingTransactionsCount} pending transactions");
 
-            while (TransactionLog.PendingTransactionsCount > 0)
-            {
-                Thread.Sleep(10);
-            }
+            while (TransactionLog.PendingTransactionsCount > 0) Thread.Sleep(10);
         }
 
 
         public void Start()
         {
-
             _storage = Container != null
                 ? new ReliableStorage(new ObjectProcessor(Container), WorkingDirectory)
                 : new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
 
-            
+
             ServerLog.LogInfo("start processing schema");
 
             // Stage 1  load the schema and
@@ -96,17 +118,16 @@ namespace Server.Persistence
 
 
         /// <summary>
-        /// Restart after some administrative tasks that do not need data to be loaded from persistent storage
+        ///     Restart after some administrative tasks that do not need data to be loaded from persistent storage
         /// </summary>
         public void LightStart()
         {
-            _storage =  new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
+            _storage = new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
             TransactionLog = new TransactionLog(WorkingDirectory);
 
             StartProcessingTransactions();
         }
 
-        
 
         private void StartProcessingTransactions()
         {
@@ -114,17 +135,18 @@ namespace Server.Persistence
             _singleConsumer = new Thread(() =>
             {
                 while (_shouldContinue)
-                {
                     try
                     {
                         // this call is blocking if nothing to process
                         var persistentTransaction = TransactionLog.StartProcessing();
 
-                        if (persistentTransaction != null && persistentTransaction.TransactionStatus != TransactionStaus.Canceled)
+                        if (persistentTransaction != null &&
+                            persistentTransaction.TransactionStatus != TransactionStaus.Canceled)
                         {
                             var data = persistentTransaction.Data;
                             var transaction =
-                                SerializationHelper.ObjectFromBytes<Transaction>(data, SerializationMode.ProtocolBuffers,
+                                SerializationHelper.ObjectFromBytes<Transaction>(data,
+                                    SerializationMode.ProtocolBuffers,
                                     false);
 
                             if (transaction is MixedTransaction mixedTransaction)
@@ -132,43 +154,41 @@ namespace Server.Persistence
                                 foreach (var item in mixedTransaction.ItemsToPut)
                                 {
                                     var itemData =
-                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers, null);
+                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers,
+                                            null);
 
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
                                     _storage.StoreBlock(itemData, item.GlobalKey,
-                                        unchecked((int)persistentTransaction.Id));
+                                        unchecked((int) persistentTransaction.Id));
                                 }
 
                                 foreach (var item in mixedTransaction.ItemsToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int)persistentTransaction.Id));
+                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int) persistentTransaction.Id));
                                 }
                             }
 
                             if (transaction is PutTransaction putTransaction)
-                            {
                                 foreach (var item in putTransaction.Items)
                                 {
                                     var itemData =
-                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers, null);
+                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers,
+                                            null);
 
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
                                     _storage.StoreBlock(itemData, item.GlobalKey,
-                                        unchecked ((int) persistentTransaction.Id));
+                                        unchecked((int) persistentTransaction.Id));
                                 }
-                            }
 
                             if (transaction is DeleteTransaction deleteTransaction)
-                            {
                                 foreach (var item in deleteTransaction.ItemsToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked ((int) persistentTransaction.Id));
+                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int) persistentTransaction.Id));
                                 }
-                            }
 
                             TransactionLog.EndProcessing(persistentTransaction);
                         }
@@ -182,7 +202,6 @@ namespace Server.Persistence
                         Dbg.Trace(e.Message);
                         //TODO add proper logging
                     }
-                }
             });
 
             _singleConsumer.Start();
@@ -194,9 +213,9 @@ namespace Server.Persistence
 
             try
             {
-
                 TransactionLog.NewTransaction(
-                    SerializationHelper.ObjectToBytes(transaction, SerializationMode.ProtocolBuffers, null), delayInMilliseconds);
+                    SerializationHelper.ObjectToBytes(transaction, SerializationMode.ProtocolBuffers, null),
+                    delayInMilliseconds);
             }
             catch (Exception e)
             {
@@ -219,54 +238,22 @@ namespace Server.Persistence
 
         public void StoreDataForRollback()
         {
-            if (Directory.Exists(RollbackDataPath))
-            {
-                Directory.Delete(RollbackDataPath, true);
-            }
+            if (Directory.Exists(RollbackDataPath)) Directory.Delete(RollbackDataPath, true);
 
             Directory.Move(DataPath, RollbackDataPath);
         }
 
         public void RollbackData()
         {
-            if (Directory.Exists(DataPath))
-            {
-                Directory.Delete(DataPath, true);
-            }
+            if (Directory.Exists(DataPath)) Directory.Delete(DataPath, true);
 
             Directory.Move(RollbackDataPath, DataPath);
         }
 
         public void DeleteRollbackData()
         {
-            if (Directory.Exists(RollbackDataPath))
-            {
-                Directory.Delete(RollbackDataPath, true);
-            }
+            if (Directory.Exists(RollbackDataPath)) Directory.Delete(RollbackDataPath, true);
         }
-
-        readonly object _schemaSync = new object();
-        readonly object _sequenceSync = new object();
-        
-
-        private string DataPath => WorkingDirectory != null? Path.Combine(WorkingDirectory, Constants.DataPath):Constants.DataPath;
-        private string RollbackDataPath => WorkingDirectory != null? Path.Combine(WorkingDirectory, Constants.RollbackDataPath):Constants.RollbackDataPath;
-
-        public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null)
-        {
-            Container = dataContainer;
-            WorkingDirectory = workingDirectory;
-            
-            SchemaFilePath = Path.Combine(DataPath, Constants.SchemaFileName);
-            SequenceFilePath = Path.Combine(DataPath, Constants.SequenceFileName);
-            
-        }
-
-        private string SchemaFilePath { get; }
-        private string SequenceFilePath { get; }
-
-        public DataContainer Container { get; set; }
-        public string WorkingDirectory { get; }
 
 
         public void UpdateSchema(string schemaJson)
@@ -280,7 +267,6 @@ namespace Server.Persistence
 
         public void UpdateSequences(string json)
         {
-
             lock (_sequenceSync)
             {
                 File.WriteAllText(SequenceFilePath, json);

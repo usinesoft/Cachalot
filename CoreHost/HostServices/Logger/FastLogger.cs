@@ -7,9 +7,8 @@ using Server;
 
 namespace CoreHost.HostServices.Logger
 {
-
     /// <summary>
-    /// A very fast async logger
+    ///     A very fast async logger
     /// </summary>
     internal class FastLogger : ILog
     {
@@ -23,11 +22,11 @@ namespace CoreHost.HostServices.Logger
 
         private static string _logDirectory = "logs";
 
-        readonly Queue<Item> _messageQueue = new Queue<Item>(MaxMessagesInQueue);
+        private readonly Queue<string> _logCache = new Queue<string>(MaxMessagesInCache);
 
-        readonly Queue<string> _logCache = new Queue<string>(MaxMessagesInCache);
+        private readonly Queue<Item> _messageQueue = new Queue<Item>(MaxMessagesInQueue);
 
-        readonly ManualResetEvent _wakeConsumerEvent = new ManualResetEvent(false);
+        private readonly ManualResetEvent _wakeConsumerEvent = new ManualResetEvent(false);
 
         private volatile bool _shouldStop;
         private Thread _worker;
@@ -57,11 +56,7 @@ namespace CoreHost.HostServices.Logger
         {
             lock (_messageQueue)
             {
-                if (_messageQueue.Count < MaxMessagesInQueue)
-                {
-                    _messageQueue.Enqueue(new Item(level, message));
-                    
-                }
+                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(new Item(level, message));
             }
         }
 
@@ -69,10 +64,7 @@ namespace CoreHost.HostServices.Logger
         {
             lock (_logCache)
             {
-                if (_logCache.Count > MaxMessagesInQueue)
-                {
-                    _logCache.Dequeue();
-                }
+                if (_logCache.Count > MaxMessagesInQueue) _logCache.Dequeue();
 
                 _logCache.Enqueue(message);
             }
@@ -80,28 +72,21 @@ namespace CoreHost.HostServices.Logger
 
 
         /// <summary>
-        /// Delete older log files
+        ///     Delete older log files
         /// </summary>
-        void DoHouseKeeping()
+        private void DoHouseKeeping()
         {
             var logFiles = Directory.EnumerateFiles(_logDirectory, "*.log").ToList().OrderBy(n => n).ToList();
             if (logFiles.Count > MaxFilesToKeep)
-            {
-                for (int i = 0; i < logFiles.Count - MaxFilesToKeep; i++)
-                {
+                for (var i = 0; i < logFiles.Count - MaxFilesToKeep; i++)
                     File.Delete(logFiles[i]);
-                }
-            }
         }
 
         public void Start(string path)
         {
             _logDirectory = path != null ? Path.Combine(path, "logs") : "logs";
 
-            if (!Directory.Exists(_logDirectory))
-            {
-                Directory.CreateDirectory(_logDirectory);
-            }
+            if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
 
 
             _worker = new Thread(() =>
@@ -113,11 +98,11 @@ namespace CoreHost.HostServices.Logger
 
                     DoHouseKeeping();
 
-                    string fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
+                    var fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
 
                     _writer = new StreamWriter(Path.Combine(_logDirectory, fileName), true);
 
-                    List<Item> newItems = new List<Item>();
+                    var newItems = new List<Item>();
 
                     lock (_messageQueue)
                     {
@@ -125,7 +110,7 @@ namespace CoreHost.HostServices.Logger
                         {
                             var msg = _messageQueue.Dequeue();
 
-                            newItems.Add(msg); 
+                            newItems.Add(msg);
                         }
                     }
 
@@ -134,12 +119,11 @@ namespace CoreHost.HostServices.Logger
                         _writer.WriteLine(item);
 
                         StoreInCache(item.ToString());
-                        
+
                         Console.WriteLine(item);
                     }
 
                     _writer.Dispose();
-                    
                 }
             });
 
@@ -156,7 +140,12 @@ namespace CoreHost.HostServices.Logger
             _worker.Join(1000);
         }
 
-        enum LogLevel
+        public IList<string> GetCachedLog()
+        {
+            return new List<string>(_logCache);
+        }
+
+        private enum LogLevel
         {
             Debug,
             Info,
@@ -164,7 +153,7 @@ namespace CoreHost.HostServices.Logger
             Error
         }
 
-        class Item
+        private class Item
         {
             public Item(LogLevel logLevel, string message)
             {
@@ -182,7 +171,7 @@ namespace CoreHost.HostServices.Logger
 
             public override string ToString()
             {
-                string level = "???";
+                var level = "???";
                 switch (LogLevel)
                 {
                     case LogLevel.Debug:
@@ -204,11 +193,6 @@ namespace CoreHost.HostServices.Logger
 
                 return $"{TimeStamp:hh:mm:ss.fff}  [{level}] {Message}";
             }
-        }
-
-        public IList<string> GetCachedLog()
-        {
-            return new List<string>(_logCache);
         }
     }
 }

@@ -30,9 +30,11 @@ namespace Client.Interface
         /// <param name="keyDataType"></param>
         /// <param name="b"></param>
         /// <param name="fullTextIndexed"></param>
-        public void Add(string propertyName, KeyType keyType, KeyDataType keyDataType, bool ordered = false, bool fullTextIndexed = false)
+        public void Add(string propertyName, KeyType keyType, KeyDataType keyDataType, bool ordered = false,
+            bool fullTextIndexed = false)
         {
-            _keys.Add(propertyName, new PropertyDescription(propertyName, keyType, keyDataType, ordered, fullTextIndexed));
+            _keys.Add(propertyName,
+                new PropertyDescription(propertyName, keyType, keyDataType, ordered, fullTextIndexed));
         }
     }
 }

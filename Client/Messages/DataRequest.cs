@@ -21,9 +21,6 @@ namespace Client.Messages
     [ProtoInclude(612, typeof(EvictionSetupRequest))]
     public abstract class DataRequest : Request
     {
-        [ProtoMember(1)] private readonly DataAccessType _accessType;
-        [ProtoMember(2)] private readonly string _fullTypeName;
-
         /// <summary>
         ///     Create an abstract data request (always attached to a data type and has a <see cref="DataAccessType" />)
         /// </summary>
@@ -31,8 +28,8 @@ namespace Client.Messages
         /// <param name="fullTypeName"></param>
         protected DataRequest(DataAccessType accessType, string fullTypeName)
         {
-            _accessType = accessType;
-            _fullTypeName = fullTypeName;
+            AccessType = accessType;
+            FullTypeName = fullTypeName;
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
@@ -40,12 +37,13 @@ namespace Client.Messages
         /// <summary>
         ///     read-only or read-write
         /// </summary>
-        public DataAccessType AccessType => _accessType;
+        [field: ProtoMember(1)]
+        public DataAccessType AccessType { get; }
 
         /// <summary>
         ///     Full name as specified in the class <see cref="Type" />
         /// </summary>
-        public virtual string FullTypeName => _fullTypeName;
+        [field: ProtoMember(2)]
+        public virtual string FullTypeName { get; }
     }
-    
 }

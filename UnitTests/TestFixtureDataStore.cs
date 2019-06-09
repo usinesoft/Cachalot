@@ -8,7 +8,6 @@ using Client.Queries;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
-using TypeDescription = Client.Messages.TypeDescription;
 
 #endregion
 
@@ -20,12 +19,10 @@ namespace UnitTests
         [SetUp]
         public void SetUp()
         {
-
             _typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsTypeDescription;
 
 
             _dataStore = new DataStore(_typeDescription, new NullEvictionPolicy(), new NodeConfig());
-            
         }
 
         private DataStore _dataStore;
@@ -55,24 +52,25 @@ namespace UnitTests
             _dataStore.InternalAddNew(CachedObject.Pack(item), false);
 
             var result =
-                _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
+                _dataStore.InternalGetMany(
+                    _typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
                     QueryOperator.Le);
             Assert.AreEqual(result.Count, 5);
 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8), QueryOperator.Ge);
+            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8),
+                QueryOperator.Ge);
             Assert.AreEqual(result.Count, 3);
 
             _dataStore.RemoveByPrimaryKey(_typeDescription.MakePrimaryKeyValue(2));
 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
+            result = _dataStore.InternalGetMany(
+                _typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
                 QueryOperator.Le);
             Assert.AreEqual(result.Count, 4);
 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8), QueryOperator.Ge);
+            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8),
+                QueryOperator.Ge);
             Assert.AreEqual(result.Count, 2);
-
-
-
         }
 
         [Test]
@@ -98,7 +96,7 @@ namespace UnitTests
             //get one by unique key
             cachedItem1 =
                 _dataStore.InternalGetOne(new KeyValue(1001,
-                    new KeyInfo(KeyDataType.IntKey, KeyType.Unique, "UniqueKey", false)));
+                    new KeyInfo(KeyDataType.IntKey, KeyType.Unique, "UniqueKey")));
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(1));
             Assert.IsTrue(cachedItem1.UniqueKeys[0].Equals(1001));
             item1Reloaded = CachedObject.Unpack<CacheableTypeOk>(cachedItem1);
@@ -165,20 +163,14 @@ namespace UnitTests
 
             result = _dataStore.InternalGetMany(q5);
             Assert.AreEqual(result.Count, 2);
-            foreach (var cachedObject in result)
-            {
-                Assert.IsTrue(q5.Match(cachedObject));
-            }
+            foreach (var cachedObject in result) Assert.IsTrue(q5.Match(cachedObject));
 
             //where IndexKeyDate <= 20101001 
             var q6 = builder.GetMany($"IndexKeyDate <=  {new DateTime(2010, 10, 01).Ticks}");
 
             result = _dataStore.InternalGetMany(q6);
             Assert.AreEqual(result.Count, 5);
-            foreach (var cachedObject in result)
-            {
-                Assert.IsTrue(q6.Match(cachedObject));
-            }
+            foreach (var cachedObject in result) Assert.IsTrue(q6.Match(cachedObject));
 
             // IN alone
             var q7 = builder.In("IndexKeyFolder", "BBA", "BBB", "BBC");

@@ -13,7 +13,7 @@ namespace Client.Core.TypeConverters
 
         public long GetAsLong(object key)
         {
-            var value = (DateTimeOffset)key;
+            var value = (DateTimeOffset) key;
 
             return value.Ticks;
         }

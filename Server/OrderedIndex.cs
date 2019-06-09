@@ -19,10 +19,10 @@ namespace Server
     /// </summary>
     public class OrderedIndex : IndexBase
     {
-        private List<CachedObject> _data;
         private readonly List<CachedObject> _tempData;
+        private List<CachedObject> _data;
 
-        private bool _insideFeedSession; 
+        private bool _insideFeedSession;
 
         /// <summary>
         ///     index of the key associated to this index inside the collection of index keys (from CacheableTypeDescription)
@@ -134,7 +134,7 @@ namespace Server
         public override void RemoveOne(CachedObject item)
         {
             // a feed session should not contain a primary key more than once. Can not remove inside a feed session because ordered
-            // indexes are not sorted untill the end of the session 
+            // indexes are not sorted until the end of the session 
             if (_insideFeedSession)
                 throw new InvalidOperationException(
                     "Illegal operation during a feed session (RemoveOne was called). Probably due duplicate primary key ");
@@ -159,17 +159,13 @@ namespace Server
 
         public override void RemoveMany(IList<CachedObject> items)
         {
-            HashSet<KeyValue> primaryKeysToRemove = new HashSet<KeyValue>(items.Select(i=>i.PrimaryKey));
+            var primaryKeysToRemove = new HashSet<KeyValue>(items.Select(i => i.PrimaryKey));
 
             var newList = new List<CachedObject>(_data.Count);
 
             foreach (var cachedObject in _data)
-            {
                 if (!primaryKeysToRemove.Contains(cachedObject.PrimaryKey))
-                {
                     newList.Add(cachedObject);
-                }
-            }
 
             // no need to reorder
             _data = newList;
@@ -188,7 +184,7 @@ namespace Server
                 throw new ArgumentException("Two keys passed to GetCount on ordered index " + Name + " for operator " +
                                             op);
 
-            
+
             if (op == QueryOperator.In)
                 return int.MaxValue; // can not count efficiently so do not use me as index
 
@@ -785,19 +781,11 @@ namespace Server
 
 
             if (index != -1)
-            {
                 for (var i = index; i <= _data.Count - 1; i++)
-                {
                     if (_data[i].IndexKeys[_keyIndex] <= end)
-                    {
                         result.Add(_data[i]);
-                    }
                     else
-                    {
                         break;
-                    }
-                }
-            }
         }
 
         private int CountAllBetween(KeyValue start, KeyValue end)

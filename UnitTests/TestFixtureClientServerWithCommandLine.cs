@@ -8,13 +8,11 @@ using System.Text.RegularExpressions;
 using AdminConsole.Commands;
 using Channel;
 using Client.Core;
-using Client.Interface;
 using Client.Queries;
 using Client.Tools;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
-
 
 #endregion
 
@@ -40,10 +38,7 @@ namespace UnitTests
 
             Logger.CommandLogger = _logger;
 
-            if (File.Exists("export_test.json"))
-            {
-                File.Delete("export_test.json");
-            }
+            if (File.Exists("export_test.json")) File.Delete("export_test.json");
         }
 
         [TearDown]
@@ -176,50 +171,6 @@ namespace UnitTests
         }
 
 
-
-        [Test]
-        public void Import_export_data_to_json()
-        {
-
-            //add some data
-            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
-
-            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
-
-            var item3 = new CacheableTypeOk(3, 1003, "bbb", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item3);
-
-            
-            CommandLineParser parser = new CommandLineParser(_client.GetClusterInformation());
-            var selectInto = parser.Parse("select CacheableTypeOk where IndexKeyFolder=aaa into export_test.json");
-
-            selectInto.TryExecute(_client);
-
-            FileAssert.Exists("export_test.json");
-
-            var exported = DumpHelper.LoadObjects("export_test.json", _client).ToList();
-            Assert.AreEqual(2, exported.Count);
-
-            var json = File.ReadAllText("export_test.json");
-            json = json.Replace("aaa", "abc");
-            File.WriteAllText("export_test.json",json);
-
-            var import = parser.Parse("import export_test.json");
-            import.TryExecute(_client);
-
-            _logger.Reset();
-            var cmd = _parser.Parse("count CacheableTypeOk where IndexKeyFolder=abc");
-            Assert.IsTrue(cmd.CanExecute);
-            Assert.IsNotNull(cmd.TryExecute(_client));
-            var response = _logger.Buffer;
-
-            var items = ExtractOne(@"\s*found\s*([0-9]*?)\s*items", response);
-            Assert.AreEqual(items, "2");
-        }
-
-
         [Test]
         public void FeedAndGetMany()
         {
@@ -243,7 +194,7 @@ namespace UnitTests
             //sync get
             _client.GetMany<TradeLike>(query).ToList();
 
-            
+
             //select 
             _logger.Reset();
             var cmd = _parser.Parse("select TRADELIKE where Nominal < 500");
@@ -266,9 +217,48 @@ namespace UnitTests
             Assert.IsNotNull(cmd.TryExecute(_client));
             var response = _logger.Buffer;
             Assert.IsTrue(response.ToUpper().Contains("CACHEABLETYPEOK"));
-            
-            
         }
 
+
+        [Test]
+        public void Import_export_data_to_json()
+        {
+            //add some data
+            var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
+            _client.Put(item1);
+
+            var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
+            _client.Put(item2);
+
+            var item3 = new CacheableTypeOk(3, 1003, "bbb", new DateTime(2010, 10, 10), 1600);
+            _client.Put(item3);
+
+
+            var parser = new CommandLineParser(_client.GetClusterInformation());
+            var selectInto = parser.Parse("select CacheableTypeOk where IndexKeyFolder=aaa into export_test.json");
+
+            selectInto.TryExecute(_client);
+
+            FileAssert.Exists("export_test.json");
+
+            var exported = DumpHelper.LoadObjects("export_test.json", _client).ToList();
+            Assert.AreEqual(2, exported.Count);
+
+            var json = File.ReadAllText("export_test.json");
+            json = json.Replace("aaa", "abc");
+            File.WriteAllText("export_test.json", json);
+
+            var import = parser.Parse("import export_test.json");
+            import.TryExecute(_client);
+
+            _logger.Reset();
+            var cmd = _parser.Parse("count CacheableTypeOk where IndexKeyFolder=abc");
+            Assert.IsTrue(cmd.CanExecute);
+            Assert.IsNotNull(cmd.TryExecute(_client));
+            var response = _logger.Buffer;
+
+            var items = ExtractOne(@"\s*found\s*([0-9]*?)\s*items", response);
+            Assert.AreEqual(items, "2");
+        }
     }
 }

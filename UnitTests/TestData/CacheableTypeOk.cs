@@ -29,52 +29,51 @@ namespace UnitTests.TestData
             _indexKeyDate = indexKeyDate;
             _indexKeyValue = indexKeyValue;
         }
-        
+
         [PrimaryKey(KeyDataType.IntKey)]
         public int PrimaryKey
         {
-            get { return _primaryKey; }
-            set { _primaryKey = value; }
+            get => _primaryKey;
+            set => _primaryKey = value;
         }
 
         [Key(KeyDataType.IntKey)]
         public int UniqueKey
         {
-            get { return _uniqueKey; }
-            set { _uniqueKey = value; }
+            get => _uniqueKey;
+            set => _uniqueKey = value;
         }
 
         [FullTextIndexation]
         [Index(KeyDataType.StringKey)]
         public string IndexKeyFolder
         {
-            get { return _indexKeyFolder; }
-            set { _indexKeyFolder = value; }
+            get => _indexKeyFolder;
+            set => _indexKeyFolder = value;
         }
 
         [Index(KeyDataType.IntKey, true)]
         public DateTime IndexKeyDate
         {
-            get { return _indexKeyDate; }
-            set { _indexKeyDate = value; }
+            get => _indexKeyDate;
+            set => _indexKeyDate = value;
         }
 
 
-        [FullTextIndexation]
-        public string Comment { get; set; }
+        [FullTextIndexation] public string Comment { get; set; }
 
 
         public string ObjectData
         {
-            get { return _objectData; }
-            set { _objectData = value; }
+            get => _objectData;
+            set => _objectData = value;
         }
 
         [Index(KeyDataType.IntKey, true)]
         public int IndexKeyValue
         {
-            get { return _indexKeyValue; }
-            set { _indexKeyValue = value; }
+            get => _indexKeyValue;
+            set => _indexKeyValue = value;
         }
 
         [Index(KeyDataType.IntKey, true)] public DateTime? NullableDate { get; set; }

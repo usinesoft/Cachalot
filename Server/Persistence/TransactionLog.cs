@@ -193,6 +193,9 @@ namespace Server.Persistence
 
                 if (_disposed) throw new ObjectDisposedException("The object was disposed");
 
+                // that can happen in conditional updates when the condition is not satisfied
+                if(_transactionQueue.Count == 0) return;
+
                 Dbg.Trace("begin canceling transaction");
                 var data = _transactionQueue.Dequeue();
 
@@ -358,7 +361,18 @@ namespace Server.Persistence
         {
             private static long _lastId = 1;
 
+
+            public TransactionData()
+            {
+                Id = Interlocked.Increment(ref _lastId);
+            }
+
             public int Offset { get; internal set; }
+
+            /// <summary>
+            ///     Used for delayed transaction in two stage mode
+            /// </summary>
+            public int DelayInMilliseconds { get; set; }
 
             public byte[] Data { get; internal set; }
 
@@ -368,22 +382,11 @@ namespace Server.Persistence
 
             public long Id { get; set; }
 
-            /// <summary>
-            ///     Used for delayed transaction in two stage mode
-            /// </summary>
-            public int DelayInMilliseconds { get; set; }
-
 
             public override string ToString()
             {
                 return
                     $"Offset: {Offset}, Id: {Id} DataLength: {Data.Length}, TimeStamp: {TimeStamp}, TransactionStatus: {TransactionStatus}, Delay: {DelayInMilliseconds}";
-            }
-
-
-            public TransactionData()
-            {
-                Id = Interlocked.Increment(ref _lastId);
             }
         }
 
@@ -480,6 +483,8 @@ namespace Server.Persistence
         {
             lock (_syncRoot)
             {
+                if (_disposed) return;
+
                 var writer = new BinaryWriter(_transactionLog);
                 writer.Seek(transaction.Offset, SeekOrigin.Begin);
 

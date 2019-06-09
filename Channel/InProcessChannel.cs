@@ -50,8 +50,8 @@ namespace Channel
 
         private class ClientData : IClient
         {
-            private readonly ManualResetEvent _dataReceived;
             private readonly ManualResetEvent _clientResponseReceived;
+            private readonly ManualResetEvent _dataReceived;
             private readonly MemoryStream _stream;
 
             private bool? _shouldContinue;
@@ -78,17 +78,14 @@ namespace Channel
                 _dataReceived.Set();
             }
 
-            
 
             public void SendManyGeneric<TItemType>(ICollection<TItemType> items) where TItemType : class
             {
-                
                 Streamer.ToStreamGeneric(_stream, items);
                 _stream.Seek(0, SeekOrigin.Begin);
                 _dataReceived.Set();
             }
 
-            
 
             public void SendMany<THeader>(THeader header, ICollection<CachedObject> items) where THeader : class
             {
@@ -97,19 +94,16 @@ namespace Channel
                 _dataReceived.Set();
             }
 
-
+            //  TODO test transactions with in-process channel (coverage)
             public bool? ShouldContinue()
             {
                 _shouldContinue = null; // reset
 
                 SendResponse(new ReadyResponse());
 
-                bool answerReceived = _clientResponseReceived.WaitOne(Consts.ClientTimeoutInMilliseconds);
+                var answerReceived = _clientResponseReceived.WaitOne(Consts.ClientTimeoutInMilliseconds);
 
-                if (!answerReceived)
-                {
-                    return null;
-                }
+                if (!answerReceived) return null;
 
                 Debug.Assert(_shouldContinue != null, nameof(_shouldContinue) + " != null");
                 return _shouldContinue.Value;
@@ -117,7 +111,6 @@ namespace Channel
 
             public void WaitForAck()
             {
-                
             }
 
             #region methods called on the client side
@@ -132,7 +125,6 @@ namespace Channel
             {
                 _shouldContinue = ok;
                 _clientResponseReceived.Set();
-
             }
 
             #endregion
@@ -162,8 +154,6 @@ namespace Channel
 
             return response;
         }
-
-      
 
 
         public void SendStreamRequest<TItemType>(Request request, DataHandler<TItemType> dataHandler,
@@ -226,7 +216,6 @@ namespace Channel
 
             if (RequestReceived != null)
             {
-                
                 RequestReceived(this, new RequestEventArgs(rcvRequest, client));
                 var stream = client.WaitForData();
 
@@ -245,7 +234,6 @@ namespace Channel
                 throw new ArgumentException("Invalid session type", nameof(session));
 
             var client = inProcessSession.ClientData;
-
 
 
             var stream = client.WaitForData();

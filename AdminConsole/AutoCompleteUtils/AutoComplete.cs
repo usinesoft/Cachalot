@@ -15,19 +15,17 @@ namespace AdminConsole.AutoCompleteUtils
             return strings.Where(s => s.StartsWith(input, ignoreCase, CultureInfo.InvariantCulture)).ToList();
         }
 
-        public static List<string> GetAutoCompletedLines(string before, string after,  string input, List<string> strings,
+        public static List<string> GetAutoCompletedLines(string before, string after, string input,
+            List<string> strings,
             bool ignoreCase = true)
         {
+            if (strings == null || strings.Count == 0) return new List<string> {before};
 
-            if (strings == null || strings.Count == 0)
-            {
-                return new List<string>{before};
-            }
+            if (string.IsNullOrEmpty(input))
+                return strings.Select(s => before + s + after).ToList();
 
-            if (string.IsNullOrEmpty(input) )
-                return strings.Select( s=> before + s + after ).ToList();
-
-            return strings.Where(s => s.StartsWith(input, ignoreCase, CultureInfo.InvariantCulture)).Select(s => before + s + after).ToList();
+            return strings.Where(s => s.StartsWith(input, ignoreCase, CultureInfo.InvariantCulture))
+                .Select(s => before + s + after).ToList();
         }
 
         public static string GetComplimentaryAutoComplete(string input, List<string> strings, bool ignoreCase = true)

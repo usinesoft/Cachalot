@@ -5,11 +5,11 @@ using Channel;
 namespace UnitTests
 {
     /// <summary>
-    /// Simulates a provider which is sometimes unavailable
+    ///     Simulates a provider which is sometimes unavailable
     /// </summary>
-    class UnreliableProviderPool : PoolStrategy<ExpiryResource>
+    internal class UnreliableProviderPool : PoolStrategy<ExpiryResource>
     {
-        readonly Random _randomGen = new Random();
+        private readonly Random _randomGen = new Random();
         private long _newResourceClaims;
 
         public UnreliableProviderPool(int poolCapacity)
@@ -23,10 +23,7 @@ namespace UnitTests
         {
         }
 
-        public long NewResourceClaims
-        {
-            get { return Interlocked.Read(ref _newResourceClaims); }
-        }
+        public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);
 
         protected override ExpiryResource GetShinyNewResource()
         {
@@ -35,8 +32,7 @@ namespace UnitTests
             {
                 if (_randomGen.Next(0, 100) < 10)
                     return null;
-                else
-                    return new ExpiryResource();
+                return new ExpiryResource();
             }
         }
 

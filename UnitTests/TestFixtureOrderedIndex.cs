@@ -172,6 +172,16 @@ namespace UnitTests
             return index;
         }
 
+
+        private bool IsOrdered(List<int> list, Comparison<int> compare)
+        {
+            for (var i = 0; i < list.Count - 1; i++)
+                if (compare(list[i], list[i + 1]) > 0)
+                    return false;
+
+            return true;
+        }
+
         [Test]
         public void Between()
         {
@@ -229,66 +239,66 @@ namespace UnitTests
             var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
 
             IList<CachedObject> result1 =
-                idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+                idx1.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 2);
             Assert.AreEqual(result1[1].PrimaryKey, 3);
             Assert.AreEqual(result1[2].PrimaryKey, 4);
 
-            var count = idx1.GetCount(MakeIntValue(3, keyType), QueryOperator.Eq);
+            var count = idx1.GetCount(MakeIntValue(3, keyType));
             Assert.AreEqual(count, 3);
 
 
             //many at the end
             var idx2 = populate(1, 2, 3, 3, 3);
 
-            result1 = idx2.GetMany(MakeIntValue(3, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+            result1 = idx2.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 2);
             Assert.AreEqual(result1[1].PrimaryKey, 3);
             Assert.AreEqual(result1[2].PrimaryKey, 4);
 
-            count = idx1.GetCount(MakeIntValue(3, keyType), QueryOperator.Eq);
+            count = idx1.GetCount(MakeIntValue(3, keyType));
             Assert.AreEqual(count, 3);
 
             //many at the beginning
             var idx3 = populate(3, 3, 3, 4, 4, 80);
 
-            result1 = idx3.GetMany(MakeIntValue(3, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+            result1 = idx3.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 0);
             Assert.AreEqual(result1[1].PrimaryKey, 1);
             Assert.AreEqual(result1[2].PrimaryKey, 2);
 
-            count = idx1.GetCount(MakeIntValue(3, keyType), QueryOperator.Eq);
+            count = idx1.GetCount(MakeIntValue(3, keyType));
             Assert.AreEqual(count, 3);
 
             //all equal
             var idx4 = populate(3, 3, 3);
 
-            result1 = idx4.GetMany(MakeIntValue(3, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+            result1 = idx4.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 0);
             Assert.AreEqual(result1[1].PrimaryKey, 1);
             Assert.AreEqual(result1[2].PrimaryKey, 2);
 
-            count = idx1.GetCount(MakeIntValue(3, keyType), QueryOperator.Eq);
+            count = idx1.GetCount(MakeIntValue(3, keyType));
             Assert.AreEqual(count, 3);
 
             //one in the middle
             var idx5 = populate(1, 3, 5, 7, 9, 111);
-            result1 = idx5.GetMany(MakeIntValue(7, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+            result1 = idx5.GetMany(MakeIntValue(7, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 1);
             Assert.AreEqual(result1[0].PrimaryKey, 3);
 
-            count = idx5.GetCount(MakeIntValue(7, keyType), QueryOperator.Eq);
+            count = idx5.GetCount(MakeIntValue(7, keyType));
             Assert.AreEqual(count, 1);
 
             //value not found
-            result1 = idx5.GetMany(MakeIntValue(8, keyType), QueryOperator.Eq).OrderBy(o => o.PrimaryKey).ToList();
+            result1 = idx5.GetMany(MakeIntValue(8, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 0);
 
-            count = idx5.GetCount(MakeIntValue(8, keyType), QueryOperator.Eq);
+            count = idx5.GetCount(MakeIntValue(8, keyType));
             Assert.AreEqual(count, 0);
         }
 
@@ -304,7 +314,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 0);
@@ -318,7 +328,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 1);
@@ -332,7 +342,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 0);
@@ -345,7 +355,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 1);
@@ -359,7 +369,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 2);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 2);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 0);
@@ -373,7 +383,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 3);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 3);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 0);
@@ -386,7 +396,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
             Assert.AreEqual(result.Count, 0);
-            result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Eq);
+            result = index.GetMany(MakeIntValue(12, keyType));
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Gt);
             Assert.AreEqual(result.Count, 3);
@@ -674,16 +684,6 @@ namespace UnitTests
             idx1.RemoveOne(result1[0]); //now 1, 2, 3, 3, 5
             result1 = idx1.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 2);
-        }
-
-
-        private bool IsOrdered(List<int> list, Comparison<int> compare)
-        {
-            for (var i = 0; i < list.Count - 1; i++)
-                if (compare(list[i], list[i + 1]) > 0)
-                    return false;
-
-            return true;
         }
     }
 }

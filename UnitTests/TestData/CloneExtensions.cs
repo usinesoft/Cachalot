@@ -11,8 +11,7 @@ namespace UnitTests.TestData
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore,
-
+                DefaultValueHandling = DefaultValueHandling.Ignore
             };
 
             var json = JsonConvert.SerializeObject(original, settings);

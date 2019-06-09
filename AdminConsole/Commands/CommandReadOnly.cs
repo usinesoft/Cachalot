@@ -3,10 +3,8 @@ using Client.Interface;
 
 namespace AdminConsole.Commands
 {
-    
     public class CommandReadOnly : CommandBase
     {
-        
         internal override ICacheClient TryExecute(ICacheClient client)
         {
             if (!CanExecute) return client;
@@ -14,7 +12,7 @@ namespace AdminConsole.Commands
 
             try
             {
-                client.SetReadonlyMode(false);
+                client.SetReadonlyMode();
             }
             catch (Exception)
             {

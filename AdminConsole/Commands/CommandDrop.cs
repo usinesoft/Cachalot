@@ -12,14 +12,9 @@ namespace AdminConsole.Commands
 
             try
             {
-
                 Console.WriteLine("This will delete ALL your data. Are you sure (y/n) ?");
                 var answer = Console.ReadLine()?.ToLower().StartsWith("y");
-                if (answer.HasValue && answer.Value)
-                {
-                    client.DropDatabase();
-                }
-                
+                if (answer.HasValue && answer.Value) client.DropDatabase();
             }
             catch (Exception)
             {

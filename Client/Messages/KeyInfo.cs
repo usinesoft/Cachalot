@@ -37,7 +37,8 @@ namespace Client.Messages
         /// <param name="name"> </param>
         /// <param name="isOrdered"></param>
         /// <param name="isFullText"></param>
-        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered = false, bool isFullText = false)
+        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered = false,
+            bool isFullText = false)
         {
             KeyDataType = keyDataType;
             KeyType = keyType;
@@ -46,7 +47,6 @@ namespace Client.Messages
             IsFullTextIndexed = isFullText;
         }
 
-        
 
         /// <summary>
         ///     Copy constructor
@@ -87,8 +87,7 @@ namespace Client.Messages
         [ProtoMember(4)]
         public bool IsOrdered { get; set; }
 
-        [ProtoMember(5)]
-        public bool IsFullTextIndexed { get; set; }
+        [ProtoMember(5)] public bool IsFullTextIndexed { get; set; }
 
         public bool Equals(KeyInfo keyInfo)
         {

@@ -44,7 +44,7 @@ namespace Server
         ///     the others (Le,Lt,Ge,Gt) only for ordered ones (<cref>IsOrdered</cref> = true
         /// </summary>
         /// <param name="values"> one value for equality operator or multiple values for In operator</param>
-        /// <param name="op"></param>        
+        /// <param name="op"></param>
         /// <returns></returns>
         public abstract ISet<CachedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 

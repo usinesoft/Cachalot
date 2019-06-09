@@ -1,183 +1,46 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\NUnit.3.11.0\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.11.0\build\NUnit.props')" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6CA13F1F-2D8E-40C4-8191-656544C6ABBE}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>UnitTests</RootNamespace>
-    <AssemblyName>UnitTests</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=1.1.0.145, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpZipLib.1.1.0\lib\net45\ICSharpCode.SharpZipLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework, Version=3.11.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
-      <HintPath>..\packages\NUnit.3.11.0\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.4.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <HintPath>..\packages\protobuf-net.2.4.0\lib\net40\protobuf-net.dll</HintPath>
-    </Reference>
-    <Reference Include="Remotion.Linq, Version=2.2.0.0, Culture=neutral, PublicKeyToken=fee00910d6e5f53b, processorArchitecture=MSIL">
-      <HintPath>..\packages\Remotion.Linq.2.2.0\lib\net45\Remotion.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="nunit" Version="3.11.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.11.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.1.1" />
+
   </ItemGroup>
+
+
   <ItemGroup>
-    <Compile Include="ExpiryResource.cs" />
-    <Compile Include="NewCacheableTypeOk.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ProtoData.cs" />
-    <Compile Include="SlowProviderPool.cs" />
-    <Compile Include="SomeResource.cs" />
-    <Compile Include="StringLogger.cs" />
-    <Compile Include="Subdomains.cs" />
-    <Compile Include="TestData\CacheableTypeKo.cs" />
-    <Compile Include="TestData\CacheableTypeOk.cs" />
-    <Compile Include="TestData\CloneExtensions.cs" />
-    <Compile Include="TestData\Events\Create.cs" />
-    <Compile Include="TestData\Events\FixingEvent.cs" />
-    <Compile Include="TestData\Events\Increase.cs" />
-    <Compile Include="TestData\Events\NegotiatedProductEvent.cs" />
-    <Compile Include="TestData\Events\ProductEvent.cs" />
-    <Compile Include="TestData\Home.cs" />
-    <Compile Include="TestData\Instruments\AssetClass.cs" />
-    <Compile Include="TestData\Instruments\EquityOption.cs" />
-    <Compile Include="TestData\Instruments\IProduct.cs" />
-    <Compile Include="TestData\Instruments\Trade.cs" />
-    <Compile Include="TestData\MoneyTransfer\Account.cs" />
-    <Compile Include="TestData\MoneyTransfer\MoneyTransfer.cs" />
-    <Compile Include="TestData\Person.cs" />
-    <Compile Include="TestData\ProductFactory.cs" />
-    <Compile Include="TestData\Quote.cs" />
-    <Compile Include="TestData\QuoteType.cs" />
-    <Compile Include="TestData\Trade.cs" />
-    <Compile Include="TestData\TradeLike.cs" />
-    <Compile Include="TestFixtureAdminInterface.cs" />
-    <Compile Include="TestFixtureAdvancedCacheWithMultipleNodes.cs" />
-    <Compile Include="TestFixtureCacheableObject.cs" />
-    <Compile Include="TestFixtureCacheableType.cs" />
-    <Compile Include="TestFixtureClientConfig.cs" />
-    <Compile Include="TestFixtureClientServer.cs" />
-    <Compile Include="TestFixtureClientServerWithCommandLine.cs" />
-    <Compile Include="TestFixtureCommandLine.cs" />
-    <Compile Include="TestFixtureDataStore.cs" />
-    <Compile Include="TestFixtureEviction.cs" />
-    <Compile Include="TestFixtureEvictionQueue.cs" />
-    <Compile Include="TestFixtureFullTextProcessing.cs" />
-    <Compile Include="TestFixtureInProcessServer.cs" />
-    <Compile Include="TestFixtureJsonIndexing.cs" />
-    <Compile Include="TestFixtureLinq.cs" />
-    <Compile Include="TestFixtureLinqWithPersistence.cs" />
-    <Compile Include="TestFixtureMultipleNodesWithPersistence.cs" />
-    <Compile Include="TestFixtureOrderedIndex.cs" />
-    <Compile Include="TestFixturePersistenceEngine.cs" />
-    <Compile Include="TestFixturePersistenceWithExternalServer.cs" />
-    <Compile Include="TestFixturePersistentStorage.cs" />
-    <Compile Include="TestFixturePool.cs" />
-    <Compile Include="TestFixtureServerConfig.cs" />
-    <Compile Include="TestFixtureStreaming.cs" />
-    <Compile Include="TestFixtureTcp.cs" />
-    <Compile Include="TestFixtureTcpMultiNode.cs" />
-    <Compile Include="TestFixtureTransactionLog.cs" />
-    <Compile Include="TestFixtureTwoStageTransactionsOneServer.cs" />
-    <Compile Include="TestFixtureTwoStageTransactionsOnMultiServerCluster.cs" />
-    <Compile Include="UnreliableProviderPool.cs" />
+    <ProjectReference Include="..\AdminConsole\AdminConsole.csproj" />
+    <ProjectReference Include="..\Cachalot\Cachalot.csproj" />
+    <ProjectReference Include="..\Channel\Channel.csproj" />
+    <ProjectReference Include="..\Client\Client.csproj" />
+    <ProjectReference Include="..\Server\Server.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <Content Include="CacheClientConfig.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="inprocess_config.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="inprocess_persistent_config.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ServerConfig.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cachealot.snk" />
-    <None Include="packages.config" />
-    <None Include="readme.md">
+    <None Update="CacheClientConfig.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="run_tests.cmd">
+    <None Update="inprocess_config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="inprocess_persistent_config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="run_tests.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ServerConfig.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\yelp.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AdminConsole\AdminConsole.csproj">
-      <Project>{efd59067-527d-4b57-8468-3a17a8cdf962}</Project>
-      <Name>AdminConsole</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Cachalot\Cachalot.csproj">
-      <Project>{ec035730-3794-4d6d-a5a4-b85b138c7027}</Project>
-      <Name>Cachalot</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Channel\Channel.csproj">
-      <Project>{fd655063-13b2-46d6-95af-aa15a8b3f797}</Project>
-      <Name>Channel</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Client\Client.csproj">
-      <Project>{554a2f6b-fd8d-4713-8132-bd78c8e7e57a}</Project>
-      <Name>Client</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Server\Server.csproj">
-      <Project>{f52893ba-c871-41b5-ab5b-f774626013ef}</Project>
-      <Name>Server</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\NUnit.3.11.0\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.11.0\build\NUnit.props'))" />
-  </Target>
+
 </Project>

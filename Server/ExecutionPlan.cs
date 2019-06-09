@@ -1,7 +1,7 @@
 ﻿namespace Server
 {
     /// <summary>
-    /// Summary of the strategy used to resolve a query
+    ///     Summary of the strategy used to resolve a query
     /// </summary>
     public class ExecutionPlan
     {
@@ -9,10 +9,7 @@
 
         public int ElementsInPrimarySet { get; set; }
 
-        public bool IsFullScan
-        {
-            get { return PrimaryIndexName == null; }
-        }
+        public bool IsFullScan => PrimaryIndexName == null;
 
         public override string ToString()
         {

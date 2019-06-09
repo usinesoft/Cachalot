@@ -7,23 +7,6 @@ namespace Client.Messages
     [ProtoContract]
     public class EvictionSetupRequest : DataRequest
     {
-        [ProtoMember(1)] public EvictionType Type { get; }
-
-
-        /// <summary>
-        /// The number of cached object that triggers the eviction
-        /// </summary>
-        [ProtoMember(2)]
-        public int Limit { get; }
-
-
-        /// <summary>
-        /// The number of cached objects evicted at once
-        /// </summary>
-        [ProtoMember(3)]
-        public int ItemsToEvict { get; }
-
-
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -42,6 +25,20 @@ namespace Client.Messages
             ItemsToEvict = itemsToEvict;
         }
 
+        [ProtoMember(1)] public EvictionType Type { get; }
 
+
+        /// <summary>
+        ///     The number of cached object that triggers the eviction
+        /// </summary>
+        [ProtoMember(2)]
+        public int Limit { get; }
+
+
+        /// <summary>
+        ///     The number of cached objects evicted at once
+        /// </summary>
+        [ProtoMember(3)]
+        public int ItemsToEvict { get; }
     }
 }

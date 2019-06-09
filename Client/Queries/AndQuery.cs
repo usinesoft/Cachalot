@@ -1,6 +1,5 @@
 #region
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,14 +16,12 @@ namespace Client.Queries
     [ProtoContract]
     public class AndQuery : Query
     {
-        [ProtoMember(1)] private List<AtomicQuery> _elements;
-
         /// <summary>
         ///     Create an empty query (called internally by the query builder)
         /// </summary>
         public AndQuery()
         {
-            _elements = new List<AtomicQuery>();
+            Elements = new List<AtomicQuery>();
         }
 
         /// <summary>
@@ -38,27 +35,27 @@ namespace Client.Queries
         /// <summary>
         ///     Accessor for the underlying elements (<see cref="AtomicQuery" />
         /// </summary>
-        public List<AtomicQuery> Elements => _elements;
+        [field: ProtoMember(1)]
+        public List<AtomicQuery> Elements { get; private set; }
 
         public AndQuery Clone()
         {
-            return new AndQuery {_elements = new List<AtomicQuery>(Elements.Select(e => e.Clone()))};
+            return new AndQuery {Elements = new List<AtomicQuery>(Elements.Select(e => e.Clone()))};
         }
 
-        
-        
+
         public override string ToString()
         {
-            if (_elements.Count == 0)
+            if (Elements.Count == 0)
                 return "<empty>";
-            if (_elements.Count == 1)
-                return _elements[0].ToString();
+            if (Elements.Count == 1)
+                return Elements[0].ToString();
 
             var sb = new StringBuilder();
-            for (var i = 0; i < _elements.Count; i++)
+            for (var i = 0; i < Elements.Count; i++)
             {
-                sb.Append(_elements[i]);
-                if (i != _elements.Count - 1)
+                sb.Append(Elements[i]);
+                if (i != Elements.Count - 1)
                     sb.Append(" AND ");
             }
 
@@ -73,7 +70,7 @@ namespace Client.Queries
 
         public bool IsSubsetOf(AndQuery query)
         {
-            return query.Elements.All(e => _elements.Any(q => q.IsSubsetOf(e)));
+            return query.Elements.All(e => Elements.Any(q => q.IsSubsetOf(e)));
         }
     }
 }

@@ -12,7 +12,6 @@ using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
 
-
 #endregion
 
 namespace UnitTests
@@ -42,11 +41,8 @@ namespace UnitTests
         [OneTimeSetUp]
         public void RunBeforeAnyTests()
         {
-
             Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-
-         
         }
 
 
@@ -68,7 +64,6 @@ namespace UnitTests
 
                 var tradeDescription = clientImplementation.KnownTypes["UnitTests.TestData.Trade"];
                 var quoteDescription = clientImplementation.KnownTypes["UnitTests.TestData.Quote"];
-
 
 
                 Assert.AreEqual(serverDescription.KnownTypesByFullName.Count, 2);
@@ -137,8 +132,7 @@ namespace UnitTests
         {
             using (var client = ClientFactory.InitSingleNode("CacheClientConfig.xml", "localhost", _serverPort))
             {
-
-                var clientImplementation = (CacheClient)client;
+                var clientImplementation = (CacheClient) client;
 
                 var tradeDescription = clientImplementation.KnownTypes["UnitTests.TestData.Trade"];
 
@@ -214,8 +208,7 @@ namespace UnitTests
             Assert.AreEqual(cfg.Servers[0].Host, "localhost");
 
             var desc2 = cfg.TypeDescriptions["UnitTests.TestData.Quote"];
-            Assert.AreEqual(1, desc2.Keys.Values.Count(p=>p.FullTextIndexed));
-
+            Assert.AreEqual(1, desc2.Keys.Values.Count(p => p.FullTextIndexed));
         }
     }
 }

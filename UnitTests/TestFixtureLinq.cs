@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using Cachalot.Linq;
+using Client.Core;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
@@ -20,11 +21,33 @@ namespace UnitTests
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
         }
 
+        [Test]
+        public void Expression_tree_processing()
+        {
+            var homes = new DataSource<Home>(null, ClientSideTypeDescription.RegisterType<Home>());
+
+            var towns = new[] {"Paris", "Nice"};
+
+            // not supposed to be optimal; improving coverage (constant at left + extension at root level)
+            var query = homes.PredicateToQuery(h => towns.Contains(h.Town) || "Toronto" == h.Town);
+
+            Assert.AreEqual(2, query.Elements.Count);
+
+            Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
+            Assert.AreEqual("Toronto",  query.Elements.Last().Elements.Single().Value.ToString());
+
+            // check reversed "Contains" at root
+            query = homes.PredicateToQuery(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
+            Assert.AreEqual(2, query.Elements.Count);
+
+            Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
+        }
+
 
         [Test]
         public void Between_operator_optimization()
         {
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
@@ -33,12 +56,13 @@ namespace UnitTests
 
                 var today = DateTime.Today;
                 var tomorrow = today.AddDays(1);
-                
+
 
                 var q = trades.PredicateToQuery(t =>
                     t.ValueDate >= today && t.ValueDate <= tomorrow);
 
-                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.Btw, "BETWEEN optimization not working");
+                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.Btw,
+                    "BETWEEN optimization not working");
 
                 Console.WriteLine(q.ToString());
             }
@@ -48,18 +72,19 @@ namespace UnitTests
         [Test]
         public void Check_contains_operator_parsing()
         {
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
             {
                 var trades = connector.DataSource<Trade>();
-                
+
                 var q = trades.PredicateToQuery(t =>
                     t.Accounts.Contains(111));
 
-              
-                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.In, "IN optimization not working");
+
+                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.In,
+                    "IN optimization not working");
 
                 Console.WriteLine(q.ToString());
 
@@ -67,7 +92,7 @@ namespace UnitTests
                 q = trades.PredicateToQuery(t =>
                     t.Accounts.Contains(111) && t.Accounts.Contains(222));
 
-                
+
                 Console.WriteLine(q.ToString());
             }
         }
@@ -75,7 +100,7 @@ namespace UnitTests
         [Test]
         public void Linq_extension()
         {
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
@@ -90,8 +115,9 @@ namespace UnitTests
 
                         Console.WriteLine(query);
                     });
-                
-                    var result = trades.Where(t=>t.Folder == "TF").FullTextSearch("something funny").ToList();
+
+                    var result =
+                        Enumerable.ToList(trades.Where(t => t.Folder == "TF").FullTextSearch("something funny"));
 
                     // disable the monitoring
                     QueryExecutor.Probe(null);
@@ -105,9 +131,9 @@ namespace UnitTests
 
                     try
                     {
-                        result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
+                        result = Enumerable.ToList(trades.Where(t => t.Folder == "TF").OnlyIfComplete());
                     }
-                    catch (Exception )
+                    catch (Exception)
                     {
                         // ignore exception
                     }
@@ -115,26 +141,21 @@ namespace UnitTests
                 finally
                 {
                     // disable the monitoring
-                    QueryExecutor.Probe(null);    
+                    QueryExecutor.Probe(null);
                 }
-
-                
-
             }
         }
-
 
 
         [Test]
         public void Linq_with_contains_extension_on_scalar_field()
         {
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
             {
-
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]
                 {
@@ -157,7 +178,8 @@ namespace UnitTests
                 {
                     var folders = new[] {"TATA", "TOTO"};
 
-                    var list = dataSource.Where(t => folders.Contains(t.Folder) && t.ValueDate < DateTime.Today).ToList();
+                    var list = dataSource.Where(t => folders.Contains(t.Folder) && t.ValueDate < DateTime.Today)
+                        .ToList();
 
                     Assert.AreEqual(1, list.Count);
                 }
@@ -185,15 +207,12 @@ namespace UnitTests
         [Test]
         public void Linq_with_contains_extension_on_vector_field()
         {
-
-
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
             {
-
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]
                 {
@@ -231,16 +250,56 @@ namespace UnitTests
         }
 
         [Test]
-        public void Simple_linq_expression()
+        public void Polymorphic_collection()
         {
-
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
             using (var connector = new Connector(config))
             {
+                var dataSource = connector.DataSource<ProductEvent>();
 
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                dataSource.PutMany(new ProductEvent[]
+                {
+                    new FixingEvent(1, "AXA", 150, "EQ-256"),
+                    new FixingEvent(2, "TOTAL", 180, "IRD-400"),
+                    new Increase(3, 180, "EQ-256")
+                });
+
+
+                var events = dataSource.Where(evt => evt.DealId == "EQ-256").ToList();
+
+                Assert.AreEqual(2, events.Count);
+
+                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
+
+                Assert.AreEqual(2, events.Count);
+
+
+                // delete one fixing event
+                dataSource.Delete(events[0]);
+
+                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
+
+                Assert.AreEqual(1, events.Count);
+
+                dataSource.Put(new Increase(4, 180, "EQ-256"));
+
+                events = dataSource.Where(evt => evt.EventType == "INCREASE").ToList();
+
+                Assert.AreEqual(2, events.Count);
+            }
+        }
+
+        [Test]
+        public void Simple_linq_expression()
+        {
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_config.xml");
+
+            using (var connector = new Connector(config))
+            {
+                var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]
                 {
@@ -280,59 +339,10 @@ namespace UnitTests
                 // check if time values can be compared with date values
                 {
                     var list = dataSource
-                        .Where(t => t.ValueDate > DateTime.Now.AddDays(-1) ).ToList();
+                        .Where(t => t.ValueDate > DateTime.Now.AddDays(-1)).ToList();
                     Assert.AreEqual(list.Count, 2);
                 }
             }
         }
-
-        [Test]
-        public void Polymorphic_collection()
-        {
-
-            ClientConfig config = new ClientConfig();
-            config.LoadFromFile("inprocess_config.xml");
-
-            using (var connector = new Connector(config))
-            {
-
-                DataSource<ProductEvent> dataSource = connector.DataSource<ProductEvent>();
-
-                dataSource.PutMany(new ProductEvent[]
-                {
-                    new FixingEvent(1, "AXA", 150, "EQ-256"),
-                    new FixingEvent(2, "TOTAL", 180, "IRD-400"),
-                    new Increase(3, 180, "EQ-256")
-                });
-
-
-                var events = dataSource.Where(evt => evt.DealId == "EQ-256").ToList();
-
-                Assert.AreEqual(2, events.Count);
-
-                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
-
-                Assert.AreEqual(2, events.Count);
-
-
-                // delete one fixing event
-                dataSource.Delete(events[0]);
-
-                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
-
-                Assert.AreEqual(1, events.Count);
-
-                dataSource.Put(new Increase(4, 180, "EQ-256"));
-
-                events = dataSource.Where(evt => evt.EventType == "INCREASE").ToList();
-
-                Assert.AreEqual(2, events.Count);
-            }
-
-           
-        }
-
-        
-        
     }
 }

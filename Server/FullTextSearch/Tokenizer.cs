@@ -13,11 +13,11 @@ namespace Server.FullTextSearch
         private CharClass GetCharClass(char ch)
         {
             if (char.IsLetter(ch)) return CharClass.Letter;
-            
+
             if (char.IsDigit(ch)) return CharClass.Digit;
 
             if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
-            
+
             return CharClass.Symbol;
         }
 
@@ -48,24 +48,15 @@ namespace Server.FullTextSearch
         }
 
 
-        private enum Casing
-        {
-            Upper,
-            Lower,
-            None
-        }
-
-
-        string Normalize(string original)
+        private string Normalize(string original)
         {
             var after = RemoveDiacritics(original);
             after = after.ToLower();
-            return  RemoveDoubleChars(after);
+            return RemoveDoubleChars(after);
         }
 
         public IList<Token> TokenizeOneLine(string input)
         {
-            
             var result = new List<Token>(1000);
 
 
@@ -127,11 +118,19 @@ namespace Server.FullTextSearch
             foreach (var line in input)
             {
                 var one = TokenizeOneLine(line);
-                result.Add(new TokenizedLine{Tokens = one.Select(t=> t.NormalizedText).ToList()});
+                result.Add(new TokenizedLine {Tokens = one.Select(t => t.NormalizedText).ToList()});
             }
 
 
             return result;
+        }
+
+
+        private enum Casing
+        {
+            Upper,
+            Lower,
+            None
         }
     }
 }

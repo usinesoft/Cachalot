@@ -14,13 +14,13 @@ namespace Server
         private static readonly LinkedList<ServerLogEntry> Entries;
         private static readonly object SyncRoot;
 
-        public static ILog ExternalLog { private get; set; }
-
         static ServerLog()
         {
             Entries = new LinkedList<ServerLogEntry>();
             SyncRoot = new object();
         }
+
+        public static ILog ExternalLog { private get; set; }
 
         public static ServerLogEntry MaxLogEntry { get; set; }
 
@@ -36,8 +36,6 @@ namespace Server
                     MaxLogEntry = newEntry;
                 else if (MaxLogEntry.CacheAccessTimeInMilliseconds < newEntry.CacheAccessTimeInMilliseconds)
                     MaxLogEntry = newEntry;
-
-               
             }
 
             ExternalLog?.LogInfo(newEntry.ToString());
@@ -47,14 +45,14 @@ namespace Server
         {
             if (count > MaxEntries)
                 count = MaxEntries;
-            
+
             var result = new List<ServerLogEntry>(count);
             lock (SyncRoot)
             {
                 if (count > Entries.Count)
                     count = Entries.Count;
 
-                int entries = 0;
+                var entries = 0;
 
                 var curEntry = Entries.Last;
                 while (entries < count)

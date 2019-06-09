@@ -13,35 +13,27 @@ namespace Server
 {
     public class Server
     {
-        
-        private enum ServerMode
-        {
-            Normal,
-            DuringDumpImport,
-            ReadOnly
-        }
+        private readonly NodeConfig _config;
 
-
-        private ServerMode Mode { get; set; }
-        
-        private DataContainer _dataContainer;
-        
         private readonly Profiler _serverProfiler = new Profiler();
 
         private IServerChannel _channel;
 
+        private DataContainer _dataContainer;
+        private PersistenceEngine _persistenceEngine;
+
 
         private DateTime _startTime;
-        private PersistenceEngine _persistenceEngine;
-        private readonly NodeConfig _config;
 
         public Server(NodeConfig config)
         {
-            
             _dataContainer = new DataContainer(_serverProfiler, config);
 
             _config = config;
         }
+
+
+        private ServerMode Mode { get; set; }
 
         public IServerChannel Channel
         {
@@ -56,7 +48,7 @@ namespace Server
                 _channel.RequestReceived += HandleRequestReceived;
             }
         }
-        
+
         /// <summary>
         ///     This call comes from different threads
         /// </summary>
@@ -64,67 +56,64 @@ namespace Server
         /// <param name="e"></param>
         private void HandleRequestReceived(object sender, RequestEventArgs e)
         {
-            
-                if (e.Request is ImportDumpRequest importRequest)
+            if (e.Request is ImportDumpRequest importRequest)
+            {
+                ManageImportRequest(importRequest, e.Client);
+            }
+            else if (e.Request is StopRequest)
+            {
+                ServerLog.LogWarning("stop request received");
+                OnStopRequired();
+            }
+            else if (e.Request is SwitchModeRequest switchModeRequest)
+            {
+                Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
+                e.Client.SendResponse(new NullResponse());
+            }
+            else if (e.Request is DropRequest)
+            {
+                try
                 {
-                    ManageImportRequest(importRequest, e.Client);
-                }
-                else if (e.Request is StopRequest)
-                {
-                    
-                    ServerLog.LogWarning("stop request received");
-                    OnStopRequired();
-                    
-                }
-                else if (e.Request is SwitchModeRequest switchModeRequest)
-                {
-                    Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
+                    ServerLog.LogWarning("drop request received");
+                    ManageDropRequest();
+                    ServerLog.LogWarning("all data was deleted");
                     e.Client.SendResponse(new NullResponse());
                 }
-                else if (e.Request is DropRequest)
+                catch (Exception exception)
                 {
-                    try
-                    {
-                        ServerLog.LogWarning("drop request received");
-                        ManageDropRequest();
-                        ServerLog.LogWarning("all data was deleted");
-                        e.Client.SendResponse(new NullResponse());
-                    }
-                    catch (Exception exception)
-                    {
-                        e.Client.SendResponse(new ExceptionResponse(exception));
-                    }
+                    e.Client.SendResponse(new ExceptionResponse(exception));
                 }
-                else
+            }
+            else
+            {
+                if (Mode == ServerMode.DuringDumpImport)
                 {
-                    if (Mode == ServerMode.DuringDumpImport)
-                    {
-                        e.Client.SendResponse(new ExceptionResponse(
-                            new NotSupportedException("Database is not available while restoring data from dump")));
-                        return;
-                    }
-
-                    if (Mode == ServerMode.ReadOnly && e.Request is DataRequest dataRequest &&
-                        dataRequest.AccessType == DataAccessType.Write)
-                    {
-                        e.Client.SendResponse(new ExceptionResponse(
-                            new NotSupportedException("Database is in read-only mode")));
-                        return;
-                    }
-
-                    //as the data container does not have access to the channel
-                    //let it know how many connections are active 
-                    var activeConnections = Channel.Connections;
-                    _dataContainer.ActiveConnections = activeConnections;
-                    _dataContainer.StartTime = _startTime;
-
-                
-                    _dataContainer.DispatchRequest(e.Request, e.Client);
+                    e.Client.SendResponse(new ExceptionResponse(
+                        new NotSupportedException("Database is not available while restoring data from dump")));
+                    return;
                 }
-            
+
+                if (Mode == ServerMode.ReadOnly && e.Request is DataRequest dataRequest &&
+                    dataRequest.AccessType == DataAccessType.Write)
+                {
+                    e.Client.SendResponse(new ExceptionResponse(
+                        new NotSupportedException("Database is in read-only mode")));
+                    return;
+                }
+
+                //as the data container does not have access to the channel
+                //let it know how many connections are active 
+                var activeConnections = Channel.Connections;
+                _dataContainer.ActiveConnections = activeConnections;
+                _dataContainer.StartTime = _startTime;
+
+
+                _dataContainer.DispatchRequest(e.Request, e.Client);
+            }
         }
 
-      
+
+        //TODO add unit test for drop (coverage)
 
         private void ManageDropRequest()
         {
@@ -137,11 +126,8 @@ namespace Server
             // delete data from memory
             _dataContainer = new DataContainer(_serverProfiler, _config);
 
-            if (_persistenceEngine != null)
-            {
-                _persistenceEngine.Container = _dataContainer;
-            }
-            
+            if (_persistenceEngine != null) _persistenceEngine.Container = _dataContainer;
+
 
             _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -269,7 +255,7 @@ namespace Server
             }
         }
 
-        public event EventHandler<EventArgs> StopRequired; 
+        public event EventHandler<EventArgs> StopRequired;
 
         public void Start()
         {
@@ -303,6 +289,13 @@ namespace Server
         protected virtual void OnStopRequired()
         {
             StopRequired?.Invoke(this, EventArgs.Empty);
+        }
+
+        private enum ServerMode
+        {
+            Normal,
+            DuringDumpImport,
+            ReadOnly
         }
     }
 }

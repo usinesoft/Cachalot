@@ -10,8 +10,6 @@ namespace Client.Messages
     [ProtoContract]
     public class RemoveManyRequest : DataRequest
     {
-        [ProtoMember(1)] private readonly OrQuery _query;
-
         public RemoveManyRequest() : base(DataAccessType.Write, string.Empty)
         {
         }
@@ -19,9 +17,9 @@ namespace Client.Messages
         public RemoveManyRequest(OrQuery query)
             : base(DataAccessType.Write, query.TypeName)
         {
-            _query = query;
+            Query = query;
         }
 
-        public OrQuery Query => _query;
+        [field: ProtoMember(1)] public OrQuery Query { get; }
     }
 }

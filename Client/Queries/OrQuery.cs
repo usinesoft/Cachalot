@@ -18,33 +18,28 @@ namespace Client.Queries
     [ProtoContract]
     public class OrQuery : Query
     {
-
-        public static OrQuery Empty<T>() => new OrQuery(typeof(T).FullName);
-
-
         [ProtoMember(1)] private readonly List<AndQuery> _elements;
-        [ProtoMember(2)] private readonly string _typeName;
 
         /// <summary>
         ///     Create an empty query (called internally by the query builder)
         /// </summary>
         public OrQuery(Type type)
         {
-            _typeName = type.FullName;
+            TypeName = type.FullName;
             _elements = new List<AndQuery>();
         }
 
 
         public OrQuery(string typeName)
         {
-            _typeName = typeName;
+            TypeName = typeName;
             _elements = new List<AndQuery>();
         }
 
 
         public OrQuery(TypeDescription typeDescription)
         {
-            _typeName = typeDescription.FullTypeName;
+            TypeName = typeDescription.FullTypeName;
             _elements = new List<AndQuery>();
         }
 
@@ -66,7 +61,8 @@ namespace Client.Queries
         /// </summary>
         public IList<AndQuery> Elements => _elements;
 
-        public string TypeName => _typeName;
+        [field: ProtoMember(2)] public string TypeName { get; }
+
         public bool MultipleWhereClauses { get; set; }
         [ProtoMember(3)] public int Take { get; set; }
         public bool CountOnly { get; set; }
@@ -78,14 +74,15 @@ namespace Client.Queries
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
 
+        public static OrQuery Empty<T>()
+        {
+            return new OrQuery(typeof(T).FullName);
+        }
+
         public bool IsSubsetOf(OrQuery query)
         {
+            if (query.IsEmpty()) return true;
 
-            if (query.IsEmpty())
-            {
-                return true;
-            }
-                
             return _elements.All(q => query.Elements.Any(q.IsSubsetOf));
         }
 

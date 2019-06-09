@@ -17,12 +17,14 @@ namespace Client.Core
     /// </summary>
     public class ClientSideTypeDescription
     {
-        
         private readonly List<ClientSideKeyInfo> _indexFields;
 
         private readonly List<ClientSideKeyInfo> _listFields;
 
         private readonly List<ClientSideKeyInfo> _uniqueKeyFields;
+
+
+        private bool _useCompression;
 
         /// <summary>
         ///     Private constructor (to prevent direct instantiation)
@@ -43,7 +45,7 @@ namespace Client.Core
         ///     Convert to a serializable form that can be used without any static dependency to
         ///     the original type
         /// </summary>
-        public TypeDescription AsTypeDescription => _typeDescriptionCached;
+        public TypeDescription AsTypeDescription { get; private set; }
 
         /// <summary>
         ///     The one and only primary key
@@ -89,7 +91,7 @@ namespace Client.Core
             internal set
             {
                 _useCompression = value;
-                _typeDescriptionCached.UseCompression = true;
+                AsTypeDescription.UseCompression = true;
             }
         }
 
@@ -106,10 +108,6 @@ namespace Client.Core
         {
             return RegisterType(typeof(T));
         }
-
-
-        private TypeDescription _typeDescriptionCached;
-        private bool _useCompression;
 
         /// <summary>
         ///     Factory method used to create a precompiled type description.
@@ -165,9 +163,9 @@ namespace Client.Core
             //check if the newly registered type is valid
             if (result.PrimaryKeyField == null)
                 throw new NotSupportedException($"No primary key defined for type {type}");
-            
 
-            result._typeDescriptionCached = new TypeDescription(result);
+
+            result.AsTypeDescription = new TypeDescription(result);
 
             return result;
         }
@@ -224,7 +222,7 @@ namespace Client.Core
             if (result.PrimaryKeyField == null)
                 throw new NotSupportedException($"no primary key defined for type {type}");
 
-            result._typeDescriptionCached = new TypeDescription(result);
+            result.AsTypeDescription = new TypeDescription(result);
 
             return result;
         }

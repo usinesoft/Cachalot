@@ -17,7 +17,7 @@ namespace UnitTests
 
         public void Write(string format, params object[] parameters)
         {
-            string line = string.Format(format, parameters);
+            var line = string.Format(format, parameters);
             Buffer += line + Environment.NewLine;
         }
 
@@ -30,7 +30,7 @@ namespace UnitTests
 
         public void WriteError(string format, params object[] parameters)
         {
-            string line = string.Format(format, parameters);
+            var line = string.Format(format, parameters);
             Buffer += line + Environment.NewLine;
         }
 

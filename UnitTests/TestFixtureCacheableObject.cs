@@ -15,17 +15,31 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureCacheableObject
     {
-        
         public static Func<TObject, object> GetPropGetter<TObject>(string propertyName)
         {
-            ParameterExpression paramExpression = Expression.Parameter(typeof(TObject), "value");
+            var paramExpression = Expression.Parameter(typeof(TObject), "value");
 
             Expression propertyGetterExpression = Expression.Property(paramExpression, propertyName);
 
-            Func<TObject, object> result =
-                Expression.Lambda<Func<TObject, object>>(Expression.Convert( propertyGetterExpression, typeof(object)), paramExpression).Compile();
+            var result =
+                Expression.Lambda<Func<TObject, object>>(Expression.Convert(propertyGetterExpression, typeof(object)),
+                    paramExpression).Compile();
 
             return result;
+        }
+
+
+        private static CacheableTypeOk GetObject1()
+        {
+            var object1 = new CacheableTypeOk
+            {
+                UniqueKey = 1,
+                PrimaryKey = 11,
+                IndexKeyValue = 15,
+                IndexKeyDate = new DateTime(2009, 10, 25),
+                IndexKeyFolder = "FOL"
+            };
+            return object1;
         }
 
 
@@ -43,38 +57,28 @@ namespace UnitTests
 
             const int iterations = 100000;
 
-            Stopwatch watch = new Stopwatch();
+            var watch = new Stopwatch();
             watch.Start();
 
-            
 
-            for (int i = 0; i < iterations; i++)
-            {
-                packed1 = CachedObject.Pack(obj, description);
-                
-            }
+            for (var i = 0; i < iterations; i++) packed1 = CachedObject.Pack(obj, description);
 
-            
+
             Console.WriteLine($"{iterations} iterations with reflexion took {watch.ElapsedMilliseconds} ms");
 
             var desc = description.AsTypeDescription;
 
             watch.Restart();
 
-            
-            for (int i = 0; i < iterations; i++)
-            {
-                packed2 = CachedObject.Pack(obj, desc);
-                
-            }
-            
+
+            for (var i = 0; i < iterations; i++) packed2 = CachedObject.Pack(obj, desc);
+
             Console.WriteLine($"{iterations} iterations with json packing took {watch.ElapsedMilliseconds} ms");
         }
 
         [Test]
         public void TestCompiledGetterVsReflexion()
         {
-
             var obj = GetObject1();
 
             var prop = typeof(CacheableTypeOk).GetProperty("PrimaryKey");
@@ -91,15 +95,15 @@ namespace UnitTests
             Assert.AreEqual(11, val2);
             const int iterations = 1000000;
 
-            Stopwatch watch = new Stopwatch();
+            var watch = new Stopwatch();
             watch.Start();
 
-            int sum = 0;
+            var sum = 0;
 
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 val1 = prop.GetValue(obj);
-                sum += (int)val1;
+                sum += (int) val1;
             }
 
             Assert.AreEqual(iterations * 11, sum);
@@ -109,34 +113,17 @@ namespace UnitTests
             watch.Restart();
 
             sum = 0;
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 val1 = getter(obj);
-                sum += (int)val1;
+                sum += (int) val1;
             }
 
             Assert.AreEqual(iterations * 11, sum);
 
             Console.WriteLine($"{iterations} iterations with compiled getter took {watch.ElapsedMilliseconds} ms");
-
         }
 
-
-
-        private static CacheableTypeOk GetObject1()
-        {
-            var object1 = new CacheableTypeOk
-            {
-                UniqueKey = 1,
-                PrimaryKey = 11,
-                IndexKeyValue = 15,
-                IndexKeyDate = new DateTime(2009, 10, 25),
-                IndexKeyFolder = "FOL"
-            };
-            return object1;
-        }
-
-      
 
         [Test]
         public void TestPackedObjectIsSerializable()
@@ -184,7 +171,7 @@ namespace UnitTests
                 }
             }
 
-            var fromCache = CachedObject.Unpack< CacheableTypeOk>(cached);
+            var fromCache = CachedObject.Unpack<CacheableTypeOk>(cached);
             Assert.AreEqual(object1, fromCache);
         }
     }

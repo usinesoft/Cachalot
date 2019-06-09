@@ -350,7 +350,7 @@ namespace Client.Queries
 
                 QueryHelper.OptimizeQuery(query);
             }
-            
+
 
             return query;
         }

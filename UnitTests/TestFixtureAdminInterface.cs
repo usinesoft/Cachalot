@@ -13,20 +13,10 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureAdminInterface
     {
-        [OneTimeSetUp]
-        public void RunBeforeAnyTests()
-        {
-            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
-            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-        }
-
         [SetUp]
         public void SetUp()
         {
-            if (Directory.Exists(Constants.DataPath))
-            {
-                Directory.Delete(Constants.DataPath, true);
-            }
+            if (Directory.Exists(Constants.DataPath)) Directory.Delete(Constants.DataPath, true);
         }
 
         [TearDown]
@@ -36,18 +26,22 @@ namespace UnitTests
             Dbg.DeactivateSimulation();
         }
 
+        [OneTimeSetUp]
+        public void RunBeforeAnyTests()
+        {
+            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
+            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+        }
+
         [Test]
         public void Dump_all_data_and_restore_from_dump()
         {
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
             const string dumpPath = "dump";
 
-            if (Directory.Exists(dumpPath))
-            {
-                Directory.Delete(dumpPath, true);
-            }
+            if (Directory.Exists(dumpPath)) Directory.Delete(dumpPath, true);
 
             Directory.CreateDirectory(dumpPath);
 
@@ -55,23 +49,17 @@ namespace UnitTests
             int maxId2;
             using (var connector = new Connector(config))
             {
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
 
-                for (int i = 0; i < 1010; i++)
-                {
+                for (var i = 0; i < 1010; i++)
                     if (i % 10 == 0)
-                    {
                         dataSource.Put(new Trade(i, 1000 + i, "TOTO", DateTime.Now.Date, 150));
-                    }
                     else
-                    {
                         dataSource.Put(new Trade(i, 1000 + i, "TATA", DateTime.Now.Date, 150));
-                    }
-                }
 
 
-                DataAdmin admin = connector.AdminInterface();
+                var admin = connector.AdminInterface();
 
 
                 // generate unique ids before dump
@@ -103,7 +91,7 @@ namespace UnitTests
             // first import a dump in a non empty database 
             using (var connector = new Connector(config))
             {
-                DataAdmin admin = connector.AdminInterface();
+                var admin = connector.AdminInterface();
 
                 admin.ImportDump(dumpPath);
 
@@ -115,9 +103,9 @@ namespace UnitTests
 
                 Assert.Greater(minId1, maxId1, "the sequences ware not correctly retored from dump");
                 Assert.Greater(minId2, maxId2, "the sequences ware not correctly retored from dump");
-                
 
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+
+                var dataSource = connector.DataSource<Trade>();
                 var folders = new[] {"TATA", "TOTO"};
 
 
@@ -158,7 +146,7 @@ namespace UnitTests
             // reload and check your data is still there
             using (var connector = new Connector(config))
             {
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
                 var folders = new[] {"TATA", "TOTO"};
 
@@ -173,12 +161,12 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
-                DataAdmin admin = connector.AdminInterface();
+                var admin = connector.AdminInterface();
 
                 admin.ImportDump(dumpPath);
 
 
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
                 var folders = new[] {"TATA", "TOTO"};
 
@@ -193,14 +181,14 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
-                DataAdmin admin = connector.AdminInterface();
+                var admin = connector.AdminInterface();
 
                 admin.InitializeFromDump(dumpPath);
 
 
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
-                var folders = new[] { "TATA", "TOTO" };
+                var folders = new[] {"TATA", "TOTO"};
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -210,67 +198,55 @@ namespace UnitTests
         }
 
         /// <summary>
-        /// Can not be run in release mode as failure simulations are available only in debug mode
+        ///     Can not be run in release mode as failure simulations are available only in debug mode
         /// </summary>
-        [Test]        
+        [Test]
         public void If_dump_import_fails_rollback_and_check_no_data_was_lost()
         {
 #if DEBUG
 
-            ClientConfig config = new ClientConfig();
+            var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
             const string dumpPath = "dump";
 
-            if (Directory.Exists(dumpPath))
-            {
-                Directory.Delete(dumpPath, true);
-            }
+            if (Directory.Exists(dumpPath)) Directory.Delete(dumpPath, true);
 
             Directory.CreateDirectory(dumpPath);
 
             using (var connector = new Connector(config))
             {
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
 
 
-                for (int i = 0; i < 1010; i++)
-                {
+                for (var i = 0; i < 1010; i++)
                     if (i % 10 == 0)
-                    {
                         dataSource.Put(new Trade(i, 1000 + i, "TOTO", DateTime.Now.Date, 150));
-                    }
                     else
-                    {
                         dataSource.Put(new Trade(i, 1000 + i, "TATA", DateTime.Now.Date, 150));
-                    }
-                }
 
 
-                DataAdmin admin = connector.AdminInterface();
+                var admin = connector.AdminInterface();
 
                 admin.Dump(dumpPath);
 
                 // add some data after dump
                 dataSource.Put(new Trade(2000, 3000, "TITI", DateTime.Now.Date, 150));
-
             }
 
 
             // simulate exception during dump import
             using (var connector = new Connector(config))
             {
+                var admin = connector.AdminInterface();
 
-
-                DataAdmin admin = connector.AdminInterface();
-                
                 Dbg.ActivateSimulation(100);
 
 
-                Assert.Throws<CacheException>(()=> admin.ImportDump(dumpPath));
+                Assert.Throws<CacheException>(() => admin.ImportDump(dumpPath));
 
 
-                DataSource<Trade> dataSource = connector.DataSource<Trade>();
+                var dataSource = connector.DataSource<Trade>();
                 var folders = new[] {"TATA", "TOTO"};
 
 
@@ -285,8 +261,6 @@ namespace UnitTests
 
                 count = dataSource.Count(t => t.Folder == "TITI");
                 Assert.AreEqual(1, count, "this object should exist as the dump import failed");
-
-               
             }
 
 #endif

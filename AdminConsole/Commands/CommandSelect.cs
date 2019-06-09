@@ -3,19 +3,16 @@ using System.Collections.Generic;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Client.Profiling;
 
 namespace AdminConsole.Commands
 {
     /// <summary>
-    /// Get only object description from the server. The concrete type of the object does not need to be available in order 
-    /// to display the generic description
+    ///     Get only object description from the server. The concrete type of the object does not need to be available in order
+    ///     to display the generic description
     /// </summary>
     public class CommandSelect : CommandBase
     {
-        
         /// <summary>
-        /// 
         /// </summary>
         /// <returns></returns>
         internal override ICacheClient TryExecute(ICacheClient client)
@@ -36,35 +33,24 @@ namespace AdminConsole.Commands
 
                 listResult = client.GetObjectDescriptions(Query);
 
-                bool dumpOk = true;
+                var dumpOk = true;
 
                 // the third parameter(optional) is the output file name
-                if (Params.Count == 3)
-                {
-                    dumpOk = Logger.DumpFile(Params[2]);
-                }
+                if (Params.Count == 3) dumpOk = Logger.DumpFile(Params[2]);
 
                 if (dumpOk)
                 {
                     Logger.Write("[");
-                    for (int i = 0; i < listResult.Count; i++)
+                    for (var i = 0; i < listResult.Count; i++)
                     {
                         Logger.Write(listResult[i].AsJson());
-                        if (i < listResult.Count - 1)
-                        {
-                            Logger.Write(",");
-                        }
+                        if (i < listResult.Count - 1) Logger.Write(",");
                     }
 
                     Logger.Write("]");
 
-                    if (Params.Count == 3)
-                    {
-                        Logger.EndDump();
-                    }
+                    if (Params.Count == 3) Logger.EndDump();
                 }
-                
-
             }
             catch (CacheException ex)
             {
@@ -78,9 +64,9 @@ namespace AdminConsole.Commands
             }
             finally
             {
-                ProfilingData profilerResult = Profiler.End();
+                var profilerResult = Profiler.End();
 
-                int count = 0;
+                var count = 0;
                 if (listResult != null)
                     count = listResult.Count;
 

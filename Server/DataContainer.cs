@@ -34,6 +34,8 @@ namespace Server
         /// </summary>
         private readonly Dictionary<string, DataStore> _dataStores;
 
+        private readonly JsonSerializer _jsonSerializer;
+
         /// <summary>
         ///     List of registered types (as <see cref="TypeDescription" />) indexed by
         ///     fullTypeName
@@ -46,9 +48,7 @@ namespace Server
             Formatting = Formatting.Indented
         };
 
-        private readonly JsonSerializer _jsonSerializer;
 
-        
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
         public DataContainer(Profiler profiler, NodeConfig config)
@@ -61,19 +61,8 @@ namespace Server
 
             _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
             _jsonSerializer.Converters.Add(new StringEnumConverter());
-            
         }
 
-        public void StartProcessingClientRequests()
-        {
-            
-        }
-
-        public void Stop()
-        {
-            
-        }
-        
         /// <summary>
         ///     <see cref="DataStore" /> by <see cref="TypeDescription" />
         /// </summary>
@@ -82,7 +71,7 @@ namespace Server
         public long ActiveConnections { private get; set; }
 
         public DateTime StartTime { private get; set; }
-        
+
 
         private Profiler Profiler { get; }
 
@@ -90,6 +79,14 @@ namespace Server
         public int ShardIndex { get; set; }
 
         public int ShardCount { get; set; }
+
+        public void StartProcessingClientRequests()
+        {
+        }
+
+        public void Stop()
+        {
+        }
 
         /// <summary>
         ///     Dispatch the request to the appropriate consumer.
@@ -167,13 +164,13 @@ namespace Server
 
             Dbg.Trace($"S: lock acquired by all clients for transaction {transactionRequest.TransactionId}");
 
-            
+
             // Second register a durable delayed transaction. It can be cancelled later
 
             try
             {
                 // check the conditions (in case of conditional update)
-                int index = 0;
+                var index = 0;
                 foreach (var condition in transactionRequest.Conditions)
                 {
                     if (!condition.IsEmpty())
@@ -181,7 +178,6 @@ namespace Server
                         var ds = DataStores[condition.TypeName];
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
-
                     }
 
                     index++;
@@ -218,7 +214,7 @@ namespace Server
                 Dbg.Trace($"error in first stage:{e.Message} server {ShardIndex}");
                 client.SendResponse(new ExceptionResponse(e));
                 // failed to write a durable transaction so stop here
-                
+
                 // unlock
                 foreach (var type in types)
                     if (DataStores[type].Lock.IsWriteLockHeld)
@@ -264,9 +260,6 @@ namespace Server
                 {
                     PersistenceEngine?.CancelDelayedTransaction();
                 }
-
-                
-                
             }
             catch (Exception e)
             {
@@ -290,19 +283,16 @@ namespace Server
             var typeList = types.ToList();
             try
             {
-
                 foreach (var type in typeList)
                     if (!DataStores[type].Lock.TryEnterWriteLock(Constants.DelayForLock))
-                    {
                         throw new CacheException("Failed to acquire write locks for single-stage transaction",
                             ExceptionType.FailedToAcquireLock);
-                    }
 
                 Dbg.Trace($"S: fallback to single stage for transaction {transactionRequest.TransactionId}");
 
 
                 // check the conditions (in case of conditional update)
-                int index = 0;
+                var index = 0;
                 foreach (var condition in transactionRequest.Conditions)
                 {
                     if (!condition.IsEmpty())
@@ -310,7 +300,6 @@ namespace Server
                         var ds = DataStores[condition.TypeName];
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
-
                     }
 
                     index++;
@@ -355,7 +344,6 @@ namespace Server
                 foreach (var type in typeList)
                     if (DataStores[type].Lock.IsWriteLockHeld)
                         DataStores[type].Lock.ExitWriteLock();
-                
             }
         }
 
@@ -397,7 +385,8 @@ namespace Server
 
             client.SendResponse(new ExceptionResponse(
                 new CacheException(
-                    $"can not acquire write lock on server {ShardIndex}  for transaction {transactionId}"),ExceptionType.FailedToAcquireLock));
+                    $"can not acquire write lock on server {ShardIndex}  for transaction {transactionId}"),
+                ExceptionType.FailedToAcquireLock));
 
             return false;
         }
@@ -414,7 +403,7 @@ namespace Server
             else // called internally (while loading data)
                 InternalProcessRegisterType(request);
         }
-        
+
 
         private void ProcessRegisterType(RegisterTypeRequest request, IClient client)
         {
@@ -466,7 +455,6 @@ namespace Server
                 PersistenceEngine?.UpdateSchema(GenerateSchema());
 
 
-                
                 var newDataStore =
                     new DataStore(typeDescription, new NullEvictionPolicy(), _config);
 
@@ -503,20 +491,14 @@ namespace Server
             if (dataRequest.AccessType == DataAccessType.Write)
             {
                 if (dataRequest is DomainDeclarationRequest)
-                {
                     if (PersistenceEngine != null)
-                    {
-                        throw new NotSupportedException("Domain declaration can only be used in cache mode (without persistence)");
-                    }
-                }
+                        throw new NotSupportedException(
+                            "Domain declaration can only be used in cache mode (without persistence)");
 
                 if (dataRequest is EvictionSetupRequest)
-                {
                     if (PersistenceEngine != null)
-                    {
-                        throw new NotSupportedException("Eviction can only be used in cache mode (without persistence)");
-                    }
-                }
+                        throw new NotSupportedException(
+                            "Eviction can only be used in cache mode (without persistence)");
 
 
                 if (dataStore.Lock.TryEnterWriteLock(-1))
@@ -728,7 +710,7 @@ namespace Server
             }
         }
 
-        
+
         private void GetKnownTypes(IClient client)
         {
             lock (DataStores)

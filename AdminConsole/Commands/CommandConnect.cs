@@ -7,7 +7,6 @@ namespace AdminConsole.Commands
 {
     public class CommandConnect : CommandBase
     {
-        
         internal override ICacheClient TryExecute(ICacheClient client)
         {
             if (!CanExecute)
@@ -17,19 +16,13 @@ namespace AdminConsole.Commands
             {
                 var server = "localhost";
 
-                bool singleServerMode = !(Params.Count == 1 && Params[0].EndsWith(".xml"));
+                var singleServerMode = !(Params.Count == 1 && Params[0].EndsWith(".xml"));
 
-                if(!singleServerMode)
-                {
-                    server = Params[0];
-                }
+                if (!singleServerMode) server = Params[0];
 
                 var port = 4848;
 
-                if (Params.Count > 1)
-                {
-                    port = int.Parse(Params[1]);
-                }
+                if (Params.Count > 1) port = int.Parse(Params[1]);
 
 
                 if (singleServerMode)
@@ -44,9 +37,6 @@ namespace AdminConsole.Commands
 
                         return newClient;
                     }
-
-                
-                
                 }
                 else // the unique  parameter is a cluster configuration file: connect to multiple servers
                 {
@@ -61,7 +51,7 @@ namespace AdminConsole.Commands
                         var channel =
                             new TcpClientChannel(new TcpClientPool(4, 1, serverConfig.Host, serverConfig.Port));
 
-                        var oneClient = new Client.Core.CacheClient
+                        var oneClient = new CacheClient
                         {
                             Channel = channel,
                             ShardIndex = index,
@@ -71,11 +61,8 @@ namespace AdminConsole.Commands
                         index++;
                     }
 
-                    if (aggregator.Ping())
-                    {
-                        Logger.Write($"Connected to a cluster of {config.Servers.Count} servers");
-                    }
-                    
+                    if (aggregator.Ping()) Logger.Write($"Connected to a cluster of {config.Servers.Count} servers");
+
 
                     return aggregator;
                 }
@@ -84,7 +71,7 @@ namespace AdminConsole.Commands
             {
                 Logger.WriteEror("Connection error:" + e.Message);
             }
-            
+
 
             return client;
         }

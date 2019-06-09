@@ -5,7 +5,7 @@ using Client.Interface;
 namespace Server
 {
     /// <summary>
-    /// Less recently used items are removed if the limit capacity is reached
+    ///     Less recently used items are removed if the limit capacity is reached
     /// </summary>
     public class LruEvictionPolicy : EvictionPolicy
     {
@@ -51,10 +51,7 @@ namespace Server
 
         public override void Touch(IList<CachedObject> items)
         {
-            for (int i = 0; i < items.Count; i++)
-            {
-                _evictionQueue.Touch(items[i]);
-            }
+            for (var i = 0; i < items.Count; i++) _evictionQueue.Touch(items[i]);
         }
 
         public override string ToString()

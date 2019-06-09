@@ -6,9 +6,9 @@ using Unity;
 
 namespace Host
 {
-    class Program
+    internal class Program
     {
-        static void Main()
+        private static void Main()
         {
             // This will ensure that future calls to Directory.GetCurrentDirectory()
             // returns the actual executable directory and not something like C:\Windows\System32 
@@ -21,7 +21,8 @@ namespace Host
 
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
-                HostServices.HostServices.Container.Resolve<ILog>().LogError($"Unhandled exception: \n {args.ExceptionObject}");
+                HostServices.HostServices.Container.Resolve<ILog>()
+                    .LogError($"Unhandled exception: \n {args.ExceptionObject}");
             };
 
             HostFactory.Run(x =>

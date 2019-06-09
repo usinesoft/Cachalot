@@ -189,7 +189,7 @@ namespace AdminConsole.ConsoleUtils
         {
             SetConsoleAction(0, consoleKey, action);
             SetConsoleAction(ConsoleModifiers.Shift, consoleKey, action);
-            
+
             SetConsoleAction(ConsoleModifiers.Alt, consoleKey, action);
             SetConsoleAction(ConsoleModifiers.Shift | ConsoleModifiers.Alt, consoleKey, action);
             SetConsoleAction(ConsoleModifiers.Control | ConsoleModifiers.Alt, consoleKey, action);

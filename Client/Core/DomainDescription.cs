@@ -31,8 +31,8 @@ namespace Client.Core
 
 
         /// <summary>
-        /// If an empty query is passed then all the data is available in the cache
-        /// If a null query is passed then no domain description is available
+        ///     If an empty query is passed then all the data is available in the cache
+        ///     If a null query is passed then no domain description is available
         /// </summary>
         /// <param name="descriptionAsQuery"></param>
         /// <param name="isFullyLoaded">if true all data is available</param>
@@ -44,8 +44,6 @@ namespace Client.Core
             Description = description;
         }
 
-        
-
 
         /// <summary>
         ///     The data corresponding to each <see cref="KeyValue" /> is fully available in the cache
@@ -56,14 +54,12 @@ namespace Client.Core
         public OrQuery DescriptionAsQuery { get; }
 
 
-
         /// <summary>
         ///     Optional user readable domain description
         /// </summary>
         [ProtoMember(2)]
         private string Description { get; }
 
-        
 
         /// <summary>
         ///     Optional user readable domain description
@@ -72,7 +68,7 @@ namespace Client.Core
         public bool IsFullyLoaded { get; }
 
 
-        public bool IsEmpty => IsFullyLoaded == false && ( DescriptionAsQuery == null || DescriptionAsQuery.IsEmpty());
+        public bool IsEmpty => IsFullyLoaded == false && (DescriptionAsQuery == null || DescriptionAsQuery.IsEmpty());
 
         public override string ToString()
         {

@@ -13,7 +13,6 @@ using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
 
-
 #endregion
 
 namespace UnitTests
@@ -38,13 +37,8 @@ namespace UnitTests
             cfg.LoadFromFile("CacheClientConfig.xml");
 
             foreach (var description in cfg.TypeDescriptions)
-            {
                 if (description.Value.FullTypeName == "UnitTests.TestData.Trade")
-                {
                     _client.RegisterTypeIfNeeded(typeof(Trade), description.Value);
-                }
-            }
-
         }
 
         [TearDown]
@@ -104,19 +98,21 @@ namespace UnitTests
             Assert.AreEqual(itemsInAaa.Count, 1);
 
             //get both of them again by date
-            IList<CacheableTypeOk> allItems = _client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}").ToList();
+            IList<CacheableTypeOk> allItems = _client
+                .GetManyWhere<CacheableTypeOk>($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}").ToList();
             Assert.AreEqual(allItems.Count, 2);
 
             var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
 
             //get object descriptions 
             var qb = new QueryBuilder(typeof(CacheableTypeOk));
-            
-            var itemDescriptions = _client.GetObjectDescriptions(qb.GetManyWhere($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}"));
+
+            var itemDescriptions =
+                _client.GetObjectDescriptions(qb.GetManyWhere($"IndexKeyDate == {new DateTime(2010, 10, 10).Ticks}"));
             Assert.AreEqual(itemDescriptions.Count, 2);
-            
+
             Assert.AreEqual(itemDescriptions[0].PrimaryKey, desc.MakePrimaryKeyValue(1));
-            
+
             Assert.AreEqual(itemDescriptions[1].PrimaryKey, desc.MakePrimaryKeyValue(2));
 
 
@@ -131,14 +127,14 @@ namespace UnitTests
 
             //removing non existent item should throw exception
             Assert.Throws<CacheException>(() => _client.Remove<CacheableTypeOk>(46546));
-            
+
 
             //the previous query should now return only one item
             allItems = _client.GetMany<CacheableTypeOk>(q).ToList();
             Assert.AreEqual(allItems.Count, 1);
 
             //COUNT should also return 1
-            int count = _client.EvalQuery(q).Value;
+            var count = _client.EvalQuery(q).Value;
             Assert.AreEqual(count, 1);
         }
 
@@ -167,8 +163,6 @@ namespace UnitTests
             evalResult = _client.EvalQuery(builder.GetMany("IndexKeyFolder=aaa"));
             Assert.IsTrue(evalResult.Key);
             Assert.AreEqual(evalResult.Value, 2);
-
-            
         }
 
         [Test]
@@ -181,13 +175,12 @@ namespace UnitTests
             Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 2);
         }
 
-        
 
         [Test]
         public void MultiThreadedDataAccess()
         {
             //first load data 
-            for (int i = 0; i < 1000; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var item = new CacheableTypeOk(i, 10000 + i, "aaa", new DateTime(2010, 10, 10), 1500 + i);
                 _client.Put(item);
@@ -197,8 +190,7 @@ namespace UnitTests
             _requestsFinished = new Semaphore(0, 100);
 
             // 100 parallel requests
-            for (int i = 0; i < 100; i++)
-            {
+            for (var i = 0; i < 100; i++)
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     //reload both items by folder name
@@ -209,13 +201,9 @@ namespace UnitTests
 
                     _requestsFinished.Release();
                 });
-            }
 
 
-            for (int i = 0; i < 100; i++)
-            {
-                _requestsFinished.WaitOne();
-            }
+            for (var i = 0; i < 100; i++) _requestsFinished.WaitOne();
         }
 
 
@@ -259,8 +247,7 @@ namespace UnitTests
             }
         }
 
-        
-       
+
         [Test]
         public void Truncate()
         {
@@ -275,7 +262,7 @@ namespace UnitTests
             Assert.AreEqual(itemsInAaa.Count, 2);
 
             var desc = _client.GetServerDescription();
-            long hits = desc.DataStoreInfoByFullName[typeof(CacheableTypeOk).FullName].HitCount;
+            var hits = desc.DataStoreInfoByFullName[typeof(CacheableTypeOk).FullName].HitCount;
 
             Assert.AreEqual(hits, 1);
 
@@ -283,7 +270,7 @@ namespace UnitTests
 
             desc = _client.GetServerDescription();
             hits = desc.DataStoreInfoByFullName[typeof(CacheableTypeOk).FullName].HitCount;
-            long count = desc.DataStoreInfoByFullName[typeof(CacheableTypeOk).FullName].Count;
+            var count = desc.DataStoreInfoByFullName[typeof(CacheableTypeOk).FullName].Count;
 
             Assert.AreEqual(hits, 0);
             Assert.AreEqual(count, 0);

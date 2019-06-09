@@ -62,6 +62,8 @@ namespace Client.Core
             return new ClusterInformation(responses);
         }
 
+
+        //TODO add UnitTest (coverage)
         public ServerLog GetLog(int lastLines)
         {
             var responses = new LogResponse[CacheClients.Count];
@@ -100,25 +102,13 @@ namespace Client.Core
             }
         }
 
+
+        //TODO add unit test (coverage)
         public void DropDatabase()
         {
             try
             {
                 Parallel.For(0, CacheClients.Count, i => { CacheClients[i].DropDatabase(); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-        }
-
-        public void ResyncUniqueIds(IDictionary<string, int> newValues)
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ResyncUniqueIds(newValues); });
             }
             catch (AggregateException e)
             {
@@ -257,6 +247,8 @@ namespace Client.Core
             ResyncUniqueIds(maxValues);
         }
 
+
+        // Add unit test (coverage)
         public IList<CachedObject> GetObjectDescriptions(OrQuery query)
         {
             var result = new List<CachedObject>();
@@ -486,12 +478,12 @@ namespace Client.Core
         {
             try
             {
-
                 // the limit is global to the cluster
                 var limitByNode = limit / CacheClients.Count;
                 var removeByNode = itemsToRemove / CacheClients.Count + 1;
 
-                Parallel.ForEach(CacheClients, client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, removeByNode));
+                Parallel.ForEach(CacheClients,
+                    client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, removeByNode));
             }
             catch (AggregateException e)
             {
@@ -953,7 +945,7 @@ namespace Client.Core
 
         {
             var clientResults = new IEnumerator<TItemType>[CacheClients.Count];
-            
+
             try
             {
                 Parallel.ForEach(CacheClients, client =>
@@ -1001,15 +993,11 @@ namespace Client.Core
             KeyValue primaryKey = null;
 
             if (primaryKeyValue is KeyValue kv)
-            {
                 primaryKey = kv;
-            }
             else
-            {
                 primaryKey = builder.MakePrimaryKeyValue(primaryKeyValue);
-            }
 
-            
+
             var node = WhichNode(primaryKey);
 
 
@@ -1099,6 +1087,20 @@ namespace Client.Core
             foreach (var client in CacheClients) result = client.RegisterTypeIfNeeded(type, description);
 
             return result;
+        }
+
+        public void ResyncUniqueIds(IDictionary<string, int> newValues)
+        {
+            try
+            {
+                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ResyncUniqueIds(newValues); });
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null)
+                    if (e.InnerException is CacheException ex)
+                        throw ex;
+            }
         }
 
 

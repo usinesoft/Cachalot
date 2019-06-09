@@ -1,14 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8"?>
+
 <cacheServer>
-    <tcp>
-        <port>4848</port>
-    </tcp>
-    <datastore typename="CacheTest.TestData.Tradelike">
-        <threads>6</threads>
-        <eviction type="LRU">
-            <lruLimit>10000</lruLimit>
-            <lruEvictionCount>1000</lruEvictionCount>
-        </eviction>
-    </datastore>
+  <tcp>
+    <port>4848</port>
+  </tcp>
+  <datastore typename="CacheTest.TestData.Tradelike">
+    <threads>6</threads>
+    <eviction type="LRU">
+      <lruLimit>10000</lruLimit>
+      <lruEvictionCount>1000</lruEvictionCount>
+    </eviction>
+  </datastore>
 
 </cacheServer>

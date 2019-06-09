@@ -15,14 +15,8 @@ namespace Client.Queries
     [ProtoContract]
     public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
     {
-        [ProtoMember(4)] private readonly KeyValue _value;
-
-        [ProtoMember(5)] private readonly KeyValue _value2;
-
         private HashSet<KeyValue> _inValues = new HashSet<KeyValue>();
 
-
-        [ProtoMember(3)] private QueryOperator _operator;
 
         /// <summary>
         ///     Parameter-less constructor used for serialization
@@ -39,8 +33,8 @@ namespace Client.Queries
         /// <param name="oper"></param>
         public AtomicQuery(KeyValue value, QueryOperator oper = QueryOperator.Eq)
         {
-            _value = value;
-            _operator = oper;
+            Value = value;
+            Operator = oper;
         }
 
 
@@ -51,7 +45,7 @@ namespace Client.Queries
         public AtomicQuery(IEnumerable<KeyValue> values)
         {
             _inValues = new HashSet<KeyValue>(values);
-            _operator = QueryOperator.In;
+            Operator = QueryOperator.In;
         }
 
         /// <summary>
@@ -61,10 +55,10 @@ namespace Client.Queries
         /// <param name="value2"></param>
         public AtomicQuery(KeyValue value, KeyValue value2)
         {
-            _value = value;
-            _value2 = value2;
+            Value = value;
+            Value2 = value2;
 
-            _operator = QueryOperator.Btw; //the one and only binary operator
+            Operator = QueryOperator.Btw; //the one and only binary operator
         }
 
         public KeyType
@@ -131,21 +125,20 @@ namespace Client.Queries
         /// <summary>
         ///     Primary value (the one used with unary operators)
         /// </summary>
-        public KeyValue Value => _value;
+        [field: ProtoMember(4)]
+        public KeyValue Value { get; }
 
         /// <summary>
         ///     used for binary operators
         /// </summary>
-        public KeyValue Value2 => _value2;
+        [field: ProtoMember(5)]
+        public KeyValue Value2 { get; }
 
         /// <summary>
         ///     The operator of the atomic query
         /// </summary>
-        public QueryOperator Operator
-        {
-            get => _operator;
-            set => _operator = value;
-        }
+        [field: ProtoMember(3)]
+        public QueryOperator Operator { get; set; }
 
         [ProtoMember(1)]
         public ICollection<KeyValue> InValues
@@ -164,12 +157,12 @@ namespace Client.Queries
         {
             if (atomicQuery == null) return false;
 
-            if (!Equals(_operator, atomicQuery._operator)) return false;
+            if (!Equals(Operator, atomicQuery.Operator)) return false;
 
 
             if (InValues.Count != atomicQuery.InValues.Count) return false;
 
-            if (_operator == QueryOperator.In)
+            if (Operator == QueryOperator.In)
             {
                 var myValues = _inValues.ToList();
                 var rightValues = atomicQuery._inValues.ToList();
@@ -212,7 +205,7 @@ namespace Client.Queries
                 var sum = 0;
                 foreach (var value in InValues)
                     sum += value.GetHashCode();
-                return _operator.GetHashCode() + sum;
+                return Operator.GetHashCode() + sum;
             }
         }
 
@@ -261,11 +254,11 @@ namespace Client.Queries
 
             Dbg.CheckThat(Value.KeyDataType == query.Value.KeyDataType);
 
-            if (!AreOperatorsCompatible(_operator, rightOperator))
+            if (!AreOperatorsCompatible(Operator, rightOperator))
                 return false;
 
 
-            switch (_operator)
+            switch (Operator)
             {
                 case QueryOperator.Eq:
                     if (rightOperator == QueryOperator.Eq) return Value == query.Value;
@@ -292,12 +285,11 @@ namespace Client.Queries
             }
         }
 
-        
-        
+
         public override string ToString()
         {
             var result = IndexName;
-            switch (_operator)
+            switch (Operator)
             {
                 case QueryOperator.Eq:
                     result += " = ";

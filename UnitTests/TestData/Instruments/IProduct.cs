@@ -7,9 +7,9 @@ namespace UnitTests.TestData.Instruments
         string Name { get; }
 
         AssetClass AssetClass { get; }
-        
+
         /// <summary>
-        /// Not all assets have maturity date
+        ///     Not all assets have maturity date
         /// </summary>
         DateTime? MaturityDate { get; }
 
@@ -18,8 +18,5 @@ namespace UnitTests.TestData.Instruments
         decimal UnitPrice { get; }
 
         decimal Notional { get; }
-
-
-
     }
 }

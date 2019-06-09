@@ -5,10 +5,10 @@ using Client.Core;
 namespace Server
 {
     /// <summary>
-    /// Mixed data structure. Can be used both as linked list and dictionary
-    /// Used to manage the eviction priority for cached items
-    /// The eviction candidates are at the beginning of the list
-    /// If an item is used it is moved at the end of the list
+    ///     Mixed data structure. Can be used both as linked list and dictionary
+    ///     Used to manage the eviction priority for cached items
+    ///     The eviction candidates are at the beginning of the list
+    ///     If an item is used it is moved at the end of the list
     /// </summary>
     public class EvictionQueue
     {
@@ -16,7 +16,7 @@ namespace Server
         private readonly LinkedList<CachedObject> _queue;
 
 
-        readonly object _syncRoot = new object();
+        private readonly object _syncRoot = new object();
 
         public EvictionQueue()
         {
@@ -25,12 +25,12 @@ namespace Server
         }
 
         /// <summary>
-        /// When eviction is needed <see cref="EvictionCount"/> items are removed
+        ///     When eviction is needed <see cref="EvictionCount" /> items are removed
         /// </summary>
         public int EvictionCount { get; set; }
 
         /// <summary>
-        /// Maximum capacity (if more items are added) eviction is needed
+        ///     Maximum capacity (if more items are added) eviction is needed
         /// </summary>
         public int Capacity { get; set; }
 
@@ -66,8 +66,8 @@ namespace Server
         }
 
         /// <summary>
-        /// Add a new item to the eviction queue. The item is stored at the end (less likely to be evicted)
-        /// REQUIRE: Item not already present in the queue
+        ///     Add a new item to the eviction queue. The item is stored at the end (less likely to be evicted)
+        ///     REQUIRE: Item not already present in the queue
         /// </summary>
         /// <param name="newItem"></param>
         public void AddNew(CachedObject newItem)
@@ -79,31 +79,31 @@ namespace Server
                 if (_cachedObjectsByKey.ContainsKey(newItem.PrimaryKey))
                     throw new NotSupportedException("Item already in eviction queue");
 
-                LinkedListNode<CachedObject> lastNode = _queue.AddLast(newItem);
+                var lastNode = _queue.AddLast(newItem);
                 _cachedObjectsByKey.Add(newItem.PrimaryKey, lastNode);
             }
         }
 
         /// <summary>
-        /// Proceed to eviction (the first <see cref="EvictionCount"/> items will be removed
+        ///     Proceed to eviction (the first <see cref="EvictionCount" /> items will be removed
         /// </summary>
         /// <returns>The items removed</returns>
         public IList<CachedObject> Go()
         {
-            List<CachedObject> result = new List<CachedObject>(EvictionCount);
+            var result = new List<CachedObject>(EvictionCount);
             lock (_syncRoot)
             {
-                int currentCount = 0;
-                LinkedListNode<CachedObject> node = _queue.First;
+                var currentCount = 0;
+                var node = _queue.First;
 
-                //remove more the Capacity - Count to avoit the eviction to be triggered for each added item
-                int itemsToRemove = Count - Capacity + EvictionCount;
+                //remove more the Capacity - Count to avoid the eviction to be triggered for each added item
+                var itemsToRemove = Count - Capacity + EvictionCount;
                 if (itemsToRemove <= 0)
                     return result;
 
-                while ((currentCount < itemsToRemove) && (node.Next != null))
+                while (currentCount < itemsToRemove && node.Next != null)
                 {
-                    LinkedListNode<CachedObject> nextNode = node.Next;
+                    var nextNode = node.Next;
 
                     _queue.Remove(node);
                     _cachedObjectsByKey.Remove(node.Value.PrimaryKey);
@@ -119,7 +119,7 @@ namespace Server
 
 
         /// <summary>
-        /// Remove an item if it is present in the queue
+        ///     Remove an item if it is present in the queue
         /// </summary>
         /// <param name="itemToRemove"></param>
         public void TryRemove(CachedObject itemToRemove)
@@ -130,7 +130,7 @@ namespace Server
             {
                 if (_cachedObjectsByKey.ContainsKey(itemToRemove.PrimaryKey))
                 {
-                    LinkedListNode<CachedObject> node = _cachedObjectsByKey[itemToRemove.PrimaryKey];
+                    var node = _cachedObjectsByKey[itemToRemove.PrimaryKey];
                     _queue.Remove(node);
                     _cachedObjectsByKey.Remove(itemToRemove.PrimaryKey);
                 }
@@ -138,8 +138,8 @@ namespace Server
         }
 
         /// <summary>
-        /// Mark the item as used. Moves it at the end of the queue
-        /// If the item is not present ignore (may be useful if certain items are excluded by the eviction policy)
+        ///     Mark the item as used. Moves it at the end of the queue
+        ///     If the item is not present ignore (may be useful if certain items are excluded by the eviction policy)
         /// </summary>
         /// <param name="item"></param>
         public void Touch(CachedObject item)
@@ -150,7 +150,7 @@ namespace Server
             {
                 if (_cachedObjectsByKey.ContainsKey(item.PrimaryKey))
                 {
-                    LinkedListNode<CachedObject> node = _cachedObjectsByKey[item.PrimaryKey];
+                    var node = _cachedObjectsByKey[item.PrimaryKey];
 
                     _queue.Remove(node);
                     _queue.AddLast(node);

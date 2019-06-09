@@ -7,26 +7,20 @@ namespace UnitTests.TestData.Events
 {
     public abstract class ProductEvent
     {
-        [PrimaryKey(KeyDataType.IntKey)]
-        public int EventId { get; set; }
+        [PrimaryKey(KeyDataType.IntKey)] public int EventId { get; set; }
 
-        [Index(KeyDataType.StringKey)]
-        public abstract string EventType { get;  }
+        [Index(KeyDataType.StringKey)] public abstract string EventType { get; }
 
         public string Comment { get; set; }
 
-        [Index(KeyDataType.StringKey)]
-        public string DealId { get; set; }
+        [Index(KeyDataType.StringKey)] public string DealId { get; set; }
 
 
-        [Index(KeyDataType.IntKey, true)]
-        public DateTime EventDate { get; set; }
+        [Index(KeyDataType.IntKey, true)] public DateTime EventDate { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
-        public DateTime ValueDate{ get; set; }
+        [Index(KeyDataType.IntKey, true)] public DateTime ValueDate { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
-        public DateTime Timestamp { get; set; }
+        [Index(KeyDataType.IntKey, true)] public DateTime Timestamp { get; set; }
 
         protected bool Equals(ProductEvent other)
         {

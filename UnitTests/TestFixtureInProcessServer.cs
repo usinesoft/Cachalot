@@ -11,22 +11,17 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureInProcessServer
     {
-
         [SetUp]
         public void ResetData()
         {
-            if (Directory.Exists(Constants.DataPath))
-            {
-                Directory.Delete(Constants.DataPath, true);
-            }
+            if (Directory.Exists(Constants.DataPath)) Directory.Delete(Constants.DataPath, true);
         }
 
 
         [Test]
         public void Insert_one_item()
         {
-
-            using (var connector = new Connector(new ClientConfig( )))
+            using (var connector = new Connector(new ClientConfig()))
             {
                 var tids = connector.GenerateUniqueIds("id", 1);
 
@@ -36,18 +31,17 @@ namespace UnitTests
 
                 persons.Put(myself);
 
+                var me = persons[tids[0]];
             }
 
             using (var connector = new Connector(new ClientConfig()))
             {
                 var persons = connector.DataSource<Person>();
 
-                var reloaded = persons.First(t=>t.First == "Dan");
+                var reloaded = persons.First(t => t.First == "Dan");
 
                 Assert.AreEqual("IONESCU", reloaded.Last);
-
             }
         }
-
     }
 }

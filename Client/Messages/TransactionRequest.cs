@@ -11,16 +11,6 @@ namespace Client.Messages
     [ProtoContract]
     public class TransactionRequest : Request
     {
-        [ProtoMember(5)] private readonly List<OrQuery> _conditions = new List<OrQuery>();
-
-        [ProtoMember(4)] private bool _isSingleStage;
-
-        [ProtoMember(2)] private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
-
-        [ProtoMember(1)] private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
-
-        [ProtoMember(3)] private string _transactionId;
-
         /// <summary>
         ///     Used for protobuf serialization
         /// </summary>
@@ -31,35 +21,27 @@ namespace Client.Messages
         public TransactionRequest(IList<CachedObject> itemsToPut, IList<OrQuery> conditions,
             IList<CachedObject> itemsToDelete = null)
         {
-            _itemsToPut = new List<CachedObject>(itemsToPut);
+            ItemsToPut = new List<CachedObject>(itemsToPut);
 
-            _conditions = new List<OrQuery>(conditions);
+            Conditions = new List<OrQuery>(conditions);
 
-            if (itemsToDelete != null) _itemsToDelete = new List<CachedObject>(itemsToDelete);
+            if (itemsToDelete != null) ItemsToDelete = new List<CachedObject>(itemsToDelete);
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
         public override bool IsSimple => IsSingleStage;
 
-        public List<CachedObject> ItemsToPut => _itemsToPut;
+        [field: ProtoMember(1)] public List<CachedObject> ItemsToPut { get; } = new List<CachedObject>();
 
 
-        public string TransactionId
-        {
-            get => _transactionId;
-            set => _transactionId = value;
-        }
+        [field: ProtoMember(3)] public string TransactionId { get; set; }
 
-        public bool IsSingleStage
-        {
-            get => _isSingleStage;
-            set => _isSingleStage = value;
-        }
+        [field: ProtoMember(4)] public bool IsSingleStage { get; set; }
 
 
-        public List<CachedObject> ItemsToDelete => _itemsToDelete;
+        [field: ProtoMember(2)] public List<CachedObject> ItemsToDelete { get; } = new List<CachedObject>();
 
-        public List<OrQuery> Conditions => _conditions;
+        [field: ProtoMember(5)] public List<OrQuery> Conditions { get; } = new List<OrQuery>();
 
 
         public static string GenerateId()
@@ -72,7 +54,7 @@ namespace Client.Messages
         {
             var result = new List<DataRequest>();
 
-            var groups = _itemsToPut.GroupBy(i => i.FullTypeName);
+            var groups = ItemsToPut.GroupBy(i => i.FullTypeName);
             foreach (var group in groups)
             {
                 var request = new PutRequest(group.Key)
@@ -82,7 +64,7 @@ namespace Client.Messages
                 result.Add(request);
             }
 
-            groups = _itemsToDelete.GroupBy(i => i.FullTypeName);
+            groups = ItemsToDelete.GroupBy(i => i.FullTypeName);
             foreach (var group in groups)
             {
                 var items = group.ToList();

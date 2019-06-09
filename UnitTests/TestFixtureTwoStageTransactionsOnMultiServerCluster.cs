@@ -20,6 +20,26 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureTwoStageTransactionsOnMultiServerCluster
     {
+        [TearDown]
+        public void Exit()
+        {
+            StopServers();
+
+            // deactivate all failure simulations
+            Dbg.DeactivateSimulation();
+        }
+
+        [SetUp]
+        public void Init()
+        {
+            for (var i = 0; i < ServerCount; i++)
+                if (Directory.Exists($"server{i:D2}"))
+                    Directory.Delete($"server{i:D2}", true);
+
+
+            StartServers();
+        }
+
         private class ServerInfo
         {
             public TcpServerChannel Channel { get; set; }
@@ -36,15 +56,6 @@ namespace UnitTests
         {
             Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-        }
-
-        [TearDown]
-        public void Exit()
-        {
-            StopServers();
-
-            // deactivate all failure simulations
-            Dbg.DeactivateSimulation();
         }
 
         private void StopServers()
@@ -75,17 +86,6 @@ namespace UnitTests
 
         private ClientConfig _clientConfig;
 
-        [SetUp]
-        public void Init()
-        {
-            for (var i = 0; i < ServerCount; i++)
-                if (Directory.Exists($"server{i:D2}"))
-                    Directory.Delete($"server{i:D2}", true);
-
-
-            StartServers();
-        }
-
         private void StartServers(int serverCount = 0)
         {
             _clientConfig = new ClientConfig();
@@ -96,8 +96,8 @@ namespace UnitTests
             for (var i = 0; i < serverCount; i++)
             {
                 var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                var nodeConfig = new NodeConfig{IsPersistent = true, DataPath = $"server{i:D2}"};
-                
+                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = $"server{i:D2}"};
+
                 serverInfo.Server =
                     new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
 
@@ -108,292 +108,11 @@ namespace UnitTests
                 _servers.Add(serverInfo);
 
                 _clientConfig.Servers.Add(
-                    new Client.Interface.ServerConfig {Host = "localhost", Port = serverInfo.Port});
+                    new ServerConfig {Host = "localhost", Port = serverInfo.Port});
             }
 
 
             Thread.Sleep(500); //be sure the server nodes are started
-        }
-
-
-        [Test]
-        public void Simple_transaction()
-        {
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-
-                var accountIds = connector.GenerateUniqueIds("account_id", 2);
-
-                var srcAccount = new Account {Id = accountIds[0], Balance = 1000};
-                var dstAccount = new Account {Id = accountIds[1], Balance = 0};
-
-                accounts.Put(srcAccount);
-                accounts.Put(dstAccount);
-
-
-                // check the sum of two balances is always 1000
-                var myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
-
-                var sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
-
-                srcAccount.Balance -= 10;
-                dstAccount.Balance += 10;
-
-
-                var transfer = new MoneyTransfer
-                {
-                    Amount = 10, Date = DateTime.Today, SourceAccount = myAccounts[0].Id,
-                    DestinationAccount = myAccounts[1].Id
-                };
-
-                var transaction = connector.BeginTransaction();
-                transaction.Put(srcAccount);
-                transaction.Put(dstAccount);
-                transaction.Put(transfer);
-                transaction.Commit();
-
-                // check the some of two balances is always 1000
-                myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
-
-                sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
-
-                Assert.IsFalse(myAccounts.Any(acc => acc.Balance == 0));
-
-                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-            }
-        }
-
-
-        [Test]
-        public void No_deadlock_if_same_objects_are_updated_in_parallel_by_one_client()
-        {
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-
-                var accountIds = connector.GenerateUniqueIds("account_id", 2);
-
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
-
-                var myAccounts = accounts.ToList();
-
-                Parallel.For(0, 100, i =>
-                {
-                    var transfer = new MoneyTransfer
-                    {
-                        Amount = 10,
-                        Date = DateTime.Today,
-                        SourceAccount = myAccounts[0].Id,
-                        DestinationAccount = myAccounts[1].Id
-                    };
-
-                    myAccounts[0].Balance -= 10;
-                    myAccounts[1].Balance += 10;
-
-                    var transaction = connector.BeginTransaction();
-                    transaction.Put(myAccounts[0]);
-                    transaction.Put(myAccounts[1]);
-                    transaction.Put(transfer);
-                    transaction.Commit();
-                });
-            }
-        }
-
-        [Test]
-        public void No_deadlock_if_same_objects_are_updated_in_parallel_by_multiple_clients()
-        {
-            List<Account> myAccounts;
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-
-                var accountIds = connector.GenerateUniqueIds("account_id", 2);
-
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
-
-                myAccounts = accounts.ToList();
-            }
-
-            Parallel.Invoke(
-                () =>
-                {
-                    using (var connector1 = new Connector(_clientConfig))
-                    {
-                        for (var i = 0; i < 100; i++)
-                        {
-                            var transfer = new MoneyTransfer
-                            {
-                                Amount = 10,
-                                Date = DateTime.Today,
-                                SourceAccount = myAccounts[0].Id,
-                                DestinationAccount = myAccounts[1].Id
-                            };
-
-                            myAccounts[0].Balance -= 10;
-                            myAccounts[1].Balance += 10;
-
-                            var transaction = connector1.BeginTransaction();
-                            transaction.Put(myAccounts[0]);
-                            transaction.Put(myAccounts[1]);
-                            transaction.Put(transfer);
-                            transaction.Commit();
-                        }
-                    }
-                },
-                () =>
-                {
-                    using (var connector2 = new Connector(_clientConfig))
-                    {
-                        for (var i = 0; i < 100; i++)
-                        {
-                            var transfer = new MoneyTransfer
-                            {
-                                Amount = 10,
-                                Date = DateTime.Today,
-                                SourceAccount = myAccounts[0].Id,
-                                DestinationAccount = myAccounts[1].Id
-                            };
-
-                            myAccounts[0].Balance -= 10;
-                            myAccounts[1].Balance += 10;
-
-                            var transaction = connector2.BeginTransaction();
-                            transaction.Put(myAccounts[0]);
-                            transaction.Put(myAccounts[1]);
-                            transaction.Put(transfer);
-                            transaction.Commit();
-                        }
-                    }
-                },
-                () =>
-                {
-                    using (var connector3 = new Connector(_clientConfig))
-                    {
-                        for (var i = 0; i < 100; i++)
-                        {
-                            var transfer = new MoneyTransfer
-                            {
-                                Amount = 10,
-                                Date = DateTime.Today,
-                                SourceAccount = myAccounts[0].Id,
-                                DestinationAccount = myAccounts[1].Id
-                            };
-
-                            myAccounts[0].Balance -= 10;
-                            myAccounts[1].Balance += 10;
-
-                            var transaction = connector3.BeginTransaction();
-                            transaction.Put(myAccounts[0]);
-                            transaction.Put(myAccounts[1]);
-                            transaction.Put(transfer);
-                            transaction.Commit();
-                        }
-                    }
-                });
-
-            TransactionStatistics.Display();
-
-
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-
-
-                myAccounts = accounts.ToList();
-
-                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-
-                Assert.AreEqual(1000, myAccounts[0].Balance + myAccounts[1].Balance);
-            }
-        }
-
-        [Test]
-        public void No_deadlock_if_transactions_and_non_transactional_queries_are_run_in_parallel()
-        {
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-
-                var accountIds = connector.GenerateUniqueIds("account_id", 2);
-
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
-
-
-                // run in parallel a sequence of transactions and clients that check that the sum of the balances of the two accounts is 
-                // always the same (thus proving that the two accounts are updated transactionally)
-
-                try
-                {
-                    Parallel.Invoke(
-                        () =>
-                        {
-                            Parallel.For(0, 100, i =>
-                            {
-                                // check the some of two balances is always 1000
-                                var myAccounts = accounts.ToList();
-                                Assert.AreEqual(2, myAccounts.Count);
-
-                                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-                            });
-                        },
-                        () =>
-                        {
-                            var myAccounts = accounts.ToList();
-
-                            for (var i = 0; i < 80; i++)
-                            {
-                                var transfer = new MoneyTransfer
-                                {
-                                    Amount = 10,
-                                    Date = DateTime.Today,
-                                    SourceAccount = myAccounts[0].Id,
-                                    DestinationAccount = myAccounts[1].Id
-                                };
-
-                                myAccounts[0].Balance -= 10;
-                                myAccounts[1].Balance += 10;
-
-                                var transaction = connector.BeginTransaction();
-                                transaction.Put(myAccounts[0]);
-                                transaction.Put(myAccounts[1]);
-                                transaction.Put(transfer);
-                                transaction.Commit();
-                            }
-                        });
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    Assert.Fail(e.Message);
-                }
-            }
-
-            // check that the data is persistent (force the external server to reload data)
-            StopServers();
-            StartServers();
-            using (var connector = new Connector(_clientConfig))
-            {
-                var accounts = connector.DataSource<Account>();
-                var myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
-
-
-                var sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
-
-                Assert.IsTrue(myAccounts.All(acc => acc.Balance < 1000),
-                    "The balance is unchanged when reloading data");
-
-                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-            }
         }
 
         [Test]
@@ -611,6 +330,287 @@ namespace UnitTests
 
 
                 Assert.AreEqual(0, transfers.Count());
+            }
+        }
+
+        [Test]
+        public void No_deadlock_if_same_objects_are_updated_in_parallel_by_multiple_clients()
+        {
+            List<Account> myAccounts;
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+
+                var accountIds = connector.GenerateUniqueIds("account_id", 2);
+
+                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
+                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+
+                myAccounts = accounts.ToList();
+            }
+
+            Parallel.Invoke(
+                () =>
+                {
+                    using (var connector1 = new Connector(_clientConfig))
+                    {
+                        for (var i = 0; i < 100; i++)
+                        {
+                            var transfer = new MoneyTransfer
+                            {
+                                Amount = 10,
+                                Date = DateTime.Today,
+                                SourceAccount = myAccounts[0].Id,
+                                DestinationAccount = myAccounts[1].Id
+                            };
+
+                            myAccounts[0].Balance -= 10;
+                            myAccounts[1].Balance += 10;
+
+                            var transaction = connector1.BeginTransaction();
+                            transaction.Put(myAccounts[0]);
+                            transaction.Put(myAccounts[1]);
+                            transaction.Put(transfer);
+                            transaction.Commit();
+                        }
+                    }
+                },
+                () =>
+                {
+                    using (var connector2 = new Connector(_clientConfig))
+                    {
+                        for (var i = 0; i < 100; i++)
+                        {
+                            var transfer = new MoneyTransfer
+                            {
+                                Amount = 10,
+                                Date = DateTime.Today,
+                                SourceAccount = myAccounts[0].Id,
+                                DestinationAccount = myAccounts[1].Id
+                            };
+
+                            myAccounts[0].Balance -= 10;
+                            myAccounts[1].Balance += 10;
+
+                            var transaction = connector2.BeginTransaction();
+                            transaction.Put(myAccounts[0]);
+                            transaction.Put(myAccounts[1]);
+                            transaction.Put(transfer);
+                            transaction.Commit();
+                        }
+                    }
+                },
+                () =>
+                {
+                    using (var connector3 = new Connector(_clientConfig))
+                    {
+                        for (var i = 0; i < 100; i++)
+                        {
+                            var transfer = new MoneyTransfer
+                            {
+                                Amount = 10,
+                                Date = DateTime.Today,
+                                SourceAccount = myAccounts[0].Id,
+                                DestinationAccount = myAccounts[1].Id
+                            };
+
+                            myAccounts[0].Balance -= 10;
+                            myAccounts[1].Balance += 10;
+
+                            var transaction = connector3.BeginTransaction();
+                            transaction.Put(myAccounts[0]);
+                            transaction.Put(myAccounts[1]);
+                            transaction.Put(transfer);
+                            transaction.Commit();
+                        }
+                    }
+                });
+
+            TransactionStatistics.Display();
+
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+
+
+                myAccounts = accounts.ToList();
+
+                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
+
+                Assert.AreEqual(1000, myAccounts[0].Balance + myAccounts[1].Balance);
+            }
+        }
+
+
+        [Test]
+        public void No_deadlock_if_same_objects_are_updated_in_parallel_by_one_client()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+
+                var accountIds = connector.GenerateUniqueIds("account_id", 2);
+
+                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
+                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+
+                var myAccounts = accounts.ToList();
+
+                Parallel.For(0, 100, i =>
+                {
+                    var transfer = new MoneyTransfer
+                    {
+                        Amount = 10,
+                        Date = DateTime.Today,
+                        SourceAccount = myAccounts[0].Id,
+                        DestinationAccount = myAccounts[1].Id
+                    };
+
+                    myAccounts[0].Balance -= 10;
+                    myAccounts[1].Balance += 10;
+
+                    var transaction = connector.BeginTransaction();
+                    transaction.Put(myAccounts[0]);
+                    transaction.Put(myAccounts[1]);
+                    transaction.Put(transfer);
+                    transaction.Commit();
+                });
+            }
+        }
+
+        [Test]
+        public void No_deadlock_if_transactions_and_non_transactional_queries_are_run_in_parallel()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+
+                var accountIds = connector.GenerateUniqueIds("account_id", 2);
+
+                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
+                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+
+
+                // run in parallel a sequence of transactions and clients that check that the sum of the balances of the two accounts is 
+                // always the same (thus proving that the two accounts are updated transactionally)
+
+                try
+                {
+                    Parallel.Invoke(
+                        () =>
+                        {
+                            Parallel.For(0, 100, i =>
+                            {
+                                // check the some of two balances is always 1000
+                                var myAccounts = accounts.ToList();
+                                Assert.AreEqual(2, myAccounts.Count);
+
+                                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
+                            });
+                        },
+                        () =>
+                        {
+                            var myAccounts = accounts.ToList();
+
+                            for (var i = 0; i < 80; i++)
+                            {
+                                var transfer = new MoneyTransfer
+                                {
+                                    Amount = 10,
+                                    Date = DateTime.Today,
+                                    SourceAccount = myAccounts[0].Id,
+                                    DestinationAccount = myAccounts[1].Id
+                                };
+
+                                myAccounts[0].Balance -= 10;
+                                myAccounts[1].Balance += 10;
+
+                                var transaction = connector.BeginTransaction();
+                                transaction.Put(myAccounts[0]);
+                                transaction.Put(myAccounts[1]);
+                                transaction.Put(transfer);
+                                transaction.Commit();
+                            }
+                        });
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Assert.Fail(e.Message);
+                }
+            }
+
+            // check that the data is persistent (force the external server to reload data)
+            StopServers();
+            StartServers();
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+                var myAccounts = accounts.ToList();
+                Assert.AreEqual(2, myAccounts.Count);
+
+
+                var sum = myAccounts.Sum(acc => acc.Balance);
+                Assert.AreEqual(1000, sum);
+
+                Assert.IsTrue(myAccounts.All(acc => acc.Balance < 1000),
+                    "The balance is unchanged when reloading data");
+
+                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
+            }
+        }
+
+
+        [Test]
+        public void Simple_transaction()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                var accounts = connector.DataSource<Account>();
+
+                var accountIds = connector.GenerateUniqueIds("account_id", 2);
+
+                var srcAccount = new Account {Id = accountIds[0], Balance = 1000};
+                var dstAccount = new Account {Id = accountIds[1], Balance = 0};
+
+                accounts.Put(srcAccount);
+                accounts.Put(dstAccount);
+
+
+                // check the sum of two balances is always 1000
+                var myAccounts = accounts.ToList();
+                Assert.AreEqual(2, myAccounts.Count);
+
+                var sum = myAccounts.Sum(acc => acc.Balance);
+                Assert.AreEqual(1000, sum);
+
+                srcAccount.Balance -= 10;
+                dstAccount.Balance += 10;
+
+
+                var transfer = new MoneyTransfer
+                {
+                    Amount = 10, Date = DateTime.Today, SourceAccount = myAccounts[0].Id,
+                    DestinationAccount = myAccounts[1].Id
+                };
+
+                var transaction = connector.BeginTransaction();
+                transaction.Put(srcAccount);
+                transaction.Put(dstAccount);
+                transaction.Put(transfer);
+                transaction.Commit();
+
+                // check the some of two balances is always 1000
+                myAccounts = accounts.ToList();
+                Assert.AreEqual(2, myAccounts.Count);
+
+                sum = myAccounts.Sum(acc => acc.Balance);
+                Assert.AreEqual(1000, sum);
+
+                Assert.IsFalse(myAccounts.Any(acc => acc.Balance == 0));
+
+                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             }
         }
     }

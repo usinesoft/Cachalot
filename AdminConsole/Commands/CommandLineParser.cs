@@ -19,12 +19,11 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandLineParser
     {
-        
         private readonly IDictionary<string, TypeDescription> _knownTypes;
 
         public CommandLineParser(ClusterInformation desc)
         {
-            _knownTypes = desc?.Schema.ToDictionary(t=>t.FullTypeName);
+            _knownTypes = desc?.Schema.ToDictionary(t => t.FullTypeName);
         }
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace AdminConsole.Commands
         /// <summary>
         ///     Parse the string and if it is valid build an instance of <see cref="CommandBase" />
         /// </summary>
-        /// <param name="command"></param>        
+        /// <param name="command"></param>
         /// <returns></returns>
         public CommandBase Parse(string command)
         {
@@ -62,9 +61,9 @@ namespace AdminConsole.Commands
 
                 if (atoms.Count == 1)
                 {
-                        var dir = atoms[0];
-                        result.Params.Add(dir);
-                 
+                    var dir = atoms[0];
+                    result.Params.Add(dir);
+
                     result.Success = true;
                 }
                 else
@@ -77,7 +76,7 @@ namespace AdminConsole.Commands
             //RESTORE source_directory
             if (Parse(command, "^RESTORE\\s*(.*)", atoms))
             {
-                result = new CommandRestore{ CmdType = CommandType.Restore };
+                result = new CommandRestore {CmdType = CommandType.Restore};
 
                 if (atoms.Count == 1)
                 {
@@ -92,10 +91,11 @@ namespace AdminConsole.Commands
                     result.ErrorMessage = "Restore comand needs one parameter";
                 }
             }
+
             //RESTORE source_directory
             if (Parse(command, "^IMPORT\\s*(.*)", atoms))
             {
-                result = new CommandImport() { CmdType = CommandType.Import };
+                result = new CommandImport {CmdType = CommandType.Import};
 
                 if (atoms.Count == 1)
                 {
@@ -110,10 +110,11 @@ namespace AdminConsole.Commands
                     result.ErrorMessage = "Import comand needs one parameter";
                 }
             }
+
             //RECREATE source directory
             if (Parse(command, "^RECREATE\\s*(.*)", atoms))
             {
-                result = new CommandRecreate { CmdType = CommandType.Recreate };
+                result = new CommandRecreate {CmdType = CommandType.Recreate};
 
                 if (atoms.Count == 1)
                 {
@@ -183,7 +184,7 @@ namespace AdminConsole.Commands
                 result = new CommandBase {CmdType = CommandType.Exit, Success = true};
                 result.Success = true;
             }
-     
+
             //STOP
             else if (Parse(command, "^STOP", atoms))
             {
@@ -193,7 +194,6 @@ namespace AdminConsole.Commands
                     Success = true
                 };
             }
-
 
             //STOP
             else if (Parse(command, "^DROP", atoms))
@@ -282,7 +282,7 @@ namespace AdminConsole.Commands
                         var builder = new QueryBuilder(typeDescription);
 
                         var ftQuery = atoms[2];
-                        
+
                         result.Query = builder.GetMany();
                         result.Query.FullTextSearch = ftQuery;
                         result.Success = true;
@@ -357,25 +357,18 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Params.Add(atoms[1]); //table
-                    if (atoms.Count == 4)
-                    {
-                        result.Params.Add(atoms[3]); //query
-                    }
-                    
+                    if (atoms.Count == 4) result.Params.Add(atoms[3]); //query
+
                     try
                     {
                         var typeDescription = GetTypeDescriptionByName(atoms[1]);
                         var builder = new QueryBuilder(typeDescription);
 
                         if (atoms.Count == 4)
-                        {
                             result.Query = builder.GetManyWhere(atoms[3]);
-                        }
                         else
-                        {
                             result.Query = new OrQuery(typeDescription);
-                        }
-                        
+
                         result.Success = true;
                     }
                     catch (Exception ex)
@@ -408,20 +401,16 @@ namespace AdminConsole.Commands
             //CONNECT server port or CONNECT config.xml
             else if (Parse(command, "^CONNECT\\s*(.*)", atoms))
             {
-                result = new CommandConnect { CmdType = CommandType.Connect };
+                result = new CommandConnect {CmdType = CommandType.Connect};
 
                 if (atoms.Count == 1)
                 {
                     var parts = atoms[0].Split();
                     result.Params.Add(parts[0]);
-                    if (parts.Length == 2)
-                    {
-                        result.Params.Add(parts[1]);
-                    }
+                    if (parts.Length == 2) result.Params.Add(parts[1]);
                 }
 
                 result.Success = true;
-
             }
 
             if (result != null)

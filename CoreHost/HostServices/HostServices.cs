@@ -5,15 +5,11 @@ using Server;
 
 namespace CoreHost.HostServices
 {
-
     /// <summary>
-    /// Contains technical services implemented by the host (Like log service)
-    /// 
+    ///     Contains technical services implemented by the host (Like log service)
     /// </summary>
     public static class HostServices
     {
-        public static ILog Log { get; }
-
         private static volatile bool _started;
 
         static HostServices()
@@ -21,13 +17,15 @@ namespace CoreHost.HostServices
             Log = new FastLogger();
         }
 
-       
+        public static ILog Log { get; }
+
+
         public static void Start(string dataPath)
         {
             if (_started) throw new NotSupportedException("Can start only once");
 
 
-            ((FastLogger)Log).Start(dataPath);
+            ((FastLogger) Log).Start(dataPath);
 
 
             _started = true;
@@ -36,12 +34,12 @@ namespace CoreHost.HostServices
 
         public static void Stop()
         {
-            ((FastLogger)Log).Stop();
+            ((FastLogger) Log).Stop();
         }
 
         public static IList<string> GetLog()
         {
-            return ((FastLogger)Log).GetCachedLog();
+            return ((FastLogger) Log).GetCachedLog();
         }
     }
 }

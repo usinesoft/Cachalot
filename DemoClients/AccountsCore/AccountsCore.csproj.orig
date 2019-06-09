@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PreserveCompilationContext>false</PreserveCompilationContext>
+    <RootNamespace>Accounts</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\..\bin\Release\DemoClients\Accounts\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\..\bin\Debug\DemoClients\Accounts\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="two_nodes_cluster.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="two_nodes_cluster.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+<<<<<<< HEAD
+    <PackageReference Include="Cachalot.Client" Version="1.0.12" />
+=======
+    <PackageReference Include="Cachalot.Client" Version="1.0.13" />
+>>>>>>> ff09088ac299b0251499394333f07bf2012bd5b4
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="readme.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="run_accounts.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

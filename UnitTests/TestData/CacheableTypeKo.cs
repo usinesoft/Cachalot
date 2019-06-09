@@ -3,7 +3,7 @@
 namespace UnitTests.TestData
 {
     /// <summary>
-    /// No primary key so it can not be serialized
+    ///     No primary key so it can not be serialized
     /// </summary>
     [Serializable]
     public class CacheableTypeKo
@@ -12,8 +12,8 @@ namespace UnitTests.TestData
 
         public string ObjectData
         {
-            get { return _objectData; }
-            set { _objectData = value; }
+            get => _objectData;
+            set => _objectData = value;
         }
     }
 }

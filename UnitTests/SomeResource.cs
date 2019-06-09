@@ -1,6 +1,6 @@
 namespace UnitTests
 {
-    class SomeResource
+    internal class SomeResource
     {
         public bool IsValid { get; set; } = true;
     }

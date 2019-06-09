@@ -34,43 +34,43 @@ namespace UnitTests
         [PrimaryKey(KeyDataType.IntKey)]
         public int PrimaryKey
         {
-            get { return _primaryKey; }
-            set { _primaryKey = value; }
+            get => _primaryKey;
+            set => _primaryKey = value;
         }
 
         [Key(KeyDataType.IntKey)]
         public int UniqueKey
         {
-            get { return _uniqueKey; }
-            set { _uniqueKey = value; }
+            get => _uniqueKey;
+            set => _uniqueKey = value;
         }
 
         [Index(KeyDataType.StringKey)]
         public string IndexKeyFolder
         {
-            get { return _indexKeyFolder; }
-            set { _indexKeyFolder = value; }
+            get => _indexKeyFolder;
+            set => _indexKeyFolder = value;
         }
 
         [Index(KeyDataType.IntKey, true)]
         public DateTime IndexKeyDate
         {
-            get { return _indexKeyDate; }
-            set { _indexKeyDate = value; }
+            get => _indexKeyDate;
+            set => _indexKeyDate = value;
         }
 
 
         public string ObjectData
         {
-            get { return _objectData; }
-            set { _objectData = value; }
+            get => _objectData;
+            set => _objectData = value;
         }
 
         [Index(KeyDataType.IntKey, true)]
         public int IndexKeyValue
         {
-            get { return _indexKeyValue; }
-            set { _indexKeyValue = value; }
+            get => _indexKeyValue;
+            set => _indexKeyValue = value;
         }
 
 

@@ -21,7 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+    <PackageReference Include="Cachalot.Client" Version="1.0.12" />
+=======
     <PackageReference Include="Cachalot.Client" Version="1.0.13" />
+>>>>>>> ff09088ac299b0251499394333f07bf2012bd5b4
   </ItemGroup>
 
 

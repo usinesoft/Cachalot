@@ -9,10 +9,6 @@ namespace Client.Messages
     [ProtoContract]
     public class RegisterTypeRequest : Request
     {
-        [ProtoMember(2)] private readonly int _shardIndex;
-        [ProtoMember(3)] private readonly int _shardsInCluster;
-        [ProtoMember(1)] private readonly TypeDescription _typeDescription;
-
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -27,9 +23,9 @@ namespace Client.Messages
         /// <param name="shardsInCluster">Nodes in cluster</param>
         public RegisterTypeRequest(TypeDescription typeDescription, int shardIndex = 0, int shardsInCluster = 1)
         {
-            _typeDescription = typeDescription;
-            _shardIndex = shardIndex;
-            _shardsInCluster = shardsInCluster;
+            TypeDescription = typeDescription;
+            ShardIndex = shardIndex;
+            ShardsInCluster = shardsInCluster;
         }
 
         public override RequestClass RequestClass => RequestClass.Admin;
@@ -37,10 +33,11 @@ namespace Client.Messages
         /// <summary>
         ///     Get the description of the type to be registered
         /// </summary>
-        public TypeDescription TypeDescription => _typeDescription;
+        [field: ProtoMember(1)]
+        public TypeDescription TypeDescription { get; }
 
-        public int ShardIndex => _shardIndex;
+        [field: ProtoMember(2)] public int ShardIndex { get; }
 
-        public int ShardsInCluster => _shardsInCluster;
+        [field: ProtoMember(3)] public int ShardsInCluster { get; }
     }
 }

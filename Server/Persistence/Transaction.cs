@@ -2,7 +2,6 @@
 
 namespace Server.Persistence
 {
-
     [ProtoContract]
     [ProtoInclude(500, typeof(PutTransaction))]
     [ProtoInclude(600, typeof(DeleteTransaction))]
@@ -10,7 +9,7 @@ namespace Server.Persistence
     public abstract class Transaction
     {
         /// <summary>
-        /// Used by protobuf serialization
+        ///     Used by protobuf serialization
         /// </summary>
         // ReSharper disable once EmptyConstructor
         // ReSharper disable once PublicConstructorInAbstractClass

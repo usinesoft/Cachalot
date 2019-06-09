@@ -111,10 +111,9 @@ namespace Client.Tools
 
             foreach (var cachedObject in objects)
             {
-                
-                string json = cachedObject.AsJson();
+                var json = cachedObject.AsJson();
 
-                
+
                 sb.Append(json);
                 sb.AppendLine();
                 sb.AppendLine("\\-"); // separator which is illegal in json

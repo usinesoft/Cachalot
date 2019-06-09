@@ -10,8 +10,6 @@ namespace Client.Messages
     [Serializable]
     public class ServerLogEntry
     {
-        [ProtoMember(5)] private readonly DateTime _timeStamp;
-
         /// <summary>
         ///     Potential lock time of the cache (as a lock free scheduler is used there is no effective lock
         ///     for read-only operations; this is the lock time in the worst case scenario)
@@ -42,13 +40,13 @@ namespace Client.Messages
             _requestType = requestType;
             _message = message;
             _itemsProcessed = itemsProcessed;
-            _timeStamp = DateTime.Now;
+            TimeStamp = DateTime.Now;
         }
 
 
         public ServerLogEntry()
         {
-            _timeStamp = DateTime.Now;
+            TimeStamp = DateTime.Now;
         }
 
         /// <summary>
@@ -88,7 +86,7 @@ namespace Client.Messages
             set => _itemsProcessed = value;
         }
 
-        public DateTime TimeStamp => _timeStamp;
+        [field: ProtoMember(5)] public DateTime TimeStamp { get; }
 
 
         public override string ToString()

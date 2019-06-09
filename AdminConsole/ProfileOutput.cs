@@ -4,7 +4,7 @@ using Client.Profiling;
 
 namespace AdminConsole
 {
-    class ProfileOutput : IProfilerLogger
+    internal class ProfileOutput : IProfilerLogger
     {
         private readonly TextWriter _writer;
 
@@ -20,10 +20,10 @@ namespace AdminConsole
 
         public void Write(string actionName, ActionType actionType, string format, params object[] parameters)
         {
-            if ((actionType == ActionType.EndSingle) || (actionType == ActionType.EndMultiple))
+            if (actionType == ActionType.EndSingle || actionType == ActionType.EndMultiple)
             {
-                string msg = string.Format(format, parameters);
-                string line = actionName + ": " + msg;
+                var msg = string.Format(format, parameters);
+                var line = actionName + ": " + msg;
                 _writer.WriteLine(line);
             }
         }

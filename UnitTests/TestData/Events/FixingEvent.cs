@@ -2,17 +2,8 @@
 
 namespace UnitTests.TestData.Events
 {
-    public class FixingEvent:ProductEvent
+    public class FixingEvent : ProductEvent
     {
-        public string Underlying { get; set; }
-
-        public Decimal Value { get; set; }
-
-        public DateTime FixingDate { get; set; }
-
-        public override string EventType => "FIXING";
-
-
         public FixingEvent(int id, string underlying, decimal value, string dealId)
         {
             EventId = id;
@@ -25,5 +16,13 @@ namespace UnitTests.TestData.Events
             EventDate = DateTime.Today;
             ValueDate = DateTime.Today;
         }
+
+        public string Underlying { get; set; }
+
+        public decimal Value { get; set; }
+
+        public DateTime FixingDate { get; set; }
+
+        public override string EventType => "FIXING";
     }
 }

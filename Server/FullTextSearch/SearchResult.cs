@@ -10,6 +10,5 @@ namespace Server.FullTextSearch
         public double Score { get; set; }
 
         public IList<LinePointer> LinePointers { get; set; } = new List<LinePointer>();
-
     }
 }

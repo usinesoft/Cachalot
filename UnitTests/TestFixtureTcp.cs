@@ -6,13 +6,10 @@ using System.Linq;
 using System.Threading;
 using Channel;
 using Client.Core;
-using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
-
-
 
 #endregion
 
@@ -35,7 +32,7 @@ namespace UnitTests
 
             _client = NewClient();
 
-            
+
             _client.RegisterTypeIfNeeded(typeof(CacheableTypeOk));
         }
 
@@ -78,10 +75,11 @@ namespace UnitTests
 
             var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
             _client.Put(item2);
-            
+
             var atomic = builder.MakeAtomicQuery("IndexKeyFolder", "aaa");
 
-            var domainDeclaration = new DomainDescription(new OrQuery(typeof(CacheableTypeOk)){Elements = { new AndQuery{Elements = { atomic}}}});
+            var domainDeclaration = new DomainDescription(new OrQuery(typeof(CacheableTypeOk))
+                {Elements = {new AndQuery {Elements = {atomic}}}});
 
             _client.DeclareDomain(domainDeclaration);
 
@@ -112,7 +110,8 @@ namespace UnitTests
 
             //get both of them again by date
             IList<CacheableTypeOk> allItems =
-                new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate ==  {new DateTime(2010, 10, 10).Ticks}"));
+                new List<CacheableTypeOk>(
+                    _client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate ==  {new DateTime(2010, 10, 10).Ticks}"));
             Assert.AreEqual(allItems.Count, 2);
 
             //get both of them using an In query
@@ -133,7 +132,7 @@ namespace UnitTests
         public void FeedDataToCache()
         {
             var items = new List<CacheableTypeOk>();
-            for (int i = 0; i < 113; i++)
+            for (var i = 0; i < 113; i++)
             {
                 var item1 = new CacheableTypeOk(i, 1000 + i, "aaa", new DateTime(2010, 10, 10), 1500);
                 items.Add(item1);
@@ -145,14 +144,13 @@ namespace UnitTests
             IList<CacheableTypeOk> itemsReloaded =
                 _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsReloaded.Count, 113);
-
         }
 
         [Test]
         public void FeedDataToCacheUsingSessions()
         {
             var session = _client.BeginFeed<CacheableTypeOk>(10, false);
-            for (int i = 0; i < 113; i++)
+            for (var i = 0; i < 113; i++)
             {
                 var item1 = new CacheableTypeOk(i, 1000 + i, "aaa", new DateTime(2010, 10, 10), 1500);
                 _client.Add(session, item1);
@@ -172,7 +170,7 @@ namespace UnitTests
         public void MultiThreadedDataAccess()
         {
             //first load data 
-            for (int i = 0; i < 1000; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var item = new CacheableTypeOk(i, 10000 + i, "aaa", new DateTime(2010, 10, 10), 1500 + i);
                 _client.Put(item);
@@ -184,8 +182,7 @@ namespace UnitTests
             _requestsFinished = new Semaphore(0, clients);
 
             //CLIENTS parallel requests: each one uses a channel
-            for (int i = 0; i < clients; i++)
-            {
+            for (var i = 0; i < clients; i++)
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     Thread.CurrentThread.Name = "client thread";
@@ -207,18 +204,13 @@ namespace UnitTests
 
                     client.Dispose();
                 });
-            }
 
 
-            for (int i = 0; i < clients; i++)
-            {
-                _requestsFinished.WaitOne();
-            }
+            for (var i = 0; i < clients; i++) _requestsFinished.WaitOne();
 
             //CLIENTS parallel requests shared channel
 
-            for (int i = 0; i < clients; i++)
-            {
+            for (var i = 0; i < clients; i++)
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     Thread.CurrentThread.Name = "client thread";
@@ -232,16 +224,9 @@ namespace UnitTests
 
                     _requestsFinished.Release();
                 });
-            }
 
 
-            for (int i = 0; i < clients; i++)
-            {
-                _requestsFinished.WaitOne();
-            }
+            for (var i = 0; i < clients; i++) _requestsFinished.WaitOne();
         }
-
-
-      
     }
 }

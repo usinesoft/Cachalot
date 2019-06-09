@@ -25,8 +25,6 @@ namespace Client.Messages
 
         [ProtoMember(1)] private List<CachedObject> _items = new List<CachedObject>();
 
-        [ProtoMember(5)] private bool _onlyIfNew;
-
         /// <summary>
         ///     If set the put is part of feed session
         /// </summary>
@@ -81,11 +79,7 @@ namespace Client.Messages
             set => _endOfSession = value;
         }
 
-        public bool OnlyIfNew
-        {
-            get => _onlyIfNew;
-            set => _onlyIfNew = value;
-        }
+        [field: ProtoMember(5)] public bool OnlyIfNew { get; set; }
 
         [ProtoMember(6)] public OrQuery Predicate { get; set; }
     }

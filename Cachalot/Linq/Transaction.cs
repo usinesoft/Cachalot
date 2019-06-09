@@ -8,19 +8,18 @@ using Client.Queries;
 
 namespace Cachalot.Linq
 {
-
     /// <summary>
-    /// A transaction contains Put and Delete operations. They will be executed in an ACID transaction
+    ///     A transaction contains Put and Delete operations. They will be executed in an ACID transaction
     /// </summary>
     public class Transaction
     {
         private readonly ICacheClient _client;
 
-        readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
+        private readonly List<OrQuery> _conditions = new List<OrQuery>();
 
-        readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
+        private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
 
-        readonly List<OrQuery> _conditions = new List<OrQuery>();
+        private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
 
         internal Transaction(IDictionary<string, ClientSideTypeDescription> typeDescriptions, ICacheClient client)
         {
@@ -30,7 +29,7 @@ namespace Cachalot.Linq
 
         private IDictionary<string, ClientSideTypeDescription> TypeDescriptions { get; }
 
-        
+
         public void Put<T>(T item)
         {
             var packed = Pack(item);
@@ -40,12 +39,11 @@ namespace Cachalot.Linq
         }
 
         /// <summary>
-        /// Conditional update. The condition is applied server-side on the previous version of the item
+        ///     Conditional update. The condition is applied server-side on the previous version of the item
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="newValue"></param>
         /// <param name="test"></param>
-
         public void UpdateIf<T>(T newValue, Expression<Func<T, bool>> test)
         {
             var desc = TypeDescriptions[typeof(T).FullName ?? throw new InvalidOperationException()];
@@ -54,40 +52,35 @@ namespace Cachalot.Linq
 
             _itemsToPut.Add(packed);
 
-            DataSource<T> dataSource = new DataSource<T>(_client, desc);
-            OrQuery testAsQuery = dataSource.PredicateToQuery(test);
+            var dataSource = new DataSource<T>(_client, desc);
+            var testAsQuery = dataSource.PredicateToQuery(test);
 
             _conditions.Add(testAsQuery);
-
         }
 
+
+        //TODO add unit test for timestamp synchronization (coverage)
         /// <summary>
-        /// Optimistic synchronization using a timestamp property
-        /// Works like an UpdateIf that checks the previous value of a property of type DateTime named "Timestamp"
-        /// It also updates this property withe DateTime.Now
-        /// If you use this you should never modify the timestamp manually when updating the object
+        ///     Optimistic synchronization using a timestamp property
+        ///     Works like an UpdateIf that checks the previous value of a property of type DateTime named "Timestamp"
+        ///     It also updates this property withe DateTime.Now
+        ///     If you use this you should never modify the timestamp manually when updating the object
         /// </summary>
         /// <param name="newValue"></param>
         public void UpdateWithTimestampSynchronization<T>(T newValue)
         {
-
             var prop = newValue.GetType().GetProperty("Timestamp");
-            if (prop == null)
-            {
-                throw new CacheException($"No Timestamp property found on type {typeof(T).Name}");
-            }
+            if (prop == null) throw new CacheException($"No Timestamp property found on type {typeof(T).Name}");
 
             if (!prop.CanWrite)
-            {
                 throw new CacheException($"The Timestamp property of type {typeof(T).Name} is not writable");
-            }
 
             var oldTimestamp = prop.GetValue(newValue);
 
             var kv = KeyInfo.ValueToKeyValue(oldTimestamp,
                 new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "Timestamp"));
 
-            AtomicQuery q = new AtomicQuery(kv);
+            var q = new AtomicQuery(kv);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(q);
             var orq = new OrQuery(typeof(T));
@@ -104,8 +97,6 @@ namespace Cachalot.Linq
             _itemsToPut.Add(packed);
 
             _conditions.Add(orq);
-
-
         }
 
 
@@ -127,9 +118,7 @@ namespace Cachalot.Linq
         {
             var name = typeof(T).FullName;
             if (!TypeDescriptions.ContainsKey(name ?? throw new InvalidOperationException()))
-            {
-                TypeDescriptions[name] = _client.RegisterTypeIfNeeded(typeof(T));                 
-            }
+                TypeDescriptions[name] = _client.RegisterTypeIfNeeded(typeof(T));
 
             var packed = CachedObject.Pack(item, TypeDescriptions[name]);
             return packed;

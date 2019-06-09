@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Client.Profiling;
 
 namespace AdminConsole.Commands
 {
@@ -27,21 +26,17 @@ namespace AdminConsole.Commands
 
                 listResult = client.GetObjectDescriptions(Query);
 
-               
+
                 Logger.Write("[");
-                for (int i = 0; i < listResult.Count; i++)
+                for (var i = 0; i < listResult.Count; i++)
                 {
                     Logger.Write(listResult[i].AsJson());
-                    if (i < listResult.Count - 1)
-                    {
-                        Logger.Write(",");
-                    }
+                    if (i < listResult.Count - 1) Logger.Write(",");
                 }
 
                 Logger.Write("]");
 
                 return client;
-
             }
             catch (CacheException ex)
             {
@@ -55,17 +50,15 @@ namespace AdminConsole.Commands
             }
             finally
             {
-                ProfilingData profilerResult = Profiler.End();
+                var profilerResult = Profiler.End();
 
-                int count = 0;
+                var count = 0;
                 if (listResult != null)
                     count = listResult.Count;
 
                 Logger.Write("Found {0} items. The call took {1} milliseconds", count,
                     profilerResult.TotalTimeMiliseconds);
             }
-
-
         }
     }
 }

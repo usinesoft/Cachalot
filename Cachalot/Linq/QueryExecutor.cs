@@ -3,23 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using Client;
 using Client.Interface;
+using Client.Messages;
 using Client.Queries;
 using Remotion.Linq;
-using TypeDescription =  Client.Messages.TypeDescription;
 
 namespace Cachalot.Linq
 {
     internal class QueryExecutor : IQueryExecutor
     {
-
-        public static void Probe(Action<OrQuery> action)
-        {
-            _customAction = action;
-        }
+        private static Action<OrQuery> _customAction;
 
         private readonly ICacheClient _client;
         private readonly TypeDescription _typeDescription;
-        private static  Action<OrQuery> _customAction;
 
 
         public QueryExecutor(ICacheClient client, TypeDescription typeDescription)
@@ -41,10 +36,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            if (expression.CountOnly)
-            {
-                return (T)(object)_client.EvalQuery(expression).Value;                
-            }
+            if (expression.CountOnly) return (T) (object) _client.EvalQuery(expression).Value;
 
             throw new NotSupportedException("Only Count scalar method is implemented");
         }
@@ -71,6 +63,11 @@ namespace Cachalot.Linq
             Dbg.Trace($"linq provider produced expression {expression}");
 
             return _client.GetMany<T>(visitor.RootExpression);
+        }
+
+        public static void Probe(Action<OrQuery> action)
+        {
+            _customAction = action;
         }
     }
 }

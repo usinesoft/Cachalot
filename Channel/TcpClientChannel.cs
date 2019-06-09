@@ -68,7 +68,6 @@ namespace Channel
             var stream = client.GetStream();
             try
             {
-
                 stream.WriteByte(Consts.RequestCookie);
                 Streamer.ToStream(stream, request);
 
@@ -97,7 +96,7 @@ namespace Channel
         {
             if (!(session is TcpSession tcpSession))
                 throw new ArgumentException("Invalid session type", nameof(session));
-            
+
             _connectionPool.Put(tcpSession.Client);
         }
 
@@ -150,22 +149,19 @@ namespace Channel
                 throw new CacheException("Not connected to server");
             var stream = client.GetStream();
 
-            
+
             var response = Streamer.FromStream<Response>(stream);
 
-            
 
             return response;
         }
 
         public bool Continue(Session session, bool shouldContinue)
         {
-            
-            var response = SendRequest(session, new ContinueRequest{Rollback = !shouldContinue});
+            var response = SendRequest(session, new ContinueRequest {Rollback = !shouldContinue});
 
-            
+
             return response is ReadyResponse;
-            
         }
 
         public void GetStreamedCollection<TItemType>(Session session, DataHandler<TItemType> dataHandler,

@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using Server;
 using Host.HostServices.Logger;
+using Server;
 using Unity;
 
 namespace Host.HostServices
 {
-
     /// <summary>
-    /// Contains technical services implemented by the host (Like log service)
-    /// They are exposed througn a Unity container
+    ///     Contains technical services implemented by the host (Like log service)
+    ///     They are exposed througn a Unity container
     /// </summary>
     public static class HostServices
     {
@@ -40,7 +39,7 @@ namespace Host.HostServices
 
 
         public static void Stop()
-        {            
+        {
             Log.Stop();
         }
 

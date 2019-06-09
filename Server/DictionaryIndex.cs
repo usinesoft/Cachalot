@@ -19,9 +19,9 @@ namespace Server
         private readonly Dictionary<KeyValue, Dictionary<KeyValue, CachedObject>> _data;
 
         /// <summary>
-        /// -1      non initialized
-        /// -2      list index
-        /// >= 0    the index of the property 
+        ///     -1      non initialized
+        ///     -2      list index
+        ///     >= 0    the index of the property
         /// </summary>
         private int _keyIndex = -1;
 
@@ -46,14 +46,12 @@ namespace Server
         {
             // first time get the index of the indexation key(this value is fixed for a cacheable data type)            
             if (_keyIndex == -1) // non initialized 
-            {
                 for (var i = 0; i < item.IndexKeys.Length; i++)
                     if (item.IndexKeys[i].KeyName == KeyInfo.Name)
                     {
                         _keyIndex = i;
                         break;
                     }
-            }
 
 
             if (_keyIndex >= 0)
@@ -65,15 +63,11 @@ namespace Server
 
 
             if (item.ListIndexKeys != null)
-            {
                 foreach (var keyValue in item.ListIndexKeys.Where(t => t.KeyName == KeyInfo.Name))
                 {
                     AddKeyValue(item, keyValue);
                     _keyIndex = -2; // list index so no need to lookup in normal indexes
                 }
-                    
-            }
-                
         }
 
         private void AddKeyValue(CachedObject item, KeyValue key)
@@ -129,7 +123,7 @@ namespace Server
                     return; //if it is a scalar index key it is unique (its name identifies the index)
                 }
             }
-            
+
             // if list values are present then the same object may be present multiple times in the same index
             if (item.ListIndexKeys != null)
                 foreach (var listValue in item.ListIndexKeys)
@@ -146,10 +140,7 @@ namespace Server
         public override void RemoveMany(IList<CachedObject> items)
         {
             // can not do much better for this index type
-            foreach (var item in items)
-            {
-                RemoveOne(item);
-            }
+            foreach (var item in items) RemoveOne(item);
         }
     }
 }

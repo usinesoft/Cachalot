@@ -35,37 +35,37 @@ namespace UnitTests.TestData
         [PrimaryKey(KeyDataType.IntKey)]
         public int Key
         {
-            get { return _primaryKey; }
-            set { _primaryKey = value; }
+            get => _primaryKey;
+            set => _primaryKey = value;
         }
 
         [Key(KeyDataType.IntKey)]
         public int UniqueKey
         {
-            get { return _uniqueKey; }
-            set { _uniqueKey = value; }
+            get => _uniqueKey;
+            set => _uniqueKey = value;
         }
 
         [Index(KeyDataType.StringKey)]
         public string Folder
         {
-            get { return _indexKeyFolder; }
-            set { _indexKeyFolder = value; }
+            get => _indexKeyFolder;
+            set => _indexKeyFolder = value;
         }
 
         [Index(KeyDataType.IntKey, true)]
         public DateTime ValueDate
         {
-            get { return _indexKeyDate; }
-            set { _indexKeyDate = value; }
+            get => _indexKeyDate;
+            set => _indexKeyDate = value;
         }
 
 
         [Index(KeyDataType.IntKey, true)]
         public int Nominal
         {
-            get { return _indexKeyValue; }
-            set { _indexKeyValue = value; }
+            get => _indexKeyValue;
+            set => _indexKeyValue = value;
         }
 
 
@@ -80,13 +80,11 @@ namespace UnitTests.TestData
             return true;
         }
 
-        void initEch()
+        private void initEch()
         {
             _ech = new List<KeyValuePair<DateTime, DateTime>>();
-            for (int i = 0; i < 10; i++)
-            {
+            for (var i = 0; i < 10; i++)
                 _ech.Add(new KeyValuePair<DateTime, DateTime>(new DateTime(2010, 9, 15), new DateTime(2010, 12, 15)));
-            }
         }
 
         public override bool Equals(object obj)

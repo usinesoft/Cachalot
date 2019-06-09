@@ -10,8 +10,6 @@ namespace Client.Messages
     [ProtoContract]
     public class RemoveRequest : DataRequest
     {
-        [ProtoMember(1)] private readonly KeyValue _primaryKey;
-
         public RemoveRequest() : base(DataAccessType.Write, string.Empty)
         {
         }
@@ -23,16 +21,16 @@ namespace Client.Messages
         public RemoveRequest(Type type, KeyValue primaryKeyValue)
             : base(DataAccessType.Write, type.FullName)
         {
-            _primaryKey = primaryKeyValue;
+            PrimaryKey = primaryKeyValue;
         }
 
         public RemoveRequest(string typeName, KeyValue primaryKeyValue)
             : base(DataAccessType.Write, typeName)
         {
-            _primaryKey = primaryKeyValue;
+            PrimaryKey = primaryKeyValue;
         }
 
 
-        public KeyValue PrimaryKey => _primaryKey;
+        [field: ProtoMember(1)] public KeyValue PrimaryKey { get; }
     }
 }

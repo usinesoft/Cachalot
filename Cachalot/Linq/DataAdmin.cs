@@ -2,9 +2,8 @@ using Client.Interface;
 
 namespace Cachalot.Linq
 {
-
     /// <summary>
-    /// All administration methods
+    ///     All administration methods
     /// </summary>
     public class DataAdmin
     {
@@ -17,7 +16,7 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Dump all data into a directory
+        ///     Dump all data into a directory
         /// </summary>
         /// <param name="path"></param>
         public void Dump(string path)
@@ -27,7 +26,7 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Delete all data from the database
+        ///     Delete all data from the database
         /// </summary>
         public void DropDatabase()
         {
@@ -35,8 +34,8 @@ namespace Cachalot.Linq
         }
 
         /// <summary>
-        /// This is a fast and safe dump import procedure. It is highly optimized but it can not be used if
-        /// the number of nodes has changed
+        ///     This is a fast and safe dump import procedure. It is highly optimized but it can not be used if
+        ///     the number of nodes has changed
         /// </summary>
         /// <param name="path"></param>
         public void ImportDump(string path)
@@ -45,7 +44,7 @@ namespace Cachalot.Linq
         }
 
         /// <summary>
-        /// This is slower than ImportDump but it allows to change the number of nodes in the database
+        ///     This is slower than ImportDump but it allows to change the number of nodes in the database
         /// </summary>
         /// <param name="path"></param>
         public void InitializeFromDump(string path)
@@ -55,13 +54,12 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Switch the database ro rad-only mode 
+        ///     Switch the database ro rad-only mode
         /// </summary>
         /// <param name="rw"> if true switch back to normal mode (read-write) </param>
         public void ReadOnlyMode(bool rw = false)
         {
             _client.SetReadonlyMode(rw);
         }
-
     }
 }

@@ -4,11 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Channel;
+using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
-
 
 #endregion
 
@@ -20,11 +20,11 @@ namespace UnitTests
         [SetUp]
         public void Init()
         {
-            _client = new Client.Core.CacheClient();
+            _client = new CacheClient();
             var channel = new InProcessChannel();
             _client.Channel = channel;
 
-           
+
             _server = new Server.Server(new NodeConfig()) {Channel = channel};
             _server.Start();
 
@@ -37,14 +37,14 @@ namespace UnitTests
             _server.Stop();
         }
 
-        private Client.Core.CacheClient _client;
+        private CacheClient _client;
 
         private Server.Server _server;
 
         [Test]
         public void EvictionLimitIsReached()
         {
-            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName, EvictionType.LessRecentlyUsed, 100, 10);
             var desc = _client.GetServerDescription();
             Assert.IsNotNull(desc);
             Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
@@ -61,14 +61,14 @@ namespace UnitTests
             Assert.AreEqual(item1, item1Reloaded);
 
             //add 100 items; eviction should be triggered(10 items should be removed)
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var item = new CacheableTypeOk(i + 2, i + 1002, "aaa", new DateTime(2010, 10, 10), 1500);
                 _client.Put(item);
             }
 
             //reload all items
-           
+
             IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
 
@@ -81,7 +81,7 @@ namespace UnitTests
             //update the first item. This should prevent it from being evicted
             _client.Put(new CacheableTypeOk(11, 1001, "aaa", new DateTime(2010, 10, 10), 1500));
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var item = new CacheableTypeOk(i + 102, i + 1102, "aaa", new DateTime(2010, 10, 10), 1500);
                 _client.Put(item);
@@ -90,7 +90,6 @@ namespace UnitTests
             itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)
 
-          
 
             itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
@@ -103,7 +102,7 @@ namespace UnitTests
         [Test]
         public void EvictionLimitIsReachedUsingPutMany()
         {
-            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName, EvictionType.LessRecentlyUsed, 100, 10);
             var desc = _client.GetServerDescription();
             Assert.IsNotNull(desc);
             Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
@@ -121,7 +120,7 @@ namespace UnitTests
 
             //add 100 items; eviction should be triggered(10 items should be removed)
             var itemsToPut = new List<CacheableTypeOk>();
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var item = new CacheableTypeOk(i + 2, i + 1002, "aaa", new DateTime(2010, 10, 10), 1500);
                 itemsToPut.Add(item);
@@ -137,12 +136,12 @@ namespace UnitTests
         [Test]
         public void ExcludedItemsAreNotEvicted()
         {
-            _client.ConfigEviction(typeof(CacheableTypeOk).FullName,EvictionType.LessRecentlyUsed, 100, 10);
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName, EvictionType.LessRecentlyUsed, 100, 10);
 
             var itemNotToBeEvicted = new CacheableTypeOk(0, 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             _client.Put(itemNotToBeEvicted, true);
 
-            for (int i = 0; i < 101; i++)
+            for (var i = 0; i < 101; i++)
             {
                 var item = new CacheableTypeOk(i + 1, i + 1001, "aaa", new DateTime(2010, 10, 10), 1500);
                 _client.Put(item);

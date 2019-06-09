@@ -4,11 +4,10 @@ using Client.Interface;
 namespace AdminConsole.Commands
 {
     /// <summary>
-    /// Display help message
+    ///     Display help message
     /// </summary>
     public class CommandHelp : CommandBase
     {
-
         private static void DisplayQueryHelp()
         {
             Logger.Write("Queries are expressed in a SQL-like language.");
@@ -26,15 +25,11 @@ namespace AdminConsole.Commands
             Logger.Write("Booleans              as 0 or 1");
             Logger.Write("Enumerations          as integer value");
             Logger.Write("Floating point values with a mandatory '.' decimal separator like 200. or 200.0");
-
         }
 
         internal override ICacheClient TryExecute(ICacheClient client)
         {
-            if (!CanExecute)
-            {
-                return null;
-            }
+            if (!CanExecute) return null;
 
             if (Params.Count == 0)
             {
@@ -46,7 +41,7 @@ namespace AdminConsole.Commands
                 Logger.Write("CONNECT   : connect to a server or a cluster of servers");
 
                 Logger.Write("EXIT      : guess what?");
-                
+
 
                 Logger.Write("READONLY  : switch on the readonly mode");
                 Logger.Write("READWRITE : switch off the readonly mode");
@@ -82,16 +77,16 @@ namespace AdminConsole.Commands
                     case "SELECT":
                         Logger.Write("SELECT <table> WHERE <query> [INTO file.json]");
                         DisplayQueryHelp();
-                        Logger.Write( "If INTO is used the data is saved as a json array in an external file");
+                        Logger.Write("If INTO is used the data is saved as a json array in an external file");
                         break;
                     case "SEARCH":
-                        Logger.Write("SEARCH <table> whatever you want");                        
-                        Logger.Write( "Perform full-text search on a given table");
+                        Logger.Write("SEARCH <table> whatever you want");
+                        Logger.Write("Perform full-text search on a given table");
                         break;
                     case "DELETE":
-                        Logger.Write( "DELETE <table> WHERE <query>");
+                        Logger.Write("DELETE <table> WHERE <query>");
                         DisplayQueryHelp();
-                        
+
                         break;
                     case "LAST":
                         Logger.Write("LAST <number> ");
@@ -104,7 +99,8 @@ namespace AdminConsole.Commands
 
                     case "DUMP":
                         Logger.Write("DUMP <existent directory> ");
-                        Logger.Write("Saves all data in an external directory. The directory is usually a network share ");
+                        Logger.Write(
+                            "Saves all data in an external directory. The directory is usually a network share ");
                         Logger.Write("It must be visible by ALL the servers");
                         Logger.Write("A sub-directory named yyyy-mm-dd will be created for the current date");
                         break;
@@ -114,20 +110,22 @@ namespace AdminConsole.Commands
                         Logger.Write("RESTORE <existent directory> ");
                         Logger.Write("Import data from a dump. The directory is usually a network share ");
                         Logger.Write("It must be visible by ALL the servers");
-                        Logger.Write("If the path contains yyyy-mm-dd this backup will be used. Otherwise the last one is restored");
+                        Logger.Write(
+                            "If the path contains yyyy-mm-dd this backup will be used. Otherwise the last one is restored");
                         Logger.Write("This method can be used ONLY if the number of nodes has not changed");
                         Logger.Write("ALL PREVIOUS DATA IS LOST");
                         break;
                     case "IMPORT":
                         Logger.Write("IMPORT <JSON file> ");
                         Logger.Write("Import data from an external json file");
-                        Logger.Write("Objects are inserted or updated");                        
+                        Logger.Write("Objects are inserted or updated");
                         break;
                     case "RECREATE":
                         Logger.Write("RECREATE <existent directory> ");
-                        Logger.Write("Import data from a dump. The directory must be accessible by the console client");                        
-                        Logger.Write("The database must be completely empty. New one or after a DROP operation");                        
-                        Logger.Write("This method is slower than RESTORE but it can be used even if the number of nodes has changed");
+                        Logger.Write("Import data from a dump. The directory must be accessible by the console client");
+                        Logger.Write("The database must be completely empty. New one or after a DROP operation");
+                        Logger.Write(
+                            "This method is slower than RESTORE but it can be used even if the number of nodes has changed");
                         Logger.Write("ALL PREVIOUS DATA IS LOST");
                         break;
                     case "CONNECT":
@@ -135,7 +133,7 @@ namespace AdminConsole.Commands
                         Logger.Write("connect (no parameter): by default connect to localhost 4848");
                         Logger.Write("connect server port   : connect to a specific node");
                         Logger.Write("connect config.xml    : connect to a cluster described by a configuration file");
-                        
+
                         break;
                 }
             }

@@ -11,57 +11,10 @@ namespace Cachalot.Linq
 {
     public class Connector : IDisposable
     {
-        public Transaction BeginTransaction()
-        {
-            return new Transaction(_typeDescriptions, Client);
-        }
-
-
-        public void Dispose()
-        {
-            Client.Dispose();
-            Client = null;
-
-            if (_server != null)
-            {
-                _server.Stop();
-                _server = null;
-            }
-        }
-
-        private Server.Server _server;
-
         private readonly Dictionary<string, ClientSideTypeDescription> _typeDescriptions =
             new Dictionary<string, ClientSideTypeDescription>();
 
-
-        /// <summary>
-        ///     Register a type for which the keys are specified with attributes and not in the configuration file
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private ClientSideTypeDescription RegisterDynamicType(Type type)
-        {
-            if (type == null) throw new ArgumentNullException(nameof(type));
-
-            var description = Client.RegisterTypeIfNeeded(type);
-
-            if (type.FullName != null) _typeDescriptions[type.FullName] = description;
-
-            return description;
-        }
-
-
-        /// <summary>
-        ///     Generate <paramref name="quantity" /> unique identifiers
-        ///     They are guaranteed to be unique but they are not necessary in a contiguous range
-        /// </summary>
-        /// <param name="generatorName">name of the generator</param>
-        /// <param name="quantity">number of unique ids to generate</param>
-        public int[] GenerateUniqueIds(string generatorName, int quantity)
-        {
-            return Client.GenerateUniqueIds(generatorName, quantity);
-        }
+        private Server.Server _server;
 
         public Connector(ClientConfig config)
         {
@@ -72,7 +25,8 @@ namespace Cachalot.Linq
                     var channel = new InProcessChannel();
                     Client = new CacheClient {Channel = channel};
 
-                    _server = new Server.Server(new NodeConfig{IsPersistent = config.IsPersistent}) {Channel = channel};
+                    _server = new Server.Server(new NodeConfig {IsPersistent = config.IsPersistent})
+                        {Channel = channel};
 
                     _server.Start();
                 }
@@ -120,12 +74,59 @@ namespace Cachalot.Linq
             }
         }
 
+        private ICacheClient Client { get; set; }
+
+
+        public void Dispose()
+        {
+            Client.Dispose();
+            Client = null;
+
+            if (_server != null)
+            {
+                _server.Stop();
+                _server = null;
+            }
+        }
+
+        public Transaction BeginTransaction()
+        {
+            return new Transaction(_typeDescriptions, Client);
+        }
+
+
+        /// <summary>
+        ///     Register a type for which the keys are specified with attributes and not in the configuration file
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        private ClientSideTypeDescription RegisterDynamicType(Type type)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
+            var description = Client.RegisterTypeIfNeeded(type);
+
+            if (type.FullName != null) _typeDescriptions[type.FullName] = description;
+
+            return description;
+        }
+
+
+        /// <summary>
+        ///     Generate <paramref name="quantity" /> unique identifiers
+        ///     They are guaranteed to be unique but they are not necessary in a contiguous range
+        /// </summary>
+        /// <param name="generatorName">name of the generator</param>
+        /// <param name="quantity">number of unique ids to generate</param>
+        public int[] GenerateUniqueIds(string generatorName, int quantity)
+        {
+            return Client.GenerateUniqueIds(generatorName, quantity);
+        }
+
         public ClusterInformation GetClusterDescription()
         {
             return Client.GetClusterInformation();
         }
-
-        private ICacheClient Client { get; set; }
 
         public DataSource<T> DataSource<T>()
         {

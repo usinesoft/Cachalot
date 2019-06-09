@@ -11,8 +11,6 @@ namespace Client.Messages
     {
         [ProtoMember(1)] private readonly List<KeyValue> _keys = new List<KeyValue>();
 
-        [ProtoMember(2)] private Query _moreCriteria;
-
         /// <summary>
         ///     Used only for protocol buffers serialization
         /// </summary>
@@ -27,10 +25,6 @@ namespace Client.Messages
 
         public IList<KeyValue> PrimaryKeys => _keys;
 
-        public Query MoreCriteria
-        {
-            get => _moreCriteria;
-            set => _moreCriteria = value;
-        }
+        [field: ProtoMember(2)] public Query MoreCriteria { get; set; }
     }
 }

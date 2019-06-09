@@ -6,8 +6,6 @@ namespace Client.Messages
     [ProtoContract]
     public class LogRequest : Request
     {
-        [ProtoMember(1)] private int _linesCount;
-
         public LogRequest()
         {
         }
@@ -19,10 +17,6 @@ namespace Client.Messages
 
         public override RequestClass RequestClass => RequestClass.Admin;
 
-        public int LinesCount
-        {
-            get => _linesCount;
-            set => _linesCount = value;
-        }
+        [field: ProtoMember(1)] public int LinesCount { get; set; }
     }
 }

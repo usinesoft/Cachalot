@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using Client.Core;
-using Client.Messages;
 using Client.Queries;
 
 #endregion
@@ -30,12 +29,6 @@ namespace Client.Interface
         ///     Delete all data
         /// </summary>
         void DropDatabase();
-
-        /// <summary>
-        ///     Reset the minimum value of the unique id generators. Mostly used internally. For example after adding a new node
-        /// </summary>
-        /// <param name="newValues"></param>
-        void ResyncUniqueIds(IDictionary<string, int> newValues);
 
         /// <summary>
         ///     Generate <paramref name="quantity" /> unique identifiers
@@ -161,7 +154,7 @@ namespace Client.Interface
         ///     To create a valid <see cref="OrQuery" /> use a <see cref="QueryBuilder" />.
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
-        /// <param name="query"></param>                        
+        /// <param name="query"></param>
         /// <returns></returns>
         IEnumerable<TItemType> GetMany<TItemType>(OrQuery query);
 
@@ -279,15 +272,15 @@ namespace Client.Interface
         /// <summary>
         ///     Declare a subset of data as being fully available in the cache.<br />
         ///     Used by loader components to declare data preloaded in the cache.
-        ///     <seealso cref="DomainDescription" /> 
+        ///     <seealso cref="DomainDescription" />
         /// </summary>
-        /// <param name="domain">data description</param>        
+        /// <param name="domain">data description</param>
         void DeclareDomain(DomainDescription domain);
 
 
         /// <summary>
-        /// Activate eviction for a type name. If EvictionType.Lru is used when the limit is reached
-        /// the less recently used <paramref name="itemsToRemove"/> items will be evicted
+        ///     Activate eviction for a type name. If EvictionType.Lru is used when the limit is reached
+        ///     the less recently used <paramref name="itemsToRemove" /> items will be evicted
         /// </summary>
         /// <param name="fullTypeName"></param>
         /// <param name="evictionType"></param>

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
 using ProtoBuf;
+
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 // ReSharper disable UnusedMember.Global
 
@@ -26,60 +27,13 @@ namespace Client.Messages
     [ProtoContract]
     public class TypeDescription : IEquatable<TypeDescription>
     {
-
-        /// <summary>
-        ///     The one and only primary key
-        /// </summary>
-        [ProtoMember(1)]
-        public KeyInfo PrimaryKeyField { get; set; }
-
-
-        [ProtoMember(2)] private List<KeyInfo> _uniqueKeyFields;
-
-        /// <summary>
-        ///     The unique keys
-        /// </summary>
-        public IList<KeyInfo> UniqueKeyFields => _uniqueKeyFields;
-
-
         [ProtoMember(3)] private List<KeyInfo> _indexFields;
-
-        /// <summary>
-        ///     The index fields
-        /// </summary>
-        public IList<KeyInfo> IndexFields => _indexFields;
 
 
         [ProtoMember(4)] private List<KeyInfo> _listFields;
 
-        /// <summary>
-        ///     The list fields
-        /// </summary>
-        public IList<KeyInfo> ListFields => _listFields;
 
-       
-        /// <summary>
-        ///     Long type name (unique for a cache instance)
-        /// </summary>
-        [ProtoMember(5)]
-        public string FullTypeName { get; set; }
-
-
-        /// <summary>
-        ///     Short type name
-        /// </summary>
-        [ProtoMember(6)]
-        public string TypeName { get; set; }
-
-        [ProtoMember(8)] public bool UseCompression { get; set; }
-
-
-        [ProtoMember(9)] private List<KeyInfo> _fullText;
-
-        /// <summary>
-        /// Fields that will be indexed for full text search
-        /// </summary>
-        public List<KeyInfo> FullText => _fullText;
+        [ProtoMember(2)] private List<KeyInfo> _uniqueKeyFields;
 
         /// <summary>
         ///     This one is used only for protobuf serialization
@@ -89,7 +43,7 @@ namespace Client.Messages
             _uniqueKeyFields = new List<KeyInfo>();
             _indexFields = new List<KeyInfo>();
             _listFields = new List<KeyInfo>();
-            _fullText = new List<KeyInfo>();
+            FullText = new List<KeyInfo>();
         }
 
         /// <summary>
@@ -114,14 +68,52 @@ namespace Client.Messages
 
             UseCompression = description.UseCompression;
 
-            _fullText = new List<KeyInfo>();
-            foreach (var fullTextIndex in description.FullTextIndexed)
-            {
-                FullText.Add(fullTextIndex.AsKeyInfo);   
-            }
-
-
+            FullText = new List<KeyInfo>();
+            foreach (var fullTextIndex in description.FullTextIndexed) FullText.Add(fullTextIndex.AsKeyInfo);
         }
+
+        /// <summary>
+        ///     The one and only primary key
+        /// </summary>
+        [ProtoMember(1)]
+        public KeyInfo PrimaryKeyField { get; set; }
+
+        /// <summary>
+        ///     The unique keys
+        /// </summary>
+        public IList<KeyInfo> UniqueKeyFields => _uniqueKeyFields;
+
+        /// <summary>
+        ///     The index fields
+        /// </summary>
+        public IList<KeyInfo> IndexFields => _indexFields;
+
+        /// <summary>
+        ///     The list fields
+        /// </summary>
+        public IList<KeyInfo> ListFields => _listFields;
+
+
+        /// <summary>
+        ///     Long type name (unique for a cache instance)
+        /// </summary>
+        [ProtoMember(5)]
+        public string FullTypeName { get; set; }
+
+
+        /// <summary>
+        ///     Short type name
+        /// </summary>
+        [ProtoMember(6)]
+        public string TypeName { get; set; }
+
+        [ProtoMember(8)] public bool UseCompression { get; set; }
+
+        /// <summary>
+        ///     Fields that will be indexed for full text search
+        /// </summary>
+        [field: ProtoMember(9)]
+        public List<KeyInfo> FullText { get; }
 
 
         /// <summary>

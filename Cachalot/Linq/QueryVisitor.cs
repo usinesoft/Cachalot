@@ -10,55 +10,45 @@ using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
-using TypeDescription = Client.Messages.TypeDescription;
-
 
 namespace Cachalot.Linq
 {
-
-   
     public class QueryVisitor : QueryModelVisitorBase
     {
-        
         private readonly TypeDescription _typeDescription;
-
-
-        public override void VisitQueryModel(QueryModel queryModel)
-        {
-            
-            base.VisitQueryModel(queryModel);
-
-            QueryHelper.OptimizeQuery(RootExpression);
-        }
 
         public QueryVisitor(TypeDescription typeDescription)
         {
             _typeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
             RootExpression = new OrQuery(_typeDescription);
-            
         }
 
-        public OrQuery RootExpression { get; } 
+        public OrQuery RootExpression { get; }
 
-        KeyValue AsKeyValue(MemberInfo member, object value)
+
+        public override void VisitQueryModel(QueryModel queryModel)
         {
+            base.VisitQueryModel(queryModel);
 
+            QueryHelper.OptimizeQuery(RootExpression);
+        }
+
+        private KeyValue AsKeyValue(MemberInfo member, object value)
+        {
             var propertyDescription = _typeDescription.KeyByName(member.Name);
 
-            var keyInfo = new KeyInfo(propertyDescription.KeyDataType, propertyDescription.KeyType, propertyDescription.Name, propertyDescription.IsOrdered);
+            var keyInfo = new KeyInfo(propertyDescription.KeyDataType, propertyDescription.KeyType,
+                propertyDescription.Name, propertyDescription.IsOrdered);
 
             if (keyInfo.KeyType == KeyType.None)
-            {
                 throw new NotSupportedException(
                     $"Property {member.Name} of type {member.DeclaringType?.Name} is not an index");
-            }
 
             return keyInfo.Value(value);
-            
         }
 
 
-        bool IsLeafExpression(Expression expression)
+        private bool IsLeafExpression(Expression expression)
         {
             return expression.NodeType == ExpressionType.GreaterThan
                    || expression.NodeType == ExpressionType.GreaterThanOrEqual
@@ -107,7 +97,6 @@ namespace Cachalot.Linq
         }
 
 
-
         public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
         {
             if (resultOperator is FirstResultOperator)
@@ -127,14 +116,10 @@ namespace Cachalot.Linq
                 var exp = takeResultOperator.Count;
 
                 if (exp.NodeType == ExpressionType.Constant)
-                {
                     RootExpression.Take = (int) ((ConstantExpression) exp).Value;
-                }
                 else
-                {
                     throw new NotSupportedException(
                         "Currently not supporting methods or variables in the Skip or Take clause.");
-                }
 
                 return;
             }
@@ -144,14 +129,10 @@ namespace Cachalot.Linq
                 var exp = @operator.Count;
 
                 if (exp.NodeType == ExpressionType.Constant)
-                {
                     RootExpression.Skip = (int) ((ConstantExpression) exp).Value;
-                }
                 else
-                {
                     throw new NotSupportedException(
                         "Currently not supporting methods or variables in the Skip or Take clause.");
-                }
 
                 return;
             }
@@ -161,14 +142,10 @@ namespace Cachalot.Linq
             {
                 var param = fullTextSearchResultOperator.Parameter as ConstantExpression;
 
-                RootExpression.FullTextSearch = (string)param.Value;
-
+                RootExpression.FullTextSearch = (string) param.Value;
             }
 
-            if (resultOperator is OnlyIfAvailableResultOperator)
-            {                
-                RootExpression.OnlyIfComplete = true;
-            }
+            if (resultOperator is OnlyIfAvailableResultOperator) RootExpression.OnlyIfComplete = true;
 
             base.VisitResultOperator(resultOperator, queryModel, index);
         }
@@ -260,13 +237,11 @@ namespace Cachalot.Linq
                     if (from?.FromExpression is MemberExpression expression)
                     {
                         // the member must not be a scalar type. A string is a vector of chars but still considered a scalar in this context
-                        bool isVector = typeof(IEnumerable).IsAssignableFrom(expression.Type) &&
-                                        !typeof(string).IsAssignableFrom(expression.Type);
+                        var isVector = typeof(IEnumerable).IsAssignableFrom(expression.Type) &&
+                                       !typeof(string).IsAssignableFrom(expression.Type);
 
                         if (!isVector)
-                        {
                             throw new NotSupportedException("Trying to use Contains extension on a scalar member");
-                        }
 
 
                         if (value is ConstantExpression valueExpession)
@@ -327,9 +302,9 @@ namespace Cachalot.Linq
             }
         }
 
-
+        //TODO add unit test for OR expression with Contains
         /// <summary>
-        /// OR expression can be present only at root level
+        ///     OR expression can be present only at root level
         /// </summary>
         /// <param name="binaryExpression"></param>
         /// <param name="rootExpression"></param>
@@ -399,14 +374,12 @@ namespace Cachalot.Linq
             {
                 if (binaryExpression.Right is SubQueryExpression subQuery)
                 {
-                    AndQuery andExpression = new AndQuery();
+                    var andExpression = new AndQuery();
                     rootExpression.Elements.Add(andExpression);
 
                     if (rootExpression.MultipleWhereClauses)
-                    {
                         throw new NotSupportedException(
                             "Multiple where clauses can be used only with simple expressions");
-                    }
 
 
                     var leaf = new AtomicQuery();
@@ -430,43 +403,28 @@ namespace Cachalot.Linq
             }
         }
 
+        // TODO add unit test for reverted expression : const = member
 
         /// <summary>
-        /// Manage simple expressions like left operator right
+        ///     Manage simple expressions like left operator right
         /// </summary>
         /// <param name="binaryExpression"></param>
         private AtomicQuery VisitLeafExpression(BinaryExpression binaryExpression)
         {
-
-
-
             if (binaryExpression.Left is MemberExpression left && binaryExpression.Right is ConstantExpression right)
             {
-
                 var kval = AsKeyValue(left.Member, right.Value);
 
-                QueryOperator oper = QueryOperator.Eq;
+                var oper = QueryOperator.Eq;
 
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThan)
-                {
-                    oper = QueryOperator.Gt;
-                }
+                if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Gt;
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual)
-                {
-                    oper = QueryOperator.Ge;
-                }
+                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Ge;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThan)
-                {
-                    oper = QueryOperator.Lt;
-                }
+                if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Lt;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual)
-                {
-                    oper = QueryOperator.Le;
-                }
+                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Le;
 
                 return new AtomicQuery(kval, oper);
             }
@@ -479,35 +437,21 @@ namespace Cachalot.Linq
             {
                 var kval = AsKeyValue(left.Member, right.Value);
 
-                QueryOperator oper = QueryOperator.Eq;
+                var oper = QueryOperator.Eq;
 
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThan)
-                {
-                    oper = QueryOperator.Le;
-                }
+                if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Le;
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual)
-                {
-                    oper = QueryOperator.Lt;
-                }
+                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Lt;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThan)
-                {
-                    oper = QueryOperator.Ge;
-                }
+                if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Ge;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual)
-                {
-                    oper = QueryOperator.Gt;
-                }
+                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Gt;
 
                 return new AtomicQuery(kval, oper);
             }
 
             throw new NotSupportedException("Error parsing binary expression");
         }
-
-        
     }
 }

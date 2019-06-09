@@ -2,18 +2,17 @@ using System.Linq;
 using System.Linq.Expressions;
 using Remotion.Linq;
 using Remotion.Linq.Parsing.Structure;
+
 // ReSharper disable UnusedMember.Global
 
 namespace Cachalot.Linq
 {
-
     /// <summary>
-    /// Dummy queryable used to parse queries without executing them
+    ///     Dummy queryable used to parse queries without executing them
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    class NullQueryable<T> : QueryableBase<T>
+    internal class NullQueryable<T> : QueryableBase<T>
     {
-        
         public NullQueryable(IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
         {
         }
@@ -26,9 +25,8 @@ namespace Cachalot.Linq
         {
         }
 
-        public NullQueryable(IQueryExecutor executor): base(QueryParser.CreateDefault(), executor)
+        public NullQueryable(IQueryExecutor executor) : base(QueryParser.CreateDefault(), executor)
         {
-
         }
     }
 }

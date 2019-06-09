@@ -8,12 +8,10 @@ namespace Client.Core
     [ProtoContract]
     public class GetRequest : DataRequest
     {
-        [ProtoMember(1)] private readonly OrQuery _query;
-
         public GetRequest(OrQuery query)
             : base(DataAccessType.Read, query.TypeName)
         {
-            _query = query;
+            Query = query;
         }
 
 
@@ -26,7 +24,6 @@ namespace Client.Core
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
 
-        public OrQuery Query => _query;
-
+        [field: ProtoMember(1)] public OrQuery Query { get; }
     }
 }

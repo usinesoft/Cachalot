@@ -1,141 +1,32 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EFD59067-527D-4B57-8468-3A17A8CDF962}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>AdminConsole</RootNamespace>
-    <AssemblyName>AdminConsole</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\bin\Debug\WindowsAdminConsole\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\bin\Release\WindowsAdminConsole\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.1;net462</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>console.ico</ApplicationIcon>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin\Debug\AdminConsole\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <OutputPath>..\bin\Release\AdminConsole\</OutputPath>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <ProjectReference Include="..\Channel\Channel.csproj" />
+    <ProjectReference Include="..\Client\Client.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="AutoCompleteUtils\AutoComplete.cs" />
-    <Compile Include="AutoCompleteUtils\CyclingAutoComplete.cs" />
-    <Compile Include="AutoCompleteUtils\CyclingDirections.cs" />
-    <Compile Include="Commands\CommandBase.cs" />
-    <Compile Include="Commands\CommandConnect.cs" />
-    <Compile Include="Commands\CommandCount.cs" />
-    <Compile Include="Commands\CommandDelete.cs" />
-    <Compile Include="Commands\CommandDesc.cs" />
-    <Compile Include="Commands\CommandDrop.cs" />
-    <Compile Include="Commands\CommandDump.cs" />
-    <Compile Include="Commands\CommandHelp.cs" />
-    <Compile Include="Commands\CommandImport.cs" />
-    <Compile Include="Commands\CommandLast.cs" />
-    <Compile Include="Commands\CommandLineParser.cs" />
-    <Compile Include="Commands\CommandReadOnly.cs" />
-    <Compile Include="Commands\CommandReadWrite.cs" />
-    <Compile Include="Commands\CommandRecreate.cs" />
-    <Compile Include="Commands\CommandRestore.cs" />
-    <Compile Include="Commands\CommandSearch.cs" />
-    <Compile Include="Commands\CommandSelect.cs" />
-    <Compile Include="Commands\CommandStop.cs" />
-    <Compile Include="Commands\CommandType.cs" />
-    <Compile Include="Commands\ConsoleLogger.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\AutoCompleteRestOfLineAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\AutoCompleteSingleCharacterAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\AutoCompleteUsingPreviousLinesAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\BackspaceAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\ClearLineAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\CycleBottomAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\CycleDownAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\CycleTopAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\CycleUpAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\DeleteAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\IConsole.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\IConsoleAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\IgnoreAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\InsertCharacterAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\InsertStringAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\MoveCursorLeftAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\MoveCursorRightAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\MoveCursorToBeginAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\MoveCursorToEndAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\RemovePrecedingAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleActions\RemoveSucceedingAction.cs" />
-    <Compile Include="ConsoleUtils\ConsoleExt.cs" />
-    <Compile Include="ConsoleUtils\ConsoleExtInstance.cs" />
-    <Compile Include="ConsoleUtils\ConsoleKeyConverter.cs" />
-    <Compile Include="ConsoleUtils\KeyPressResult.cs" />
-    <Compile Include="ConsoleUtils\LineState.cs" />
-    <Compile Include="ConsoleUtils\PreviousLineBuffer.cs" />
-    <Compile Include="ProfileOutput.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-    <None Include="cachealot.snk" />
-    <None Include="ReadMe.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Channel\Channel.csproj">
-      <Project>{fd655063-13b2-46d6-95af-aa15a8b3f797}</Project>
-      <Name>Channel</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Client\Client.csproj">
-      <Project>{554a2f6b-fd8d-4713-8132-bd78c8e7e57a}</Project>
-      <Name>Client</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="cachalot.ico" />
-    <Content Include="console.ico" />
-    <Content Include="console_48px.ico" />
-    <Content Include="ReadMe.html">
-      <DependentUpon>ReadMe.md</DependentUpon>
+    <None Update="ReadMe.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
+    <None Update="start.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="protobuf-net">
-      <Version>2.4.0</Version>
-    </PackageReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>

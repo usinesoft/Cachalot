@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,8 +19,6 @@ namespace Client.Core
     [ProtoContract]
     public class CachedObject
     {
-        [ProtoMember(2)] private readonly KeyValue _primaryKey;
-        [ProtoMember(1)] private string _fullTypeName;
         [ProtoMember(4)] private KeyValue[] _indexKeys;
 
         /// <summary>
@@ -29,17 +26,7 @@ namespace Client.Core
         /// </summary>
         [ProtoMember(8)] private KeyValue[] _listIndexKeys;
 
-        [ProtoMember(5)] private byte[] _objectData;
         [ProtoMember(3)] private KeyValue[] _uniqueKeys;
-        [ProtoMember(7)] private bool _useCompression;
-
-        [ProtoMember(9)] private string[] _fullText;
-
-        /// <summary>
-        /// Stores the id of the operation that changed this object. This id is unique for each node and can be used for nodes resynchronization 
-        /// </summary>
-        [ProtoMember(10)]
-        public long ChangeNo { get; set; }
 
 
         /// <summary>
@@ -52,8 +39,15 @@ namespace Client.Core
 
         private CachedObject(KeyValue primaryKey)
         {
-            _primaryKey = primaryKey;
+            PrimaryKey = primaryKey;
         }
+
+        /// <summary>
+        ///     Stores the id of the operation that changed this object. This id is unique for each node and can be used for nodes
+        ///     resynchronization
+        /// </summary>
+        [ProtoMember(10)]
+        public long ChangeNo { get; set; }
 
         public string GlobalKey => FullTypeName + PrimaryKey;
 
@@ -103,17 +97,20 @@ namespace Client.Core
         /// <summary>
         ///     The one and only primary key
         /// </summary>
-        public KeyValue PrimaryKey => _primaryKey;
+        [field: ProtoMember(2)]
+        public KeyValue PrimaryKey { get; }
 
         /// <summary>
         ///     Full name of the defining type
         /// </summary>
-        public string FullTypeName => _fullTypeName;
+        [field: ProtoMember(1)]
+        public string FullTypeName { get; private set; }
 
         /// <summary>
         ///     The original object serialized ti byte[]
         /// </summary>
-        public byte[] ObjectData => _objectData;
+        [field: ProtoMember(5)]
+        public byte[] ObjectData { get; private set; }
 
 
         /// <summary>
@@ -124,7 +121,7 @@ namespace Client.Core
         {
             get
             {
-                var copy = new CachedObject(_primaryKey)
+                var copy = new CachedObject(PrimaryKey)
                 {
                     UniqueKeys = UniqueKeys ?? new KeyValue[0],
                     IndexKeys = IndexKeys ?? new KeyValue[0],
@@ -136,9 +133,9 @@ namespace Client.Core
             }
         }
 
-        public bool UseCompression => _useCompression;
+        [field: ProtoMember(7)] public bool UseCompression { get; private set; }
 
-        public string[] FullText => _fullText;
+        [field: ProtoMember(9)] public string[] FullText { get; private set; }
 
         public bool MatchOneOf(ISet<KeyValue> values)
         {
@@ -146,7 +143,7 @@ namespace Client.Core
             var indexName = values.First().KeyName;
 
             if (indexType == KeyType.Primary)
-                return values.Contains(_primaryKey);
+                return values.Contains(PrimaryKey);
 
 
             if (indexType == KeyType.Unique && _uniqueKeys != null)
@@ -209,19 +206,16 @@ namespace Client.Core
             var lines = new List<string>();
 
             foreach (var fulltext in typeDescription.FullTextIndexed)
-            {
-                lines.AddRange(fulltext.GetStringValues(instance));                
-            }
+                lines.AddRange(fulltext.GetStringValues(instance));
 
-            result._fullText= lines.ToArray();
+            result.FullText = lines.ToArray();
 
 
-
-            result._objectData =
+            result.ObjectData =
                 SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsTypeDescription);
-            result._fullTypeName = typeDescription.FullTypeName;
+            result.FullTypeName = typeDescription.FullTypeName;
 
-            result._useCompression = typeDescription.UseCompression;
+            result.UseCompression = typeDescription.UseCompression;
 
             return result;
         }
@@ -335,7 +329,6 @@ namespace Client.Core
                     continue;
 
                 if (jKey.Value.Type == JTokenType.Array)
-                {
                     foreach (var jToken in jKey.Value.Children())
                     {
                         var child = (JObject) jToken;
@@ -344,45 +337,38 @@ namespace Client.Core
                         {
                             var field = (JProperty) jToken1;
                             if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
-                            {
-                                lines.Add((string)field);
-                            }
+                                lines.Add((string) field);
                         }
                     }
-                }
                 else
-                {
-                    lines.Add((string)jKey);
-                }
-                
+                    lines.Add((string) jKey);
             }
 
-            result._fullText = lines.ToArray();
+            result.FullText = lines.ToArray();
 
             using (var output = new MemoryStream())
             {
                 if (typeDescription.UseCompression)
                 {
-                    var outZStream = new GZipOutputStream(output){IsStreamOwner = false};
+                    var outZStream = new GZipOutputStream(output) {IsStreamOwner = false};
                     var encoded = Encoding.UTF8.GetBytes(json);
                     outZStream.Write(encoded, 0, encoded.Length);
-              
+
                     outZStream.Flush();
-                   
                 }
                 else
                 {
                     var encoded = Encoding.UTF8.GetBytes(json);
-                    output.Write(encoded, 0, encoded.Length);              
+                    output.Write(encoded, 0, encoded.Length);
                 }
 
 
-                result._objectData = output.ToArray();
+                result.ObjectData = output.ToArray();
             }
 
-            result._fullTypeName = typeDescription.FullTypeName;
+            result.FullTypeName = typeDescription.FullTypeName;
 
-            result._useCompression = typeDescription.UseCompression;
+            result.UseCompression = typeDescription.UseCompression;
 
             return result;
         }
@@ -397,7 +383,7 @@ namespace Client.Core
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append(_primaryKey);
+            sb.Append(PrimaryKey);
             sb.Append(" {");
 
             if (_uniqueKeys != null)
@@ -423,8 +409,8 @@ namespace Client.Core
 
             sb.Append(" } ");
 
-            if (_objectData != null)
-                sb.Append(_objectData.Length).Append(" bytes");
+            if (ObjectData != null)
+                sb.Append(ObjectData.Length).Append(" bytes");
 
             return sb.ToString();
         }
@@ -437,13 +423,13 @@ namespace Client.Core
         /// <returns> </returns>
         public static T Unpack<T>(CachedObject cachedObject)
         {
-            return SerializationHelper.ObjectFromBytes<T>(cachedObject._objectData, SerializationMode.Json,
-                cachedObject._useCompression);
+            return SerializationHelper.ObjectFromBytes<T>(cachedObject.ObjectData, SerializationMode.Json,
+                cachedObject.UseCompression);
         }
 
         private bool Equals(CachedObject other)
         {
-            return _primaryKey.Equals(other._primaryKey);
+            return PrimaryKey.Equals(other.PrimaryKey);
         }
 
         public override bool Equals(object obj)
@@ -459,7 +445,7 @@ namespace Client.Core
 
         public override int GetHashCode()
         {
-            return _primaryKey.GetHashCode();
+            return PrimaryKey.GetHashCode();
         }
 
         public static bool operator ==(CachedObject left, CachedObject right)

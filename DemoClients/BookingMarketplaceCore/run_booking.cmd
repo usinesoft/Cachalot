@@ -1,1 +1,1 @@
-dotnet BookingMarketplaceCore.dll
+dotnet BookingMarketplace.dll

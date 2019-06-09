@@ -24,14 +24,14 @@ namespace Channel
 
         public long Connections => Interlocked.Read(ref _connections);
 
-        
+
         public int Init(int port = 0)
         {
             _listener = new TcpListener(new IPEndPoint(IPAddress.IPv6Any, port));
             _listener.Server.DualMode = true;
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 0);
             _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.NoDelay, true);
-            
+
             _listener.Start();
 
             if (!(_listener.LocalEndpoint is IPEndPoint endpoint))
@@ -58,7 +58,6 @@ namespace Channel
         private void WaitForClients()
         {
             while (true)
-            {
                 try
                 {
                     var client = _listener.AcceptTcpClient();
@@ -76,17 +75,11 @@ namespace Channel
                 {
                     break;
                 }
-            }
-                
+
 
             lock (_connectedClients)
             {
-                foreach (var connectedClient in _connectedClients)
-                {
-                   
-                    connectedClient.Close();
-                }
-                    
+                foreach (var connectedClient in _connectedClients) connectedClient.Close();
             }
         }
 
@@ -104,7 +97,7 @@ namespace Channel
                 {
                     var inputType = clientStream.ReadByte();
 
-                    if(inputType == -1) // connection closed
+                    if (inputType == -1) // connection closed
                         break;
 
                     // if its a simple ping do not expect a request
@@ -116,7 +109,7 @@ namespace Channel
                     {
                         var request = Streamer.FromStream<Request>(clientStream);
 
-                        
+
                         if (RequestReceived != null)
                         {
                             var sc = new ServerClient(client);
@@ -132,10 +125,7 @@ namespace Channel
                             var ackOkay = Streamer.ReadAck(clientStream);
                             Debug.Assert(ackOkay);
                         }
-                        
                     }
-                    
-                   
                 }
             }
             catch (IOException)
@@ -179,8 +169,7 @@ namespace Channel
 
             public bool? ShouldContinue()
             {
-
-                int receiveTimeout = 0;
+                var receiveTimeout = 0;
                 try
                 {
                     SendResponse(new ReadyResponse());
@@ -194,26 +183,17 @@ namespace Channel
                     Stream stream = _tcpClient.GetStream();
 
                     var cookie = stream.ReadByte();
-                    if (cookie != Consts.RequestCookie)
-                    {
-                        return null;
-                    }
+                    if (cookie != Consts.RequestCookie) return null;
 
                     var answer = Streamer.FromStream<Request>(stream);
 
                     if (answer is ContinueRequest @continue)
                     {
-                        if (!@continue.Rollback)
-                        {
-                            return true;
-                        }
+                        if (!@continue.Rollback) return true;
 
-                        if (@continue.Rollback)
-                        {
-                            return false;
-                        }
+                        if (@continue.Rollback) return false;
                     }
-                    
+
 
                     return null;
                 }
@@ -221,19 +201,11 @@ namespace Channel
                 {
                     return null;
                 }
-                finally
-                {
-                    // restore the receive timeout
-#if !DEBUG
-                    _tcpClient.ReceiveTimeout = receiveTimeout;
-#endif
-                }
-                
             }
 
             public void WaitForAck()
             {
-                Streamer.ReadAck(_tcpClient.GetStream());                
+                Streamer.ReadAck(_tcpClient.GetStream());
             }
 
             public void SendResponse(Response response)
@@ -241,15 +213,13 @@ namespace Channel
                 try
                 {
                     Stream stream = _tcpClient.GetStream();
-                    
+
                     Streamer.ToStream(stream, response);
-                    
                 }
 // ReSharper disable EmptyGeneralCatchClause
                 catch (Exception)
 // ReSharper restore EmptyGeneralCatchClause
                 {
-                    
                 }
 
                 //_dataReceived.Set();
@@ -266,26 +236,24 @@ namespace Channel
                     {
                         var memStream = new MemoryStream();
                         Streamer.ToStreamGeneric(memStream, items);
-                        ThreadPool.QueueUserWorkItem(delegate (object state)
+                        ThreadPool.QueueUserWorkItem(delegate(object state)
                         {
-                            var networkStream = (Stream)state;
+                            var networkStream = (Stream) state;
 
                             memStream.Seek(0, SeekOrigin.Begin);
                             networkStream.Write(memStream.GetBuffer(), 0,
-                                (int)memStream.Length);
+                                (int) memStream.Length);
                         }, stream);
                     }
                     else // switch to streaming mode. Potentially more lock time but avoids memory overuse
                     {
                         Streamer.ToStreamGeneric(stream, items);
                     }
-                    
                 }
 // ReSharper disable EmptyGeneralCatchClause
                 catch (Exception)
 // ReSharper restore EmptyGeneralCatchClause
                 {
-                    
                 }
             }
 
@@ -316,7 +284,6 @@ namespace Channel
                 catch (Exception)
 // ReSharper restore EmptyGeneralCatchClause
                 {
-                    
                 }
             }
 
@@ -341,11 +308,10 @@ namespace Channel
                 catch (Exception)
 // ReSharper restore EmptyGeneralCatchClause
                 {
-                    
                 }
             }
 
-#endregion
+            #endregion
         }
     }
 }

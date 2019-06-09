@@ -19,14 +19,14 @@ namespace UnitTests
         [Test]
         public void AddMoreThanCapacity()
         {
-            EvictionQueue queue = new EvictionQueue();
+            var queue = new EvictionQueue();
             queue.Capacity = 1000;
             queue.EvictionCount = 100;
 
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 10000; i++)
             {
-                TradeLike item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                CachedObject packedItem = CachedObject.Pack(item);
+                var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
+                var packedItem = CachedObject.Pack(item);
                 queue.AddNew(packedItem);
             }
 
@@ -46,11 +46,11 @@ namespace UnitTests
         [Test]
         public void AddTwiceRaisesAnException()
         {
-            EvictionQueue queue = new EvictionQueue();
+            var queue = new EvictionQueue();
             queue.Capacity = 1000;
             queue.EvictionCount = 100;
-            TradeLike item = new TradeLike(0, 1000, "aaa", DateTime.Now, 456);
-            CachedObject packedItem = CachedObject.Pack(item);
+            var item = new TradeLike(0, 1000, "aaa", DateTime.Now, 456);
+            var packedItem = CachedObject.Pack(item);
             queue.AddNew(packedItem);
 
             //this call should raise an exception
@@ -60,16 +60,16 @@ namespace UnitTests
         [Test]
         public void EvictionOrder()
         {
-            EvictionQueue queue = new EvictionQueue();
+            var queue = new EvictionQueue();
             queue.Capacity = 9;
             queue.EvictionCount = 2;
 
-            List<CachedObject> allItems = new List<CachedObject>();
+            var allItems = new List<CachedObject>();
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
-                TradeLike item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                CachedObject packedItem = CachedObject.Pack(item);
+                var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
+                var packedItem = CachedObject.Pack(item);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }
@@ -77,7 +77,7 @@ namespace UnitTests
             //items in queue now: 0 1 2 3 4 5 6 7 8 9 
 
             Assert.IsTrue(queue.EvictionRequired);
-            IList<CachedObject> evicted = queue.Go();
+            var evicted = queue.Go();
 
             //items in queue: 3 4 5 6 7 8 9 
 
@@ -105,16 +105,16 @@ namespace UnitTests
         [Test]
         public void Remove()
         {
-            EvictionQueue queue = new EvictionQueue();
+            var queue = new EvictionQueue();
             queue.Capacity = 7;
             queue.EvictionCount = 2;
 
-            List<CachedObject> allItems = new List<CachedObject>();
+            var allItems = new List<CachedObject>();
 
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
-                TradeLike item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                CachedObject packedItem = CachedObject.Pack(item);
+                var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
+                var packedItem = CachedObject.Pack(item);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }
@@ -125,7 +125,7 @@ namespace UnitTests
 
             //items in queue now: 1 3 4 5 6 7 8 9 
             Assert.IsTrue(queue.EvictionRequired);
-            IList<CachedObject> evicted = queue.Go();
+            var evicted = queue.Go();
 
             //items in queue now: 5 6 7 8 9 
 

@@ -4,10 +4,10 @@ using Channel;
 namespace UnitTests
 {
     /// <summary>
-    /// Simulates a resource pool connected to a slow provider provider
-    /// In this case, resource reciclying inside the pool should prevail
+    ///     Simulates a resource pool connected to a slow provider provider
+    ///     In this case, resource reciclying inside the pool should prevail
     /// </summary>
-    class SlowProviderPool : PoolStrategy<SomeResource>
+    internal class SlowProviderPool : PoolStrategy<SomeResource>
     {
         private long _newResourceClaims;
 
@@ -20,10 +20,7 @@ namespace UnitTests
         {
         }
 
-        public long NewResourceClaims
-        {
-            get { return Interlocked.Read(ref _newResourceClaims); }
-        }
+        public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);
 
         protected override SomeResource GetShinyNewResource()
         {

@@ -3,9 +3,9 @@ using System;
 namespace UnitTests
 {
     /// <summary>
-    /// Simulates a resource which expires. Sometimes randomly, always after N usages
+    ///     Simulates a resource which expires. Sometimes randomly, always after N usages
     /// </summary>
-    class ExpiryResource
+    internal class ExpiryResource
     {
         private static readonly Random _randGen = new Random();
         private bool? _expired;

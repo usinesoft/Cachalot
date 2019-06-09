@@ -11,169 +11,111 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureTransactionLog
     {
-
         [SetUp]
         public void SetUp()
         {
-            if(File.Exists(Path.Combine(Constants.DataPath, TransactionLog.LogFileName)))
+            if (File.Exists(Path.Combine(Constants.DataPath, TransactionLog.LogFileName)))
                 File.Delete(Path.Combine(Constants.DataPath, TransactionLog.LogFileName));
         }
 
         [Test]
-        public void Test_persistent_transaction_log()
+        public void An_empty_log_is_blocking_consumers_and_releses_them_when_disposed()
         {
-
-            var t1 = new byte[] { 1, 2, 3 };
-            var t2 = new byte[] { 11, 12, 13, 14, 15, 16 };
-
             var log = new TransactionLog();
 
-            log.NewTransaction(t1);
-            log.NewTransaction(t2);
-
-            log.Dispose();
-
-            Console.WriteLine(log.FileAsString());
-
-            //reload
-            log = new TransactionLog();
-
-            Assert.AreEqual(2, log.PendingTransactionsCount);
-
-            var data1 = log.StartProcessing();
-            log.EndProcessing(data1);
-
-            Assert.AreEqual(1, log.PendingTransactionsCount);
-
-            log.Dispose();
-            Console.WriteLine(log.FileAsString());
-
-            //reload
-            log = new TransactionLog();
-            Assert.AreEqual(1, log.PendingTransactionsCount);
-
-            log.Dispose();
-
-
-        }
-       
-        [Test]
-        public void Test_delayed_transactions()
-        {
-
-            var t1 = new byte[] { 1, 2, 3 };
-           
-            var log = new TransactionLog();
-
-            log.NewTransaction(t1, 100);
-            
-            var transaction = log.StartProcessing();
-
-            Assert.IsTrue(DateTime.Now - transaction.TimeStamp > TimeSpan.FromMilliseconds(10), "The transaction log should wait for a delayed transaction");
-            
-            log.EndProcessing(transaction);
-            
-            log.Dispose();
-
-            Console.WriteLine(log.FileAsString());
-
-            log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
-            log.Dispose();
-
-        }
-
-        [Test]
-        public void Test_cancel_delayed_transactions()
-        {
-
-            var t1 = new byte[] { 1, 2, 3 };
-            
-            var log = new TransactionLog();
-
-            log.NewTransaction(t1, 10);
-            
-            log.CancelTransaction();
-
-            Assert.AreEqual(0, log.PendingTransactionsCount);
-            
-            log.Dispose();
-
-            Console.WriteLine(log.FileAsString());
-
-            // canceled transactions should not be reloaded
-            log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
-
-            // cancel a delayed transaction while it is processed
-            log.NewTransaction(t1, 100);
-            Task.Factory.StartNew(() =>
-            {
-                Thread.Sleep(10);
-                log.CancelTransaction();
-            });
-
-            try
+            var workerFinished = false;
+            var worker = new Thread(() =>
             {
                 var transaction = log.StartProcessing();
 
+                // when released by a dispose the result is empty
                 Assert.IsNull(transaction);
-            }
-            finally
-            {
-                log.Dispose();
-            }
 
-           
+                workerFinished = true;
+            });
 
+            worker.Start();
+
+            Thread.Sleep(300);
+
+            // check that the worker is blocked
+            Assert.IsFalse(workerFinished);
+
+            log.Dispose();
+
+            worker.Join();
+
+            workerFinished = true;
         }
 
-
         [Test]
-        public void Performance_test()
+        public void An_empty_log_is_blocking_consumers_and_releses_them_when_transactions_are_added()
         {
-            var data = new byte[1000];
-            for (int i = 0; i < 1000; i++)
+            var log = new TransactionLog();
+
+            var workerFinished = false;
+
+            var processed = 0;
+
+            var worker = new Thread(() =>
             {
-                data[i] = (byte)(i % 255);
-            }
-
-            using (var log = new TransactionLog())
-            {
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-
-                for (int i = 0; i < 10000; i++)
+                while (true)
                 {
-                    log.NewTransaction(data);
+                    var transaction = log.StartProcessing();
+
+                    if (transaction != null)
+                    {
+                        log.EndProcessing(transaction);
+                        processed++;
+                    }
+                    else
+                    {
+                        workerFinished = true;
+                        return;
+                    }
                 }
+            });
 
-                sw.Stop();
+            worker.Start();
 
-                Console.WriteLine($"Writing 10000 transactions took {sw.ElapsedMilliseconds} milliseconds");
-                
-            }
+            Thread.Sleep(300);
 
+            // check that the worker is blocked
+            Assert.IsFalse(workerFinished);
+
+            log.NewTransaction(new byte[] {1, 2, 3});
+            Thread.Sleep(100);
+            Assert.AreEqual(1, processed);
+            Assert.IsFalse(workerFinished);
+
+            log.NewTransaction(new byte[] {2, 3, 4});
+            Thread.Sleep(100);
+            Assert.AreEqual(2, processed);
+            Assert.IsFalse(workerFinished);
+
+            log.Dispose();
+
+            worker.Join();
+
+            workerFinished = true;
         }
 
         [Test]
         public void Clear_log_when_everything_is_processed()
         {
-
-            var t1 = new byte[] { 1, 2, 3 };
-            var t2 = new byte[] { 11, 12, 13, 14, 15, 16 };
-            var t3 = new byte[] { 100, 200, 210, 220 };
+            var t1 = new byte[] {1, 2, 3};
+            var t2 = new byte[] {11, 12, 13, 14, 15, 16};
+            var t3 = new byte[] {100, 200, 210, 220};
 
             var log = new TransactionLog();
 
 
             {
-                Stopwatch sw = new Stopwatch();
+                var sw = new Stopwatch();
 
                 sw.Start();
 
-                for (int i = 0; i < 1000; i++)
+                for (var i = 0; i < 1000; i++)
                 {
                     log.NewTransaction(t1);
                     log.NewTransaction(t2);
@@ -185,7 +127,6 @@ namespace UnitTests
                 Console.WriteLine($"Writing 3000 transactions took {sw.ElapsedMilliseconds} milliseconds");
 
                 log.Dispose();
-
             }
 
 
@@ -196,14 +137,13 @@ namespace UnitTests
             Assert.AreEqual(3000, log.PendingTransactionsCount);
 
             {
-                Stopwatch sw = new Stopwatch();
+                var sw = new Stopwatch();
 
                 sw.Start();
-                for (int i = 0; i < 3000; i++)
+                for (var i = 0; i < 3000; i++)
                 {
                     var t = log.StartProcessing();
                     log.EndProcessing(t);
-
                 }
 
                 sw.Stop();
@@ -235,95 +175,128 @@ namespace UnitTests
             log.Dispose();
 
             Console.WriteLine(log.FileAsString());
+        }
 
 
+        [Test]
+        public void Performance_test()
+        {
+            var data = new byte[1000];
+            for (var i = 0; i < 1000; i++) data[i] = (byte) (i % 255);
+
+            using (var log = new TransactionLog())
+            {
+                var sw = new Stopwatch();
+
+                sw.Start();
+
+                for (var i = 0; i < 10000; i++) log.NewTransaction(data);
+
+                sw.Stop();
+
+                Console.WriteLine($"Writing 10000 transactions took {sw.ElapsedMilliseconds} milliseconds");
+            }
         }
 
         [Test]
-        public void An_empty_log_is_blocking_consumers_and_releses_them_when_disposed()
+        public void Test_cancel_delayed_transactions()
         {
+            var t1 = new byte[] {1, 2, 3};
+
             var log = new TransactionLog();
 
-            bool workerFinished = false;
-            var worker = new Thread(() =>
+            log.NewTransaction(t1, 10);
+
+            log.CancelTransaction();
+
+            Assert.AreEqual(0, log.PendingTransactionsCount);
+
+            log.Dispose();
+
+            Console.WriteLine(log.FileAsString());
+
+            // canceled transactions should not be reloaded
+            log = new TransactionLog();
+            Assert.AreEqual(0, log.PendingTransactionsCount);
+
+            // cancel a delayed transaction while it is processed
+            log.NewTransaction(t1, 100);
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(10);
+                log.CancelTransaction();
+            });
+
+            try
             {
                 var transaction = log.StartProcessing();
 
-                // when released by a dispose the result is empty
                 Assert.IsNull(transaction);
-
-                workerFinished = true;
-            });
-
-            worker.Start();
-
-            Thread.Sleep(300);
-
-            // check that the worker is blocked
-            Assert.IsFalse(workerFinished);
-
-            log.Dispose();
-
-            worker.Join();
-
-            workerFinished = true;
+            }
+            finally
+            {
+                log.Dispose();
+            }
         }
 
         [Test]
-        public void An_empty_log_is_blocking_consumers_and_releses_them_when_transactions_are_added()
+        public void Test_delayed_transactions()
         {
+            var t1 = new byte[] {1, 2, 3};
+
             var log = new TransactionLog();
 
-            bool workerFinished = false;
+            log.NewTransaction(t1, 100);
 
-            int processed = 0;
+            var transaction = log.StartProcessing();
 
-            var worker = new Thread(() =>
-            {
-                while (true)
-                {
-                    var transaction = log.StartProcessing();
+            Assert.IsTrue(DateTime.Now - transaction.TimeStamp > TimeSpan.FromMilliseconds(10),
+                "The transaction log should wait for a delayed transaction");
 
-                    if (transaction != null)
-                    {
-                        log.EndProcessing(transaction);
-                        processed++;
-                    }
-                    else
-                    {
-                        workerFinished = true;
-                        return;
-                    }
-   
-                }
-                
-            });
-
-            worker.Start();
-
-            Thread.Sleep(300);
-
-            // check that the worker is blocked
-            Assert.IsFalse(workerFinished);
-
-            log.NewTransaction(new byte[]{1,2,3});
-            Thread.Sleep(100);
-            Assert.AreEqual(1, processed);
-            Assert.IsFalse(workerFinished);
-
-            log.NewTransaction(new byte[] { 2, 3, 4 });
-            Thread.Sleep(100);
-            Assert.AreEqual(2, processed);
-            Assert.IsFalse(workerFinished);
+            log.EndProcessing(transaction);
 
             log.Dispose();
 
-            worker.Join();
+            Console.WriteLine(log.FileAsString());
 
-            workerFinished = true;
+            log = new TransactionLog();
+            Assert.AreEqual(0, log.PendingTransactionsCount);
+            log.Dispose();
+        }
+
+        [Test]
+        public void Test_persistent_transaction_log()
+        {
+            var t1 = new byte[] {1, 2, 3};
+            var t2 = new byte[] {11, 12, 13, 14, 15, 16};
+
+            var log = new TransactionLog();
+
+            log.NewTransaction(t1);
+            log.NewTransaction(t2);
+
+            log.Dispose();
+
+            Console.WriteLine(log.FileAsString());
+
+            //reload
+            log = new TransactionLog();
+
+            Assert.AreEqual(2, log.PendingTransactionsCount);
+
+            var data1 = log.StartProcessing();
+            log.EndProcessing(data1);
+
+            Assert.AreEqual(1, log.PendingTransactionsCount);
+
+            log.Dispose();
+            Console.WriteLine(log.FileAsString());
+
+            //reload
+            log = new TransactionLog();
+            Assert.AreEqual(1, log.PendingTransactionsCount);
+
+            log.Dispose();
         }
     }
-
-
-    
 }

@@ -8,15 +8,10 @@ namespace Client.Messages
     public class LogResponse : Response
     {
         [ProtoMember(1)] private readonly List<ServerLogEntry> _entries = new List<ServerLogEntry>();
-        [ProtoMember(2)] private ServerLogEntry _maxLockEntry;
 
         public IList<ServerLogEntry> Entries => _entries;
 
-        public ServerLogEntry MaxLockEntry
-        {
-            get => _maxLockEntry;
-            set => _maxLockEntry = value;
-        }
+        [field: ProtoMember(2)] public ServerLogEntry MaxLockEntry { get; set; }
 
         public override ResponseType ResponseType => ResponseType.Data;
     }

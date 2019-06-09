@@ -16,44 +16,44 @@ namespace UnitTests.TestData
 
         public string Name
         {
-            get { return _name; }
-            set { _name = value; }
+            get => _name;
+            set => _name = value;
         }
 
         public DateTime Date
         {
-            get { return _date; }
-            set { _date = value; }
+            get => _date;
+            set => _date = value;
         }
 
         public string RefSet
         {
-            get { return _refSet; }
-            set { _refSet = value; }
+            get => _refSet;
+            set => _refSet = value;
         }
 
         public float Ask
         {
-            get { return _ask; }
-            set { _ask = value; }
+            get => _ask;
+            set => _ask = value;
         }
 
         public float Bid
         {
-            get { return _bid; }
-            set { _bid = value; }
+            get => _bid;
+            set => _bid = value;
         }
 
         public float Mid
         {
-            get { return _mid; }
-            set { _mid = value; }
+            get => _mid;
+            set => _mid = value;
         }
 
         public QuoteType QuoteType
         {
-            get { return _quoteType; }
-            set { _quoteType = value; }
+            get => _quoteType;
+            set => _quoteType = value;
         }
     }
 }

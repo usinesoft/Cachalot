@@ -5,15 +5,15 @@ using Client.Interface;
 namespace Server
 {
     /// <summary>
-    /// Base class for eviction policies
-    /// An eviction policy is responsible for deciding if eviction is needed and which items need to be evicted
+    ///     Base class for eviction policies
+    ///     An eviction policy is responsible for deciding if eviction is needed and which items need to be evicted
     /// </summary>
     public abstract class EvictionPolicy
     {
         public abstract EvictionType Type { get; }
 
         /// <summary>
-        /// Returns true if items need to be removed from the cache
+        ///     Returns true if items need to be removed from the cache
         /// </summary>
         public virtual bool IsEvictionRequired => false;
 
@@ -24,8 +24,8 @@ namespace Server
         }
 
         /// <summary>
-        /// Get the items to remove according to the current policy. They are already removed from the internal data
-        /// structures of the policy
+        ///     Get the items to remove according to the current policy. They are already removed from the internal data
+        ///     structures of the policy
         /// </summary>
         /// <returns></returns>
         public virtual IList<CachedObject> DoEviction()
@@ -34,7 +34,7 @@ namespace Server
         }
 
         /// <summary>
-        /// The specified item was accessed, update its priority accordingly
+        ///     The specified item was accessed, update its priority accordingly
         /// </summary>
         /// <param name="item"></param>
         public virtual void Touch(CachedObject item)
@@ -43,8 +43,8 @@ namespace Server
         }
 
         /// <summary>
-        /// This item is not present in the cache any more. The eviction policy should not compute
-        /// its eviction priority any more
+        ///     This item is not present in the cache any more. The eviction policy should not compute
+        ///     its eviction priority any more
         /// </summary>
         /// <param name="item"></param>
         public virtual void TryRemove(CachedObject item)

@@ -6,28 +6,18 @@ namespace Client.Messages
     [ProtoContract]
     public class EvalResponse : Response
     {
-        [ProtoMember(1)] private bool _complete;
-
-        [ProtoMember(2)] private int _items;
-
         public override ResponseType ResponseType => ResponseType.Data;
 
         /// <summary>
         ///     Number of items in the result set
         /// </summary>
-        public int Items
-        {
-            get => _items;
-            set => _items = value;
-        }
+        [field: ProtoMember(2)]
+        public int Items { get; set; }
 
         /// <summary>
         ///     Is the query result completelly available in the cache
         /// </summary>
-        public bool Complete
-        {
-            get => _complete;
-            set => _complete = value;
-        }
+        [field: ProtoMember(1)]
+        public bool Complete { get; set; }
     }
 }

@@ -1,15 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29001.49
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AccountsCore", "AccountsCore\AccountsCore.csproj", "{CA52EB72-6832-4310-BE29-0DD2564CCAAC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Accounts", "AccountsCore\Accounts.csproj", "{CA52EB72-6832-4310-BE29-0DD2564CCAAC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BookingMarketplaceCore", "BookingMarketplaceCore\BookingMarketplaceCore.csproj", "{4DD699BA-25B5-486F-9967-E1288D094B45}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Accounts", "Accounts\Accounts.csproj", "{81D96596-7900-4234-B746-9525B49D59A4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingMarketplace", "BookingMarketplace\BookingMarketplace.csproj", "{22C72669-C36B-4EB1-A6C9-68C350D9ADB9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BookingMarketplace", "BookingMarketplaceCore\BookingMarketplace.csproj", "{4DD699BA-25B5-486F-9967-E1288D094B45}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,14 +21,6 @@ Global
 		{4DD699BA-25B5-486F-9967-E1288D094B45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4DD699BA-25B5-486F-9967-E1288D094B45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4DD699BA-25B5-486F-9967-E1288D094B45}.Release|Any CPU.Build.0 = Release|Any CPU
-		{81D96596-7900-4234-B746-9525B49D59A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{81D96596-7900-4234-B746-9525B49D59A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{81D96596-7900-4234-B746-9525B49D59A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{81D96596-7900-4234-B746-9525B49D59A4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{22C72669-C36B-4EB1-A6C9-68C350D9ADB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{22C72669-C36B-4EB1-A6C9-68C350D9ADB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{22C72669-C36B-4EB1-A6C9-68C350D9ADB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{22C72669-C36B-4EB1-A6C9-68C350D9ADB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

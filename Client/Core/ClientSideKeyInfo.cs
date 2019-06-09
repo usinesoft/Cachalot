@@ -3,11 +3,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using Client.Interface;
 using Client.Messages;
 using Client.Tools;
@@ -24,6 +21,12 @@ namespace Client.Core
     public class ClientSideKeyInfo : IEquatable<ClientSideKeyInfo>
     {
         /// <summary>
+        ///     Used for full text indexation
+        /// </summary>
+        private static readonly Dictionary<Type, List<Func<object, object>>> StringGetterCache =
+            new Dictionary<Type, List<Func<object, object>>>();
+
+        /// <summary>
         ///     if true order operators can be used for this key
         /// </summary>
         private readonly bool _isOrdered;
@@ -38,12 +41,6 @@ namespace Client.Core
         /// </summary>
         private readonly PropertyInfo _propertyInfo;
 
-        public bool IndexedAsFulltext { get; }
-
-        private Func<object, object> Getter { get; }
-
-        private readonly KeyInfo _keyInfoCache;
-        
 
         /// <summary>
         ///     Build from PropertyInfo
@@ -52,7 +49,6 @@ namespace Client.Core
         /// <param name="propertyInfo"> </param>
         public ClientSideKeyInfo(PropertyInfo propertyInfo)
         {
-
             try
             {
                 _propertyInfo = propertyInfo;
@@ -60,12 +56,10 @@ namespace Client.Core
                 Getter = _propertyInfo.CompileGetter();
 
                 // full text indexation can be applied to any type of key or event to non indexed properties
-                var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true).FirstOrDefault();
+                var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true)
+                    .FirstOrDefault();
 
-                if (fullText != null)
-                {
-                    IndexedAsFulltext = true;
-                }
+                if (fullText != null) IndexedAsFulltext = true;
 
 
                 //check if primary key
@@ -76,7 +70,7 @@ namespace Client.Core
                     if (attributes[0] is PrimaryKeyAttribute attr)
                         _keyDataType = attr.KeyDataType;
 
-                    
+
                     return;
                 }
 
@@ -88,7 +82,7 @@ namespace Client.Core
                     if (attributes[0] is KeyAttribute attr)
                         _keyDataType = attr.KeyDataType;
 
-                    
+
                     return;
                 }
 
@@ -112,18 +106,16 @@ namespace Client.Core
                         _keyDataType = attr.KeyDataType;
                         _isOrdered = attr.Ordered;
                     }
-                    
+
 
                     return;
                 }
 
                 KeyType = KeyType.None;
-
-                
             }
             finally
             {
-                _keyInfoCache = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
+                AsKeyInfo = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
             }
         }
 
@@ -147,13 +139,17 @@ namespace Client.Core
             _isOrdered = propertyDescription.Ordered;
             IndexedAsFulltext = propertyDescription.FullTextIndexed;
 
-            _keyInfoCache = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
+            AsKeyInfo = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
         }
+
+        public bool IndexedAsFulltext { get; }
+
+        private Func<object, object> Getter { get; }
 
         /// <summary>
         ///     Return a serializable, light version <see cref="KeyInfo" />
         /// </summary>
-        public KeyInfo AsKeyInfo => _keyInfoCache;
+        public KeyInfo AsKeyInfo { get; }
 
         /// <summary>
         ///     int or string
@@ -278,38 +274,31 @@ namespace Client.Core
         }
 
         /// <summary>
-        /// Used for full text indexation
+        ///     Used for full text indexation
         /// </summary>
         /// <param name="instance"></param>
         /// <returns></returns>
         public IList<string> GetStringValues(object instance)
         {
-
-            List<string> result = new List<string>();
+            var result = new List<string>();
 
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
 
 
-            if (Info.GetValue(instance, null) is string text) // string is also an IEnumerable but we do not want to be processed as a collection
+            if (Info.GetValue(instance, null) is string text
+            ) // string is also an IEnumerable but we do not want to be processed as a collection
             {
                 result.Add(text);
             }
             else if (Info.GetValue(instance, null) is IEnumerable values)
             {
-                foreach (var value in values)
-                {
-                    result.AddRange(ToStrings(value));
-                }
+                foreach (var value in values) result.AddRange(ToStrings(value));
             }
             else
             {
                 var val = Info.GetValue(instance);
-                if (val != null)
-                {
-                    result.AddRange(ToStrings(val));
-                }
-                
+                if (val != null) result.AddRange(ToStrings(val));
             }
 
 
@@ -317,64 +306,40 @@ namespace Client.Core
         }
 
 
-        
-
-
         /// <summary>
-        /// Used for full text indexation
-        /// </summary>
-        static readonly Dictionary<Type, List<Func<object, object>>> StringGetterCache = new Dictionary<Type, List<Func<object, object>>>();
-
-
-        /// <summary>
-        /// Generate precompiled getters for a type. This will avoid using reflection for each call
+        ///     Generate precompiled getters for a type. This will avoid using reflection for each call
         /// </summary>
         /// <param name="type"></param>
         private static void GenerateAccessorsForType(Type type)
         {
             var accessors = new List<Func<object, object>>();
             foreach (var property in type.GetProperties())
-            {
                 if (property.PropertyType == typeof(string))
-                {
-                    accessors.Add(property.CompileGetter());                    
-                }
-            }
+                    accessors.Add(property.CompileGetter());
 
             StringGetterCache[type] = accessors;
         }
 
 
         /// <summary>
-        /// Return a list off all the values of string properties
+        ///     Return a list off all the values of string properties
         /// </summary>
         /// <param name="instance"></param>
         /// <returns></returns>
-        static IList<string> ToStrings(object instance)
+        private static IList<string> ToStrings(object instance)
         {
-
             var result = new List<string>();
             var type = instance.GetType();
 
-            if (!StringGetterCache.ContainsKey(type))
-            {
-                GenerateAccessorsForType(type);
-            }
+            if (!StringGetterCache.ContainsKey(type)) GenerateAccessorsForType(type);
 
             foreach (var accessor in StringGetterCache[type])
             {
                 var val = accessor(instance);
-                if (val != null)
-                {
-                    result.Add(val as string);
-                }
-                
+                if (val != null) result.Add(val as string);
             }
 
             return result;
         }
     }
-
-
- 
 }

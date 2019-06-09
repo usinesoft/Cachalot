@@ -1,24 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<cacheClient isPersistent ="true">
-    <servers>
-      <!--keep empty for in-process configurations -->
-    </servers>
-    <typeDescriptions>
-        <type fullName="UnitTests.TestData.Trade" assembly="UnitTests">
-            <property name="Id" dataType="int" keyType="primary" ordered="false"/>
-            <property name="ContractId" dataType="int" keyType="unique" ordered="false"/>
-            <property name="Folder" dataType="string" keyType="index" ordered="false"/>
-            <property name="ValueDate" dataType="int" keyType="index" ordered="true"/>
-            <property name="Nominal" dataType="int" keyType="index" ordered="true"/>
-            <property name="Accounts" dataType="int" keyType="list" ordered="false"/>
-            <property name="FixingDates" dataType="int" keyType="list" ordered="false"/>
-        </type>
-        <type fullName="UnitTests.TestData.Quote" assembly="UnitTests">
-            <property name="Name" dataType="string" keyType="primary" ordered="false"/>
-            <property name="RefSet" dataType="string" keyType="index" ordered="false"/>            
-            <property name="Date" dataType="int" keyType="index" ordered="true"/>            
-            <property name="QuoteType" dataType="int" keyType="index" ordered="true"/>            
-        </type>
-    </typeDescriptions>
- 
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<cacheClient isPersistent="true">
+  <servers>
+    <!--keep empty for in-process configurations -->
+  </servers>
+  <typeDescriptions>
+    <type fullName="UnitTests.TestData.Trade" assembly="UnitTests">
+      <property name="Id" dataType="int" keyType="primary" ordered="false" />
+      <property name="ContractId" dataType="int" keyType="unique" ordered="false" />
+      <property name="Folder" dataType="string" keyType="index" ordered="false" />
+      <property name="ValueDate" dataType="int" keyType="index" ordered="true" />
+      <property name="Nominal" dataType="int" keyType="index" ordered="true" />
+      <property name="Accounts" dataType="int" keyType="list" ordered="false" />
+      <property name="FixingDates" dataType="int" keyType="list" ordered="false" />
+    </type>
+    <type fullName="UnitTests.TestData.Quote" assembly="UnitTests">
+      <property name="Name" dataType="string" keyType="primary" ordered="false" />
+      <property name="RefSet" dataType="string" keyType="index" ordered="false" />
+      <property name="Date" dataType="int" keyType="index" ordered="true" />
+      <property name="QuoteType" dataType="int" keyType="index" ordered="true" />
+    </type>
+  </typeDescriptions>
+
 </cacheClient>

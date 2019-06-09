@@ -21,14 +21,12 @@ using Server.Persistence;
 namespace Server
 {
     /// <summary>
-    /// A data store contains multiply indexed objects of the same type
-    /// It implements a synchronization mechanism that executes read-only queries in parallel and queries that modify data are serialized    
+    ///     A data store contains multiply indexed objects of the same type
+    ///     It implements a synchronization mechanism that executes read-only queries in parallel and queries that modify data
+    ///     are serialized
     /// </summary>
     public class DataStore
     {
-        
-        public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
-
         /// <summary>
         ///     List of indexes for index keys (multiple objects by key value)
         /// </summary>
@@ -44,14 +42,18 @@ namespace Server
         /// </summary>
         private readonly Dictionary<string, Dictionary<KeyValue, CachedObject>> _dataByUniqueKey;
 
+
+        private readonly Dictionary<string, List<CachedObject>> _feedSessions =
+            new Dictionary<string, List<CachedObject>>();
+
+        private readonly FullTextIndex _fullTextIndex;
+
         /// <summary>
         ///     Will contain the name of the index used for the last query or null if a full scan was required
         /// </summary>
         private readonly ThreadLocal<ExecutionPlan> _lastExecutionPlan = new ThreadLocal<ExecutionPlan>();
 
-        private readonly FullTextIndex _fullTextIndex;
 
-        
         private long _count;
 
         /// <summary>
@@ -73,7 +75,6 @@ namespace Server
         /// <param name="config"></param>
         public DataStore(TypeDescription typeDescription, EvictionPolicy evictionPolicy, NodeConfig config)
         {
-            
             TypeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
 
             EvictionPolicy = evictionPolicy ?? throw new ArgumentNullException(nameof(evictionPolicy));
@@ -108,14 +109,11 @@ namespace Server
 
 
             // create the full-text index if required
-            if (typeDescription.FullText.Count > 0)
-            {
-                _fullTextIndex = new FullTextIndex(config.FullTextConfig);
-            }
-            
+            if (typeDescription.FullText.Count > 0) _fullTextIndex = new FullTextIndex(config.FullTextConfig);
         }
 
-       
+        public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
+
 
         public ExecutionPlan LastExecutionPlan
         {
@@ -141,11 +139,11 @@ namespace Server
             get => _domainDescription;
             private set => _domainDescription = value;
         }
-        
+
         public long HitCount => Interlocked.Read(ref _hitCount);
 
         public long ReadCount => Interlocked.Read(ref _readCount);
-        
+
 
         /// <summary>
         ///     object by primary key
@@ -167,14 +165,12 @@ namespace Server
 
             if (!excludeFromEviction)
                 EvictionPolicy.AddItem(cachedObject);
-
-           
         }
 
 
         public void Dump(DumpRequest request, int shardIndex)
         {
-            InternalDump(request.Path, shardIndex);            
+            InternalDump(request.Path, shardIndex);
         }
 
         private void InternalAddNew(CachedObject cachedObject)
@@ -205,10 +201,7 @@ namespace Server
 
 
             if (cachedObject.FullText != null && cachedObject.FullText.Length > 0)
-            {
                 _fullTextIndex.IndexDocument(cachedObject.FullText, cachedObject.PrimaryKey);
-            }
-            
         }
 
 
@@ -235,7 +228,7 @@ namespace Server
         private CachedObject InternalRemoveByPrimaryKey(KeyValue primary)
         {
             Dbg.Trace($"remove by primary key {primary}");
-            
+
             var toRemove = _dataByPrimaryKey[primary];
             _dataByPrimaryKey.Remove(primary);
 
@@ -499,17 +492,13 @@ namespace Server
                 var dataIsComplete = _domainDescription != null && _domainDescription.IsFullyLoaded;
 
                 if (!dataIsComplete && _domainDescription != null && !_domainDescription.DescriptionAsQuery.IsEmpty())
-                {
                     dataIsComplete = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
-                }
 
 
                 if (!dataIsComplete)
                     throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
             }
-           
 
-            
 
             // if empty query return all, unless there is a full-text query
             if (query.IsEmpty())
@@ -518,9 +507,8 @@ namespace Server
                 {
                     Dbg.Trace($"InternalFind with empty query: return all {query.TypeName}");
 
-                    return (query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values).ToList();
-
-                    
+                    return (query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values)
+                        .ToList();
                 }
 
                 // pure full-text search
@@ -542,25 +530,15 @@ namespace Server
             IList<CachedObject> ftResult = null;
 
             Parallel.Invoke(
-                () =>
-                {
-                    InternalStructuredFind(query, structuredResult);
-                }, 
-                () =>
-                {
-                    ftResult = FullTextSearch(query.FullTextSearch, query.Take);
-                });
+                () => { InternalStructuredFind(query, structuredResult); },
+                () => { ftResult = FullTextSearch(query.FullTextSearch, query.Take); });
 
             var result = new List<CachedObject>();
 
             foreach (var cachedObject in ftResult)
-            {
                 if (structuredResult.Contains(cachedObject))
-                {
                     result.Add(cachedObject);
-                }
-            }
-            
+
             Dbg.Trace($"end InternalFind returned {result.Count} ");
 
             return result;
@@ -572,15 +550,11 @@ namespace Server
 
             var remaining = take;
             foreach (var andQuery in query.Elements)
-            {
                 // 0 means no limit
                 if (take > 0)
                 {
-                    foreach (var item in InternalFind(andQuery, remaining))
-                    {
-                        result.Add(item);
-                    }
-                    
+                    foreach (var item in InternalFind(andQuery, remaining)) result.Add(item);
+
                     if (result.Count < remaining)
                         remaining = take - result.Count;
                     else
@@ -588,14 +562,8 @@ namespace Server
                 }
                 else
                 {
-                    foreach (var item in InternalFind(andQuery, remaining))
-                    {
-                        result.Add(item);
-                    }
-                    
+                    foreach (var item in InternalFind(andQuery, remaining)) result.Add(item);
                 }
-            }
-                
         }
 
         /// <summary>
@@ -605,7 +573,6 @@ namespace Server
         /// <returns>number of items effectively removed</returns>
         private int InternalRemoveMany(OrQuery query)
         {
-            
             var toRemove = InternalFind(query);
             var result = toRemove.Count;
 
@@ -769,17 +736,17 @@ namespace Server
             if (primaryQuery != null)
                 simplifiedQuery.Elements.Remove(primaryQuery);
 
-            if (count > 0) return primarySet.Where(simplifiedQuery.Match).Take(count).ToList();
-            return primarySet.Where(simplifiedQuery.Match).ToList();
+            return count > 0 ? primarySet.Where(simplifiedQuery.Match).Take(count).ToList() : primarySet.Where(simplifiedQuery.Match).ToList();
         }
 
 
         /// <summary>
         /// </summary>
-        /// <param name="items"></param>        
+        /// <param name="items"></param>
         /// <param name="excludeFromEviction">used only for non persistent case</param>
         /// <param name="persistTransaction">external action that is responsible to persist a durable transaction</param>
-        internal void InternalPutMany(IList<CachedObject> items, bool excludeFromEviction, Action<Transaction> persistTransaction)
+        internal void InternalPutMany(IList<CachedObject> items, bool excludeFromEviction,
+            Action<Transaction> persistTransaction)
         {
             var isBulkOperation = items.Count > Constants.BulkThreshold;
 
@@ -788,7 +755,7 @@ namespace Server
             try
             {
                 Dbg.Trace($"begin InternalPutMany with {items.Count} object");
-                
+
                 persistTransaction?.Invoke(new PutTransaction {Items = items});
 
 
@@ -815,35 +782,23 @@ namespace Server
                 }
                 else
                 {
-                    foreach (var cachedObject in toUpdate)
-                    {                        
-                        InternalUpdate(cachedObject);
-                    }
+                    foreach (var cachedObject in toUpdate) InternalUpdate(cachedObject);
                 }
 
-                foreach (var cachedObject in toUpdate)
-                {
-                    EvictionPolicy.Touch(cachedObject);                    
-                }
+                foreach (var cachedObject in toUpdate) EvictionPolicy.Touch(cachedObject);
 
-                
+
                 Dbg.Trace($"end InternalPutMany with {items.Count} object");
             }
         }
 
 
-        private readonly Dictionary<string, List<CachedObject>> _feedSessions =
-            new Dictionary<string, List<CachedObject>>();
-
-
         private void ProcessEviction()
         {
-
             if (EvictionPolicy.IsEvictionRequired)
             {
-
                 var itemsToEvict = EvictionPolicy.DoEviction();
-                
+
                 foreach (var item in itemsToEvict)
                 {
                     InternalRemoveByPrimaryKey(item.PrimaryKey);
@@ -860,16 +815,15 @@ namespace Server
             }
         }
 
-        
+
         internal void ProcessRequest(DataRequest dataRequest, IClient client, Action<Transaction> persistTransaction)
         {
-            
             var requestDescription = "";
             var processedItems = 0;
             var requestType = "UNKNOWN";
 
             // if this request is part of a transaction the persistence is managed at a higher level
-            bool insideTransaction = persistTransaction == null;
+            var insideTransaction = persistTransaction == null;
 
 
             try
@@ -877,7 +831,7 @@ namespace Server
                 Profiler.Start("data request");
                 Response toSend = null;
 
-                
+
                 if (dataRequest.AccessType == DataAccessType.Write)
                 {
                     if (dataRequest is PutRequest put)
@@ -901,28 +855,22 @@ namespace Server
                                 InternalPutMany(alreadyReceived, put.ExcludeFromEviction, persistTransaction);
                             }
                         }
-                        
-                        else if(put.OnlyIfNew) // conditional insert
+
+                        else if (put.OnlyIfNew) // conditional insert
                         {
                             if (put.Items.Count != 1)
-                            {
                                 throw new NotSupportedException("TryAdd can be called only with exactly one item");
-                            }
 
-                            int addedNewItems = InternalTryAdd(put.Items.First(), persistTransaction);
+                            var addedNewItems = InternalTryAdd(put.Items.First(), persistTransaction);
 
                             toSend = new ItemsCountResponse(addedNewItems);
-                            
                         }
                         else if (put.Predicate != null) // conditional update
                         {
                             if (put.Items.Count != 1)
-                            {
                                 throw new NotSupportedException("UpdateIf can be called only with exactly one item");
-                            }
 
                             InternalUpdateIf(put.Items.First(), put.Predicate, persistTransaction);
-                            
                         }
                         else
                         {
@@ -943,8 +891,8 @@ namespace Server
 
                         var item = _dataByPrimaryKey[primaryKeyToRemove];
 
-                        persistTransaction?.Invoke(new DeleteTransaction { ItemsToDelete = { item } });
-                        
+                        persistTransaction?.Invoke(new DeleteTransaction {ItemsToDelete = {item}});
+
                         RemoveByPrimaryKey(primaryKeyToRemove);
 
                         requestDescription = $"{removeRequest1.PrimaryKey.KeyName} = {removeRequest1.PrimaryKey}";
@@ -959,14 +907,14 @@ namespace Server
 
                         if (removeRequest.Query.Elements == null || removeRequest.Query.Elements.Count == 0)
                         {
-                            persistTransaction(new DeleteTransaction
+                            persistTransaction?.Invoke(new DeleteTransaction
                             {
                                 ItemsToDelete = _dataByPrimaryKey.Values.ToList()
                             });
-                            
+
 
                             var items = _dataByPrimaryKey.Count;
-                            
+
                             InternalTruncate();
                             requestDescription = string.Format(TypeDescription.TypeName.ToUpper());
                             processedItems = items;
@@ -976,13 +924,12 @@ namespace Server
                         }
                         else
                         {
-                            
                             var items = InternalFind(removeRequest.Query);
-                            persistTransaction(new DeleteTransaction
+                            persistTransaction?.Invoke(new DeleteTransaction
                             {
                                 ItemsToDelete = items
                             });
-                            
+
 
                             var removedItems = InternalRemoveMany(removeRequest.Query);
 
@@ -994,32 +941,29 @@ namespace Server
                         }
                     }
 
-                    
+
                     else if (dataRequest is DomainDeclarationRequest domainRequest)
                     {
                         if (EvictionPolicy.Type != EvictionType.None)
-                        {
-                            throw new NotSupportedException("Can not make a domain declaration for a type if eviction is active");
-                        }
+                            throw new NotSupportedException(
+                                "Can not make a domain declaration for a type if eviction is active");
 
-                        DomainDescription = domainRequest.Description;                        
+                        DomainDescription = domainRequest.Description;
                     }
 
                     else if (dataRequest is EvictionSetupRequest evictionSetup)
                     {
                         if (DomainDescription != null && !DomainDescription.IsEmpty)
-                        {
-                            throw new NotSupportedException("Can not activate eviction on a type with a domain declaration");
-                        }
+                            throw new NotSupportedException(
+                                "Can not activate eviction on a type with a domain declaration");
 
-                        EvictionPolicy =  evictionSetup.Type == EvictionType.LessRecentlyUsed
+                        EvictionPolicy = evictionSetup.Type == EvictionType.LessRecentlyUsed
                             ? new LruEvictionPolicy(evictionSetup.Limit, evictionSetup.ItemsToEvict)
-                            : (EvictionPolicy)new NullEvictionPolicy();
+                            : (EvictionPolicy) new NullEvictionPolicy();
                     }
 
-                    
+
                     if (client != null)
-                    {
                         if (!insideTransaction) // if inside a transaction the response is sent by the higher level
                         {
                             if (toSend == null)
@@ -1027,8 +971,6 @@ namespace Server
 
                             client.SendResponse(toSend);
                         }
-                        
-                    }
                 }
                 else
                 {
@@ -1063,7 +1005,7 @@ namespace Server
                             requestDescription = query.ToString();
                             processedItems = result.Count;
                             requestType = "SELECT";
-                            
+
                             client.SendManyGeneric(result);
                         }
                         else
@@ -1133,9 +1075,8 @@ namespace Server
 
                 ServerLog.AddEntry(new ServerLogEntry(data.TotalTimeMiliseconds, requestType, requestDescription,
                     processedItems));
-                
+
                 ProcessEviction();
-                
             }
         }
 
@@ -1143,11 +1084,13 @@ namespace Server
         {
             try
             {
-                Dbg.Trace($"begin InternalUpdateIf with primary key {newValue.PrimaryKey} for type{newValue.FullTypeName}");
+                Dbg.Trace(
+                    $"begin InternalUpdateIf with primary key {newValue.PrimaryKey} for type{newValue.FullTypeName}");
 
                 if (!_dataByPrimaryKey.ContainsKey(newValue.PrimaryKey))
                 {
-                    Dbg.Trace($"item {newValue.PrimaryKey} for type{newValue.FullTypeName} not found. Conditional update failed");
+                    Dbg.Trace(
+                        $"item {newValue.PrimaryKey} for type{newValue.FullTypeName} not found. Conditional update failed");
                     throw new CacheException("Item not found. Conditional update failed");
                 }
 
@@ -1155,8 +1098,7 @@ namespace Server
 
                 if (test.Match(prevValue))
                 {
-
-                    persistTransaction?.Invoke(new PutTransaction { Items = { newValue } });
+                    persistTransaction?.Invoke(new PutTransaction {Items = {newValue}});
 
                     InternalUpdate(newValue);
                 }
@@ -1164,20 +1106,15 @@ namespace Server
                 {
                     throw new CacheException("Condition not satisfied.Item not updated");
                 }
-
-                    
             }
             finally
             {
                 Dbg.Trace("end InternalUpdateIf");
             }
-
-            
         }
 
         private int InternalTryAdd(CachedObject item, Action<Transaction> persistTransaction)
         {
-            
             try
             {
                 Dbg.Trace($"begin InternalTryAdd with primary key {item.PrimaryKey} for type{item.FullTypeName}");
@@ -1188,12 +1125,12 @@ namespace Server
                     return 0;
                 }
 
-                persistTransaction?.Invoke(new PutTransaction { Items = {item} });
+                persistTransaction?.Invoke(new PutTransaction {Items = {item}});
 
                 InternalAddNew(item, true);
             }
             finally
-            {               
+            {
                 Dbg.Trace("end InternalTryAdd");
             }
 
@@ -1209,9 +1146,9 @@ namespace Server
             Parallel.ForEach(_dataByIndexKey.Where(p => p.Value is OrderedIndex), pair => { pair.Value.EndFill(); });
         }
 
-        private void InternalBeginBulkInsert(bool transactional)
+        private void InternalBeginBulkInsert(bool bulkInsertMode)
         {
-            if (!transactional)
+            if (!bulkInsertMode)
                 return;
 
             foreach (var index in _dataByIndexKey)
@@ -1277,9 +1214,9 @@ namespace Server
             if (_dataByPrimaryKey.TryGetValue(primaryKey, out var item))
             {
                 if (!condition.Match(item))
-                {
-                    throw new CacheException($"Condition not satisfied for item {primaryKey} of type {TypeDescription.FullTypeName}", ExceptionType.ConditionNotSatisfied);
-                }
+                    throw new CacheException(
+                        $"Condition not satisfied for item {primaryKey} of type {TypeDescription.FullTypeName}",
+                        ExceptionType.ConditionNotSatisfied);
             }
             else
             {

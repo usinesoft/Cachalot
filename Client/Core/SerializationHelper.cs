@@ -15,6 +15,8 @@ namespace Client.Core
 {
     public static class SerializationHelper
     {
+        private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
+
         /// <summary>
         ///     Create a serializer that produces human readable json
         /// </summary>
@@ -38,10 +40,10 @@ namespace Client.Core
         {
             return new JsonSerializerSettings
             {
-                TypeNameHandling = TypeNameHandling.Objects,                
+                TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore                
+                DefaultValueHandling = DefaultValueHandling.Ignore
             };
         }
 
@@ -51,37 +53,33 @@ namespace Client.Core
         {
             if (mode != SerializationMode.Json)
                 return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
-            
-            
+
+
             JsonTextReader reader;
             if (compress)
             {
-                var zInStream = new GZipInputStream(stream);                    
+                var zInStream = new GZipInputStream(stream);
                 reader = new JsonTextReader(new StreamReader(zInStream));
-                    
+
                 return Serializer.Deserialize<TItem>(reader);
             }
 
-                
+
             reader = new JsonTextReader(new StreamReader(stream));
             return Serializer.Deserialize<TItem>(reader);
-
         }
 
 
         public static string AsJson(this CachedObject obj)
         {
-            
-
             if (obj.UseCompression)
             {
-               
-                var stream = new MemoryStream(obj.ObjectData);               
+                var stream = new MemoryStream(obj.ObjectData);
                 using (var zInStream = new GZipInputStream(stream))
                 {
                     var stream2 = new MemoryStream(obj.ObjectData);
                     zInStream.CopyTo(stream2);
-                    
+
                     var json = Encoding.UTF8.GetString(stream2.ToArray());
 
                     return JToken.Parse(json).ToString(Formatting.Indented);
@@ -99,35 +97,27 @@ namespace Client.Core
         {
             var stream = new MemoryStream(bytes);
 
-            
-            if (mode == SerializationMode.Json)
-            {
-                return ObjectFromStream<TItem>(stream, mode, compress);
-            }
+
+            if (mode == SerializationMode.Json) return ObjectFromStream<TItem>(stream, mode, compress);
 
             return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
         }
-
-        static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
 
         public static void ObjectToStream<TItem>(TItem obj, Stream stream, SerializationMode mode, bool compress)
         {
             if (mode == SerializationMode.Json)
             {
-                
                 if (compress)
                 {
-
-                    using (var outZStream = new GZipOutputStream(stream){IsStreamOwner = false})
+                    using (var outZStream = new GZipOutputStream(stream) {IsStreamOwner = false})
                     {
                         var writer = new JsonTextWriter(new StreamWriter(outZStream));
                         Serializer.Serialize(writer, obj);
-                        writer.Flush();                        
+                        writer.Flush();
                     }
-                    
                 }
                 else
-                {                    
+                {
                     var writer = new JsonTextWriter(new StreamWriter(stream));
                     Serializer.Serialize(writer, obj);
                     writer.Flush();
@@ -143,16 +133,10 @@ namespace Client.Core
         {
             using (var output = new MemoryStream())
             {
-               
                 if (mode == SerializationMode.Json)
-                {
-
                     ObjectToStream(obj, output, mode, typeDescription.UseCompression);
-                }
                 else
-                {
                     ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
-                }
 
                 return output.ToArray();
             }
@@ -172,13 +156,10 @@ namespace Client.Core
             return JsonConvert.SerializeObject(obj, JsonSettings());
         }
 
-        
 
         public static T DeserializeJson<T>(string json)
         {
             return FormattedSerializer.Deserialize<T>(new JsonTextReader(new StringReader(json)));
         }
-
-       
     }
 }

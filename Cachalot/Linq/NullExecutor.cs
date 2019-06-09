@@ -15,14 +15,16 @@ namespace Cachalot.Linq
             _typeDescription = typeDescription;
         }
 
+        public OrQuery Expression { get; private set; }
+
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            return default(T);
+            return default;
         }
 
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
-            return default(T);
+            return default;
         }
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
@@ -35,7 +37,5 @@ namespace Cachalot.Linq
 
             return Enumerable.Empty<T>();
         }
-
-        public OrQuery Expression { get; private set; }
     }
 }

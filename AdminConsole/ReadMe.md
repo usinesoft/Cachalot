@@ -31,3 +31,4 @@ RESTORE   | restore data saved with the DUMP command (same number of nodes)
 RECREATE  | restore data saved with the DUMP command (number of nodes changed)
 IMPORT    | import data from an external json file
 LAST      | display information on the last actions executed by the server
+SEARCH    | full-text search

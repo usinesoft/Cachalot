@@ -16,6 +16,19 @@ namespace UnitTests
     public class TestFixtureCacheableType
     {
         [Test]
+        public void HashcodesOfKeysAreAlwaysPositive()
+        {
+            var hash = new KeyValue("66666", new KeyInfo(KeyDataType.StringKey, KeyType.Primary, "test")).GetHashCode();
+
+            Assert.IsTrue(hash > 0, "hash > 0");
+
+            hash = new KeyValue(999999999999999, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "test"))
+                .GetHashCode();
+
+            Assert.IsTrue(hash > 0, "hash > 0");
+        }
+
+        [Test]
         public void TestKoNoPrimaryKey()
         {
             Assert.Throws<NotSupportedException>(() =>
@@ -57,21 +70,6 @@ namespace UnitTests
 
             Assert.AreEqual(typeDescription.IndexCount, 4);
             Assert.AreEqual(typeDescription.FullTextIndexed.Count, 2);
-
-
-        }
-
-        [Test]
-        public void HashcodesOfKeysAreAlwaysPositive()
-        {
-            var hash = new KeyValue("66666", new KeyInfo(KeyDataType.StringKey, KeyType.Primary, "test")).GetHashCode();
-
-            Assert.IsTrue(hash > 0, "hash > 0");
-
-            hash = new KeyValue(999999999999999, new KeyInfo(KeyDataType.IntKey, KeyType.Primary, "test"))
-                .GetHashCode();
-
-            Assert.IsTrue(hash > 0, "hash > 0");
         }
     }
 }

@@ -5,9 +5,8 @@ using System.Reflection;
 
 namespace Client.Tools
 {
-
     /// <summary>
-    /// Precompile accessors to avoid reflection at runtime
+    ///     Precompile accessors to avoid reflection at runtime
     /// </summary>
     public static class ReflectionExtensions
     {

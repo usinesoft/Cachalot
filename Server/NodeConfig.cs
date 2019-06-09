@@ -22,6 +22,6 @@ namespace Server
 
         public int MaxTokensToIgnore { get; set; } = 100;
 
-        public  List<string> TokensToIgnore { get; set; } = new List<string>();
+        public List<string> TokensToIgnore { get; set; } = new List<string>();
     }
 }

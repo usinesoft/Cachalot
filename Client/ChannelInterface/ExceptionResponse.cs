@@ -12,10 +12,6 @@ namespace Client.ChannelInterface
     [ProtoContract]
     public class ExceptionResponse : Response
     {
-        [ProtoMember(1)] private readonly string _callStack;
-        [ProtoMember(3)] private ExceptionType _exceptionType;
-        [ProtoMember(2)] private readonly string _message;
-
         /// <summary>
         ///     Required by protocol buffers
         /// </summary>
@@ -31,9 +27,9 @@ namespace Client.ChannelInterface
         /// <param name="exceptionType"></param>
         public ExceptionResponse(Exception ex, ExceptionType exceptionType = ExceptionType.Unknown)
         {
-            _exceptionType = exceptionType;
-            _callStack = ex.ToString();
-            _message = ex.Message;
+            ExceptionType = exceptionType;
+            CallStack = ex.ToString();
+            Message = ex.Message;
         }
 
         public override ResponseType ResponseType => ResponseType.Exception;
@@ -41,17 +37,15 @@ namespace Client.ChannelInterface
         /// <summary>
         ///     Server side call stack
         /// </summary>
-        public string CallStack => _callStack;
+        [field: ProtoMember(1)]
+        public string CallStack { get; }
 
         /// <summary>
         ///     Server side exception message
         /// </summary>
-        public string Message => _message;
+        [field: ProtoMember(2)]
+        public string Message { get; }
 
-        public ExceptionType ExceptionType
-        {
-            get => _exceptionType;
-            set => _exceptionType = value;
-        }
+        [field: ProtoMember(3)] public ExceptionType ExceptionType { get; set; }
     }
 }

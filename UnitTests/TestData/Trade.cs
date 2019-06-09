@@ -9,10 +9,6 @@ namespace UnitTests.TestData
         private IList<int> _accounts = new List<int>();
         private int _contractId;
 
-
-        //[Index(KeyDataType.IntKey)]
-        public List<DateTime> FixingDates { get; set; } = new List<DateTime>();
-
         private string _folder;
         private int _id;
         private float _nominal;
@@ -20,12 +16,10 @@ namespace UnitTests.TestData
 
         public Trade()
         {
-            
         }
 
         public Trade(int id, int contractId, string folder, DateTime valueDate, float nominal)
         {
-            
             _id = id;
             _contractId = contractId;
             _folder = folder;
@@ -34,50 +28,54 @@ namespace UnitTests.TestData
         }
 
 
+        //[Index(KeyDataType.IntKey)]
+        public List<DateTime> FixingDates { get; set; } = new List<DateTime>();
+
+
         //[PrimaryKey(KeyDataType.IntKey)]
         public int Id
         {
-            get { return _id; }
-            set { _id = value; }
+            get => _id;
+            set => _id = value;
         }
 
 
         //[Key(KeyDataType.IntKey)]
         public int ContractId
         {
-            get { return _contractId; }
-            set { _contractId = value; }
+            get => _contractId;
+            set => _contractId = value;
         }
 
 
         //[Index(KeyDataType.StringKey)]
         public string Folder
         {
-            get { return _folder; }
-            set { _folder = value; }
+            get => _folder;
+            set => _folder = value;
         }
 
 
         //[Index(KeyDataType.IntKey, true)]
         public DateTime ValueDate
         {
-            get { return _valueDate; }
-            set { _valueDate = value; }
+            get => _valueDate;
+            set => _valueDate = value;
         }
 
 
         public float Nominal
         {
-            get { return _nominal; }
-            set { _nominal = value; }
+            get => _nominal;
+            set => _nominal = value;
         }
 
 
         //[Index(KeyDataType.IntKey)]
         public IList<int> Accounts
         {
-            get { return _accounts; }
-            set { _accounts = value; }
+            get => _accounts;
+            set => _accounts = value;
         }
 
 
@@ -94,7 +92,6 @@ namespace UnitTests.TestData
             return true;
         }
 
-       
 
         public override bool Equals(object obj)
         {

@@ -3,19 +3,17 @@ using System.IO;
 
 namespace Server.Persistence
 {
-
     /// <summary>
-    /// A specialized storage used for backup. It can load individual blocks to be used for the recovery of a main storage
+    ///     A specialized storage used for backup. It can load individual blocks to be used for the recovery of a main storage
     /// </summary>
     public class BackupStorage : ReliableStorage
     {
-        
-        public BackupStorage(string backupPath) : base(new NullObjectProcessor(), null,  backupPath, true)
+        public BackupStorage(string backupPath) : base(new NullObjectProcessor(), null, backupPath, true)
         {
         }
 
 
-       public PersistentBlock ReadBlock(string primaryKey)
+        public PersistentBlock ReadBlock(string primaryKey)
         {
             if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var info))
             {

@@ -13,28 +13,30 @@ namespace UnitTests
     public class TestFixtureCommandLine
     {
         /// <summary>
-        /// fake server description used for tests
+        ///     fake server description used for tests
         /// </summary>
         private ClusterInformation _serverDescription;
 
         [OneTimeSetUp]
         public void FixtureSetUp()
         {
+            var clientTypeDescription = ClientSideTypeDescription.RegisterType(typeof(TradeLike));
 
-            ClientSideTypeDescription clientTypeDescription = ClientSideTypeDescription.RegisterType(typeof(TradeLike));
+            var sd = new ServerDescriptionResponse
+            {
+                KnownTypesByFullName = {{clientTypeDescription.FullTypeName, clientTypeDescription.AsTypeDescription}}
+            };
 
-            var sd = new ServerDescriptionResponse {KnownTypesByFullName = {{clientTypeDescription.FullTypeName, clientTypeDescription.AsTypeDescription } }};
-            
-            _serverDescription = new ClusterInformation(new[]{sd});
+            _serverDescription = new ClusterInformation(new[] {sd});
         }
 
         [Test]
         public void ExecuteCommands()
         {
             var client = new CacheClient();
-            InProcessChannel channel = new InProcessChannel();
+            var channel = new InProcessChannel();
             client.Channel = channel;
-            Server.Server server = new Server.Server(new NodeConfig()) {Channel = channel};
+            var server = new Server.Server(new NodeConfig()) {Channel = channel};
             server.Start();
 
 
@@ -43,29 +45,25 @@ namespace UnitTests
 
             var serverDesc = client.GetClusterInformation();
             Assert.AreEqual(serverDesc.Schema.Length, 1);
-            CommandLineParser parser = new CommandLineParser(serverDesc);
+            var parser = new CommandLineParser(serverDesc);
 
-            CommandBase cmd = parser.Parse("desc");
-             cmd.TryExecute(client);
-            
+            var cmd = parser.Parse("desc");
+            cmd.TryExecute(client);
+
 
             cmd = parser.Parse("desc TRADELIKE");
             cmd.TryExecute(client);
-            
+
 
             cmd = parser.Parse("count from TRADELIKE where folder=aaa ");
             cmd.TryExecute(client);
-           
-
-           
         }
 
         [Test]
         public void ParseAndCount()
         {
-            
-            CommandLineParser parser = new CommandLineParser(_serverDescription);
-            
+            var parser = new CommandLineParser(_serverDescription);
+
             var cmd = parser.Parse("count from TRADELIKE where folder=aaa ");
             Assert.IsTrue(cmd.Success);
             Assert.AreEqual(cmd.CmdType, CommandType.Count);
@@ -77,10 +75,10 @@ namespace UnitTests
         [Test]
         public void ParseSimpleCommands()
         {
-            CommandLineParser parser = new CommandLineParser(_serverDescription);
+            var parser = new CommandLineParser(_serverDescription);
 
             //this one should fail
-            CommandBase cmd = parser.Parse("unknown lkjljk kjlkj ");
+            var cmd = parser.Parse("unknown lkjljk kjlkj ");
             Assert.IsFalse(cmd.Success);
             Assert.AreEqual(cmd.CmdType, CommandType.Unknown);
 
@@ -93,7 +91,7 @@ namespace UnitTests
             Assert.AreEqual(cmd.Params.Count, 1);
             Assert.AreEqual(cmd.Params[0], "c:/temp");
 
-         
+
             ///////////////////////////////////////////////////////////
             // LAST / LAST n
             cmd = parser.Parse("last ");

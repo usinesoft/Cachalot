@@ -7,19 +7,13 @@ namespace AdminConsole.AutoCompleteUtils
 {
     public class CyclingAutoComplete
     {
-        private int _autoCompleteIndex;
-        private List<string> _autoCompleteList;
-        private string _previousAutoComplete = string.Empty;
-
-        public IList<TypeDescription> KnownTypes { get; set; } = new List<TypeDescription>();
-
-        readonly List<string> _commands = new List<string>
+        private readonly List<string> _commands = new List<string>
         {
             "desc",
             "help",
             "select",
             "count",
-            "exit",           
+            "exit",
             "dump",
             "delete",
             "connect",
@@ -34,7 +28,12 @@ namespace AdminConsole.AutoCompleteUtils
             "search"
         };
 
-        private readonly char[] _tokenDelimiters = { ' ', ',' };
+        private readonly char[] _tokenDelimiters = {' ', ','};
+        private int _autoCompleteIndex;
+        private List<string> _autoCompleteList;
+        private string _previousAutoComplete = string.Empty;
+
+        public IList<TypeDescription> KnownTypes { get; set; } = new List<TypeDescription>();
 
         public string AutoComplete(string line, CyclingDirections cyclingDirection = CyclingDirections.Forward,
             bool ignoreCase = true)
@@ -46,8 +45,9 @@ namespace AdminConsole.AutoCompleteUtils
                 return ContinueCycleReverse();
             }
 
-            
-            var parts = line.Split(_tokenDelimiters).Select(p => p.ToLower()).Where(p=>!string.IsNullOrEmpty(p)).ToList();
+
+            var parts = line.Split(_tokenDelimiters).Select(p => p.ToLower()).Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
 
             var tables = KnownTypes?.Select(t => t.TypeName.ToLower()).ToList();
 
@@ -63,39 +63,26 @@ namespace AdminConsole.AutoCompleteUtils
                 if (_commands.Contains(part1))
                 {
                     if (part1 == "delete" || part1 == "select" || part1 == "count")
-                    {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", " where", "", tables);
-                    }
                     else if (part1 == "help")
-                    {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", _commands);
-                    }
                     else if (part1 == "desc")
-                    {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
-                    }
                     else if (part1 == "truncate")
-                    {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
-                    }
                     else if (part1 == "search")
-                    {
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", "", tables);
-                    }
-
                 }
                 else
                 {
                     _autoCompleteList =
                         AutoCompleteUtils.AutoComplete.GetAutoCompletedLines("", "", part1, _commands);
                 }
-                
-
             }
             else if (parts.Count == 2)
             {
@@ -122,7 +109,8 @@ namespace AdminConsole.AutoCompleteUtils
 
                     else if (part1 == "connect")
                     {
-                        var configFiles = Directory.EnumerateFiles(Directory.GetCurrentDirectory(), part2 + "*.xml").Select(Path.GetFileName).ToList();
+                        var configFiles = Directory.EnumerateFiles(Directory.GetCurrentDirectory(), part2 + "*.xml")
+                            .Select(Path.GetFileName).ToList();
                         _autoCompleteList =
                             AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(part1 + " ", "", part2, configFiles);
                     }
@@ -137,8 +125,6 @@ namespace AdminConsole.AutoCompleteUtils
                     _autoCompleteList =
                         AutoCompleteUtils.AutoComplete.GetAutoCompletedLines("", "", part1, _commands);
                 }
-
-
             }
             else if (parts.Count >= 3)
             {
@@ -146,7 +132,6 @@ namespace AdminConsole.AutoCompleteUtils
                 var part2 = parts[1];
                 var part3 = parts[2];
 
-                
 
                 if (_commands.Contains(part1) && tables.Contains(part2) && part3 == "where")
                 {
@@ -157,13 +142,10 @@ namespace AdminConsole.AutoCompleteUtils
                         var endsWithComma = line.Trim().Last() == ',';
 
                         var toComplete = "";
-                        
-                        if(!endsWithComma  && parts.Count > 3)
-                        {
-                            toComplete = parts.Last();
-                        }
 
-                        
+                        if (!endsWithComma && parts.Count > 3) toComplete = parts.Last();
+
+
                         var beforeLastSeperator = line.Substring(0, line.Length - toComplete.Length);
 
                         if (typeDescription != null)
@@ -174,21 +156,16 @@ namespace AdminConsole.AutoCompleteUtils
                             allFields.Add(typeDescription.PrimaryKeyField);
 
                             _autoCompleteList =
-                                AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(beforeLastSeperator, "", toComplete, allFields.Select(f=>f.Name.ToLower()).ToList());
-
+                                AutoCompleteUtils.AutoComplete.GetAutoCompletedLines(beforeLastSeperator, "",
+                                    toComplete, allFields.Select(f => f.Name.ToLower()).ToList());
                         }
-                        
                     }
-                    
-
                 }
                 else
                 {
                     _autoCompleteList =
                         AutoCompleteUtils.AutoComplete.GetAutoCompletedLines("", "", part1, _commands);
                 }
-
-
             }
 
 

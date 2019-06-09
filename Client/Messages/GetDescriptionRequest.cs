@@ -8,8 +8,6 @@ namespace Client.Messages
     [ProtoContract]
     public class GetDescriptionRequest : DataRequest
     {
-        [ProtoMember(1)] private readonly OrQuery _query;
-
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -20,11 +18,11 @@ namespace Client.Messages
         public GetDescriptionRequest(OrQuery query)
             : base(DataAccessType.Read, query.TypeName)
         {
-            _query = query;
+            Query = query;
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
 
-        public OrQuery Query => _query;
+        [field: ProtoMember(1)] public OrQuery Query { get; }
     }
 }

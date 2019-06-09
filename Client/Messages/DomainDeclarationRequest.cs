@@ -9,9 +9,6 @@ namespace Client.Messages
     [ProtoContract]
     public class DomainDeclarationRequest : DataRequest
     {
-      
-        [ProtoMember(1)] private readonly DomainDescription _description;
-
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -24,11 +21,11 @@ namespace Client.Messages
         /// </summary>
         public DomainDeclarationRequest(DomainDescription description)
             : base(DataAccessType.Write, description.DescriptionAsQuery.TypeName)
-        {            
-            _description = description;
+        {
+            Description = description;
         }
 
-        public DomainDescription Description => _description;
+        [field: ProtoMember(1)] public DomainDescription Description { get; }
 
         public override string FullTypeName => Description.DescriptionAsQuery.TypeName;
     }

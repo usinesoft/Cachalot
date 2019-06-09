@@ -5,7 +5,7 @@ Full documentation can be found [here>>](https://github.com/usinesoft/Cachalot/b
 Cachalot Client 
 ===========================================
  
-This is the code requiered to connect to a Cachalot cluster. The entry-point (the only one to be referenced directly by client code) is **Cachalot.dll**
+This is the code required to connect to a Cachalot cluster. The entry-point (the only one to be referenced directly by client code) is **Cachalot.dll**
 
 It is a dotnet standard (2.0) library that can be referenced both by Windows and portable core applications
 

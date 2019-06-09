@@ -1,1 +1,1 @@
-dotnet AccountsCore.dll
+dotnet Accounts.dll

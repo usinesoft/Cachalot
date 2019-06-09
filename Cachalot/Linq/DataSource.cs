@@ -20,31 +20,11 @@ namespace Cachalot.Linq
     /// <typeparam name="T"></typeparam>
     public class DataSource<T> : QueryableBase<T>
     {
-        private static QueryParser CreateParser()
+        
+        public void Truncate()
         {
-            //Create Custom node registry
-            var customNodeTypeRegistry = new MethodInfoBasedNodeTypeRegistry();
-
-            customNodeTypeRegistry.Register(FullTextSearchExpressionNode.SupportedMethods,
-                typeof(FullTextSearchExpressionNode));
-
-            customNodeTypeRegistry.Register(OnlyIfCompleteExpressionNode.SupportedMethods,
-                typeof(OnlyIfCompleteExpressionNode));
-
-            //This creates all the default node types
-            var nodeTypeProvider = ExpressionTreeParser.CreateDefaultNodeTypeProvider();
-
-            //add custom node provider to the providers
-            nodeTypeProvider.InnerProviders.Add(customNodeTypeRegistry);
-
-            var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
-            var processor = ExpressionTreeParser.CreateDefaultProcessor(transformerRegistry);
-            var expressionTreeParser = new ExpressionTreeParser(nodeTypeProvider, processor);
-            var queryParser = new QueryParser(expressionTreeParser);
-
-            return queryParser;
+            _client.Truncate<T>();
         }
-        //TODO implement truncate
 
         private readonly ICacheClient _client;
         private readonly ClientSideTypeDescription _typeDescription;
@@ -70,12 +50,46 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Only used in cache-only mode (no persistence). Declare a subset of the data as being fully loaded into the cache
-        /// Any expression that can be used for querying is valid here
+        ///     Get one item by primary key. Returns null if none
+        /// </summary>
+        /// <param name="primaryKey"></param>
+        /// <returns></returns>
+        public T this[object primaryKey] => _client.GetOne<T>(primaryKey);
+
+        private static QueryParser CreateParser()
+        {
+            //Create Custom node registry
+            var customNodeTypeRegistry = new MethodInfoBasedNodeTypeRegistry();
+
+            customNodeTypeRegistry.Register(FullTextSearchExpressionNode.SupportedMethods,
+                typeof(FullTextSearchExpressionNode));
+
+            customNodeTypeRegistry.Register(OnlyIfCompleteExpressionNode.SupportedMethods,
+                typeof(OnlyIfCompleteExpressionNode));
+
+            //This creates all the default node types
+            var nodeTypeProvider = ExpressionTreeParser.CreateDefaultNodeTypeProvider();
+
+            //add custom node provider to the providers
+            nodeTypeProvider.InnerProviders.Add(customNodeTypeRegistry);
+
+            var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
+            var processor = ExpressionTreeParser.CreateDefaultProcessor(transformerRegistry);
+            var expressionTreeParser = new ExpressionTreeParser(nodeTypeProvider, processor);
+            var queryParser = new QueryParser(expressionTreeParser);
+
+            return queryParser;
+        }
+
+
+        /// <summary>
+        ///     Only used in cache-only mode (no persistence). Declare a subset of the data as being fully loaded into the cache
+        ///     Any expression that can be used for querying is valid here
         /// </summary>
         /// <param name="domainDefinition"></param>
         /// <param name="humanReadableDescription">Optional description of the loaded domain</param>
-        public void DeclareLoadedDomain([NotNull] Expression<Func<T, bool>> domainDefinition, string humanReadableDescription = null)
+        public void DeclareLoadedDomain([NotNull] Expression<Func<T, bool>> domainDefinition,
+            string humanReadableDescription = null)
         {
             if (domainDefinition == null) throw new ArgumentNullException(nameof(domainDefinition));
 
@@ -89,8 +103,9 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Only used in cache-only mode (no persistence). Can activate Less Recently Used eviction for a data type.
-        /// When the <paramref name="limit"/> is reached the less recently used  <paramref name="itemsToRemove"/> items are evicted
+        ///     Only used in cache-only mode (no persistence). Can activate Less Recently Used eviction for a data type.
+        ///     When the <paramref name="limit" /> is reached the less recently used  <paramref name="itemsToRemove" /> items are
+        ///     evicted
         /// </summary>
         /// <param name="evictionType"></param>
         /// <param name="limit"></param>
@@ -98,22 +113,19 @@ namespace Cachalot.Linq
         public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100)
         {
             if (evictionType == EvictionType.LessRecentlyUsed && limit == 0)
-            {
                 throw new ArgumentException("If LRU eviction is used, a positive limit must be specified");
-            }
 
             _client.ConfigEviction(typeof(T).FullName, evictionType, limit, itemsToRemove);
-
         }
 
 
         /// <summary>
-        /// Mostly useful in distributed cache mode without persistence. Declare all instances of a given type as being available
-        /// Usually called after the cache is fed. This will enable "get many" operations 
-        /// </summary>        
+        ///     Mostly useful in distributed cache mode without persistence. Declare all instances of a given type as being
+        ///     available
+        ///     Usually called after the cache is fed. This will enable "get many" operations
+        /// </summary>
         public void DeclareFullyLoaded(bool fullyLoaded = true)
         {
-            
             var domain = new DomainDescription(OrQuery.Empty<T>(), fullyLoaded);
 
             _client.DeclareDomain(domain);
@@ -121,18 +133,10 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        ///     Get one item by primary key. Returns null if none
-        /// </summary>
-        /// <param name="primaryKey"></param>
-        /// <returns></returns>
-        public T this[object primaryKey] => _client.GetOne<T>(primaryKey);
-
-
-        /// <summary>
         ///     Update or insert an object
         /// </summary>
         /// <param name="item"></param>
-        public  void Put(T item)
+        public void Put(T item)
         {
             _client.Put(item);
         }

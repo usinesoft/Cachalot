@@ -5,7 +5,6 @@ namespace AdminConsole.Commands
 {
     public class CommandReadWrite : CommandBase
     {
-
         internal override ICacheClient TryExecute(ICacheClient client)
         {
             if (!CanExecute) return client;

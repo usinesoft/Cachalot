@@ -157,8 +157,7 @@ namespace Client.Interface
         /// <param name="query"></param>
         /// <returns></returns>
         IEnumerable<TItemType> GetMany<TItemType>(OrQuery query);
-
-
+        
         /// <summary>
         ///     Remove an item from the cache.
         /// </summary>

@@ -34,6 +34,7 @@ namespace Client.Core
 
             var useProtocolBuffers = reader.ReadBoolean();
             var useCompression = reader.ReadBoolean();
+            reader.ReadDouble();// the rank is ignored for single objects
             var dataSize = reader.ReadInt32();
             var data = reader.ReadBytes(dataSize);
 
@@ -64,6 +65,7 @@ namespace Client.Core
             var data = SerializationHelper.ObjectToBytes(item, mode, typeDescription);
             writer.Write(useProtocolBuffers);
             writer.Write(useCompression);
+            writer.Write(0D);
             writer.Write(data.Length);
             writer.Write(data);
             writer.Flush();
@@ -94,6 +96,7 @@ namespace Client.Core
                     writer.Write(true); //serialized using protocol buffers
                     writer.Write(false);
                     //no compression for generic objects as we use protocol buffers which are very compact
+                    writer.Write(0D); // the rank is not used in this case
                     writer.Write(data.Length);
                     writer.Write(data);
 
@@ -125,6 +128,7 @@ namespace Client.Core
                 var data = item.ObjectData;
                 writer.Write(false);
                 writer.Write(item.UseCompression);
+                writer.Write(item.Rank);
                 writer.Write(data.Length);
                 writer.Write(data);
             }
@@ -133,7 +137,7 @@ namespace Client.Core
         }
 
 
-        public static IEnumerable<TItemType> EnumerableFromStream<TItemType>(Stream stream)
+        public static IEnumerable<RankedItem> EnumerableFromStream<TItemType>(Stream stream)
         {
             var reader = new BinaryReader(stream);
 
@@ -142,6 +146,7 @@ namespace Client.Core
             {
                 var useProtocolBuffers = reader.ReadBoolean();
                 var useCompression = reader.ReadBoolean();
+                var rank = reader.ReadDouble();
                 var dataSize = reader.ReadInt32();
                 var data = reader.ReadBytes(dataSize);
 
@@ -178,7 +183,9 @@ namespace Client.Core
                         throw new StreamingException(message);
                     }
 
-                    yield return (TItemType) result;
+                    
+
+                    yield return new RankedItem{Item = result, Rank = rank};
                 }
             }
         }
@@ -200,7 +207,9 @@ namespace Client.Core
             {
                 var useProtocolBuffers = reader.ReadBoolean();
                 var useCompression = reader.ReadBoolean();
+                reader.ReadDouble(); // the rank is not used in this case
                 var dataSize = reader.ReadInt32();
+
                 var data = reader.ReadBytes(dataSize);
 
                 using (var memStream = new MemoryStream(data))
@@ -300,6 +309,7 @@ namespace Client.Core
                 var data = item.ObjectData;
                 writer.Write(false); // no protobuf for objects
                 writer.Write(item.UseCompression);
+                writer.Write(item.Rank);
                 writer.Write(data.Length);
                 writer.Write(data);
             }

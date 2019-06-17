@@ -34,7 +34,7 @@ namespace UnitTests
                 LoadedObjects.Add(obj);
             }
 
-            public void EndProcess()
+            public void EndProcess(string dataPath)
             {
             }
         }

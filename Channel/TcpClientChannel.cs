@@ -55,7 +55,7 @@ namespace Channel
 
         #region IClientChannel Members
 
-        public IEnumerable<TItemType> SendStreamRequest<TItemType>(Request request)
+        public IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));

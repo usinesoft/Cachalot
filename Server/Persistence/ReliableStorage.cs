@@ -202,7 +202,7 @@ namespace Server.Persistence
                 offset = (int) StorageStream.Position;
             }
 
-            if (useObjectProcessor) ObjectProcessor.EndProcess();
+            if (useObjectProcessor) ObjectProcessor.EndProcess(DataPath);
 
             StorageSize = offset;
         }

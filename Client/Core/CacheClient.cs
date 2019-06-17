@@ -495,7 +495,7 @@ namespace Client.Core
 
             var result = InternalGetMany<TItemType>(query);
 
-            return result.FirstOrDefault();
+            return (TItemType) result.FirstOrDefault()?.Item;
         }
 
         /// <summary>
@@ -512,7 +512,7 @@ namespace Client.Core
 
             var result = InternalGetMany<TItemType>(query);
 
-            return result.FirstOrDefault();
+            return (TItemType) result.FirstOrDefault()?.Item;
         }
 
 
@@ -824,6 +824,11 @@ namespace Client.Core
         /// <returns></returns>
         public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
         {
+            return InternalGetMany<TItemType>(query).Select(ri=>ri.Item).Cast<TItemType>();
+        }
+
+        public IEnumerable<RankedItem> GetManyWithRank<TItemType>(OrQuery query)
+        {
             return InternalGetMany<TItemType>(query);
         }
 
@@ -961,7 +966,7 @@ namespace Client.Core
             return concreteResponse;
         }
 
-        private IEnumerable<TItemType> InternalGetMany<TItemType>(OrQuery query)
+        private IEnumerable<RankedItem> InternalGetMany<TItemType>(OrQuery query)
         {
             var request = new GetRequest(query);
 
@@ -986,7 +991,7 @@ namespace Client.Core
 
             var query = builder.GetManyWhere(sqlLike);
 
-            return InternalGetMany<TItemType>(query);
+            return InternalGetMany<TItemType>(query).Select(ri=> ri.Item).Cast<TItemType>();
         }
 
         /// <summary>
@@ -999,7 +1004,7 @@ namespace Client.Core
         {
             var description = RegisterTypeIfNeeded(typeof(TItemType)).AsTypeDescription;
 
-            KeyValue primaryKey = null;
+            KeyValue primaryKey;
 
             if (primaryKeyValue is KeyValue kv)
                 primaryKey = kv;

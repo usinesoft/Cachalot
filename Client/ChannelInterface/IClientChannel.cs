@@ -28,7 +28,7 @@ namespace Client.ChannelInterface
             ExceptionHandler exceptionHandler);
 
 
-        IEnumerable<TItemType> SendStreamRequest<TItemType>(Request request);
+        IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request);
 
         //Start a complex communication session
         Session BeginSession();

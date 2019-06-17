@@ -19,6 +19,12 @@ namespace Client.Core
     [ProtoContract]
     public class CachedObject
     {
+
+        /// <summary>
+        /// This property is not persistent. It is used when ordering items from multiple nodes
+        /// </summary>
+        public double Rank { get; set; }
+
         [ProtoMember(4)] private KeyValue[] _indexKeys;
 
         /// <summary>

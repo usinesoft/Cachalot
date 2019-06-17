@@ -27,6 +27,17 @@ namespace Server
     /// </summary>
     public class DataStore
     {
+
+        public ISet<string> GetMostFrequentTokens(int max)
+        {
+            if (_fullTextIndex == null)
+            {
+                return new HashSet<string>();
+            }
+
+            return new HashSet<string>(_fullTextIndex.PositionsByToken.OrderByDescending(p => p.Value.Count).Select(p => p.Key).Take(max));
+        }
+
         /// <summary>
         ///     List of indexes for index keys (multiple objects by key value)
         /// </summary>
@@ -109,7 +120,14 @@ namespace Server
 
 
             // create the full-text index if required
-            if (typeDescription.FullText.Count > 0) _fullTextIndex = new FullTextIndex(config.FullTextConfig);
+            if (typeDescription.FullText.Count > 0)
+            {
+                _fullTextIndex = new FullTextIndex(config.FullTextConfig)
+                {
+                    // a function that allows the full text engine to find the original line of text
+                    LineProvider = pointer => _dataByPrimaryKey[pointer.PrimaryKey].FullText[pointer.Line]
+                };
+            }
         }
 
         public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
@@ -479,7 +497,13 @@ namespace Server
         {
             var result = _fullTextIndex.SearchBestDocuments(query, maxElements);
 
-            return result.Select(r => _dataByPrimaryKey[r.PrimaryKey]).ToList();
+            return result.Select(r =>
+            {
+                // copy the score the CachedObject
+                var item = _dataByPrimaryKey[r.PrimaryKey];
+                item.Rank = r.Score;
+                return item ;
+            }).ToList();
         }
 
         private IList<CachedObject> InternalFind(OrQuery query, bool onlyIfComplete = false)
@@ -789,6 +813,9 @@ namespace Server
 
 
                 Dbg.Trace($"end InternalPutMany with {items.Count} object");
+
+                
+                
             }
         }
 

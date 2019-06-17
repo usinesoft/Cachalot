@@ -6,7 +6,7 @@
         {
         }
 
-        public void EndProcess()
+        public void EndProcess(string dataPath = null)
         {
         }
     }

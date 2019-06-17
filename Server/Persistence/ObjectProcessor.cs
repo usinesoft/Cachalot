@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Client;
 using Client.Core;
 
@@ -36,11 +37,25 @@ namespace Server.Persistence
                 throw new NotSupportedException($"The type {item.FullTypeName} is not present in the database schema");
         }
 
-        public void EndProcess()
+        public void EndProcess(string dataPath = null)
         {
-            foreach (var pair in _temporaryStorage)
-                _dataContainer.DataStores[pair.Key].InternalPutMany(pair.Value, true, null);
 
+            HashSet<string> frequentTokens = new HashSet<string>();
+            foreach (var pair in _temporaryStorage)
+            {
+                var store = _dataContainer.DataStores[pair.Key];
+                store.InternalPutMany(pair.Value, true, null);
+                frequentTokens.UnionWith(store.GetMostFrequentTokens(100));
+                
+            }
+                
+            // generate a helper file containing most frequent tokens
+
+            if (dataPath != null && frequentTokens.Count > 0)
+            {
+                File.WriteAllLines(Path.Combine(dataPath, "Most_reequent_tokens.txt"),  frequentTokens);
+            }
+            
             _temporaryStorage.Clear();
 
             Dbg.Trace("done loading persistent objects into memory");

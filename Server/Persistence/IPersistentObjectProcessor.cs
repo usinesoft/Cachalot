@@ -7,6 +7,6 @@
     {
         void Process(byte[] data);
 
-        void EndProcess();
+        void EndProcess(string dataPath = null);
     }
 }

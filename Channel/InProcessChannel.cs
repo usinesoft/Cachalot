@@ -168,7 +168,7 @@ namespace Channel
             }
         }
 
-        public IEnumerable<TItemType> SendStreamRequest<TItemType>(Request request)
+        public IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request)
         {
             if (RequestReceived != null)
             {
@@ -179,7 +179,7 @@ namespace Channel
             }
 
             // otherwise return empty collection
-            return new List<TItemType>();
+            return new List<RankedItem>();
         }
 
 

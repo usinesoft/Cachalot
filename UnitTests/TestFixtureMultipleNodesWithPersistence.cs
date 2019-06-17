@@ -741,13 +741,13 @@ namespace UnitTests
                 Assert.IsTrue(result.Any());
 
 
-                //result = data.FullTextSearch("enjoyable evening").ToList();
-                //Assert.IsTrue(result.Count >= 1);
-                //Assert.IsTrue(result[0].Reviews.Any(r => r.Text.Contains("enjoyable evening")),
-                //    "the first result should contain the exact expression");
+                result = data.FullTextSearch("enjoyable evening").ToList();
+                Assert.IsTrue(result.Count >= 1);
+                Assert.IsTrue(result[0].Reviews.Any(r => r.Text.Contains("enjoyable evening")),
+                    "the first result should contain the exact expression");
 
-                //result = data.FullTextSearch("panera").ToList();
-                //Assert.AreEqual(1, result.Count);
+                result = data.FullTextSearch("panera").ToList();
+                Assert.AreEqual(1, result.Count);
             }
         }
 

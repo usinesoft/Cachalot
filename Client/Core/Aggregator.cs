@@ -391,7 +391,6 @@ namespace Client.Core
 
                 var firstStageOk = serverStatus.Values.All(s => s);
 
-
                 if (firstStageOk)
                 {
                     // commit the transaction
@@ -420,9 +419,10 @@ namespace Client.Core
                     });
 
                     throw new CacheException(
-                        "Error in two stage transaction. The transaction was successfully rolled back", exType);
+                        $"Error in two stage transaction. The transaction was successfully rolled back: {exType}", exType);
                 }
-
+                
+                
                 // close the session
                 Parallel.ForEach(CacheClients, client =>
                 {
@@ -431,7 +431,9 @@ namespace Client.Core
                         var session = sessions[client.ShardIndex];
                         client.Channel.EndSession(session);
                     }
-                });
+                });    
+                
+                
             }
         }
 
@@ -944,13 +946,13 @@ namespace Client.Core
         public IEnumerable<TItemType> GetMany<TItemType>(OrQuery query)
 
         {
-            var clientResults = new IEnumerator<TItemType>[CacheClients.Count];
+            var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
             try
             {
                 Parallel.ForEach(CacheClients, client =>
                 {
-                    var resultsFromThisNode = client.GetMany<TItemType>(query);
+                    var resultsFromThisNode = client.GetManyWithRank<TItemType>(query);
                     clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
                 });
             }
@@ -959,25 +961,55 @@ namespace Client.Core
                 if (e.InnerException != null) throw e.InnerException;
             }
 
-            var count = 0;
-            while (true)
-            {
-                var allFinished = true;
-                foreach (var clientResult in clientResults)
-                {
-                    // limit the number of returned object if Take linq extension method was used
-                    if (query.Take > 0 && count >= query.Take) yield break;
 
-                    if (clientResult.MoveNext())
+            if (!query.IsFullTextQuery)
+            {
+                var count = 0;
+                while (true)
+                {
+                    var allFinished = true;
+                    foreach (var clientResult in clientResults)
                     {
-                        allFinished = false;
-                        yield return clientResult.Current;
-                        count++;
+                        // limit the number of returned object if Take linq extension method was used
+                        if (query.Take > 0 && count >= query.Take) yield break;
+
+                        if (clientResult.MoveNext())
+                        {
+                            allFinished = false;
+                            yield return (TItemType) clientResult.Current?.Item;
+                            count++;
+                        }
                     }
+
+                    if (allFinished) yield break;
+                }
+            }
+            else // for full text queries we have to merge all results and sort by rank
+            {
+                var all = new List<RankedItem>();
+
+                Parallel.ForEach(clientResults, r =>
+                {
+                    List<RankedItem> resultFromClient = new List<RankedItem>();
+                    while (r.MoveNext())
+                    {
+                        resultFromClient.Add(r.Current);
+                    }
+
+                    lock (all)
+                    {
+                        all.AddRange(resultFromClient);
+                    }
+
+                });
+
+                foreach (var item in all.OrderByDescending(ri => ri.Rank).Select(ri => ri.Item).Cast<TItemType>())
+                {
+                    yield return item;
                 }
 
-                if (allFinished) yield break;
             }
+            
         }
 
 
@@ -990,7 +1022,7 @@ namespace Client.Core
         {
             var builder = new QueryBuilder(typeof(TItemType));
 
-            KeyValue primaryKey = null;
+            KeyValue primaryKey;
 
             if (primaryKeyValue is KeyValue kv)
                 primaryKey = kv;

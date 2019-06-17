@@ -35,7 +35,7 @@ namespace UnitTests
                 ProcessedBlocks.Add(data);
             }
 
-            public void EndProcess()
+            public void EndProcess(string dataPath)
             {
             }
         }

@@ -457,25 +457,33 @@ namespace UnitTests
 
                 var myAccounts = accounts.ToList();
 
-                Parallel.For(0, 100, i =>
+                try
                 {
-                    var transfer = new MoneyTransfer
+                    Parallel.For(0, 100, i =>
                     {
-                        Amount = 10,
-                        Date = DateTime.Today,
-                        SourceAccount = myAccounts[0].Id,
-                        DestinationAccount = myAccounts[1].Id
-                    };
+                        var transfer = new MoneyTransfer
+                        {
+                            Amount = 10,
+                            Date = DateTime.Today,
+                            SourceAccount = myAccounts[0].Id,
+                            DestinationAccount = myAccounts[1].Id
+                        };
 
-                    myAccounts[0].Balance -= 10;
-                    myAccounts[1].Balance += 10;
+                        myAccounts[0].Balance -= 10;
+                        myAccounts[1].Balance += 10;
 
-                    var transaction = connector.BeginTransaction();
-                    transaction.Put(myAccounts[0]);
-                    transaction.Put(myAccounts[1]);
-                    transaction.Put(transfer);
-                    transaction.Commit();
-                });
+                        var transaction = connector.BeginTransaction();
+                        transaction.Put(myAccounts[0]);
+                        transaction.Put(myAccounts[1]);
+                        transaction.Put(transfer);
+                        transaction.Commit();
+                    });
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    // a transaction can fail. We are testing that there is no deadlock
+                }
             }
         }
 

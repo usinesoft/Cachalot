@@ -226,6 +226,7 @@ namespace Channel
             }
 
 
+            // TODO: check if really useful
             public void SendManyGeneric<TItemType>(ICollection<TItemType> items) where TItemType : class
             {
                 try

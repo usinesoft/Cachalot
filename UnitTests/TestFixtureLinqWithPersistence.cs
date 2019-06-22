@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Cachalot.Linq;
@@ -492,6 +493,100 @@ namespace UnitTests
             }
         }
 
+         [Test]
+        public void Full_text_search()
+        {
+
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_persistent_config.xml");
+
+            using (var connector = new Connector(config))
+            {
+                connector.AdminInterface().DropDatabase();
+
+                var ids = connector.GenerateUniqueIds("home_id", 103);
+
+                var list = new List<Home>();
+                for (var i = 0; i < 100; i++)
+                {
+                    var home = new Home
+                    {
+                        Id = ids[i],
+                        Town = "Paris",
+                        CountryCode = "FR",
+                        Address = "rue des malheurs",
+                        Bathrooms = 1,
+                        Rooms = 2
+                    };
+                    list.Add(home);
+                }
+
+                var homes = connector.DataSource<Home>();
+                homes.PutMany(list);
+
+               
+                // manually add some items for full-text search testing
+                var h1 = new Home
+                {
+                    Id = ids[ids.Length - 3],
+                    Address = "14 rue de la mort qui tue",
+                    Bathrooms = 2,
+                    CountryCode = "FR",
+                    PriceInEuros = 150,
+                    Rooms = 3,
+                    Town = "Paris",
+                    Comments = new List<Comment>
+                    {
+                        new Comment{Text="beautiful view"},
+                        new Comment{Text="close to the metro"},
+                    }
+                };
+
+                var h2 = new Home
+                {
+                    Id = ids[ids.Length - 2],
+                    Address = "15 allée de l'amour",
+                    Bathrooms = 1,
+                    CountryCode = "FR",
+                    PriceInEuros = 250,
+                    Rooms = 4,
+                    Town = "Paris",
+                    Comments = new List<Comment>
+                    {
+                        new Comment{Text="ps4"},
+                        new Comment{Text="close to the metro"},
+                    }
+                };
+
+                var h3 = new Home
+                {
+                    Id = ids[ids.Length - 1],
+                    Address = "156 db du gral Le Clerc",
+                    Bathrooms = 2,
+                    CountryCode = "FR",
+                    PriceInEuros = 200,
+                    Rooms = 3,
+                    Town = "Nice",
+                    Comments = new List<Comment>
+                    {
+                        new Comment{Text="wonderful sea view"},
+                        new Comment{Text="close to beach"},
+                    }
+                };
+
+                homes.Put(h1);
+                homes.Put(h2);
+                homes.Put(h3);
+
+                var result = homes.FullTextSearch("gral le clerc");
+                Assert.AreEqual(h3.Id, result.First().Id);
+
+                result = homes.FullTextSearch("amour");
+                Assert.AreEqual(h2.Id, result.First().Id);
+            }
+        }
 
     }
+
+
 }

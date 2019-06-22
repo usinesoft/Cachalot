@@ -236,8 +236,12 @@ namespace Server.FullTextSearch
             if (PositionsByDocument.TryGetValue(primaryKey, out var pointers))
                 foreach (var pointer in pointers)
                 {
-                    pointer.Deleted = true;
-                    Entries--;
+                    if (!pointer.Deleted)
+                    {
+                        pointer.Deleted = true;
+                        Entries--;
+                    }
+                    
                 }
         }
 

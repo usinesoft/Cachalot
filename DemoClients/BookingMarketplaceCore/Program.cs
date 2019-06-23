@@ -363,18 +363,18 @@ namespace BookingMarketplace
             Console.WriteLine(
                 $"bast match:  {result3.First().Id}");
 
-            //// delete many with complex query
-            //watch.Reset();
-            //watch.Start();
+            // delete many with complex query
+            watch.Reset();
+            watch.Start();
 
-            //properties.DeleteMany(p =>
-            //    p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
+            properties.DeleteMany(p =>
+                p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
 
-            //watch.Stop();
+            watch.Stop();
 
 
-            //Console.WriteLine(
-            //    $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
+            Console.WriteLine(
+                $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
 
         }
 

@@ -53,7 +53,7 @@ namespace Server.Persistence
 
             if (dataPath != null && frequentTokens.Count > 0)
             {
-                File.WriteAllLines(Path.Combine(dataPath, "Most_reequent_tokens.txt"),  frequentTokens);
+                File.WriteAllLines(Path.Combine(dataPath, "Most_frequent_tokens.txt"),  frequentTokens);
             }
             
             _temporaryStorage.Clear();

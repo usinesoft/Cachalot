@@ -1,1 +1,1 @@
-nuget pack Cachalot.csproj -IncludeReferencedProjects -Prop Configuration=Release -Symbols
+nuget pack Cachalot.csproj -IncludeReferencedProjects -Prop Configuration=Debug -Symbols

@@ -8,6 +8,7 @@ using System.Reflection;
 using Client.Interface;
 using Client.Messages;
 using Client.Tools;
+using JetBrains.Annotations;
 
 #endregion
 
@@ -26,21 +27,6 @@ namespace Client.Core
         private static readonly Dictionary<Type, List<Func<object, object>>> StringGetterCache =
             new Dictionary<Type, List<Func<object, object>>>();
 
-        /// <summary>
-        ///     if true order operators can be used for this key
-        /// </summary>
-        private readonly bool _isOrdered;
-
-        /// <summary>
-        ///     Any key type must be convertible to LongInt or String
-        /// </summary>
-        private readonly KeyDataType _keyDataType;
-
-        /// <summary>
-        ///     description of the underlying property
-        /// </summary>
-        private readonly PropertyInfo _propertyInfo;
-
 
         /// <summary>
         ///     Build from PropertyInfo
@@ -51,10 +37,9 @@ namespace Client.Core
         {
             try
             {
-                _propertyInfo = propertyInfo;
+                Info = propertyInfo;
 
-                Getter = _propertyInfo.CompileGetter();
-
+                
                 // full text indexation can be applied to any type of key or event to non indexed properties
                 var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true)
                     .FirstOrDefault();
@@ -68,7 +53,7 @@ namespace Client.Core
                 {
                     KeyType = KeyType.Primary;
                     if (attributes[0] is PrimaryKeyAttribute attr)
-                        _keyDataType = attr.KeyDataType;
+                        KeyDataType = attr.KeyDataType;
 
 
                     return;
@@ -80,7 +65,7 @@ namespace Client.Core
                 {
                     KeyType = KeyType.Unique;
                     if (attributes[0] is KeyAttribute attr)
-                        _keyDataType = attr.KeyDataType;
+                        KeyDataType = attr.KeyDataType;
 
 
                     return;
@@ -103,8 +88,8 @@ namespace Client.Core
 
                     if (attributes[0] is IndexAttribute attr)
                     {
-                        _keyDataType = attr.KeyDataType;
-                        _isOrdered = attr.Ordered;
+                        KeyDataType = attr.KeyDataType;
+                        IsOrdered = attr.Ordered;
                     }
 
 
@@ -115,7 +100,7 @@ namespace Client.Core
             }
             finally
             {
-                AsKeyInfo = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
+                AsKeyInfo = new KeyInfo(KeyDataType, KeyType, Info.Name, IsOrdered, IndexedAsFulltext);
             }
         }
 
@@ -130,22 +115,19 @@ namespace Client.Core
             if (propertyDescription == null)
                 throw new ArgumentNullException(nameof(propertyDescription));
 
-            _propertyInfo = propertyInfo;
-
-            Getter = _propertyInfo.CompileGetter();
+            Info = propertyInfo;
 
             KeyType = propertyDescription.KeyType;
-            _keyDataType = propertyDescription.KeyDataType;
-            _isOrdered = propertyDescription.Ordered;
+            KeyDataType = propertyDescription.KeyDataType;
+            IsOrdered = propertyDescription.Ordered;
             IndexedAsFulltext = propertyDescription.FullTextIndexed;
 
-            AsKeyInfo = new KeyInfo(_keyDataType, KeyType, Info.Name, _isOrdered, IndexedAsFulltext);
+            AsKeyInfo = new KeyInfo(KeyDataType, KeyType, Info.Name, IsOrdered, IndexedAsFulltext);
         }
 
         public bool IndexedAsFulltext { get; }
 
-        private Func<object, object> Getter { get; }
-
+        
         /// <summary>
         ///     Return a serializable, light version <see cref="KeyInfo" />
         /// </summary>
@@ -159,7 +141,7 @@ namespace Client.Core
         /// <summary>
         ///     Any key type must be convertible to LongInt or String
         /// </summary>
-        public KeyDataType KeyDataType => _keyDataType;
+        public KeyDataType KeyDataType { get; }
 
         /// <summary>
         ///     Name of the key (unique for a cacheable type)
@@ -169,12 +151,12 @@ namespace Client.Core
         /// <summary>
         ///     if true order operators can be used for this key
         /// </summary>
-        public bool IsOrdered => _isOrdered;
+        public bool IsOrdered { get; }
 
         /// <summary>
         ///     description of the underlying property
         /// </summary>
-        public PropertyInfo Info => _propertyInfo;
+        public PropertyInfo Info { get; }
 
         /// <summary>
         ///     Equals from <see cref="IEquatable{T}" />
@@ -190,7 +172,7 @@ namespace Client.Core
                 return false;
             if (!Equals(KeyType, keyInfo.KeyType))
                 return false;
-            if (!Equals(_keyDataType, keyInfo._keyDataType))
+            if (!Equals(KeyDataType, keyInfo.KeyDataType))
                 return false;
 
             return true;
@@ -232,7 +214,7 @@ namespace Client.Core
         {
             var result = Info.GetHashCode();
             result = 29 * result + KeyType.GetHashCode();
-            result = 29 * result + _keyDataType.GetHashCode();
+            result = 29 * result + KeyDataType.GetHashCode();
             return result;
         }
 
@@ -249,8 +231,6 @@ namespace Client.Core
             //TODO use precompiled accessors
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
-
-            //var value = Getter(instance);
 
             var value = Info.GetValue(instance, null);
 
@@ -310,8 +290,10 @@ namespace Client.Core
         ///     Generate precompiled getters for a type. This will avoid using reflection for each call
         /// </summary>
         /// <param name="type"></param>
-        private static void GenerateAccessorsForType(Type type)
+        private static void GenerateAccessorsForType([NotNull] Type type)
         {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
             var accessors = new List<Func<object, object>>();
             foreach (var property in type.GetProperties())
                 if (property.PropertyType == typeof(string))
@@ -331,13 +313,35 @@ namespace Client.Core
             var result = new List<string>();
             var type = instance.GetType();
 
-            if (!StringGetterCache.ContainsKey(type)) GenerateAccessorsForType(type);
-
-            foreach (var accessor in StringGetterCache[type])
+            if (type == typeof(string))
             {
-                var val = accessor(instance);
-                if (val != null) result.Add(val as string);
+                result.Add((string)instance);
             }
+            else if(type.Namespace != null && type.Namespace.StartsWith("System"))
+            {
+                result.Add(instance.ToString());
+            }
+            else // some complex type
+            {
+
+                List<Func<object, object>> accessors;
+                lock (StringGetterCache)
+                {
+                    if (!StringGetterCache.ContainsKey(type)) GenerateAccessorsForType(type);
+                    accessors = StringGetterCache[type];
+                }
+
+                if (accessors != null)
+                {
+                    foreach (var accessor in accessors)
+                    {
+                        var val = accessor(instance);
+                        if (val != null) result.Add(val as string);
+                    }    
+                }
+                
+            }
+            
 
             return result;
         }

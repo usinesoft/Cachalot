@@ -19,7 +19,7 @@ namespace UnitTests
         }
 
         [Test]
-        public void An_empty_log_is_blocking_consumers_and_releses_them_when_disposed()
+        public void An_empty_log_is_blocking_consumers_and_releases_them_when_disposed()
         {
             var log = new TransactionLog();
 
@@ -49,7 +49,7 @@ namespace UnitTests
         }
 
         [Test]
-        public void An_empty_log_is_blocking_consumers_and_releses_them_when_transactions_are_added()
+        public void An_empty_log_is_blocking_consumers_and_releases_them_when_transactions_are_added()
         {
             var log = new TransactionLog();
 

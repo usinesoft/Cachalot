@@ -1,1 +1,1 @@
-dotnet CoreHost.dll 4851
+CoreHost.exe 4851

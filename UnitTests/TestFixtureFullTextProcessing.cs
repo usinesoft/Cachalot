@@ -53,7 +53,7 @@ namespace UnitTests
         {
             var description = ClientSideTypeDescription.RegisterType<Home>();
 
-            Assert.AreEqual(4, description.FullTextIndexed.Count);
+            Assert.AreEqual(5, description.FullTextIndexed.Count);
             var home = new Home
             {
                 Address = "14 rue du chien qui fume", Bathrooms = 2, Rooms = 4, PriceInEuros = 200, CountryCode = "FR",
@@ -61,19 +61,20 @@ namespace UnitTests
                 {
                     new Comment {Text = "Wonderful place", User = "foo"},
                     new Comment {Text = "Very nice apartment"}
-                }
+                },
+                Contacts = {"mail", "phone"}
             };
 
             var packed = CachedObject.Pack(home);
 
-            Assert.AreEqual(5, packed.FullText.Length);
+            Assert.AreEqual(7, packed.FullText.Length);
             Assert.IsTrue(packed.FullText.Any(t => t.Contains("chien qui fume")));
 
             // now pack the same object as json
             var json = SerializationHelper.ObjectToJson(home);
 
             var packed2 = CachedObject.PackJson(json, description.AsTypeDescription);
-            Assert.AreEqual(5, packed2.FullText.Length);
+            Assert.AreEqual(7, packed2.FullText.Length);
             Assert.IsTrue(packed2.FullText.Any(t => t.Contains("chien qui fume")));
         }
 

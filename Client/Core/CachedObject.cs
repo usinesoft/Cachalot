@@ -48,13 +48,7 @@ namespace Client.Core
             PrimaryKey = primaryKey;
         }
 
-        /// <summary>
-        ///     Stores the id of the operation that changed this object. This id is unique for each node and can be used for nodes
-        ///     resynchronization
-        /// </summary>
-        [ProtoMember(10)]
-        public long ChangeNo { get; set; }
-
+        
         public string GlobalKey => FullTypeName + PrimaryKey;
 
         /// <summary>
@@ -142,6 +136,20 @@ namespace Client.Core
         [field: ProtoMember(7)] public bool UseCompression { get; private set; }
 
         [field: ProtoMember(9)] public string[] FullText { get; private set; }
+
+        
+        /// <summary>
+        ///     Stores the id of the operation that changed this object. This id is unique for each node and can be used for nodes
+        ///     resynchronization
+        /// </summary>
+        [ProtoMember(10)]
+        public long ChangeNo { get; set; }
+
+
+        /// <summary>
+        /// Store normalized version in order to avoid tokenizing multiple times
+        /// </summary>
+        [field: ProtoMember(11)] public string[] NormalizedFullText { get; set; }
 
         public bool MatchOneOf(ISet<KeyValue> values)
         {
@@ -337,14 +345,23 @@ namespace Client.Core
                 if (jKey.Value.Type == JTokenType.Array)
                     foreach (var jToken in jKey.Value.Children())
                     {
-                        var child = (JObject) jToken;
 
-                        foreach (var jToken1 in child.Children())
+                        if (jToken.Type == JTokenType.String)
                         {
-                            var field = (JProperty) jToken1;
-                            if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
-                                lines.Add((string) field);
+                            lines.Add((string)jToken);
                         }
+                        else
+                        {
+                            var child = (JObject) jToken;
+
+                            foreach (var jToken1 in child.Children())
+                            {
+                                var field = (JProperty) jToken1;
+                                if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
+                                    lines.Add((string) field);
+                            }    
+                        }
+                        
                     }
                 else
                     lines.Add((string) jKey);

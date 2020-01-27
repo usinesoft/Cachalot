@@ -78,7 +78,11 @@ namespace Server
                 _data[key] = byPrimaryKey;
             }
 
-            byPrimaryKey.Add(item.PrimaryKey, item);
+            if (!byPrimaryKey.ContainsKey(item.PrimaryKey))
+            {
+                byPrimaryKey.Add(item.PrimaryKey, item);
+            }
+            
         }
 
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Client.Core;
 using Client.Tools;
+using JetBrains.Annotations;
 
 namespace Server.FullTextSearch
 {
@@ -124,11 +125,11 @@ namespace Server.FullTextSearch
 
 
                 if (distance1 == distance2)
-                    scoreMultiplier *= 10;
+                    scoreMultiplier *= 100;
                 else if (distance2 - distance1 == 1)
-                    scoreMultiplier *= 5;
+                    scoreMultiplier *= 50;
                 else if (distance2 - distance1 == 2)
-                    scoreMultiplier *= 3;
+                    scoreMultiplier *= 30;
                 else if (distance2 > 0) // still apply a bonus because order is preserved 
                     scoreMultiplier *= 2;
             }
@@ -249,20 +250,34 @@ namespace Server.FullTextSearch
         /// <summary>
         ///     Index a document. A document is an ordered sequence of lines
         /// </summary>
-        /// <param name="documentContent"></param>
-        /// <param name="primaryKey"></param>
-        public void IndexDocument(string[] documentContent, KeyValue primaryKey)
+        public void IndexDocument([NotNull] CachedObject item)
         {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+
+            
+
+            KeyValue primaryKey = item.PrimaryKey;
+
             // update = delete + insert
             if (PositionsByDocument.ContainsKey(primaryKey)) DeleteDocument(primaryKey);
 
             var tokenizer = new Tokenizer();
 
-            var lines = documentContent;
-            var tokenizedLines = tokenizer.Tokenize(lines);
+            IList<TokenizedLine> lines = null;
 
+            if (item.NormalizedFullText != null)
+            {
+                lines = tokenizer.FastTokenize(item.NormalizedFullText);
+            }
+            else
+            {
+                lines = tokenizer.Tokenize(item.FullText);
+                item.NormalizedFullText = lines.Select(l => string.Join(" ", l.Tokens.ToArray())).ToArray();
+            }
+
+            
             var lineIndex = 0;
-            foreach (var line in tokenizedLines)
+            foreach (var line in lines)
             {
                 IndexLine(line, lineIndex, primaryKey);
 

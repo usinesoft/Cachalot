@@ -219,7 +219,7 @@ namespace Server
 
 
             if (cachedObject.FullText != null && cachedObject.FullText.Length > 0)
-                _fullTextIndex.IndexDocument(cachedObject.FullText, cachedObject.PrimaryKey);
+                _fullTextIndex.IndexDocument(cachedObject);
         }
 
 

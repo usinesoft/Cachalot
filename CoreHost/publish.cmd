@@ -1,1 +1,1 @@
-dotnet publish -c release -o ..\bin\Release\DotnetCoreServer\netcoreapp2.1\
+dotnet publish -c release -o ..\bin\Release\Server\netcoreapp3.0\

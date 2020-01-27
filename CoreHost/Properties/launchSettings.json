@@ -1,8 +1,7 @@
 {
   "profiles": {
     "CoreHost": {
-      "commandName": "Project",
-      "commandLineArgs": "44"
+      "commandName": "Project"
     }
   }
 }

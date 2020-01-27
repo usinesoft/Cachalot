@@ -17,6 +17,7 @@ namespace UnitTests.TestData
         public string Town { get; set; }
 
         [FullTextIndexation] public string Address { get; set; }
+        [FullTextIndexation] public IList<string> Contacts { get; set; } = new List<string>();
 
         public string Owner { get; set; }
 

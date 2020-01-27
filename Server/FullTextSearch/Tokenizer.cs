@@ -111,6 +111,21 @@ namespace Server.FullTextSearch
             return result;
         }
 
+        /// <summary>
+        /// Used to split lines where tokens have been normalize before
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public IList<Token> FastTokenizeOneLine(string input)
+        {
+            var result = new List<Token>(1000);
+
+            var tokens = input.Split(' ');
+
+            return tokens.Select(t => new Token {NormalizedText = t, Text = t, TokenType = CharClass.Digit}).ToList();
+
+        }
+
         public IList<TokenizedLine> Tokenize(IEnumerable<string> input)
         {
             var result = new List<TokenizedLine>();
@@ -118,6 +133,20 @@ namespace Server.FullTextSearch
             foreach (var line in input)
             {
                 var one = TokenizeOneLine(line);
+                result.Add(new TokenizedLine {Tokens = one.Select(t => t.NormalizedText).ToList()});
+            }
+
+
+            return result;
+        }
+
+        public IList<TokenizedLine> FastTokenize(IEnumerable<string> input)
+        {
+            var result = new List<TokenizedLine>();
+
+            foreach (var line in input)
+            {
+                var one = FastTokenizeOneLine(line);
                 result.Add(new TokenizedLine {Tokens = one.Select(t => t.NormalizedText).ToList()});
             }
 

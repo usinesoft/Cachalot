@@ -117,7 +117,7 @@ namespace Server.Persistence
 
                     var reader = new BinaryReader(transactionLog);
 
-                    var lastOffset = reader.ReadInt32();
+                    var lastOffset = reader.ReadInt64();
 
                     var sb = new StringBuilder();
                     sb.AppendLine($"LastOffset = {lastOffset}");
@@ -136,7 +136,7 @@ namespace Server.Persistence
                             var timestamp = reader.ReadInt64();
                             var length = reader.ReadInt32();
                             var data = reader.ReadBytes(length);
-                            var offset = reader.ReadInt32();
+                            var offset = reader.ReadInt64();
                             var id = reader.ReadInt64();
                             var delay = reader.ReadInt32();
                             var endMarker = reader.ReadInt64();
@@ -244,7 +244,7 @@ namespace Server.Persistence
                 writer.Write(EndMarker);
 
 
-                var newPosition = (int) _transactionLog.Position;
+                var newPosition =  _transactionLog.Position;
 
                 writer.Seek(0, SeekOrigin.Begin);
 
@@ -367,7 +367,7 @@ namespace Server.Persistence
                 Id = Interlocked.Increment(ref _lastId);
             }
 
-            public int Offset { get; internal set; }
+            public long Offset { get; internal set; }
 
             /// <summary>
             ///     Used for delayed transaction in two stage mode
@@ -396,7 +396,7 @@ namespace Server.Persistence
 
             _transactionLog = new FileStream(LogFilePath, FileMode.CreateNew);
 
-            _lastOffset = sizeof(int);
+            _lastOffset = sizeof(long);
             var writer = new BinaryWriter(_transactionLog);
             writer.Write(_lastOffset);
             writer.Flush();
@@ -409,7 +409,7 @@ namespace Server.Persistence
 
             var reader = new BinaryReader(_transactionLog);
 
-            _lastOffset = reader.ReadInt32();
+            _lastOffset = reader.ReadInt64();
 
             var completeTransaction = true;
 
@@ -424,7 +424,7 @@ namespace Server.Persistence
                     var timestamp = reader.ReadInt64();
                     var length = reader.ReadInt32();
                     var data = reader.ReadBytes(length);
-                    var offset = reader.ReadInt32();
+                    var offset = reader.ReadInt64();
                     var id = reader.ReadInt64();
                     var delay = reader.ReadInt32();
                     var endMarker = reader.ReadInt64();
@@ -485,15 +485,17 @@ namespace Server.Persistence
             {
                 if (_disposed) return;
 
+                _transactionLog.Position = transaction.Offset;
                 var writer = new BinaryWriter(_transactionLog);
-                writer.Seek(transaction.Offset, SeekOrigin.Begin);
-
+                
                 writer.Write((int) transaction.TransactionStatus);
 
                 writer.Flush();
 
                 // move back at the end
-                writer.Seek(_lastOffset, SeekOrigin.Begin);
+                _transactionLog.Position = _lastOffset;
+
+                
             }
         }
 
@@ -512,7 +514,7 @@ namespace Server.Persistence
         private Stream _transactionLog;
 
 
-        private int _lastOffset;
+        private long _lastOffset;
 
 
         private bool _disposed;

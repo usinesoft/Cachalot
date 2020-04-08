@@ -51,7 +51,7 @@ namespace Server
             {
                 lock (_syncRoot)
                 {
-                    return _cachedObjectsByKey.Count > Capacity;
+                    return _cachedObjectsByKey.Count >= Capacity;
                 }
             }
         }
@@ -91,6 +91,9 @@ namespace Server
         public IList<CachedObject> Go()
         {
             var result = new List<CachedObject>(EvictionCount);
+            if (!EvictionRequired)
+                return result;
+
             lock (_syncRoot)
             {
                 var currentCount = 0;

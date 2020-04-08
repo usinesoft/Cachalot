@@ -13,6 +13,11 @@ namespace Client.Interface
         /// <summary>
         ///     LRU eviction policy
         /// </summary>
-        LessRecentlyUsed
+        LessRecentlyUsed,
+
+        /// <summary>
+        /// A time limit is imposed for the cached items
+        /// </summary>
+        TimeToLive
     }
 }

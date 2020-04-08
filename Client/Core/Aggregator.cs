@@ -476,7 +476,8 @@ namespace Client.Core
             }
         }
 
-        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
+        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove,
+            int timeLimitInMilliseconds)
         {
             try
             {
@@ -485,7 +486,7 @@ namespace Client.Core
                 var removeByNode = itemsToRemove / CacheClients.Count + 1;
 
                 Parallel.ForEach(CacheClients,
-                    client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, removeByNode));
+                    client => client.ConfigEviction(fullTypeName, evictionType, limitByNode, removeByNode, timeLimitInMilliseconds));
             }
             catch (AggregateException e)
             {

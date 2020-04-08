@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Client.Core;
 using Client.Interface;
@@ -13,6 +14,16 @@ namespace Server
 
         public LruEvictionPolicy(int limit, int evictionCount)
         {
+            if(limit <= 0)
+                throw new ArgumentException($"the {nameof(limit)} should be strictly positive", nameof(limit));
+
+            if(evictionCount <= 0)
+                throw new ArgumentException($"the {nameof(evictionCount)} should be strictly positive", nameof(evictionCount));
+
+            if(limit <= evictionCount)
+                throw new ArgumentException($"the {nameof(limit)} should be strictly superior to {nameof(evictionCount)}");
+
+
             _evictionQueue.Capacity = limit;
             _evictionQueue.EvictionCount = evictionCount;
         }
@@ -51,12 +62,13 @@ namespace Server
 
         public override void Touch(IList<CachedObject> items)
         {
-            for (var i = 0; i < items.Count; i++) _evictionQueue.Touch(items[i]);
+            foreach (var t in items)
+                _evictionQueue.Touch(t);
         }
 
         public override string ToString()
         {
-            return string.Format("LRU({0}, {1})", _evictionQueue.Capacity, _evictionQueue.EvictionCount);
+            return $"LRU({_evictionQueue.Capacity}, {_evictionQueue.EvictionCount})";
         }
     }
 }

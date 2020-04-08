@@ -17,12 +17,13 @@ namespace Client.Messages
         /// <summary>
         ///     Create a new request for the specified type. The domain description will be empty
         /// </summary>
-        public EvictionSetupRequest(string fullTypeName, EvictionType evictionType, int limit = 0, int itemsToEvict = 0)
+        public EvictionSetupRequest(string fullTypeName, EvictionType evictionType, int limit = 0, int itemsToEvict = 0, int timeToLiveInMilliseconds = 0)
             : base(DataAccessType.Write, fullTypeName)
         {
             Type = evictionType;
             Limit = limit;
             ItemsToEvict = itemsToEvict;
+            TimeToLiveInMilliseconds = timeToLiveInMilliseconds;
         }
 
         [ProtoMember(1)] public EvictionType Type { get; }
@@ -40,5 +41,8 @@ namespace Client.Messages
         /// </summary>
         [ProtoMember(3)]
         public int ItemsToEvict { get; }
+
+        [ProtoMember(4)]
+        public int TimeToLiveInMilliseconds { get; }
     }
 }

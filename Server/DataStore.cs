@@ -488,7 +488,13 @@ namespace Server
         {
             var result = InternalFind(query, onlyIfComplete);
 
-            EvictionPolicy.Touch(result);
+            // important decision after lots of thinking. A get many on a datastore does not make much sense so we will considered 
+            // the item "touched" only if its a single one. Otherwise the eviction order may be shuffled as the primary key index is not ordered
+            if (result.Count == 1)
+            {
+                EvictionPolicy.Touch(result);
+            }
+            
 
             return result;
         }
@@ -786,11 +792,12 @@ namespace Server
                 InternalBeginBulkInsert(isBulkOperation);
 
                 foreach (var item in items)
-
+                {
                     if (_dataByPrimaryKey.ContainsKey(item.PrimaryKey))
                         toUpdate.Add(item);
                     else
                         InternalAddNew(item, excludeFromEviction);
+                }
             }
             finally
             {
@@ -809,7 +816,10 @@ namespace Server
                     foreach (var cachedObject in toUpdate) InternalUpdate(cachedObject);
                 }
 
-                foreach (var cachedObject in toUpdate) EvictionPolicy.Touch(cachedObject);
+                foreach (var cachedObject in toUpdate)
+                {
+                    EvictionPolicy.Touch(cachedObject);
+                }
 
 
                 Dbg.Trace($"end InternalPutMany with {items.Count} object");
@@ -986,7 +996,8 @@ namespace Server
 
                         EvictionPolicy = evictionSetup.Type == EvictionType.LessRecentlyUsed
                             ? new LruEvictionPolicy(evictionSetup.Limit, evictionSetup.ItemsToEvict)
-                            : (EvictionPolicy) new NullEvictionPolicy();
+                            : evictionSetup.Type == EvictionType.LessRecentlyUsed ? new TtlEvictionPolicy(TimeSpan.FromMilliseconds(evictionSetup.TimeToLiveInMilliseconds)) 
+                                : (EvictionPolicy) new NullEvictionPolicy();
                     }
 
 

@@ -110,12 +110,13 @@ namespace Cachalot.Linq
         /// <param name="evictionType"></param>
         /// <param name="limit"></param>
         /// <param name="itemsToRemove"></param>
-        public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100)
+        /// <param name="timeLimitInMilliseconds"></param>
+        public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100, int timeLimitInMilliseconds = 0)
         {
             if (evictionType == EvictionType.LessRecentlyUsed && limit == 0)
                 throw new ArgumentException("If LRU eviction is used, a positive limit must be specified");
 
-            _client.ConfigEviction(typeof(T).FullName, evictionType, limit, itemsToRemove);
+            _client.ConfigEviction(typeof(T).FullName, evictionType, limit, itemsToRemove, timeLimitInMilliseconds);
         }
 
 
@@ -136,9 +137,10 @@ namespace Cachalot.Linq
         ///     Update or insert an object
         /// </summary>
         /// <param name="item"></param>
-        public void Put(T item)
+        /// <param name="excludedFromEviction">In cache-only mode,if tue the item is never evicted from the cache</param>
+        public void Put(T item, bool excludedFromEviction = false) 
         {
-            _client.Put(item);
+            _client.Put(item, excludedFromEviction);
         }
 
 

@@ -285,7 +285,8 @@ namespace Client.Interface
         /// <param name="evictionType"></param>
         /// <param name="limit"></param>
         /// <param name="itemsToRemove"></param>
-        void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove);
+        /// <param name="timeLimitInMilliseconds"></param>
+        void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove, int timeLimitInMilliseconds);
 
         #endregion
     }

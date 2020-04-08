@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Channel;
 using Client.Core;
 using Client.Interface;
@@ -70,13 +71,13 @@ namespace UnitTests
             //reload all items
 
             IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
+            Assert.AreEqual(91, itemsInAaa.Count); //eviction triggered at 100 removed 10 added 1
 
             var itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
-            //check that the first 11 items were evicted
-            Assert.IsTrue(itemsAsList[0].PrimaryKey == 12);
+            //check that the first 10 items were evicted
+            Assert.IsTrue(itemsAsList[0].PrimaryKey == 11);
 
             //update the first item. This should prevent it from being evicted
             _client.Put(new CacheableTypeOk(11, 1001, "aaa", new DateTime(2010, 10, 10), 1500));
@@ -88,15 +89,15 @@ namespace UnitTests
             }
 
             itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)
+            Assert.AreEqual(itemsInAaa.Count, 91); //(100 - 10 +1)
 
 
             itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
             //check that the item having 11 as primary key was not evicted
-            Assert.IsTrue(itemsAsList[0].PrimaryKey == 11);
-            Assert.IsTrue(itemsAsList[1].PrimaryKey == 23);
+            Assert.AreEqual(11, itemsAsList[0].PrimaryKey);
+            Assert.AreEqual(22, itemsAsList[1].PrimaryKey);
         }
 
         [Test]
@@ -152,8 +153,30 @@ namespace UnitTests
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
             //check that the first item was not evicted
-            Assert.AreEqual(itemsAsList.Count, 91);
+            Assert.AreEqual(92, itemsAsList.Count);
             Assert.IsTrue(itemsAsList[0].PrimaryKey == 0);
         }
+
+
+        [Test]
+        public void TtlEviction()
+        {
+            _client.ConfigEviction(typeof(CacheableTypeOk).FullName, EvictionType.TimeToLive, 0, 0, 1000);
+
+            // this item should not be evicted
+            var itemNotToBeEvicted = new CacheableTypeOk(0, 1000, "aaa", new DateTime(2010, 10, 10), 1500);
+            _client.Put(itemNotToBeEvicted, true);
+
+            var itemToBeEvicted = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
+            _client.Put(itemNotToBeEvicted, true);
+
+            Thread.Sleep(1500);
+
+            IList<CacheableTypeOk> itemsInAaa = _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+
+            Assert.AreEqual(1, itemsInAaa.Count);
+            Assert.AreEqual(0, itemsInAaa.Single().PrimaryKey);
+        }
+
     }
 }

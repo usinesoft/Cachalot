@@ -19,7 +19,7 @@ namespace Client.Core.TypeConverters
 
         public string GetAsString(object key)
         {
-            return key.ToString();
+            throw new NotImplementedException();
         }
     }
 }

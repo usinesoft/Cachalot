@@ -805,9 +805,20 @@ namespace Client.Core
         /// <param name="evictionType"></param>
         /// <param name="limit"></param>
         /// <param name="itemsToRemove"></param>
-        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove)
+        /// <param name="timeLimitInMilliseconds"></param>
+        public void ConfigEviction(string fullTypeName, EvictionType evictionType, int limit, int itemsToRemove, int timeLimitInMilliseconds = 0)
         {
-            var request = new EvictionSetupRequest(fullTypeName, evictionType, limit, itemsToRemove);
+            if (evictionType == EvictionType.LessRecentlyUsed && timeLimitInMilliseconds != 0)
+            {
+                throw new ArgumentException($"{nameof(timeLimitInMilliseconds)} can be used only for TTL eviction");
+            }
+
+            if (evictionType == EvictionType.TimeToLive && (limit != 0 || itemsToRemove != 0))
+            {
+                throw new ArgumentException($"{nameof(limit)} and {nameof(itemsToRemove)} can be used only for LRU eviction");
+            }
+
+            var request = new EvictionSetupRequest(fullTypeName, evictionType, limit, itemsToRemove, timeLimitInMilliseconds);
 
             var response = Channel.SendRequest(request);
 

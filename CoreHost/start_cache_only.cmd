@@ -1,1 +1,1 @@
-CoreHost.exe cache_only
+Server.exe cache_only

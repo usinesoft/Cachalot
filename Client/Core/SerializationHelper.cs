@@ -77,7 +77,7 @@ namespace Client.Core
                 var stream = new MemoryStream(obj.ObjectData);
                 using (var zInStream = new GZipInputStream(stream))
                 {
-                    var stream2 = new MemoryStream(obj.ObjectData);
+                    var stream2 = new MemoryStream();
                     zInStream.CopyTo(stream2);
 
                     var json = Encoding.UTF8.GetString(stream2.ToArray());

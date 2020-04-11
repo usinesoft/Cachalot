@@ -183,7 +183,7 @@ namespace Client.Core
 
             var netType = instance.GetType();
 
-            typeDescription = typeDescription ?? ClientSideTypeDescription.RegisterType<TObject>();
+            typeDescription ??= ClientSideTypeDescription.RegisterType<TObject>();
 
             if (typeDescription == null)
                 throw new NotSupportedException(

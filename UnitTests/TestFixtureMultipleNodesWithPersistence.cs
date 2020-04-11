@@ -397,6 +397,61 @@ namespace UnitTests
         }
 
 
+         [Test]
+        public void Dump_and_import_compressed_data_with_multiple_servers()
+        {
+            var dumpPath = "dump";
+
+            if (Directory.Exists(dumpPath))
+                Directory.Delete(dumpPath, true);
+
+            Directory.CreateDirectory(dumpPath);
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<CompressedItem>();
+
+                var items = new List<CompressedItem>();
+                for (var i = 0; i < 100; i++)
+                {
+                    items.Add(new CompressedItem{Id = i});
+                }
+
+                dataSource.PutMany(items);
+
+                
+                
+                var admin = connector.AdminInterface();
+                admin.Dump(dumpPath);
+
+                
+
+                dataSource.Put(new CompressedItem{Id = 133});
+            }
+
+            StopServers();
+            StartServers();
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<CompressedItem>();
+
+                var afterDump = dataSource[133];
+                Assert.IsNotNull(afterDump);
+
+                var admin = connector.AdminInterface();
+                admin.ImportDump(dumpPath);
+
+                // this time it should be null as it was added after the backup and backup was restored
+                afterDump = dataSource[133];
+                Assert.IsNull(afterDump);
+
+                var after = dataSource.Count();
+                Assert.AreEqual(100, after);
+                
+            }
+        }
+
         [Test]
         public void Dump_and_init_from_dump_changing_the_number_of_nodes()
         {

@@ -3,14 +3,15 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Client;
 using Client.Tools;
 
 namespace Server.FullTextSearch
 {
-    public class Tokenizer
+    public static class Tokenizer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private CharClass GetCharClass(char ch)
+        private static CharClass GetCharClass(char ch)
         {
             if (char.IsLetter(ch)) return CharClass.Letter;
 
@@ -48,14 +49,14 @@ namespace Server.FullTextSearch
         }
 
 
-        private string Normalize(string original)
+        private static string Normalize(string original)
         {
             var after = RemoveDiacritics(original);
             after = after.ToLower();
             return RemoveDoubleChars(after);
         }
 
-        public IList<Token> TokenizeOneLine(string input)
+        public static  IList<Token> TokenizeOneLine(string input)
         {
             var result = new List<Token>(1000);
 
@@ -111,22 +112,9 @@ namespace Server.FullTextSearch
             return result;
         }
 
-        /// <summary>
-        /// Used to split lines where tokens have been normalize before
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public IList<Token> FastTokenizeOneLine(string input)
-        {
-            var result = new List<Token>(1000);
+        
 
-            var tokens = input.Split(' ');
-
-            return tokens.Select(t => new Token {NormalizedText = t, Text = t, TokenType = CharClass.Digit}).ToList();
-
-        }
-
-        public IList<TokenizedLine> Tokenize(IEnumerable<string> input)
+        public static IList<TokenizedLine> Tokenize(IEnumerable<string> input)
         {
             var result = new List<TokenizedLine>();
 
@@ -140,19 +128,6 @@ namespace Server.FullTextSearch
             return result;
         }
 
-        public IList<TokenizedLine> FastTokenize(IEnumerable<string> input)
-        {
-            var result = new List<TokenizedLine>();
-
-            foreach (var line in input)
-            {
-                var one = FastTokenizeOneLine(line);
-                result.Add(new TokenizedLine {Tokens = one.Select(t => t.NormalizedText).ToList()});
-            }
-
-
-            return result;
-        }
 
 
         private enum Casing

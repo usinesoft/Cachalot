@@ -4,6 +4,7 @@ using System.Threading;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Server.FullTextSearch;
 
 namespace Server.Persistence
 {
@@ -129,6 +130,54 @@ namespace Server.Persistence
         }
 
 
+        /// <summary>
+        /// When items are stored in the transaction log they are not yet indexed in memory so if they contain full-text data
+        /// it is not tokenized yet. While storing an item from the transaction log in the persistent storage, get the tokenized full-text
+        /// if available or tokenize it otherwise. It is important to avoid tokenization while reloading the database
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        CachedObject GetItemWithTokenizedFullText(CachedObject item)
+        {
+            
+            if (item.FullText != null && item.FullText.Length > 0)
+            {
+                Container.DataStores.TryGetValue(item.FullTypeName, out var dataStore);
+
+                if (dataStore != null)
+                {
+                    
+                    if (dataStore.Lock.TryEnterReadLock(100))
+                    {
+                        if (dataStore.DataByPrimaryKey.TryGetValue(item.PrimaryKey, out var result))
+                        {
+                            if (result.TokenizedFullText != null && result.TokenizedFullText.Count > 0
+                            ) // tokenized full-text available
+                            {
+                                dataStore.Lock.ExitReadLock();
+                                return result;
+                            }
+                        }
+
+                        dataStore.Lock.ExitReadLock();
+                    }
+
+                    
+                }
+                
+            }
+            else // no full-text data
+            {
+                return item;
+            }
+
+
+            // It may reach this point when commiting to persistent storage pending transactions from the transaction log
+            // This happens in the early stages of the startup before loading items into memory
+            item.TokenizedFullText = Tokenizer.Tokenize(item.FullText);
+            return item;
+        }
+
         private void StartProcessingTransactions()
         {
             _shouldContinue = true;
@@ -153,8 +202,10 @@ namespace Server.Persistence
                             {
                                 foreach (var item in mixedTransaction.ItemsToPut)
                                 {
+                                    var itemFromMemory = GetItemWithTokenizedFullText(item);
+
                                     var itemData =
-                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers,
+                                        SerializationHelper.ObjectToBytes(itemFromMemory, SerializationMode.ProtocolBuffers,
                                             null);
 
                                     Dbg.Trace(
@@ -173,8 +224,10 @@ namespace Server.Persistence
                             if (transaction is PutTransaction putTransaction)
                                 foreach (var item in putTransaction.Items)
                                 {
+                                    var itemFromMemory = GetItemWithTokenizedFullText(item);
+
                                     var itemData =
-                                        SerializationHelper.ObjectToBytes(item, SerializationMode.ProtocolBuffers,
+                                        SerializationHelper.ObjectToBytes(itemFromMemory, SerializationMode.ProtocolBuffers,
                                             null);
 
                                     Dbg.Trace(

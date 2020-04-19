@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Client;
 using Client.Core;
 using Client.Tools;
 using JetBrains.Annotations;
@@ -79,10 +80,10 @@ namespace Server.FullTextSearch
         /// <returns></returns>
         public static double ComputeBonusIfOrderIsPreserved(string query, string line)
         {
-            var tokenizer = new Tokenizer();
+            
 
-            var first = tokenizer.TokenizeOneLine(query);
-            var second = tokenizer.TokenizeOneLine(line);
+            var first = Tokenizer.TokenizeOneLine(query);
+            var second = Tokenizer.TokenizeOneLine(line);
 
 
             // index in query --> index in line or -1 if correspondent token not found
@@ -261,18 +262,19 @@ namespace Server.FullTextSearch
             // update = delete + insert
             if (PositionsByDocument.ContainsKey(primaryKey)) DeleteDocument(primaryKey);
 
-            var tokenizer = new Tokenizer();
+            
 
             IList<TokenizedLine> lines = null;
 
-            if (item.NormalizedFullText != null)
+            if (item.TokenizedFullText != null)
             {
-                lines = tokenizer.FastTokenize(item.NormalizedFullText);
+                lines = item.TokenizedFullText;
             }
             else
             {
-                lines = tokenizer.Tokenize(item.FullText);
-                item.NormalizedFullText = lines.Select(l => string.Join(" ", l.Tokens.ToArray())).ToArray();
+                lines = Tokenizer.Tokenize(item.FullText);
+                
+                item.TokenizedFullText = lines;
             }
 
             
@@ -288,8 +290,8 @@ namespace Server.FullTextSearch
 
         private IList<string> OrderByFrequency(string query)
         {
-            var tokenizer = new Tokenizer();
-            var tokens = tokenizer.TokenizeOneLine(query).Where(t => t.TokenType != CharClass.Symbol);
+            
+            var tokens = Tokenizer.TokenizeOneLine(query).Where(t => t.TokenType != CharClass.Symbol);
 
             var frequencyByToken = new Dictionary<string, int>();
 

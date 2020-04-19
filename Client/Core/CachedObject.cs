@@ -147,16 +147,16 @@ namespace Client.Core
 
 
         /// <summary>
-        /// Store normalized version in order to avoid tokenizing multiple times
+        /// Store tokenized full text to avoid tokenization time while loading database from storage
         /// </summary>
-        [field: ProtoMember(11)] public string[] NormalizedFullText { get; set; }
+        [field: ProtoMember(11)] public IList<TokenizedLine> TokenizedFullText { get; set; }
 
         public bool MatchOneOf(ISet<KeyValue> values)
         {
             var indexType = values.First().KeyType;
             var indexName = values.First().KeyName;
 
-            if (indexType == KeyType.Primary)
+            if (indexType == KeyType.Primary) 
                 return values.Contains(PrimaryKey);
 
 

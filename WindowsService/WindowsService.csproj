@@ -6,11 +6,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>..\bin\Release\Server\</OutputPath>
+    <OutputPath>..\bin\Release\WindowsService\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\bin\Debug\Server\</OutputPath>
+    <OutputPath>..\bin\Debug\WindowsService\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,11 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CoreHost\CoreHost.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="install.cmd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="node_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

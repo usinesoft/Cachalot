@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Client.Interface;
 using Newtonsoft.Json;
 
@@ -38,13 +37,5 @@ namespace UnitTests.TestData
         [FullTextIndexation]
         [JsonProperty("reviews")]
         public List<Review> Reviews { get; set; }
-    }
-
-
-    public class Review
-    {
-        [JsonProperty("text")] public string Text { get; set; }
-
-        [JsonProperty("date")] public DateTimeOffset Date { get; set; }
     }
 }

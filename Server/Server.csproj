@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Channel\Channel.csproj" />
     <ProjectReference Include="..\Client\Client.csproj" />
   </ItemGroup>
 

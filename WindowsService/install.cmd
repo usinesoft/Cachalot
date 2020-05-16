@@ -1,1 +1,1 @@
-﻿sc create "Cachalot service" binPath= %cd%\WindowsService.exe
+sc create "Cachalot service" binPath= %cd%\WindowsService.exe

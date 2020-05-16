@@ -5,16 +5,14 @@ using System.Threading;
 using Channel;
 using Client.Core;
 using Newtonsoft.Json;
-using Server;
-using Server.HostServices;
 using Server.Persistence;
 
-namespace Host
+namespace Server
 {
     public class HostedService
     {
         private readonly ManualResetEvent _stopEvent;
-        private Server.Server _cacheServer;
+        private global::Server.Server _cacheServer;
         private TcpServerChannel _listener;
 
         public HostedService(ILog log, ManualResetEvent stopEvent)
@@ -52,7 +50,7 @@ namespace Host
 
                         nodeConfig = configFromFile;
 
-                        HostServices.Start(configFromFile.DataPath);
+                        HostServices.HostServices.Start(configFromFile.DataPath);
 
                         Log.LogInfo("----------------------------------------------------------");
                         Log.LogInfo($"Reading configuration file {configFile} ");
@@ -64,12 +62,12 @@ namespace Host
                 }
                 else
                 {
-                    HostServices.Start(nodeConfig.DataPath);
+                    HostServices.HostServices.Start(nodeConfig.DataPath);
                     Log.LogWarning($"Configuration file {configFile} not found. Using defaults");
                 }
 
 
-                _cacheServer = new Server.Server(nodeConfig);
+                _cacheServer = new global::Server.Server(nodeConfig);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
@@ -94,7 +92,7 @@ namespace Host
 
                 _cacheServer.StopRequired += (sender, args) =>
                 {
-                    HostServices.Stop();
+                    HostServices.HostServices.Stop();
                     Stop();
 
                     _stopEvent.Set();
@@ -124,7 +122,7 @@ namespace Host
             Log.LogInfo("Service stopped successfully");
 
             // stop this after last log
-            HostServices.Stop();
+            HostServices.HostServices.Stop();
 
 
             return true;

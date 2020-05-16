@@ -36,20 +36,4 @@ namespace UnitTests.TestData
 
         [FullTextIndexation] public List<Comment> Comments { get; set; } = new List<Comment>();
     }
-
-
-    public class Comment
-    {
-        public DateTime Date { get; set; }
-
-        public string User { get; set; }
-
-        public string Text { get; set; }
-
-
-        public override string ToString()
-        {
-            return Text;
-        }
-    }
 }

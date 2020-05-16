@@ -514,16 +514,4 @@ namespace Server.FullTextSearch
             }
         }
     }
-
-    public interface ITrace
-    {
-        void Trace(string line);
-    }
-
-    internal class NullTrace : ITrace
-    {
-        public void Trace(string line)
-        {
-        }
-    }
 }

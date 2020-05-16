@@ -285,6 +285,7 @@ namespace AdminConsole.Commands
 
                         result.Query = builder.GetMany();
                         result.Query.FullTextSearch = ftQuery;
+                        result.Query.Take = 10;// limit the number of results when searching in admin console
                         result.Success = true;
                     }
                     catch (Exception ex)

@@ -1,5 +1,5 @@
 ﻿using System.Threading;
-using CoreHost.HostServices;
+using Server.HostServices;
 
 namespace Host
 {

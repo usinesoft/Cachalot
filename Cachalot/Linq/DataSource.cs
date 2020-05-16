@@ -249,7 +249,7 @@ namespace Cachalot.Linq
         /// <param name="items"></param>
         public void PutMany(IEnumerable<T> items)
         {
-            _client.FeedMany(items);
+            _client.FeedMany(items, false, 10000);
         }
     }
 }

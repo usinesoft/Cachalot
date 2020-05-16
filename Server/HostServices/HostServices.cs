@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using CoreHost.HostServices.Logger;
-using Server;
+using Server.HostServices.Logger;
 
-namespace CoreHost.HostServices
+namespace Server.HostServices
 {
     /// <summary>
     ///     Contains technical services implemented by the host (Like log service)

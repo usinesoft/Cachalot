@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading;
 using Channel;
 using Client.Core;
-using CoreHost.HostServices;
 using Newtonsoft.Json;
 using Server;
+using Server.HostServices;
 using Server.Persistence;
 
 namespace Host
@@ -80,7 +80,14 @@ namespace Host
 
                 var persistentDescription = nodeConfig.IsPersistent ? fullDataPath : " NO";
 
-                Console.Title = $"Cachalot Core on port {nodeConfig.TcpPort} persistent = {persistentDescription}";
+                try
+                {
+                    Console.Title = $"Cachalot Core on port {nodeConfig.TcpPort} persistent = {persistentDescription}";
+                }
+                catch (Exception )
+                {
+                    //ignore this may throw an exception when run in service mode
+                }
 
                 Log.LogInfo(
                     $"Starting hosted service on port {nodeConfig.TcpPort} persistent = {persistentDescription}");

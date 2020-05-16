@@ -26,6 +26,7 @@ namespace AdminConsole.Commands
 
                 listResult = client.GetObjectDescriptions(Query);
 
+                
 
                 Logger.Write("[");
                 for (var i = 0; i < listResult.Count; i++)
@@ -35,6 +36,17 @@ namespace AdminConsole.Commands
                 }
 
                 Logger.Write("]");
+
+                Logger.DumpFile("ftresult.json");
+                Logger.Write("[");
+                for (var i = 0; i < listResult.Count; i++)
+                {
+                    Logger.Write(listResult[i].AsJson());
+                    if (i < listResult.Count - 1) Logger.Write(",");
+                }
+
+                Logger.Write("]");
+                Logger.EndDump();
 
                 return client;
             }

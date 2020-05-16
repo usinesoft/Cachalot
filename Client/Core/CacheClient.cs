@@ -328,10 +328,19 @@ namespace Client.Core
                             if (cachedObject != null)
                                 request.Items.Add(cachedObject);
 
-                        var response = Channel.SendRequest(request);
-                        if (response is ExceptionResponse exResponse)
-                            throw new CacheException("Error while writing an object to the cache", exResponse.Message,
-                                exResponse.CallStack);
+                        
+                        var split = request.SplitWithMaxSize();
+
+                        foreach (var putRequest in split)
+                        {
+                            var response =
+                                Channel.SendRequest(putRequest);
+                            if (response is ExceptionResponse exResponse)
+                                throw new CacheException(
+                                    "Error while writing an object to the cache",
+                                    exResponse.Message, exResponse.CallStack);    
+                        }
+                        
                     }
                 }
             }

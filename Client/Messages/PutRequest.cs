@@ -82,5 +82,41 @@ namespace Client.Messages
         [field: ProtoMember(5)] public bool OnlyIfNew { get; set; }
 
         [ProtoMember(6)] public OrQuery Predicate { get; set; }
+
+
+        /// <summary>
+        /// Split the request in order to limit data that is sent at once to a stream
+        /// </summary>
+        /// <returns></returns>
+        public IList<PutRequest> SplitWithMaxSize()
+        {
+            List<PutRequest> result = new List<PutRequest>();
+
+            var request = new PutRequest(FullTypeName)
+            {
+                EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+            };
+
+            result.Add(request);
+            int size = 0;
+            foreach (var item in Items)
+            {
+                request.Items.Add(item);
+                size += item.ObjectData.Length;
+                if (size >= 1_000_000_000)
+                {
+                    request = new PutRequest(FullTypeName)
+                    {
+                        EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+                    };
+
+                    result.Add(request);
+                    size = 0;
+                }
+            }
+
+
+            return result;
+        }
     }
 }

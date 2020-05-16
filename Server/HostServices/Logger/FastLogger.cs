@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Server;
 
-namespace CoreHost.HostServices.Logger
+namespace Server.HostServices.Logger
 {
     /// <summary>
     ///     A very fast async logger

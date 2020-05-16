@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminConsole", "AdminConsol
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\UnitTests.csproj", "{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsService", "WindowsService\WindowsService.csproj", "{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

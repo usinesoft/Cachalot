@@ -692,12 +692,19 @@ namespace Client.Core
                 {
                     var task = Task.Factory.StartNew(re =>
                     {
-                        var response =
-                            CacheClients[node].Channel.SendRequest((PutRequest) re);
-                        if (response is ExceptionResponse exResponse)
-                            throw new CacheException(
-                                "Error while writing an object to the cache",
-                                exResponse.Message, exResponse.CallStack);
+                        var put = (PutRequest) re;
+                        var split = put.SplitWithMaxSize();
+
+                        foreach (var putRequest in split)
+                        {
+                            var response =
+                                CacheClients[node].Channel.SendRequest(putRequest);
+                            if (response is ExceptionResponse exResponse)
+                                throw new CacheException(
+                                    "Error while writing an object to the cache",
+                                    exResponse.Message, exResponse.CallStack);    
+                        }
+                        
                     }, request);
 
 

@@ -1,12 +1,25 @@
 # Cachalot
 
+## What is new in this version
+
+It improves the full-text search: faster and more pertinent.
+All the executables target the platform netcore 3.1. The Nugget package containing the client code is netstandard 2.1. It can be used both in core and classical applications.
+The admin console is now supported on Linux too. The Windows service was ported to netcore 3.1 (it will only run on Windows as a service).
+We added a new eviction policy (in pure cache mode): TTL (Time To Live). It automatically removes those that are older than a given age (specified for each type of data).
+A simple connection string can be used to connect to a cluster instead of the configuration file.
+
+
 ## What is Cachalot DB?
 
-A very fast, open source, NO SQL, fully transactional database for .NET applications.
-It is distributed, it scales linearly with the number of nodes. On a single node you can durably insert fifty thousand objects per second on a modest system.  
-A powerful LINQ provider is available. As well as an administration console.
-It can also be used as an abvanced, transactional, distributed cache with unique features.
-Much more detail in the next sections but…
+Cachalot DB is more than one solution. 
+ 
+It is a distributed cache with unique features. It can do the usual things distributed caches do. Retrieve items by one or more unique keys and remove them according to different eviction policies. But it can do much more. Using a smart LINQ extension, you can run SQL-like queries, and they return a result set if and only if the whole subset of data is available in the cache. 
+ 
+Cachalot is also a fully-featured in-memory database. Like REDIS but with a full query model, not only a key-values dictionary.  And unlike REDIS, it is entirely transactional. 
+
+A powerful LINQ provider is available, as well as an administration console.
+Much more detail in the next sections, but
+
 
 ## Show me some code first
 
@@ -44,7 +57,7 @@ public class Home
 
 Now the object can be stored in the database.
 First step is to instantiate a **Connector** which needs a "client configuration". More on the configuration later but, for now, it needs to contain the list of servers in the cluster. To start, only one run locally.
-The configuration is usually read from an external file. For the moment, let’s build it manually
+We can read the configuration from an external file or specify it as a connection string. For the moment, let’s build it manually.
 
 ```
 var config = new ClientConfig
@@ -60,8 +73,9 @@ using (var connector = new Cachalot.Linq.Connector(config))
 ```
 
 
-One last step before storing an object in the database. We need to generate a unique value for the primary key. Multiple unique values can be generated with a single call.
-Unlike other databases, you do not need to explicitly create a unique value generator. First call with an unknown generator name will automatically create it.
+There is one last step before storing an object in the database. We need to generate a unique value for the primary key. We can produce multiple unique values with a single call.
+Unlike other databases, you do not need to create a unique value generator explicitly. The first call with an unknown generator name will automatically create it.
+
 
 ```
 var ids = connector.GenerateUniqueIds("home_id", 1);
@@ -94,10 +108,11 @@ var reloaded = homes.First(p => p.Id == property.Id);
 ```
 
 The first one is faster as there is no need to parse the expression tree. 
-In most relational databases we use two distinct operations: INSERT and UPDATE. In Cachalot Db only one operation is exposed: PUT 
-It will insert new items (new primary key) and will update existing items.
+In most relational databases, we use two distinct operations: INSERT and UPDATE. In Cachalot Db only one operation is exposed: PUT 
+It will insert new items (new primary key) and will update the existing ones.
 
-You probably have higher expectation from a modern database than simply storing and retrieving objects by primary key. And you are right.
+You probably have higher expectations from a modern database than merely storing and retrieving objects by primary key. And you are right.
+
 
 The whole user guide, including an administration section is available here
 

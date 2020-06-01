@@ -754,7 +754,7 @@ namespace Server
 
                 var currentProcess = Process.GetCurrentProcess();
 
-                var assembly = Assembly.GetEntryAssembly();
+                var assembly = Assembly.GetAssembly(typeof(Server));
                 response.ServerProcessInfo = new ServerInfo
                 {
                     ConnectedClients = (int) ActiveConnections,

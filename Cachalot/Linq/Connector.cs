@@ -16,6 +16,11 @@ namespace Cachalot.Linq
 
         private Server.Server _server;
 
+
+        public Connector(string connectionString):this(new ClientConfig(connectionString))
+        {
+        }
+
         public Connector(ClientConfig config)
         {
             if (Client == null)

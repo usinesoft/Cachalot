@@ -92,6 +92,12 @@ namespace UnitTests
             {
                 connector.GenerateUniqueIds("event", 1);
             }
+
+            // works with connection string too
+            using (var connector = new Connector("localhost:6666"))
+            {
+                connector.GenerateUniqueIds("event", 1);
+            }
         }
 
 

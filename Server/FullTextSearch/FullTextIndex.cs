@@ -12,15 +12,19 @@ namespace Server.FullTextSearch
 {
     public class FullTextIndex
     {
+        class LineResult
+        {
+            public double Score { get; set; }
+
+            public IList<string> TokensFound { get; set; }
+
+        }
+
         /// <summary>
         ///     Score bonus im more than one tokens on the same line
         /// </summary>
-        private static readonly int SameLineMultiplier = 1000;
-
-        /// <summary>
-        ///     Score bonus im more than one tokens in the same document
-        /// </summary>
-        private static readonly int SameDocumentMultiplier = 100;
+        private static readonly int SameLineMultiplier = 100;
+        private static readonly int TokenCoverageMultiplier = 1;
 
         private readonly FullTextConfig _ftConfig;
 
@@ -36,15 +40,15 @@ namespace Server.FullTextSearch
         ///     A function that allows to retrieve the text of the original line pointed by a line pointer
         ///     If provided, it is used for finer score computing (order of tokens inside the line is taken into account)
         /// </summary>
-        public Func<LinePointer, string> LineProvider { get; set; }
+        public Func<LinePointer, TokenizedLine> LineProvider { get; set; }
 
 
-        public ITrace Trace { get; set; } = new NullTrace();
+        private ITrace Trace { get; } = new NullTrace();
 
 
-        public int Entries { get; private set; }
+        private int Entries { get; set; }
 
-        public int IgnoredTokens { get; private set; }
+        private int IgnoredTokens { get; set; }
 
 
         /// <summary>
@@ -78,24 +82,24 @@ namespace Server.FullTextSearch
         /// <param name="query"></param>
         /// <param name="line"></param>
         /// <returns></returns>
-        public static double ComputeBonusIfOrderIsPreserved(string query, string line)
+        public static double ComputeBonusIfOrderIsPreserved(TokenizedLine query, TokenizedLine line)
         {
-            
+            var first = query.Tokens;
 
-            var first = Tokenizer.TokenizeOneLine(query);
-            var second = Tokenizer.TokenizeOneLine(line);
+            var second = line.Tokens;
 
 
             // index in query --> index in line or -1 if correspondent token not found
             var indexes = new List<KeyValuePair<int, int>>();
 
             var index1 = 0;
+
             foreach (var token in first)
             {
                 var index2 = -1;
 
                 for (var i = 0; i < second.Count; i++)
-                    if (second[i].NormalizedText == token.NormalizedText)
+                    if (second[i] == token)
                     {
                         index2 = i;
                         break;
@@ -237,14 +241,11 @@ namespace Server.FullTextSearch
         {
             if (PositionsByDocument.TryGetValue(primaryKey, out var pointers))
                 foreach (var pointer in pointers)
-                {
                     if (!pointer.Deleted)
                     {
                         pointer.Deleted = true;
                         Entries--;
                     }
-                    
-                }
         }
 
 
@@ -255,16 +256,14 @@ namespace Server.FullTextSearch
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
 
-            
 
-            KeyValue primaryKey = item.PrimaryKey;
+            var primaryKey = item.PrimaryKey;
 
             // update = delete + insert
             if (PositionsByDocument.ContainsKey(primaryKey)) DeleteDocument(primaryKey);
 
-            
 
-            IList<TokenizedLine> lines = null;
+            IList<TokenizedLine> lines;
 
             if (item.TokenizedFullText != null)
             {
@@ -273,11 +272,11 @@ namespace Server.FullTextSearch
             else
             {
                 lines = Tokenizer.Tokenize(item.FullText);
-                
+
                 item.TokenizedFullText = lines;
             }
 
-            
+
             var lineIndex = 0;
             foreach (var line in lines)
             {
@@ -290,7 +289,6 @@ namespace Server.FullTextSearch
 
         private IList<string> OrderByFrequency(string query)
         {
-            
             var tokens = Tokenizer.TokenizeOneLine(query).Where(t => t.TokenType != CharClass.Symbol);
 
             var frequencyByToken = new Dictionary<string, int>();
@@ -316,47 +314,64 @@ namespace Server.FullTextSearch
         /// <param name="query"></param>
         /// <param name="maxResults"></param>
         /// <returns></returns>
-        public Dictionary<LinePointer, double> Find(string query, int maxResults)
+        private Dictionary<LinePointer, LineResult> Find(string query, int maxResults)
         {
-            Dictionary<LinePointer, double> sameLineResult = null;
+            var sameLineResult = SameLineFind(query);
 
-            Dictionary<LinePointer, double> sameDocResult = null;
-
-            // run different search strategies in parallel
-            Parallel.Invoke(
-                () => { sameLineResult = SameLineFind(query); },
-                () => { sameDocResult = SameDocumentFind(query); }
-            );
-
-
-            // if the original text is available improve score calculation by taking into account tokens order
+            var result = sameLineResult;
+            // if the original text is available improve score calculation by taking into account order of tokens
             if (LineProvider != null)
-                sameLineResult = sameLineResult.ToDictionary(r => r.Key, r =>
+            {
+                var tokenizedQuery = Tokenizer.Tokenize(new[] {query});
+
+                result = new Dictionary<LinePointer, LineResult>();
+
+                Parallel.ForEach(sameLineResult, r =>
                 {
                     var line = LineProvider(r.Key);
-                    var multiplier = ComputeBonusIfOrderIsPreserved(query, line);
-                    return r.Value * multiplier;
+                    var multiplier = ComputeBonusIfOrderIsPreserved(tokenizedQuery[0], line);
+                    var value = r.Value.Score * multiplier;
+
+
+                    lock (result)
+                    {
+                        result[r.Key] = new LineResult{Score = value,TokensFound = r.Value.TokensFound};
+                    }
+
                 });
 
-            var mergedResult = new Dictionary<LinePointer, double>(sameLineResult);
+                //sameLineResult = sameLineResult.ToDictionary(r => r.Key, r =>
+                //{
+                //    var line = LineProvider(r.Key);
+                //    var multiplier = ComputeBonusIfOrderIsPreserved(tokenizedQuery[0], line);
+                //    return r.Value * multiplier;
+                //});
+            }
 
-            foreach (var pair in sameDocResult)
-                if (mergedResult.TryGetValue(pair.Key, out var score))
-                {
-                    if (pair.Value > score) // a better score with the second strategy
-                        mergedResult[pair.Key] = pair.Value;
-                }
-                else
-                {
-                    mergedResult[pair.Key] = pair.Value;
-                }
 
-            return mergedResult;
+            return result;
         }
 
 
+
         /// <summary>
-        ///     Find the documents with the highest score (a document score is the some of its line's scores)
+        /// Compute the aggregated score of a document from the scores of its lines
+        /// </summary>
+        static double ComputeDocumentScore(IList<LineResult> lineResults)
+        {
+            // first sum-up the line scores
+            var score = lineResults.Sum(r => r.Score);
+
+            var totalTokens = new HashSet<string>(lineResults.SelectMany(r=>r.TokensFound));
+
+            score *= totalTokens.Count * TokenCoverageMultiplier;
+
+            return score;
+
+        }
+
+        /// <summary>
+        ///     Find the documents with the highest score (a document score is the sum of its line's scores)
         /// </summary>
         /// <param name="query"></param>
         /// <param name="maxResults"></param>
@@ -368,14 +383,22 @@ namespace Server.FullTextSearch
                 .Select(g => new SearchResult
                 {
                     PrimaryKey = g.Key,
-                    Score = g.Sum(p => p.Value),
+                    Score = ComputeDocumentScore(g.Select(p=>p.Value).ToList()),
                     LinePointers = g.OrderBy(p => p.Key.Line).Select(p => p.Key).ToList()
                 })
-                .OrderByDescending(d => d.Score);
+                .OrderByDescending(d => d.Score).ToList();
 
-            if (maxResults > 0) return documents.Take(maxResults).ToList();
+            if (documents.Count > 0)
+            {
+                var maxScore = documents.Max(d => d.Score);
+                var mostInterestingOnes = documents.Where(d => d.Score >= maxScore / 100);
+                if (maxResults > 0) return mostInterestingOnes.Take(maxResults).ToList();
 
-            return documents.ToList();
+                return mostInterestingOnes.ToList();
+            }
+            
+
+            return documents;
         }
 
 
@@ -384,24 +407,23 @@ namespace Server.FullTextSearch
         /// </summary>
         /// <param name="query"></param>
         /// <returns>score for each found pointer</returns>
-        private Dictionary<LinePointer, double> SameLineFind(string query)
+        private Dictionary<LinePointer, LineResult> SameLineFind(string query)
         {
             var orderedTokens = OrderByFrequency(query);
 
             if (orderedTokens.Count == 0)
                 // none of the tokens in the query was found
-                return new Dictionary<LinePointer, double>();
+                return new Dictionary<LinePointer, LineResult>();
 
 
-            var result = new Dictionary<LinePointer, double>();
+            var result = new Dictionary<LinePointer, LineResult>();
 
-            var foundTokens = 1;
 
             Trace?.Trace("Same line strategy");
 
             var scores = new ScoreByPointer();
 
-            var tokensByLine = new Dictionary<LinePointer, List<string>>();
+            var foundTokensByLine = new Dictionary<LinePointer, List<string>>();
 
             foreach (var tk in orderedTokens)
             {
@@ -409,10 +431,10 @@ namespace Server.FullTextSearch
 
                 foreach (var position in positions.Where(p => p.Deleted == false))
                 {
-                    if (!tokensByLine.TryGetValue(position, out var tokens))
+                    if (!foundTokensByLine.TryGetValue(position, out var tokens))
                     {
                         tokens = new List<string>();
-                        tokensByLine[position] = tokens;
+                        foundTokensByLine[position] = tokens;
                     }
 
                     tokens.Add(tk);
@@ -420,82 +442,26 @@ namespace Server.FullTextSearch
 
                 if (positions.Count != 0)
                 {
+                    // a measure of the information content
                     var score = Math.Log10((double) Entries / positions.Count);
                     foreach (var pointer in positions)
                         scores[pointer] += score;
                 }
             }
 
-            foreach (var pair in tokensByLine.Where(p => p.Value.Count > 1))
-                result[pair.Key] = scores[pair.Key] *= SameLineMultiplier * foundTokens;
 
-            if (result.Count == 0) return result;
-
-            var maxScore = result.Max(p => p.Value);
-
-            return result.Where(p => p.Value > maxScore / 100).ToDictionary(p => p.Key, p => p.Value);
-        }
-
-
-        /// <summary>
-        ///     Search strategy that favors multiple tokens in the same document (not on the same line)
-        ///     Also works for single tokens per document
-        /// </summary>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        private Dictionary<LinePointer, double> SameDocumentFind(string query)
-        {
-            var orderedTokens = OrderByFrequency(query);
-
-            var result = new HashSet<LinePointer>();
-
-            Trace?.Trace("Same document strategy");
-
-
-            var differentTokensByDocument = new Dictionary<KeyValue, HashSet<string>>();
-
-            var scores = new ScoreByPointer();
-
-            foreach (var tk in orderedTokens)
+            foreach (var pair in foundTokensByLine)
             {
-                var positions = PositionsByToken[tk];
-
-                var score = Math.Log10((double) Entries / positions.Count);
-
-                var plist = positions.Where(p => !p.Deleted).ToList();
-
-
-                foreach (var pointer in plist)
-                {
-                    if (!differentTokensByDocument.TryGetValue(pointer.PrimaryKey, out var tset))
-                    {
-                        tset = new HashSet<string>();
-                        differentTokensByDocument[pointer.PrimaryKey] = tset;
-                    }
-
-                    tset.Add(tk);
-
-                    scores[pointer] += score;
-
-                    result.Add(pointer);
-                }
+                // the multiplier applies only if more than one token in the query was found on the same line
+                var score = scores[pair.Key];
+                if (pair.Value.Count > 1) score *= SameLineMultiplier * pair.Value.Count;
+                result[pair.Key] = new LineResult {Score = scores[pair.Key] = score, TokensFound = pair.Value };
             }
 
-            // better score if different tokens found in the same document
+            return result;
 
-            foreach (var linePointer in result)
-            {
-                var tokens = differentTokensByDocument[linePointer.PrimaryKey].Count;
-                if (tokens > 1) scores[linePointer] *= tokens * SameDocumentMultiplier;
-            }
-
-
-            if (result.Count == 0) return result.ToDictionary(p => p, p => scores[p]);
-
-            var maxScore = result.Max(p => scores[p]);
-
-            return result.Where(p => scores[p] > maxScore / 100).ToDictionary(p => p, p => scores[p]);
         }
+
 
         private class ScoreByPointer
         {

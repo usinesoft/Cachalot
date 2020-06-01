@@ -6,6 +6,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
     <AssemblyName>ServerComponents</AssemblyName>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

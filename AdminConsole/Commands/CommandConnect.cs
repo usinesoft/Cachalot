@@ -14,9 +14,16 @@ namespace AdminConsole.Commands
 
             try
             {
+                // server or cluster my be specified as 
+                // hostname                 => single node mode port defaults to 4848
+                // hostname port            => single node mode
+                // hostname: port           => single node mode
+                // config.xml               => single node or cluster specified as configuration file
+                // host1:post1+host2:port2  => cluster specified as connection string
+
                 var server = "localhost";
 
-                var singleServerMode = !(Params.Count == 1 && Params[0].EndsWith(".xml"));
+                var singleServerMode = !(Params.Count == 1 && (Params[0].EndsWith(".xml") || Params[0].Contains('+')));
 
                 if (!singleServerMode) server = Params[0];
 
@@ -42,8 +49,18 @@ namespace AdminConsole.Commands
                 {
                     var aggregator = new Aggregator();
 
-                    var config = new ClientConfig();
-                    config.LoadFromFile(Params[0]);
+                    ClientConfig config;
+
+                    if (Params[0].EndsWith(".xml"))
+                    {
+                        config = new ClientConfig();
+                        config.LoadFromFile(Params[0]);
+                    }
+                    else // a connection string
+                    {
+                        config = new ClientConfig(Params[0]);
+                    }
+                    
 
                     var index = 0;
                     foreach (var serverConfig in config.Servers)

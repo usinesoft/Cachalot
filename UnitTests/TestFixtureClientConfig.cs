@@ -210,5 +210,33 @@ namespace UnitTests
             var desc2 = cfg.TypeDescriptions["UnitTests.TestData.Quote"];
             Assert.AreEqual(1, desc2.Keys.Values.Count(p => p.FullTextIndexed));
         }
+
+        [Test]
+        public void FromConnectionString()
+        {
+            var cfg = new ClientConfig("localhost:123");
+
+            Assert.AreEqual(1, cfg.Servers.Count);
+
+            Assert.AreEqual(123, cfg.Servers[0].Port);
+            Assert.AreEqual("localhost", cfg.Servers[0].Host);
+
+            cfg = new ClientConfig("host1:123 + host2:456");
+
+            Assert.AreEqual(2, cfg.Servers.Count);
+
+            Assert.AreEqual(123, cfg.Servers[0].Port);
+            Assert.AreEqual("host2", cfg.Servers[1].Host);
+
+            cfg = new ClientConfig("host1:123 + host2:456; 10, 4");
+
+            Assert.AreEqual(2, cfg.Servers.Count);
+
+            Assert.AreEqual(123, cfg.Servers[0].Port);
+            Assert.AreEqual("host2", cfg.Servers[1].Host);
+
+            Assert.AreEqual(10, cfg.ConnectionPoolCapacity);
+            Assert.AreEqual(4, cfg.PreloadedConnections);
+        }
     }
 }

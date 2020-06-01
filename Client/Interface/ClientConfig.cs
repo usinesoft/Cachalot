@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Xml;
 
 #endregion
@@ -28,9 +29,9 @@ namespace Client.Interface
         public IList<ServerConfig> Servers => _servers;
 
 
-        public int ConnectionPoolCapacity { get; private set; }
+        public int ConnectionPoolCapacity { get;  set; }
 
-        public int PreloadedConnections { get; private set; }
+        public int PreloadedConnections { get; set; }
 
         public bool IsPersistent { get; set; } = true;
 
@@ -44,6 +45,48 @@ namespace Client.Interface
             doc.Load(fileName);
 
             LoadFromElement(doc.DocumentElement);
+        }
+
+        /// <summary>
+        /// Read from a connection string in the form host1:port1+host2:port2;max_connections_in_pool, preloaded_connections_in_pool
+        /// </summary>
+        /// <param name="connectionString"></param>
+        public  ClientConfig(string connectionString)
+        {
+            // the part after ; contains the connection pool parameters
+            if (connectionString.Contains(';'))
+            {
+                var parts = connectionString.Split(';');
+                connectionString = parts[0];
+
+                if (parts.Length > 0)
+                {
+                    var pool = parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    ConnectionPoolCapacity = int.Parse(pool[0]);
+                    if (pool.Length > 1)
+                    {
+                        PreloadedConnections = int.Parse(pool[1]);
+                    }
+                }
+            }
+
+            var servers = connectionString.Split('+');
+
+            foreach (var server in servers)
+            {
+                if (!server.Contains(":"))
+                {
+                    throw new FormatException("A server should be specified as hostname:port");
+                    
+                }
+
+                var parts = server.Split(':').Select(p=>p.Trim()).ToList();
+
+                var host = parts[0].Trim();
+                var port = int.Parse(parts[1].Trim());
+
+                Servers.Add(new ServerConfig{Host = host, Port = port});
+            }
         }
 
 

@@ -125,7 +125,7 @@ namespace Server
                 _fullTextIndex = new FullTextIndex(config.FullTextConfig)
                 {
                     // a function that allows the full text engine to find the original line of text
-                    LineProvider = pointer => _dataByPrimaryKey[pointer.PrimaryKey].FullText[pointer.Line]
+                    LineProvider = pointer => _dataByPrimaryKey[pointer.PrimaryKey].TokenizedFullText[pointer.Line]
                 };
             }
         }

@@ -10,7 +10,7 @@
     <Company>USINESOFT</Company>
     <Description>Fastest transactional database for dotnet applications. It can also be used as a very powerful distributed cache</Description>
     <Copyright>USINESOFT</Copyright>
-    <Version>1.1.15</Version>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

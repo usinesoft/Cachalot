@@ -172,8 +172,10 @@ namespace Client.Queries
                         return false;
             }
 
+
             if (ReferenceEquals(Value, null) && !ReferenceEquals(atomicQuery.Value, null))
                 return false;
+
             if (!ReferenceEquals(Value, null) && ReferenceEquals(atomicQuery.Value, null))
                 return false;
 
@@ -182,6 +184,14 @@ namespace Client.Queries
             if (!ReferenceEquals(Value2, null) && ReferenceEquals(atomicQuery.Value2, null))
                 return false;
 
+            if (Value != atomicQuery.Value)
+                return false;
+
+            if (Value2 != atomicQuery.Value2)
+                return false;
+
+            if (IndexName != atomicQuery.IndexName)
+                return false;
 
             return true;
         }

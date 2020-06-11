@@ -735,6 +735,10 @@ namespace Server
                 }
             }
 
+            // do not work too hard if the most specific index returned 0
+            if(minimumItemsMatched == 0)
+                return new List<CachedObject>();
+
             // Get a primary set directly using the index
 
             IEnumerable<CachedObject> primarySet;

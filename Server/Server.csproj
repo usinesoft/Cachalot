@@ -7,7 +7,15 @@
     <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
     <AssemblyName>ServerComponents</AssemblyName>
     <Version>1.2.1</Version>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\Channel\Channel.csproj" />

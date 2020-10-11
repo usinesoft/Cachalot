@@ -11,9 +11,7 @@ namespace Cachalot.Linq
 {
     public class Connector : IDisposable
     {
-        private readonly Dictionary<string, ClientSideTypeDescription> _typeDescriptions =
-            new Dictionary<string, ClientSideTypeDescription>();
-
+        
         private Server.Server _server;
 
 
@@ -75,7 +73,7 @@ namespace Cachalot.Linq
                 var type = Type.GetType(description.Value.FullTypeName + ", " + description.Value.AssemblyName);
                 var typeDescription = Client.RegisterTypeIfNeeded(type, description.Value);
 
-                _typeDescriptions.Add(typeDescription.FullTypeName, typeDescription);
+                TypeDescriptionsCache.AddExplicitTypeDescription(type, typeDescription);
             }
         }
 
@@ -96,25 +94,9 @@ namespace Cachalot.Linq
 
         public Transaction BeginTransaction()
         {
-            return new Transaction(_typeDescriptions, Client);
+            return new Transaction(Client);
         }
 
-
-        /// <summary>
-        ///     Register a type for which the keys are specified with attributes and not in the configuration file
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private ClientSideTypeDescription RegisterDynamicType(Type type)
-        {
-            if (type == null) throw new ArgumentNullException(nameof(type));
-
-            var description = Client.RegisterTypeIfNeeded(type);
-
-            if (type.FullName != null) _typeDescriptions[type.FullName] = description;
-
-            return description;
-        }
 
 
         /// <summary>
@@ -135,11 +117,10 @@ namespace Cachalot.Linq
 
         public DataSource<T> DataSource<T>()
         {
-            var name = typeof(T).FullName;
-
-            if (!_typeDescriptions.TryGetValue(name, out var typeDescription))
-                typeDescription = RegisterDynamicType(typeof(T));
-
+            ClientSideTypeDescription typeDescription = TypeDescriptionsCache.GetDescription(typeof(T));
+            
+            typeDescription = Client.RegisterType(typeof(T), typeDescription);
+            
             return new DataSource<T>(Client, typeDescription);
         }
 

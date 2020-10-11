@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Client.Core;
+using Client.Messages;
 using Client.Queries;
 
 #endregion
@@ -210,6 +211,29 @@ namespace Client.Interface
         /// <param name="description"></param>
         ClientSideTypeDescription RegisterTypeIfNeeded(Type type, TypeDescriptionConfig description);
 
+        /// <summary>
+        /// Sent a message to the server to create a new empty indexed collection in none was already there for this type
+        /// Used when the indexes are defined with tags on the type
+        /// If <see cref="forceReindex"/> is true an existing collection will be re indexed according to the provided type description
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="forceReindex">force reindexing an existing collection</param>
+        /// <returns></returns>
+        ClientSideTypeDescription RegisterType(Type type, bool forceReindex = false);
+
+
+        /// <summary>
+        /// Sent a message to the server to create a new empty indexed collection in none was already there for this type
+        /// Used when the indexes are defined in the xml configuration file
+        /// If <see cref="forceReindex"/> is true an existing collection will be re indexed according to the provided type description
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="typeDescription">explicit type description</param>
+        /// <param name="forceReindex">force reindexing an existing collection</param>
+        /// <returns></returns>
+        ClientSideTypeDescription RegisterType(Type type, ClientSideTypeDescription typeDescription, bool forceReindex = false);
+
+        
         /// <summary>
         ///     Count the items matching the query and check for data completeness.
         /// </summary>

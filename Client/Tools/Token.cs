@@ -1,4 +1,6 @@
-﻿namespace Client.Tools
+﻿using System.Collections;
+
+namespace Client.Tools
 {
     public class Token
     {

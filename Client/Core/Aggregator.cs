@@ -604,6 +604,14 @@ namespace Client.Core
         }
 
 
+        public ClientSideTypeDescription RegisterType(Type type, ClientSideTypeDescription typeDescription, bool forceReindex = false)
+        {
+            ClientSideTypeDescription result = null;
+            foreach (var client in CacheClients) result = client.RegisterType(type, typeDescription);
+
+            return result;
+        }
+
         public KeyValuePair<bool, int> EvalQuery(OrQuery query)
         {
             try
@@ -1111,6 +1119,18 @@ namespace Client.Core
             }
 
             return answers.All(a => a);
+        }
+
+        public ClientSideTypeDescription RegisterType(Type type, bool forceReindex = false)
+        {
+            ClientSideTypeDescription description = null;
+            
+            Parallel.ForEach(CacheClients, client =>
+            {
+                description = client.RegisterType(type, forceReindex);
+            });
+
+            return description;
         }
 
         public ClientSideTypeDescription RegisterTypeIfNeeded(Type type)

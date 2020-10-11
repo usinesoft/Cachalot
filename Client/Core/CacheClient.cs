@@ -11,6 +11,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Queries;
 using Client.Tools;
+using JetBrains.Annotations;
 
 #endregion
 
@@ -37,8 +38,8 @@ namespace Client.Core
         /// </summary>
         public IClientChannel Channel { get; set; }
 
-        public Dictionary<string, ClientSideTypeDescription> KnownTypes { get; } =
-            new Dictionary<string, ClientSideTypeDescription>();
+        public SafeDictionary<string, ClientSideTypeDescription> KnownTypes { get; } =
+            new SafeDictionary<string, ClientSideTypeDescription>();
 
 
         public ClusterInformation GetClusterInformation()
@@ -612,6 +613,43 @@ namespace Client.Core
 
             typeDescription = ClientSideTypeDescription.RegisterType(type, description);
 
+            KnownTypes[typeDescription.FullTypeName] = typeDescription;
+
+
+            var request = new RegisterTypeRequest(typeDescription.AsTypeDescription, ShardIndex, ShardsCount);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while registering a type on the server", exResponse.Message,
+                    exResponse.CallStack);
+
+            return typeDescription;
+        }
+
+        public ClientSideTypeDescription RegisterType(Type type, bool forceReindex = false)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
+            
+            var typeDescription = ClientSideTypeDescription.RegisterType(type);
+            KnownTypes[typeDescription.FullTypeName] = typeDescription;
+
+
+            var request = new RegisterTypeRequest(typeDescription.AsTypeDescription, ShardIndex, ShardsCount);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while registering a type on the server", exResponse.Message,
+                    exResponse.CallStack);
+
+            return typeDescription;
+        }
+
+        public ClientSideTypeDescription RegisterType(Type type, [NotNull] ClientSideTypeDescription typeDescription, bool forceReindex = false)
+        {
+            
             KnownTypes[typeDescription.FullTypeName] = typeDescription;
 
 

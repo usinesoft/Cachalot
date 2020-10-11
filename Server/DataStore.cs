@@ -94,7 +94,7 @@ namespace Server
             _dataByPrimaryKey = new Dictionary<KeyValue, CachedObject>();
 
 
-            //initialize the unique keys dictionaries (une by unique key) 
+            //initialize the unique keys dictionaries (one by unique key) 
             _dataByUniqueKey = new Dictionary<string, Dictionary<KeyValue, CachedObject>>();
 
             foreach (var keyInfo in typeDescription.UniqueKeyFields)

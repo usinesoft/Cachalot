@@ -125,6 +125,7 @@ namespace Channel
 
             if (client == null || client.Connected == false)
                 throw new CacheException("Not connected to server");
+            
             var stream = client.GetStream();
 
             stream.WriteByte(Consts.RequestCookie);

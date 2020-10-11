@@ -21,13 +21,13 @@ namespace Cachalot.Linq
 
         private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
 
-        internal Transaction(IDictionary<string, ClientSideTypeDescription> typeDescriptions, ICacheClient client)
+        HashSet<Type> _types = new HashSet<Type>();
+
+
+        internal Transaction(ICacheClient client)
         {
             _client = client;
-            TypeDescriptions = typeDescriptions;
         }
-
-        private IDictionary<string, ClientSideTypeDescription> TypeDescriptions { get; }
 
 
         public void Put<T>(T item)
@@ -36,6 +36,8 @@ namespace Cachalot.Linq
 
             _itemsToPut.Add(packed);
             _conditions.Add(new OrQuery()); // empty condition
+
+            _types.Add(typeof(T));
         }
 
         /// <summary>
@@ -46,7 +48,7 @@ namespace Cachalot.Linq
         /// <param name="test"></param>
         public void UpdateIf<T>(T newValue, Expression<Func<T, bool>> test)
         {
-            var desc = TypeDescriptions[typeof(T).FullName ?? throw new InvalidOperationException()];
+            var desc = TypeDescriptionsCache.GetDescription(typeof(T));
 
             var packed = Pack(newValue);
 
@@ -56,6 +58,8 @@ namespace Cachalot.Linq
             var testAsQuery = dataSource.PredicateToQuery(test);
 
             _conditions.Add(testAsQuery);
+
+            _types.Add(typeof(T));
         }
 
 
@@ -105,22 +109,26 @@ namespace Cachalot.Linq
             var packed = Pack(item);
 
             _itemsToDelete.Add(packed);
+
+            _types.Add(typeof(T));
         }
 
 
         public void Commit()
         {
+            foreach (var type in _types)
+            {
+                var description = TypeDescriptionsCache.GetDescription(type);
+                _client.RegisterType(type, description);
+
+            }
             _client.ExecuteTransaction(_itemsToPut, _conditions, _itemsToDelete);
         }
 
 
         private CachedObject Pack<T>(T item)
         {
-            var name = typeof(T).FullName;
-            if (!TypeDescriptions.ContainsKey(name ?? throw new InvalidOperationException()))
-                TypeDescriptions[name] = _client.RegisterTypeIfNeeded(typeof(T));
-
-            var packed = CachedObject.Pack(item, TypeDescriptions[name]);
+            var packed = CachedObject.Pack(item, TypeDescriptionsCache.GetDescription(typeof(T)));
             return packed;
         }
     }

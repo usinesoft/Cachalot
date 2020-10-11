@@ -24,6 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cachalot.Client" Version="1.2.1" />
+    <PackageReference Include="Cachalot.Client" Version="1.2.2" />
   </ItemGroup>
 </Project>

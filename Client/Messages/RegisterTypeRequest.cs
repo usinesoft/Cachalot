@@ -21,11 +21,13 @@ namespace Client.Messages
         /// <param name="typeDescription">The description of the type to be registered</param>
         /// <param name="shardIndex">Index of the node inside the cluster (0 based)</param>
         /// <param name="shardsInCluster">Nodes in cluster</param>
-        public RegisterTypeRequest(TypeDescription typeDescription, int shardIndex = 0, int shardsInCluster = 1)
+        /// <param name="forceReindex">if true reindex the collection if it is already created</param>
+        public RegisterTypeRequest(TypeDescription typeDescription, int shardIndex = 0, int shardsInCluster = 1, bool forceReindex = false) 
         {
             TypeDescription = typeDescription;
             ShardIndex = shardIndex;
             ShardsInCluster = shardsInCluster;
+            ForceReindex = forceReindex;
         }
 
         public override RequestClass RequestClass => RequestClass.Admin;
@@ -39,5 +41,7 @@ namespace Client.Messages
         [field: ProtoMember(2)] public int ShardIndex { get; }
 
         [field: ProtoMember(3)] public int ShardsInCluster { get; }
+
+        [field: ProtoMember(4)] public bool ForceReindex { get; }
     }
 }

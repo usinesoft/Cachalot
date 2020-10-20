@@ -72,7 +72,7 @@ namespace Server
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
                 _listener.Init(nodeConfig.TcpPort);
-                _listener.Start();
+                
 
                 var fullDataPath = Path.GetFullPath(nodeConfig.DataPath ?? Constants.DataPath);
 
@@ -98,6 +98,8 @@ namespace Server
                     _stopEvent.Set();
                 };
                 _cacheServer.Start();
+                // this is where we effectively start accepting requests
+                _listener.Start();
             }
             catch (Exception e)
             {

@@ -12,7 +12,7 @@ namespace Client.Interface
         ///     Build a unique key having the specified data type
         /// </summary>
         /// <param name="keyDataType"></param>
-        public KeyAttribute(KeyDataType keyDataType)
+        public KeyAttribute(KeyDataType keyDataType = KeyDataType.Default)
         {
             KeyDataType = keyDataType;
         }
@@ -20,6 +20,6 @@ namespace Client.Interface
         /// <summary>
         ///     int or string key
         /// </summary>
-        public KeyDataType KeyDataType { get; } = KeyDataType.Unknown;
+        public KeyDataType KeyDataType { get; }
     }
 }

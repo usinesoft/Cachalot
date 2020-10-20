@@ -4,8 +4,8 @@ using System.IO;
 namespace Server.Persistence
 {
     /// <summary>
-    ///     Object stored in a parsistent store
-    ///     Limits are explictely marked and can also be retrieved from Offset, Offset + ReservedSpace
+    ///     Object stored in a persistent store
+    ///     Limits are explicitly marked and can also be retrieved from Offset, Offset + ReservedSpace
     ///     to allow for data recovery in case of disaster
     /// </summary>
     public class PersistentBlock
@@ -18,9 +18,9 @@ namespace Server.Persistence
         private byte[] _rawData;
 
 
-        private int BeginMarker { get; set; } = BeginMarkerValue;
+        public int BeginMarker { get; set; } = BeginMarkerValue;
 
-        private int EndMarker { get; set; } = EndMarkerValue;
+        public int EndMarker { get; set; } = EndMarkerValue;
 
         public string PrimaryKey { get; set; }
 
@@ -32,11 +32,16 @@ namespace Server.Persistence
         public BlockStatus BlockStatus { get; set; }
 
         public int UsedDataSize { get; set; }
+        public long Offset { get; set; }
+
+
 
         /// <summary>
         ///     We reserve more space than really used in oder to allow for in-place updates in most cases
         /// </summary>
         public int ReservedDataSize { get; set; }
+
+        public bool HashOk { get; private set; } = true;
 
         public byte[] RawData
         {
@@ -73,21 +78,28 @@ namespace Server.Persistence
         }
 
 
-        public bool Read(BinaryReader reader)
+        public bool Read(BinaryReader reader, bool silent = false)
         {
             var insideBlock = false;
 
             var offset = reader.BaseStream.Position;
 
+            Offset = offset;
+
             try
             {
                 BeginMarker = reader.ReadInt32();
 
-                if (BeginMarker != BeginMarkerValue) throw new InvalidBlockException(offset) {BeginMarkerKo = true};
+                if (BeginMarker != BeginMarkerValue && !silent) throw new InvalidBlockException(offset) {BeginMarkerKo = true};
 
                 insideBlock = true;
 
                 PrimaryKey = reader.ReadString();
+
+                //if (PrimaryKey == "StressTests.AbstractEntity4b612432-118f-4fe9-ad95-10947e686e4d")
+                //{
+
+                //}
                 LastTransactionId = reader.ReadInt32();
 
                 BlockStatus = (BlockStatus) reader.ReadInt32();
@@ -104,9 +116,14 @@ namespace Server.Persistence
 
                 EndMarker = reader.ReadInt32();
 
-                if (Hash != FastHash(_rawData)) throw new InvalidBlockException(offset) {HashKo = true};
+                if (Hash != FastHash(_rawData))
+                {
+                    HashOk = false;
+                    if(!silent) throw new InvalidBlockException(offset) {HashKo = true};
+                }
+                    
 
-                if (EndMarker != EndMarkerValue) throw new InvalidBlockException(offset) {EndMarkerKo = true};
+                if (EndMarker != EndMarkerValue && !silent) throw new InvalidBlockException(offset) {EndMarkerKo = true};
 
 
                 return true;
@@ -161,6 +178,11 @@ namespace Server.Persistence
 
                 return h;
             }
+        }
+
+        public override string ToString()
+        {
+            return $"{nameof(LastTransactionId)}: {LastTransactionId}, {nameof(BlockStatus)}: {BlockStatus}, {nameof(UsedDataSize)}: {UsedDataSize}, {nameof(ReservedDataSize)}: {ReservedDataSize}, {nameof(HashOk)}: {HashOk}";
         }
     }
 }

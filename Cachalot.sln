@@ -21,10 +21,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsService", "WindowsSe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{44884EF3-0331-4AD8-B8C2-CECE04A18773}"
 	ProjectSection(SolutionItems) = preProject
+		publish.cmd = publish.cmd
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressTests", "StressTests\StressTests.csproj", "{20DFA135-3809-4FDA-9ADF-BCB368D29449}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StressTests", "StressTests\StressTests.csproj", "{20DFA135-3809-4FDA-9ADF-BCB368D29449}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StorageAnalyzer", "StorageAnalyzer\StorageAnalyzer.csproj", "{80258FC5-4D27-4AC4-B6E7-BEAB799F901B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +71,10 @@ Global
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80258FC5-4D27-4AC4-B6E7-BEAB799F901B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80258FC5-4D27-4AC4-B6E7-BEAB799F901B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80258FC5-4D27-4AC4-B6E7-BEAB799F901B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80258FC5-4D27-4AC4-B6E7-BEAB799F901B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

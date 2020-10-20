@@ -7,6 +7,9 @@ popd
 pushd AdminConsole
 dotnet publish -c release -f netcoreapp3.1 -o ..\bin\Release\netcoreapp3.1\
 popd
+pushd StorageAnalyzer
+dotnet publish -c release -f netcoreapp3.1 -o ..\bin\Release\netcoreapp3.1\
+popd
 pushd DemoClients\AccountsCore
 dotnet publish -c release -f netcoreapp3.1 -o ..\..\bin\Release\DemoClients\netcoreapp3.1\
 popd

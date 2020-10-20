@@ -190,7 +190,7 @@ namespace Server.Persistence
                         var persistentTransaction = TransactionLog.StartProcessing();
 
                         if (persistentTransaction != null &&
-                            persistentTransaction.TransactionStatus != TransactionStaus.Canceled)
+                            persistentTransaction.TransactionStatus != TransactionStatus.Canceled)
                         {
                             var data = persistentTransaction.Data;
                             var transaction =

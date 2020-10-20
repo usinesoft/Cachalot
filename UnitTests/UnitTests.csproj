@@ -21,6 +21,7 @@
     <ProjectReference Include="..\AdminConsole\AdminConsole.csproj" />
     <ProjectReference Include="..\Cachalot\Cachalot.csproj" />
     <ProjectReference Include="..\Channel\Channel.csproj" />
+    <ProjectReference Include="..\Channel\Channel.csproj" />
     <ProjectReference Include="..\Client\Client.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
   </ItemGroup>

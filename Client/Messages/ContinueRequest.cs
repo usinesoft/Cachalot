@@ -4,7 +4,7 @@ using ProtoBuf;
 namespace Client.Messages
 {
     /// <summary>
-    ///     Delete amm data from database
+    ///     Exchanged during two stage transactions. Continue or abort current transaction 
     /// </summary>
     [ProtoContract]
     public class ContinueRequest : Request

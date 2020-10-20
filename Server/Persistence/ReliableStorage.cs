@@ -185,12 +185,12 @@ namespace Server.Persistence
             // read all the blocks
             while (block.Read(reader))
             {
-                // get information for deleted blocks too as there may be an uncomplete delete transaction to 
+                // get information for deleted blocks too as there may be an incomplete delete transaction to 
                 // reprocess
                 if (block.BlockStatus == BlockStatus.Active || block.BlockStatus == BlockStatus.Deleted)
                 {
                     BlockInfoByPrimaryKey[block.PrimaryKey] =
-                        new BlockInfo(offset, block.LastTransactionId);
+                        new BlockInfo(block.Offset, block.LastTransactionId);
 
                     // only active blocks contain objects 
                     if (useObjectProcessor && block.BlockStatus == BlockStatus.Active)
@@ -199,7 +199,6 @@ namespace Server.Persistence
 
                 if (block.BlockStatus != BlockStatus.Active) InactiveBlockCount++;
 
-                offset = (int) StorageStream.Position;
             }
 
             if (useObjectProcessor) ObjectProcessor.EndProcess(DataPath);
@@ -317,10 +316,19 @@ namespace Server.Persistence
                 var reader = new BinaryReader(StorageStream);
 
                 var oldBlock = new PersistentBlock();
-                oldBlock.Read(reader);
+
+                var validBlock = true;
+                try
+                {
+                    oldBlock.Read(reader);
+                }
+                catch (Exception )
+                {
+                    validBlock = false;
+                }
 
                 // if enough space is available do in-place update
-                if (oldBlock.ReservedDataSize > block.UsedDataSize)
+                if (validBlock && oldBlock.ReservedDataSize > block.UsedDataSize)
                 {
                     block.ReservedDataSize = oldBlock.ReservedDataSize;
 
@@ -328,12 +336,16 @@ namespace Server.Persistence
                 }
                 else // the old block is marked as deleted and the new version is added at the end of the stream
                 {
-                    oldBlock.BlockStatus = BlockStatus.Dirty;
+                    if (validBlock)
+                    {
+                        oldBlock.BlockStatus = BlockStatus.Dirty;
 
-                    InactiveBlockCount++;
+                        InactiveBlockCount++;
 
-                    WriteBlock(oldBlock, blockInfo.Offset);
+                        WriteBlock(oldBlock, blockInfo.Offset);
 
+                    }
+                    
                     block.ReservedDataSize = (int) (block.UsedDataSize * 1.5);
                     StorageSize = WriteBlock(block, StorageSize);
 

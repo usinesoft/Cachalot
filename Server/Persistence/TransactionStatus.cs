@@ -1,6 +1,6 @@
 namespace Server.Persistence
 {
-    public enum TransactionStaus
+    public enum TransactionStatus
     {
         ToProcess,
         Processing,

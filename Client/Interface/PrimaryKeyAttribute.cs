@@ -11,7 +11,7 @@ namespace Client.Interface
         /// <summary>
         /// </summary>
         /// <param name="keyDataType">int or string key</param>
-        public PrimaryKeyAttribute(KeyDataType keyDataType)
+        public PrimaryKeyAttribute(KeyDataType keyDataType = KeyDataType.Default)
         {
             KeyDataType = keyDataType;
         }
@@ -19,6 +19,6 @@ namespace Client.Interface
         /// <summary>
         ///     int or string key
         /// </summary>
-        public KeyDataType KeyDataType { get; } = KeyDataType.Unknown;
+        public KeyDataType KeyDataType { get; }
     }
 }

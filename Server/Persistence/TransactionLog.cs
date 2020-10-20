@@ -152,7 +152,7 @@ namespace Server.Persistence
 
                             var transaction = new TransactionData
                             {
-                                TransactionStatus = (TransactionStaus) status,
+                                TransactionStatus = (TransactionStatus) status,
                                 TimeStamp = time,
                                 Data = data,
                                 Offset = offset,
@@ -162,7 +162,7 @@ namespace Server.Persistence
 
                             sb.AppendLine(transaction.ToString());
 
-                            if (transaction.TransactionStatus != TransactionStaus.Processed)
+                            if (transaction.TransactionStatus != TransactionStatus.Processed)
                                 _transactionQueue.Enqueue(transaction);
                         }
                     }
@@ -208,7 +208,7 @@ namespace Server.Persistence
                     throw new NotSupportedException(
                         "Trying to cancel a transaction which is not delayed");
 
-                data.TransactionStatus = TransactionStaus.Canceled;
+                data.TransactionStatus = TransactionStatus.Canceled;
                 UpdateTransactionStatus(data);
                 Dbg.Trace("end canceling transaction");
             }
@@ -225,7 +225,7 @@ namespace Server.Persistence
                 var transaction = new TransactionData
                 {
                     TimeStamp = DateTime.Now,
-                    TransactionStatus = TransactionStaus.ToProcess,
+                    TransactionStatus = TransactionStatus.ToProcess,
                     Offset = _lastOffset,
                     Data = data,
                     DelayInMilliseconds = delayInMilliseconds
@@ -292,7 +292,7 @@ namespace Server.Persistence
 
                 var millisecondsToWait =
                     data.DelayInMilliseconds - (int) (DateTime.Now - data.TimeStamp).TotalMilliseconds;
-                if (millisecondsToWait > 0 && data.TransactionStatus != TransactionStaus.Canceled)
+                if (millisecondsToWait > 0 && data.TransactionStatus != TransactionStatus.Canceled)
                 {
                     Dbg.Trace($"waiting {millisecondsToWait} ms for delayed transaction to become active");
                     SmartSleep(millisecondsToWait);
@@ -300,18 +300,18 @@ namespace Server.Persistence
             }
 
             // if canceled do not process
-            if (data.TransactionStatus == TransactionStaus.Canceled)
+            if (data.TransactionStatus == TransactionStatus.Canceled)
             {
                 Dbg.Trace("delayed transaction was canceled");
                 return null;
             }
 
-            if (data.TransactionStatus != TransactionStaus.ToProcess)
+            if (data.TransactionStatus != TransactionStatus.ToProcess)
                 Dbg.Trace("Incomplete transaction found. Reprocessing");
 
             lock (_syncRoot)
             {
-                data.TransactionStatus = TransactionStaus.Processing;
+                data.TransactionStatus = TransactionStatus.Processing;
                 UpdateTransactionStatus(data);
             }
 
@@ -341,11 +341,11 @@ namespace Server.Persistence
                 // reset the event so the next call is blocking
                 if (_transactionQueue.Count == 0) _queueNotEmpty.Reset();
 
-                if (data.Id != transaction.Id || data.TransactionStatus != TransactionStaus.Processing)
+                if (data.Id != transaction.Id || data.TransactionStatus != TransactionStatus.Processing)
                     throw new NotSupportedException(
                         "EndProcessing() can be called only on the one transaction currently in Processing status ");
 
-                data.TransactionStatus = TransactionStaus.Processed;
+                data.TransactionStatus = TransactionStatus.Processed;
                 UpdateTransactionStatus(data);
             }
         }
@@ -357,7 +357,7 @@ namespace Server.Persistence
         /// <summary>
         ///     Internal data for a persistent transaction
         /// </summary>
-        private class TransactionData : IPersistentTransaction
+        public class TransactionData : IPersistentTransaction
         {
             private static long _lastId = 1;
 
@@ -378,15 +378,37 @@ namespace Server.Persistence
 
             public DateTime TimeStamp { get; internal set; }
 
-            public TransactionStaus TransactionStatus { get; internal set; }
+            public TransactionStatus TransactionStatus { get; internal set; }
 
             public long Id { get; set; }
+            public bool EndMarkerOk { get; set; }
 
-
+            
             public override string ToString()
             {
+                var status = "UNKNOWN";
+
+
+                switch (TransactionStatus)
+                {
+                    case TransactionStatus.ToProcess:
+                        status = "TO_PROCESS";
+                        break;
+                    case TransactionStatus.Processing:
+                        status = "PROCESSING";
+                        break;
+                    case TransactionStatus.Processed:
+                        status = "PROCESSED ";
+                        break;
+                    case TransactionStatus.Canceled:
+                        status = "CANCELED  ";
+                        break;
+                    
+                }
+
+
                 return
-                    $"Offset: {Offset}, Id: {Id} DataLength: {Data.Length}, TimeStamp: {TimeStamp}, TransactionStatus: {TransactionStatus}, Delay: {DelayInMilliseconds}";
+                    $"Offset: {Offset}, Id: {Id} DataLength: {Data.Length}, TimeStamp: {TimeStamp}, Status: {status}, Delay: {DelayInMilliseconds}";
             }
         }
 
@@ -402,6 +424,35 @@ namespace Server.Persistence
             writer.Flush();
         }
 
+        public static TransactionData ReadTransaction(BinaryReader reader)
+        {
+            var status = reader.ReadInt32();
+            var timestamp = reader.ReadInt64();
+            var length = reader.ReadInt32();
+            var data = reader.ReadBytes(length);
+            var offset = reader.ReadInt64();
+            var id = reader.ReadInt64();
+            var delay = reader.ReadInt32();
+            var endMarker = reader.ReadInt64();
+
+            
+            
+            var time = new DateTime(timestamp);
+
+
+            var transaction = new TransactionData
+            {
+                TransactionStatus = (TransactionStatus) status,
+                TimeStamp = time,
+                Data = data,
+                Offset = offset,
+                Id = id,
+                DelayInMilliseconds = delay,
+                EndMarkerOk = endMarker == EndMarker
+            };
+
+            return transaction;
+        }
 
         private void LoadAllTransactions()
         {
@@ -411,54 +462,32 @@ namespace Server.Persistence
 
             _lastOffset = reader.ReadInt64();
 
-            var completeTransaction = true;
+            
 
             try
             {
                 while (true)
                 {
-                    var status = reader.ReadInt32();
+                    
+                    
 
-                    completeTransaction = false;
+                    var transaction = ReadTransaction(reader);
 
-                    var timestamp = reader.ReadInt64();
-                    var length = reader.ReadInt32();
-                    var data = reader.ReadBytes(length);
-                    var offset = reader.ReadInt64();
-                    var id = reader.ReadInt64();
-                    var delay = reader.ReadInt32();
-                    var endMarker = reader.ReadInt64();
-
-                    if (endMarker != EndMarker)
+                    
+                    if (!transaction.EndMarkerOk)
                         throw new FormatException(
                             "Inconsistent transaction log. End marker not found at the end of a transaction");
 
-                    completeTransaction = true;
-
-                    var time = new DateTime(timestamp);
-
-
-                    var transaction = new TransactionData
-                    {
-                        TransactionStatus = (TransactionStaus) status,
-                        TimeStamp = time,
-                        Data = data,
-                        Offset = offset,
-                        Id = id,
-                        DelayInMilliseconds = delay
-                    };
-
-                    if (transaction.TransactionStatus != TransactionStaus.Processed &&
-                        transaction.TransactionStatus != TransactionStaus.Canceled)
+                    
+                    if (transaction.TransactionStatus != TransactionStatus.Processed &&
+                        transaction.TransactionStatus != TransactionStatus.Canceled)
                         _transactionQueue.Enqueue(transaction);
                 }
             }
 
             catch (EndOfStreamException)
             {
-                if (!completeTransaction)
-                    throw new FormatException(
-                        "Inconsistent transaction log. End of file reached in the middle of a transaction");
+                // ignore (end of log)
             }
 
 
@@ -467,11 +496,11 @@ namespace Server.Persistence
                 // only the last transaction may be in "Processing" status. In this case there was a failure during transaction processing
                 // we mark it "ToProcess". Transactions are idempotent
                 var lastTransaction = _transactionQueue.Peek();
-                if (lastTransaction.TransactionStatus == TransactionStaus.Processing)
+                if (lastTransaction.TransactionStatus == TransactionStatus.Processing)
                 {
                     ServerLog.LogWarning("Reprocessing incomplete transaction");
 
-                    lastTransaction.TransactionStatus = TransactionStaus.ToProcess;
+                    lastTransaction.TransactionStatus = TransactionStatus.ToProcess;
                     UpdateTransactionStatus(lastTransaction);
                 }
 

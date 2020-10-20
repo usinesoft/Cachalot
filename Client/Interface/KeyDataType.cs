@@ -9,9 +9,9 @@ namespace Client.Interface
     public enum KeyDataType
     {
         /// <summary>
-        ///     internal use only
+        ///     int or string will be chosen automatically according to the property type
         /// </summary>
-        Unknown,
+        Default,
 
         /// <summary>
         ///     long integer key

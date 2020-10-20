@@ -6,7 +6,7 @@ namespace Server.Persistence
     {
         byte[] Data { get; }
         DateTime TimeStamp { get; }
-        TransactionStaus TransactionStatus { get; }
+        TransactionStatus TransactionStatus { get; }
 
         long Id { get; }
     }

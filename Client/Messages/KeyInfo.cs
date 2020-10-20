@@ -156,7 +156,7 @@ namespace Client.Messages
         public static KeyValue ValueToKeyValue(object value, KeyInfo info)
         {
             //check if directly assignable to int
-            if (info.KeyDataType == KeyDataType.IntKey)
+            if (info.KeyDataType == KeyDataType.IntKey || info.KeyDataType == KeyDataType.Default)
             {
                 // default behavior for nullable values (works fine for dates)
                 if (value == null)
@@ -190,6 +190,11 @@ namespace Client.Messages
                     if (converter.CanConvertToString) return new KeyValue(converter.GetAsString(value), info);
 
                     Dbg.CheckThat(false, "trying to use an invalid key converter");
+                }
+
+                if (info.KeyDataType == KeyDataType.Default)
+                {
+                    return new KeyValue(value.ToString(), info);
                 }
             }
             else

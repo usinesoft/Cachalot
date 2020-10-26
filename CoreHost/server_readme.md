@@ -2,10 +2,10 @@
 ===========================================================================================================
 Full documentation can be found [here>>](https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf)
 
-Running CoreHost
+Cachalot Server
 ===========================================
-CoreHost is a dotnet core 2.1 executable, hosting a cachalot server with logging facility
-It can be run with the command line "dotnet CoreHost.dll"
+Server is a dotnet core 3.1 executable, hosting a cachalot server with logging facility
+It can be run directly on windows (server.exe) or with the command line "dotnet CoreHost.dll" on all systems
 By default it uses the configuration file **node_config.json**
 
 Example of configuration file

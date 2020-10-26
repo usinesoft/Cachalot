@@ -2,6 +2,11 @@
 
 ## What is new in this version
 
+### Last One
+- No need any more to specify the data type for indexes.
+- Bug correction; AVoid client messages to be processed in some cases before the server has fully charged persistent data
+
+### Previous
 It improves the full-text search: faster and more pertinent.
 All the executables target the platform netcore 3.1. The Nugget package containing the client code is netstandard 2.1. It can be used both in core and classical applications.
 The admin console is now supported on Linux too. The Windows service was ported to netcore 3.1 (it will only run on Windows as a service).

@@ -185,6 +185,7 @@ namespace Server.Persistence
             // read all the blocks
             while (block.Read(reader))
             {
+                offset = block.Offset + block.StorageSize;
                 // get information for deleted blocks too as there may be an incomplete delete transaction to 
                 // reprocess
                 if (block.BlockStatus == BlockStatus.Active || block.BlockStatus == BlockStatus.Deleted)

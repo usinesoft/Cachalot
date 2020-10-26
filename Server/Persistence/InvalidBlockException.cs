@@ -15,5 +15,6 @@ namespace Server.Persistence
         public bool BeginMarkerKo { get; set; }
         public bool EndMarkerKo { get; set; }
         public bool IncompleteBlock { get; set; }
+        public bool CorruptedBlock { get; set; }
     }
 }

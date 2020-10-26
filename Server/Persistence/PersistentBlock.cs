@@ -90,7 +90,8 @@ namespace Server.Persistence
             {
                 BeginMarker = reader.ReadInt32();
 
-                if (BeginMarker != BeginMarkerValue && !silent) throw new InvalidBlockException(offset) {BeginMarkerKo = true};
+                if (BeginMarker != BeginMarkerValue && !silent)
+                    throw new InvalidBlockException(offset) {BeginMarkerKo = true};
 
                 insideBlock = true;
 
@@ -110,6 +111,16 @@ namespace Server.Persistence
 
                 RawData = reader.ReadBytes(UsedDataSize);
 
+                // can arrive only if data was really corrupted
+                if (ReservedDataSize < UsedDataSize)
+                {
+                    if (silent)
+                        return true;
+
+                    throw new InvalidBlockException(offset) {CorruptedBlock = true};
+
+                }
+
                 reader.ReadBytes(ReservedDataSize - UsedDataSize); // discard the padding bytes
 
                 Hash = reader.ReadInt32();
@@ -119,11 +130,12 @@ namespace Server.Persistence
                 if (Hash != FastHash(_rawData))
                 {
                     HashOk = false;
-                    if(!silent) throw new InvalidBlockException(offset) {HashKo = true};
+                    if (!silent) throw new InvalidBlockException(offset) {HashKo = true};
                 }
-                    
 
-                if (EndMarker != EndMarkerValue && !silent) throw new InvalidBlockException(offset) {EndMarkerKo = true};
+
+                if (EndMarker != EndMarkerValue && !silent)
+                    throw new InvalidBlockException(offset) {EndMarkerKo = true};
 
 
                 return true;
@@ -135,7 +147,14 @@ namespace Server.Persistence
                 // ignore otherwise: end of stream
                 return false;
             }
+            finally
+            {
+                offset = reader.BaseStream.Position;
+                StorageSize = offset - Offset;
+            }
         }
+
+        public long StorageSize { get; set; }
 
         public void Write(BinaryWriter writer)
         {

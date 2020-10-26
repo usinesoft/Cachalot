@@ -327,7 +327,7 @@ namespace UnitTests
             }
 
 
-            // here it is clean again (lost block was recoveres)
+            // here it is clean again (lost block was recovered)
             using (var storage = new ReliableStorage(new NullProcessor(), null, "backup"))
             {
                 storage.LoadPersistentData();

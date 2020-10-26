@@ -53,10 +53,7 @@
     <None Update="node_config_4852.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="readme.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="readme.md">
+    <None Update="server_readme.md">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="publish.cmd">

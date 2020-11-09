@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<cacheClient>
+  <servers>
+    <server>
+      <host>localhost</host>
+      <port>4567</port>
+
+    </server>
+    <server>
+      <host>localhost</host>
+      <port>4568</port>
+
+    </server>
+    <server>
+      <host>localhost</host>
+      <port>4569</port>
+
+    </server>
+  </servers>
+  <typeDescriptions>
+    <type fullName="UnitTests.TestData.Order" assembly="UnitTests">
+      <property name="Id"  keyType="primary" />
+      <property name="Amount" />
+      <property name="Quantity" />
+      <property name="Category" keyType="index"/>
+      <property name="ProductId" keyType="index" />
+      <property name="ClientId" keyType="index" />
+      <property name="Date" keyType="index" />
+      <property name="DayOfWeek" keyType="index" />
+      <property name="Month" keyType="index" />
+      <property name="Year" keyType="index" />
+    </type>
+   
+  </typeDescriptions>
+
+</cacheClient>

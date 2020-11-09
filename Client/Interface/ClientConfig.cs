@@ -201,7 +201,8 @@ namespace Client.Interface
                         {
                             var propertyName = StringFromXpath(propertyNode, "@name");
                             var propertyType = StringFromXpath(propertyNode, "@keyType");
-                            KeyType keyType;
+                            
+                            KeyType keyType = KeyType.ServerSideValue;
                             switch (propertyType.ToUpper())
                             {
                                 case "PRIMARY":
@@ -216,27 +217,32 @@ namespace Client.Interface
                                 case "LIST":
                                     keyType = KeyType.ListIndex;
                                     break;
-                                default:
-                                    throw new CacheException(
-                                        $"Unknown key type {propertyType} for property{propertyName}");
                             }
 
                             var keyDataType = StringFromXpath(propertyNode, "@dataType");
 
-                            KeyDataType dataType;
-                            switch (keyDataType.ToUpper())
-                            {
-                                case "INT":
-                                case "INTEGER":
-                                    dataType = KeyDataType.IntKey;
-                                    break;
-                                case "STRING":
-                                    dataType = KeyDataType.StringKey;
-                                    break;
+                            KeyDataType dataType = KeyDataType.Default;
 
-                                default:
-                                    throw new CacheException(
-                                        $"Unknown key data type {keyDataType} for property{propertyName}");
+                            if (!string.IsNullOrWhiteSpace(keyDataType))
+                            {
+                                switch (keyDataType.ToUpper())
+                                {
+                                    case "INT":
+                                    case "INTEGER":
+                                        dataType = KeyDataType.IntKey;
+                                        break;
+                                    case "STRING":
+                                        dataType = KeyDataType.StringKey;
+                                        break;
+
+                                    case "DEFAULT":
+                                        dataType = KeyDataType.Default;
+                                        break;
+
+                                    default:
+                                        throw new CacheException(
+                                            $"Unknown key data type {keyDataType} for property{propertyName}");
+                                }
                             }
 
                             var orderedIndex = StringFromXpath(propertyNode, "@ordered");

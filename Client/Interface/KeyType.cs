@@ -28,6 +28,11 @@ namespace Client.Interface
         /// <summary>
         ///     Indexed list of values
         /// </summary>
-        ListIndex
+        ListIndex,
+
+        /// <summary>
+        /// Not an index but can be used for server side aggregations
+        /// </summary>
+        ServerSideValue
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Client.Interface
 {
     /// <summary>
-    ///     Define the indexable properties and the storage parameters(compression) of a type
+    ///     Define the index-able properties and the storage parameters(compression) of a type
     /// </summary>
     public class TypeDescriptionConfig
     {
@@ -28,10 +28,11 @@ namespace Client.Interface
         /// <param name="propertyName"></param>
         /// <param name="keyType"></param>
         /// <param name="keyDataType"></param>
-        /// <param name="b"></param>
+        /// <param name="ordered"></param>
         /// <param name="fullTextIndexed"></param>
+        /// <param name="serverSideVisible"></param>
         public void Add(string propertyName, KeyType keyType, KeyDataType keyDataType, bool ordered = false,
-            bool fullTextIndexed = false)
+            bool fullTextIndexed = false, bool serverSideVisible = false)
         {
             _keys.Add(propertyName,
                 new PropertyDescription(propertyName, keyType, keyDataType, ordered, fullTextIndexed));

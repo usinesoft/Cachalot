@@ -23,6 +23,8 @@ namespace Client.Core
 
         private readonly List<ClientSideKeyInfo> _uniqueKeyFields;
 
+        private readonly List<ClientSideKeyInfo> _serverSideValues;
+
 
         private bool _useCompression;
 
@@ -37,6 +39,8 @@ namespace Client.Core
             _indexFields = new List<ClientSideKeyInfo>();
 
             _listFields = new List<ClientSideKeyInfo>();
+
+            _serverSideValues= new List<ClientSideKeyInfo>();
 
             FullTextIndexed = new List<ClientSideKeyInfo>();
         }
@@ -67,12 +71,16 @@ namespace Client.Core
         /// </summary>
         public int IndexCount => _indexFields.Count;
 
+        public int ServerValuesCount => _serverSideValues.Count;
+
         /// <summary>
         ///     ist of fields which are indexed (non unique)
         /// </summary>
         public IEnumerable<ClientSideKeyInfo> IndexFields => _indexFields;
 
         public IEnumerable<ClientSideKeyInfo> ListFields => _listFields;
+
+        public IEnumerable<ClientSideKeyInfo> ServerSideValues => _serverSideValues;
 
         /// <summary>
         ///     Fully qualified type name
@@ -158,6 +166,8 @@ namespace Client.Core
                     result._indexFields.Add(key);
                 else if (key.KeyType == KeyType.ListIndex)
                     result._listFields.Add(key);
+                else if (key.KeyType == KeyType.ServerSideValue)
+                    result._serverSideValues.Add(key);
             }
 
             //check if the newly registered type is valid
@@ -185,10 +195,7 @@ namespace Client.Core
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (!type.IsSerializable)
-                throw new NotSupportedException(
-                    $"the type {type} is not serializable so it can not be registered as cacheable type");
-
+            
             var result = new ClientSideTypeDescription
             {
                 TypeName = type.Name,
@@ -216,6 +223,8 @@ namespace Client.Core
                         result._indexFields.Add(key);
                     else if (key.KeyType == KeyType.ListIndex)
                         result._listFields.Add(key);
+                    else if (key.KeyType == KeyType.ServerSideValue)
+                        result._serverSideValues.Add(key);
                 }
 
             //check if the newly registered type is valid

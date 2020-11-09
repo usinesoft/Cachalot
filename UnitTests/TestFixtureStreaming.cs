@@ -107,7 +107,7 @@ namespace UnitTests
             for (var i = 0; i < 5000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 1);
-                var packed = CachedObject.Pack(obj).Metadata;
+                var packed = CachedObject.Pack(obj);
 
                 var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, null);
                 var reloaded =
@@ -126,7 +126,7 @@ namespace UnitTests
             for (var i = 0; i < 1000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), randGen.Next(1000));
-                var packed = CachedObject.Pack(obj).Metadata;
+                var packed = CachedObject.Pack(obj);
                 items.Add(packed);
             }
 
@@ -388,7 +388,7 @@ namespace UnitTests
 
             stream.Seek(0, SeekOrigin.Begin);
             var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 0);
-            var packed = CachedObject.Pack(obj).Metadata;
+            var packed = CachedObject.Pack(obj);
 
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);

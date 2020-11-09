@@ -2,9 +2,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using UnitTests.TestData;
 
@@ -173,6 +176,84 @@ namespace UnitTests
 
             var fromCache = CachedObject.Unpack<CacheableTypeOk>(cached);
             Assert.AreEqual(object1, fromCache);
+        }
+
+
+        [Test]
+        public void TestObjectWithServerSideValues()
+        {
+            var config = new ClientConfig();
+            config.LoadFromFile("ClientConfigOrder.xml");
+
+            var serverSide = config.TypeDescriptions.Single().Value.Keys.Values.Where(k => k.KeyType == KeyType.ServerSideValue).ToList();
+
+            Assert.AreEqual(2, serverSide.Count);
+            Assert.AreEqual("Amount", serverSide[0].PropertyName);
+            Assert.AreEqual(KeyDataType.Default, serverSide[0].KeyDataType);
+            Assert.AreEqual(KeyType.ServerSideValue, serverSide[0].KeyType);
+
+            // register with configuration file
+            var description = ClientSideTypeDescription.RegisterType(typeof(Order), config.TypeDescriptions.Values.Single());
+
+            Assert.AreEqual(2, description.ServerSideValues.Count());
+            Assert.AreEqual("Amount", description.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+
+            var desc = description.AsTypeDescription;
+            Assert.AreEqual(2, desc.ServerSideValues.Count);
+            Assert.AreEqual("Amount", desc.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+            Assert.AreEqual(KeyType.ServerSideValue, desc.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+
+            // now try attributes on type
+            var description1 = ClientSideTypeDescription.RegisterType(typeof(Order), config.TypeDescriptions.Values.Single());
+
+            Assert.AreEqual(2, description1.ServerSideValues.Count());
+            Assert.AreEqual("Amount", description1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+
+            var desc1 = description1.AsTypeDescription;
+            Assert.AreEqual(2, desc1.ServerSideValues.Count);
+            Assert.AreEqual("Amount", desc1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+            Assert.AreEqual(KeyType.ServerSideValue, desc1.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+
+            // check that we get the same description from configuration types and with tags
+            Assert.AreEqual(desc, desc1);
+
+            //var desc2 = Description.AddProperty("Id", KeyType.Primary)
+            //    .AddProperty("Amount",KeyType.ScalarIndex, true)
+            //    .AddProperty("Quantity", KeyType.ServerSideValue)
+            //    .Ad 
+
+
+            // pack an object using different kinds of type description
+            var order = new Order
+            {
+                Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var packed = CachedObject.Pack(order, description);
+            Assert.AreEqual(2, packed.Values.Length);
+            Assert.AreEqual("Amount", packed.Values[0].Name);
+            Assert.AreEqual(order.Amount, packed.Values[0].Value);
+            Assert.AreEqual("Quantity", packed.Values[1].Name);
+            Assert.AreEqual(order.Quantity, packed.Values[1].Value);
+
+            var packed1 = CachedObject.Pack(order, desc);
+            Assert.AreEqual(2, packed1.Values.Length);
+            Assert.AreEqual("Amount", packed1.Values[0].Name);
+            Assert.AreEqual(order.Amount, packed1.Values[0].Value);
+            Assert.AreEqual("Quantity", packed1.Values[1].Name);
+            Assert.AreEqual(order.Quantity, packed1.Values[1].Value);
+
+            var json = JsonConvert.SerializeObject(order);
+            var packed2 = CachedObject.PackJson(json, desc);
+            Assert.AreEqual(2, packed2.Values.Length);
+            Assert.AreEqual("Amount", packed1.Values[0].Name);
+            Assert.AreEqual(order.Amount, packed2.Values[0].Value);
+
+
+
+
         }
     }
 }

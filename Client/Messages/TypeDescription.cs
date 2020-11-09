@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
+using Client.Interface;
 using ProtoBuf;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -27,13 +28,41 @@ namespace Client.Messages
     [ProtoContract]
     public class TypeDescription : IEquatable<TypeDescription>
     {
+
+        /// <summary>
+        ///     The one and only primary key
+        /// </summary>
+        [ProtoMember(1)]public KeyInfo PrimaryKeyField { get; set; }
+
+        [ProtoMember(2)] private List<KeyInfo> _uniqueKeyFields;
+
         [ProtoMember(3)] private List<KeyInfo> _indexFields;
 
 
         [ProtoMember(4)] private List<KeyInfo> _listFields;
 
+        
+        [ProtoMember(5)] private List<KeyInfo> _serverSideVisible;
 
-        [ProtoMember(2)] private List<KeyInfo> _uniqueKeyFields;
+        /// <summary>
+        ///     Long type name (unique for a cache instance)
+        /// </summary>
+        [ProtoMember(6)]
+        public string FullTypeName { get; set; }
+
+
+        /// <summary>
+        ///     Short type name
+        /// </summary>
+        [ProtoMember(7)]
+        public string TypeName { get; set; }
+
+        [ProtoMember(8)] public bool UseCompression { get; set; }
+
+        /// <summary>
+        ///     Fields that will be indexed for full text search
+        /// </summary>
+        [field: ProtoMember(9)] public List<KeyInfo> FullText { get; }
 
         /// <summary>
         ///     This one is used only for protobuf serialization
@@ -43,6 +72,8 @@ namespace Client.Messages
             _uniqueKeyFields = new List<KeyInfo>();
             _indexFields = new List<KeyInfo>();
             _listFields = new List<KeyInfo>();
+            _serverSideVisible = new List<KeyInfo>();
+
             FullText = new List<KeyInfo>();
         }
 
@@ -57,11 +88,15 @@ namespace Client.Messages
             _indexFields = new List<KeyInfo>();
             _listFields = new List<KeyInfo>();
 
+            _serverSideVisible = new List<KeyInfo>();
+
             foreach (var uniqueKeyField in description.UniqueKeyFields) _uniqueKeyFields.Add(uniqueKeyField.AsKeyInfo);
 
             foreach (var indexField in description.IndexFields) _indexFields.Add(indexField.AsKeyInfo);
 
             foreach (var indexField in description.ListFields) _listFields.Add(indexField.AsKeyInfo);
+
+            foreach (var indexField in description.ServerSideValues) _serverSideVisible.Add(indexField.AsKeyInfo);
 
             FullTypeName = description.FullTypeName;
             TypeName = description.TypeName;
@@ -72,11 +107,7 @@ namespace Client.Messages
             foreach (var fullTextIndex in description.FullTextIndexed) FullText.Add(fullTextIndex.AsKeyInfo);
         }
 
-        /// <summary>
-        ///     The one and only primary key
-        /// </summary>
-        [ProtoMember(1)]
-        public KeyInfo PrimaryKeyField { get; set; }
+       
 
         /// <summary>
         ///     The unique keys
@@ -93,27 +124,10 @@ namespace Client.Messages
         /// </summary>
         public IList<KeyInfo> ListFields => _listFields;
 
-
-        /// <summary>
-        ///     Long type name (unique for a cache instance)
-        /// </summary>
-        [ProtoMember(5)]
-        public string FullTypeName { get; set; }
+        public IList<KeyInfo> ServerSideValues => _serverSideVisible;
 
 
-        /// <summary>
-        ///     Short type name
-        /// </summary>
-        [ProtoMember(6)]
-        public string TypeName { get; set; }
-
-        [ProtoMember(8)] public bool UseCompression { get; set; }
-
-        /// <summary>
-        ///     Fields that will be indexed for full text search
-        /// </summary>
-        [field: ProtoMember(9)]
-        public List<KeyInfo> FullText { get; }
+       
 
 
         /// <summary>
@@ -291,6 +305,81 @@ namespace Client.Messages
 
 
             return false;
+        }
+
+        
+    }
+
+    public static class Description
+    {
+        public static TypeDescription PrimaryKey(string name)
+        {
+
+            var result = new TypeDescription
+            {
+                PrimaryKeyField = new KeyInfo
+                {
+                    Name = name,
+                    KeyType = KeyType.Primary,
+                    KeyDataType = KeyDataType.Default,
+                    IsOrdered = false,
+                    IsFullTextIndexed = false
+                }
+            };
+
+
+            return result;
+        }
+
+        public static TypeDescription PrimaryKey(this TypeDescription @this, string name)
+        {
+            if (@this == null)
+            {
+                @this = new TypeDescription();
+            }
+
+            @this.PrimaryKeyField = new KeyInfo{Name = name, KeyType = KeyType.Primary, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false};
+
+            return @this;
+        }
+
+        public static TypeDescription AddProperty(this TypeDescription @this , string name, KeyType type = KeyType.ScalarIndex, bool isOrdered = false, bool fullTextSearch = false)
+        {
+            if (@this == null)
+            {
+                @this = new TypeDescription();
+            }
+
+            switch (type)
+            {
+                case KeyType.None:
+                    throw new ArgumentException("Invalid property type");
+                case KeyType.Primary:
+                    @this.PrimaryKeyField = new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch};
+                    break;
+                case KeyType.Unique:
+                    @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
+                    break;
+                case KeyType.ScalarIndex:
+                    @this.IndexFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
+                    break;
+                case KeyType.ListIndex:
+                    @this.ListFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
+                    break;
+                case KeyType.ServerSideValue:
+                    @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+
+            return @this;
+        }
+
+        public static TypeDescription AddProperty(string name, KeyType type = KeyType.ScalarIndex,
+            bool isOrdered = false, bool fullTextSearch = false)
+        {
+            return AddProperty(null, name, type, isOrdered, fullTextSearch);
         }
     }
 }

@@ -12,20 +12,20 @@ namespace Client.Core
 {
     /// <summary>
     ///     A key needs to be convertible in a meaningful way to string or long int
-    ///     Using int keys is faster. Key values can not be modified once created which allows to pre compute the hcode
+    ///     Using int keys is faster. Key values can not be modified once created which allows to pre compute the hashcode
     /// </summary>
     [ProtoContract]
     public sealed class KeyValue : IComparable<KeyValue>
     {
-        [ProtoMember(4)] private readonly int _hcode; //precomputed hcode
-
-        [ProtoMember(3)] private readonly long _intValue;
-
-        [ProtoMember(5)] private readonly bool _isNotNull;
+        [ProtoMember(1)] private readonly KeyInfo _type;
 
         [ProtoMember(2)] private readonly string _stringValue;
 
-        [ProtoMember(1)] private readonly KeyInfo _type;
+        [ProtoMember(3)] private readonly long _intValue;
+
+        [ProtoMember(4)] private readonly int _hash; //precomputed hashcode
+
+        [ProtoMember(5)] private readonly bool _isNotNull;
 
         [UsedImplicitly]
         public KeyValue()
@@ -38,7 +38,7 @@ namespace Client.Core
         /// <param name="right"> </param>
         public KeyValue(KeyValue right)
         {
-            _hcode = right._hcode;
+            _hash = right._hash;
             _intValue = right._intValue;
             _stringValue = right._stringValue;
             _type = new KeyInfo(right._type);
@@ -61,21 +61,21 @@ namespace Client.Core
 
             if (value == null)
             {
-                _hcode = 0;
+                _hash = 0;
             }
 
             else //manually compute the hash code to ensure interoperability between 64 and 32 bits systems
             {
                 long hash = 1;
-                long multiplyer = 29;
+                long multiplier = 29;
                 foreach (var c in value)
                 {
-                    hash += c * multiplyer;
-                    multiplyer *= multiplyer;
+                    hash += c * multiplier;
+                    multiplier *= multiplier;
                 }
 
                 hash = Math.Abs(hash);
-                _hcode = (int) (hash % int.MaxValue);
+                _hash = (int) (hash % int.MaxValue);
             }
 
             _isNotNull = true;
@@ -90,7 +90,7 @@ namespace Client.Core
         {
             _intValue = value;
             _type = info;
-            _hcode = Math.Abs(value.GetHashCode() % int.MaxValue);
+            _hash = Math.Abs(value.GetHashCode() % int.MaxValue);
             _isNotNull = true;
         }
 
@@ -156,7 +156,7 @@ namespace Client.Core
 
         public override int GetHashCode()
         {
-            return _hcode;
+            return _hash;
         }
 
 
@@ -168,7 +168,7 @@ namespace Client.Core
         /// <returns> </returns>
         public static bool operator ==(KeyValue left, string right)
         {
-            if (left._stringValue == null)
+            if (left?._stringValue == null)
                 return false;
             return left._stringValue == right;
         }
@@ -193,9 +193,9 @@ namespace Client.Core
         /// <returns> </returns>
         public static bool operator ==(KeyValue left, long right)
         {
-            if (left._intValue == long.MinValue)
+            if (left?._intValue == long.MinValue)
                 return false;
-            return left._intValue == right;
+            return left?._intValue == right;
         }
 
         /// <summary>

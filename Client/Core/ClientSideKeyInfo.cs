@@ -39,7 +39,7 @@ namespace Client.Core
             {
                 Info = propertyInfo;
 
-                
+
                 // full text indexation can be applied to any type of key or event to non indexed properties
                 var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true)
                     .FirstOrDefault();
@@ -96,6 +96,15 @@ namespace Client.Core
                     return;
                 }
 
+                //check if it is visible server-side
+                attributes = propertyInfo.GetCustomAttributes(typeof(ServerSideVisibleAttribute), true);
+                if (attributes.Length == 1)
+                {
+                    KeyType = KeyType.ServerSideValue;
+
+                    return;
+                }
+
                 KeyType = KeyType.None;
             }
             finally
@@ -127,7 +136,7 @@ namespace Client.Core
 
         public bool IndexedAsFulltext { get; }
 
-        
+
         /// <summary>
         ///     Return a serializable, light version <see cref="KeyInfo" />
         /// </summary>
@@ -141,7 +150,7 @@ namespace Client.Core
         /// <summary>
         ///     Any key type must be convertible to LongInt or String
         /// </summary>
-        public KeyDataType KeyDataType { get; }
+        private KeyDataType KeyDataType { get; }
 
         /// <summary>
         ///     Name of the key (unique for a cacheable type)
@@ -151,12 +160,13 @@ namespace Client.Core
         /// <summary>
         ///     if true order operators can be used for this key
         /// </summary>
-        public bool IsOrdered { get; }
+        private bool IsOrdered { get; }
 
         /// <summary>
         ///     description of the underlying property
         /// </summary>
-        public PropertyInfo Info { get; }
+        private PropertyInfo Info { get; }
+       
 
         /// <summary>
         ///     Equals from <see cref="IEquatable{T}" />
@@ -237,6 +247,19 @@ namespace Client.Core
             return KeyInfo.ValueToKeyValue(value, AsKeyInfo);
         }
 
+        public ServerSideValue GetServerValue(object instance)
+        {
+            //TODO use precompiled accessors
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            var value = Info.GetValue(instance, null);
+
+            var val = Convert.ToDouble(value); 
+
+            return new ServerSideValue{Name = Info.Name, Value = val};
+        }
+
         /// <summary>
         ///     Get the values in a an IEnumerable property
         /// </summary>
@@ -315,15 +338,14 @@ namespace Client.Core
 
             if (type == typeof(string))
             {
-                result.Add((string)instance);
+                result.Add((string) instance);
             }
-            else if(type.Namespace != null && type.Namespace.StartsWith("System"))
+            else if (type.Namespace != null && type.Namespace.StartsWith("System"))
             {
                 result.Add(instance.ToString());
             }
             else // some complex type
             {
-
                 List<Func<object, object>> accessors;
                 lock (StringGetterCache)
                 {
@@ -332,16 +354,13 @@ namespace Client.Core
                 }
 
                 if (accessors != null)
-                {
                     foreach (var accessor in accessors)
                     {
                         var val = accessor(instance);
                         if (val != null) result.Add(val as string);
-                    }    
-                }
-                
+                    }
             }
-            
+
 
             return result;
         }

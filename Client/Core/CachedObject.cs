@@ -198,7 +198,7 @@ namespace Client.Core
             return (long) valueToken;
         }
 
-        public static double JTokenToDouble(JToken jToken)
+        public static decimal JTokenToDecimal(JToken jToken)
         {
             // null converted to long is 0
             if (jToken == null) return 0;
@@ -208,22 +208,20 @@ namespace Client.Core
 
             if (valueToken?.Type == JTokenType.Integer)
             {
-                var doubleValue= (double?) valueToken;
+                var doubleValue= (decimal?) valueToken;
 
                 if (doubleValue.HasValue)
                 {
                     return doubleValue.Value;
-
                 }
             }
             else if(valueToken?.Type == JTokenType.Float)
             {
-                var doubleValue= (double?) valueToken;
+                var doubleValue= (decimal?) valueToken;
 
                 if (doubleValue.HasValue)
                 {
                     return doubleValue.Value;
-
                 }
             }
 
@@ -312,7 +310,7 @@ namespace Client.Core
             {
                 var jKey = jObject.Property(value.Name);
 
-                var val = JTokenToDouble(jKey);
+                var val = JTokenToDecimal(jKey);
 
 
                 serverValues.Add( new ServerSideValue{Name = value.Name, Value = val});

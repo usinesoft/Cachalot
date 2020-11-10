@@ -11,6 +11,6 @@ namespace Client.Core
     {
         [ProtoMember(1)]public string Name { get; set; }
 
-        [ProtoMember(2)]public double Value { get; set; }
+        [ProtoMember(2)]public decimal Value { get; set; }
     }
 }

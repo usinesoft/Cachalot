@@ -43,6 +43,7 @@ namespace UnitTests
             Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
         }
 
+        
 
         [Test]
         public void Between_operator_optimization()

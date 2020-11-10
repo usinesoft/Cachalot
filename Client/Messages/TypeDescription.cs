@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
 using Client.Interface;
+using Newtonsoft.Json;
 using ProtoBuf;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -307,79 +308,72 @@ namespace Client.Messages
             return false;
         }
 
-        
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
     }
 
+
+    /// <summary>
+    /// Programatically create type description using fluent syntax
+    /// </summary>
     public static class Description
     {
-        public static TypeDescription PrimaryKey(string name)
+        public static TypeDescription New(string fullTypeName, bool useCompression = false)
+        {
+            var name = fullTypeName.Split('.').Last();
+            return new TypeDescription{FullTypeName = fullTypeName, UseCompression = useCompression, TypeName = name};
+        }
+
+        public static TypeDescription PrimaryKey(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
         {
 
-            var result = new TypeDescription
+            @this.PrimaryKeyField = new KeyInfo
             {
-                PrimaryKeyField = new KeyInfo
-                {
-                    Name = name,
-                    KeyType = KeyType.Primary,
-                    KeyDataType = KeyDataType.Default,
-                    IsOrdered = false,
-                    IsFullTextIndexed = false
-                }
+                Name = name,
+                KeyType = KeyType.Primary,
+                KeyDataType = KeyDataType.Default,
+                IsOrdered = false,
+                IsFullTextIndexed = fullTextSearchEnabled
             };
 
-
-            return result;
+            return @this;
         }
 
-        public static TypeDescription PrimaryKey(this TypeDescription @this, string name)
+        public static TypeDescription AddUniqueKey(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
         {
-            if (@this == null)
-            {
-                @this = new TypeDescription();
-            }
-
-            @this.PrimaryKeyField = new KeyInfo{Name = name, KeyType = KeyType.Primary, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false};
+            @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = KeyType.Unique, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
 
             return @this;
         }
 
-        public static TypeDescription AddProperty(this TypeDescription @this , string name, KeyType type = KeyType.ScalarIndex, bool isOrdered = false, bool fullTextSearch = false)
+        public static TypeDescription AddIndex(this TypeDescription @this, string name, bool ordered = false,  bool serverSideVisible = false, bool fullTextSearchEnabled = false)
         {
-            if (@this == null)
-            {
-                @this = new TypeDescription();
-            }
+            @this.IndexFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = fullTextSearchEnabled});
 
-            switch (type)
+            if (serverSideVisible)
             {
-                case KeyType.None:
-                    throw new ArgumentException("Invalid property type");
-                case KeyType.Primary:
-                    @this.PrimaryKeyField = new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch};
-                    break;
-                case KeyType.Unique:
-                    @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
-                    break;
-                case KeyType.ScalarIndex:
-                    @this.IndexFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
-                    break;
-                case KeyType.ListIndex:
-                    @this.ListFields.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
-                    break;
-                case KeyType.ServerSideValue:
-                    @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = type, KeyDataType = KeyDataType.Default, IsOrdered =  isOrdered, IsFullTextIndexed = fullTextSearch});
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ServerSideValue, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
             }
 
             return @this;
         }
 
-        public static TypeDescription AddProperty(string name, KeyType type = KeyType.ScalarIndex,
-            bool isOrdered = false, bool fullTextSearch = false)
+        public static TypeDescription AddListIndex(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
         {
-            return AddProperty(null, name, type, isOrdered, fullTextSearch);
+            @this.ListFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
+
+            return @this;
         }
+
+        public static TypeDescription AddServerSideValue(this TypeDescription @this, string name)
+        {
+            @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ServerSideValue, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
+
+            return @this;
+        }
+
     }
 }

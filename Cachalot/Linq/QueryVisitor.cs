@@ -105,6 +105,7 @@ namespace Cachalot.Linq
                 return;
             }
 
+            
             if (resultOperator is CountResultOperator || resultOperator is LongCountResultOperator)
             {
                 RootExpression.CountOnly = true;

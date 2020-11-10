@@ -255,7 +255,7 @@ namespace Client.Core
 
             var value = Info.GetValue(instance, null);
 
-            var val = Convert.ToDouble(value); 
+            var val = Convert.ToDecimal(value); 
 
             return new ServerSideValue{Name = Info.Name, Value = val};
         }

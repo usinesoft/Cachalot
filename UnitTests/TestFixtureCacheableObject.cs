@@ -217,6 +217,7 @@ namespace UnitTests
             // check that we get the same description from configuration types and with tags
             Assert.AreEqual(desc, desc1);
 
+            
             //var desc2 = Description.AddProperty("Id", KeyType.Primary)
             //    .AddProperty("Amount",KeyType.ScalarIndex, true)
             //    .AddProperty("Quantity", KeyType.ServerSideValue)
@@ -252,8 +253,27 @@ namespace UnitTests
             Assert.AreEqual(order.Amount, packed2.Values[0].Value);
 
 
+        }
 
 
+        [Test]
+        public void PackObjectUsingFluentTypeDescription()
+        {
+            var description = Description.New("UnitTests.TestData.Order")
+                .PrimaryKey("Id")
+                .AddIndex("Amount", true, true)
+                .AddServerSideValue("Quantity")
+                .AddIndex("Category")
+                .AddIndex("ProductId")
+                .AddIndex("ClientId")
+                .AddIndex("Date")
+                .AddIndex("DayOfWeek")
+                .AddIndex("Month")
+                .AddIndex("Year");
+
+            var description1 = ClientSideTypeDescription.RegisterType<Order>().AsTypeDescription;
+
+            Assert.AreEqual(description, description1);
         }
     }
 }

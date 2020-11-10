@@ -69,7 +69,10 @@ namespace Client.Queries
         public int Skip { get; set; }
 
         [ProtoMember(4)] public string FullTextSearch { get; set; }
+
         [ProtoMember(5)] public bool OnlyIfComplete { get; set; }
+        
+        [ProtoMember(6)] public bool Sum { get; set; }
 
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);

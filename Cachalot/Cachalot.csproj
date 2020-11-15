@@ -48,6 +48,9 @@
     <None Update="Cachalot.nuspec">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
+    <None Update="client_ReadMe.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="make_package.cmd">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>

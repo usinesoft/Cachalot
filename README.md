@@ -3,15 +3,54 @@
 ## What is new in this version
 
 ### Last One
-- No need any more to specify the data type for indexes.
-- Bug correction; AVoid client messages to be processed in some cases before the server has fully charged persistent data
+
+Compute pivot tables with variable number of axis in the cache. 
+
+A new tag [ServerSideVisible] is available. It can decorate numeric properties that can
+be used for computations executed inside the cache without transferring the objects to
+the client.
+All integer or string properties that are indexed can be used as a pivot axis. 
+
+```
+public class Order
+ {
+     [PrimaryKey]
+     public Guid Id { get; set; }
+     
+     [ServerSideVisible]
+     [Index(ordered:true)]
+     public double Amount { get; set; }
+     
+     [ServerSideVisible]
+     public int Quantity { get; set; }
+     
+     [Index]
+     public string Category { get; set; }
+     
+     [Index]
+     public int ProductId { get; set; }
+     ...
+ }
+``` 
+
+We can aggregate on Amount and Quantity and use Category, ProductId as a pivot axis.
+
+A pivot table can be computed an all data from a collection or on a subset defined by a query.
+
+Computing a pivot with two axis on the whole collection is as simple as:
+``` 
+var pivot = dataSource.ComputePivot(null, o => o.Category, o => o.ProductId);
+``` 
 
 ### Previous
-It improves the full-text search: faster and more pertinent.
-All the executables target the platform netcore 3.1. The Nugget package containing the client code is netstandard 2.1. It can be used both in core and classical applications.
-The admin console is now supported on Linux too. The Windows service was ported to netcore 3.1 (it will only run on Windows as a service).
-We added a new eviction policy (in pure cache mode): TTL (Time To Live). It automatically removes those that are older than a given age (specified for each type of data).
-A simple connection string can be used to connect to a cluster instead of the configuration file.
+- No need any more to specify the data type for indexes.
+- Bug correction; AVoid client messages to be processed in some cases before the server has fully charged persistent data
+- Improved full-text search: faster and more pertinent.
+- All the executables target the platform netcore 3.1. The Nugget package containing the client code is netstandard 2.1. It can be used both in core and classical applications.
+- The admin console is now supported on Linux too. 
+- The Windows service was ported to netcore 3.1 (it will only run on Windows as a service).
+- We added a new eviction policy (in pure cache mode): TTL (Time To Live). It automatically removes those that are older than a given age (specified for each type of data).
+- A simple connection string can be used to connect to a cluster instead of the configuration file.
 
 
 ## What is Cachalot DB?
@@ -37,7 +76,7 @@ public class Home
 {
 	public string CountryCode { get; set; }
 	public string Town { get; set; }
-	public string Adress { get; set; }
+	public string Address { get; set; }
 	public string Owner { get; set; }
 	public string OwnerEmail { get; set; }
 	public string OwnerPhone { get; set; }

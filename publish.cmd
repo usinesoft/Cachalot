@@ -20,3 +20,4 @@ pushd Cachalot
 nuget pack Cachalot.csproj -IncludeReferencedProjects -Prop Configuration=Release -Symbols
 move *.nupkg ..\bin\Release
 popd
+copy /Y readme.html bin\Release\netcoreapp3.1\

@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Cachalot</title>
+</head>
+<body>
+
+    <h1 id="cachalot">Cachalot</h1>
+<h2 id="what-is-new-in-this-version">What is new in this version</h2>
+<h3 id="last-one">Last One</h3>
+<p>Compute pivot tables with variable number of axis in the cache.</p>
+<p>A new tag [ServerSideVisible] is available. It can decorate numeric properties that can
+be used for computations executed inside the cache without transferring the objects to
+the client.
+All integer or string properties that are indexed can be used as a pivot axis.</p>
+<pre><code>public class Order
+ {
+     [PrimaryKey]
+     public Guid Id { get; set; }
+     
+     [ServerSideVisible]
+     [Index(ordered:true)]
+     public double Amount { get; set; }
+     
+     [ServerSideVisible]
+     public int Quantity { get; set; }
+     
+     [Index]
+     public string Category { get; set; }
+     
+     [Index]
+     public int ProductId { get; set; }
+     ...
+ }
+</code></pre>
+<p>We can aggregate on Amount and Quantity and use Category, ProductId as a pivot axis.</p>
+<p>A pivot table can be computed an all data from a collection or on a subset defined by a query.</p>
+<p>Computing a pivot with two axis on the whole collection is as simple as:</p>
+<pre><code>var pivot = dataSource.ComputePivot(null, o =&gt; o.Category, o =&gt; o.ProductId);
+</code></pre>
+<h3 id="previous">Previous</h3>
+<ul>
+<li>No need any more to specify the data type for indexes.</li>
+<li>Bug correction; AVoid client messages to be processed in some cases before the server has fully charged persistent data</li>
+<li>Improved full-text search: faster and more pertinent.</li>
+<li>All the executables target the platform netcore 3.1. The Nugget package containing the client code is netstandard 2.1. It can be used both in core and classical applications.</li>
+<li>The admin console is now supported on Linux too.</li>
+<li>The Windows service was ported to netcore 3.1 (it will only run on Windows as a service).</li>
+<li>We added a new eviction policy (in pure cache mode): TTL (Time To Live). It automatically removes those that are older than a given age (specified for each type of data).</li>
+<li>A simple connection string can be used to connect to a cluster instead of the configuration file.</li>
+</ul>
+<h2 id="what-is-cachalot-db">What is Cachalot DB?</h2>
+<p>Cachalot DB is more than one solution.</p>
+<p>It is a distributed cache with unique features. It can do the usual things distributed caches do. Retrieve items by one or more unique keys and remove them according to different eviction policies. But it can do much more. Using a smart LINQ extension, you can run SQL-like queries, and they return a result set if and only if the whole subset of data is available in the cache.</p>
+<p>Cachalot is also a fully-featured in-memory database. Like REDIS but with a full query model, not only a key-values dictionary.  And unlike REDIS, it is entirely transactional.</p>
+<p>A powerful LINQ provider is available, as well as an administration console.
+Much more detail in the next sections, but</p>
+<h2 id="show-me-some-code-first">Show me some code first</h2>
+<p>Let’s prepare our business objects for database storage.
+We start with a toy web site which allows to rent homes between individuals.
+A simple description of a real estate property would be.</p>
+<pre><code>public class Home
+{
+	public string CountryCode { get; set; }
+	public string Town { get; set; }
+	public string Address { get; set; }
+	public string Owner { get; set; }
+	public string OwnerEmail { get; set; }
+	public string OwnerPhone { get; set; }
+	public int Rooms { get; set; }
+	public int Bathrooms { get; set; }
+	public int PriceInEuros { get; set; }
+}
+</code></pre>
+<p>The first requirement for a business object is to have a primary key. As there is no “natural” one in this case, we will add a numeric Id.</p>
+<pre><code>public class Home
+{
+	[PrimaryKey(KeyDataType.IntKey)]
+	public int Id { get; set; }
+
+	°°°
+}
+</code></pre>
+<p>Now the object can be stored in the database.
+First step is to instantiate a <strong>Connector</strong> which needs a &quot;client configuration&quot;. More on the configuration later but, for now, it needs to contain the list of servers in the cluster. To start, only one run locally.
+We can read the configuration from an external file or specify it as a connection string. For the moment, let’s build it manually.</p>
+<pre><code>var config = new ClientConfig
+{
+	Servers = {new ServerConfig {Host = &quot;localhost&quot;, Port = 4848}}
+};
+
+using (var connector = new Cachalot.Linq.Connector(config))
+{
+	var homes = connector.DataSource&lt;Home&gt;();
+	// the rest of the code goes here
+}
+</code></pre>
+<p>There is one last step before storing an object in the database. We need to generate a unique value for the primary key. We can produce multiple unique values with a single call.
+Unlike other databases, you do not need to create a unique value generator explicitly. The first call with an unknown generator name will automatically create it.</p>
+<pre><code>var ids = connector.GenerateUniqueIds(&quot;home_id&quot;, 1);
+
+var home = new Home
+{
+	Id = ids[0],
+	Adress = &quot;14 rue du chien qui fume&quot;,
+	Bathrooms = 1,
+	CountryCode = &quot;FR&quot;,
+	PriceInEuros = 125,
+	Rooms = 2, 
+	Town = &quot;Paris&quot;
+};
+
+homes.Put(home);
+</code></pre>
+<p>Now your first object is safely stored in the database.
+For the moment, you can only retrieve it by primary key. That can be done in two equivalent ways.</p>
+<pre><code>var reloaded = homes[property.Id];
+</code></pre>
+<p>Or with a LINQ expression.</p>
+<pre><code>var reloaded = homes.First(p =&gt; p.Id == property.Id);
+</code></pre>
+<p>The first one is faster as there is no need to parse the expression tree.
+In most relational databases, we use two distinct operations: INSERT and UPDATE. In Cachalot Db only one operation is exposed: PUT
+It will insert new items (new primary key) and will update the existing ones.</p>
+<p>You probably have higher expectations from a modern database than merely storing and retrieving objects by primary key. And you are right.</p>
+<p>The whole user guide, including an administration section is available here</p>
+<p><a href="https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf">https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf</a></p>
+
+
+</body>
+</html>

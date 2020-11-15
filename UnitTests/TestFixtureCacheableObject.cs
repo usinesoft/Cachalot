@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using UnitTests.TestData;
@@ -185,12 +186,12 @@ namespace UnitTests
             var config = new ClientConfig();
             config.LoadFromFile("ClientConfigOrder.xml");
 
-            var serverSide = config.TypeDescriptions.Single().Value.Keys.Values.Where(k => k.KeyType == KeyType.ServerSideValue).ToList();
+            var serverSide = config.TypeDescriptions.Single().Value.Keys.Values.Where(k => k.ServerSideVisible).ToList();
 
             Assert.AreEqual(2, serverSide.Count);
             Assert.AreEqual("Amount", serverSide[0].PropertyName);
             Assert.AreEqual(KeyDataType.Default, serverSide[0].KeyDataType);
-            Assert.AreEqual(KeyType.ServerSideValue, serverSide[0].KeyType);
+            Assert.AreEqual(KeyType.ScalarIndex, serverSide[0].KeyType);
 
             // register with configuration file
             var description = ClientSideTypeDescription.RegisterType(typeof(Order), config.TypeDescriptions.Values.Single());
@@ -201,10 +202,11 @@ namespace UnitTests
             var desc = description.AsTypeDescription;
             Assert.AreEqual(2, desc.ServerSideValues.Count);
             Assert.AreEqual("Amount", desc.ServerSideValues.Single(v=>v.Name == "Amount").Name);
-            Assert.AreEqual(KeyType.ServerSideValue, desc.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+            Assert.AreEqual(KeyType.ScalarIndex, desc.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+            Assert.AreEqual(KeyType.None, desc.ServerSideValues.Single(v=>v.Name == "Quantity").KeyType);
 
             // now try attributes on type
-            var description1 = ClientSideTypeDescription.RegisterType(typeof(Order), config.TypeDescriptions.Values.Single());
+            var description1 = ClientSideTypeDescription.RegisterType(typeof(Order));
 
             Assert.AreEqual(2, description1.ServerSideValues.Count());
             Assert.AreEqual("Amount", description1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
@@ -212,17 +214,13 @@ namespace UnitTests
             var desc1 = description1.AsTypeDescription;
             Assert.AreEqual(2, desc1.ServerSideValues.Count);
             Assert.AreEqual("Amount", desc1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
-            Assert.AreEqual(KeyType.ServerSideValue, desc1.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+            Assert.AreEqual(KeyType.ScalarIndex, desc1.ServerSideValues.Single(v=>v.Name == "Amount").KeyType);
+            Assert.AreEqual(KeyType.None, desc1.ServerSideValues.Single(v=>v.Name == "Quantity").KeyType);
 
             // check that we get the same description from configuration types and with tags
             Assert.AreEqual(desc, desc1);
 
-            
-            //var desc2 = Description.AddProperty("Id", KeyType.Primary)
-            //    .AddProperty("Amount",KeyType.ScalarIndex, true)
-            //    .AddProperty("Quantity", KeyType.ServerSideValue)
-            //    .Ad 
-
+           
 
             // pack an object using different kinds of type description
             var order = new Order
@@ -252,12 +250,16 @@ namespace UnitTests
             Assert.AreEqual("Amount", packed1.Values[0].Name);
             Assert.AreEqual(order.Amount, packed2.Values[0].Value);
 
+            var packed3 = CachedObject.Pack(order);
+            Assert.AreEqual(2, packed3.Values.Length);
+            Assert.AreEqual("Amount", packed3.Values[0].Name);
+            Assert.AreEqual(order.Amount, packed3.Values[0].Value);
 
         }
 
 
         [Test]
-        public void PackObjectUsingFluentTypeDescription()
+        public void FluentDescriptionIsEquivalentToTheOldOne()
         {
             var description = Description.New("UnitTests.TestData.Order")
                 .PrimaryKey("Id")
@@ -274,6 +276,150 @@ namespace UnitTests
             var description1 = ClientSideTypeDescription.RegisterType<Order>().AsTypeDescription;
 
             Assert.AreEqual(description, description1);
+        }
+
+        [Test]
+        public void ComputePivotWithServerValues()
+        {
+            var order1 = new Order
+            {
+                Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var order2 = new Order
+            {
+                Amount = 123.45, Date = DateTimeOffset.Now, Category = "sf", ClientId = 101, ProductId = 401,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var packed1 = CachedObject.Pack(order1);
+            var packed2 = CachedObject.Pack(order2);
+
+            var pivot = new PivotLevel();
+
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
+
+
+            // Amount and Quantity should be aggregated
+            Assert.AreEqual(2, pivot.AggregatedValues.Count);
+
+            var agg = pivot.AggregatedValues.First(v => v.ColumnName == "Amount");
+
+            Assert.AreEqual(2, agg.Count);
+            Assert.AreEqual(order1.Amount + order2.Amount, agg.Sum);
+
+
+            Console.WriteLine(pivot.ToString());
+        }
+
+        [Test]
+        public void ComputePivotWithMultipleAxis()
+        {
+            var order1 = new Order
+            {
+                Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var order2 = new Order
+            {
+                Amount = 123.45, Date = DateTimeOffset.Now, Category = "sf", ClientId = 101, ProductId = 401,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var order3 = new Order
+            {
+                Amount = 14.5, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 402,
+                Id = Guid.NewGuid(),
+                Quantity = 2
+            };
+
+            var packed1 = CachedObject.Pack(order1);
+            var packed2 = CachedObject.Pack(order2);
+            var packed3 = CachedObject.Pack(order3);
+
+
+            // first test with one single axis
+            var pivot = new PivotLevel();
+
+            pivot.AggregateOneObject(packed1, "Category");
+            pivot.AggregateOneObject(packed2, "Category");
+            pivot.AggregateOneObject(packed3, "Category");
+
+
+            // Amount and Quantity should be aggregated
+            Assert.AreEqual(2, pivot.AggregatedValues.Count);
+
+            var agg = pivot.AggregatedValues.First(v => v.ColumnName == "Amount");
+
+            Assert.AreEqual(3, agg.Count);
+            Assert.AreEqual(order1.Amount + order2.Amount + order3.Amount, agg.Sum);
+
+            Assert.IsTrue(pivot.Children.Keys.All(k=>k.KeyName == "Category"));
+            Assert.IsTrue(pivot.Children.Values.All(v=>v.AxisValue.KeyName == "Category"));
+
+            var geek = pivot.Children.Values.First(p => p.AxisValue.AxisValue == "geek");
+
+            Assert.AreEqual(2, geek.AggregatedValues.Count);
+
+            // then with two axis
+
+            pivot = new PivotLevel();
+
+            pivot.AggregateOneObject(packed1, "Category", "ProductId");
+            pivot.AggregateOneObject(packed2, "Category", "ProductId");
+            pivot.AggregateOneObject(packed3, "Category", "ProductId");
+            
+            Console.WriteLine(pivot.ToString());
+
+            var geek1 = pivot.Children.Values.First(p => p.AxisValue.AxisValue == "geek");
+
+            Assert.AreEqual(2, geek1.AggregatedValues.Count);
+            Assert.AreEqual(2, geek1.Children.Count);
+
+
+            // check pivot merging
+
+            // a new category
+            var order4 = new Order
+            {
+                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Id = Guid.NewGuid(),
+                Quantity = 1
+            };
+
+            var packed4 = CachedObject.Pack(order4);
+
+            var pivot1 = new PivotLevel();
+
+            pivot1.AggregateOneObject(packed1, "Category", "ProductId");
+            pivot1.AggregateOneObject(packed2, "Category", "ProductId");
+            pivot1.AggregateOneObject(packed3, "Category", "ProductId");
+
+            var pivot2 = new PivotLevel();
+
+            pivot2.AggregateOneObject(packed1, "Category", "ProductId");
+            pivot2.AggregateOneObject(packed3, "Category", "ProductId");
+            pivot2.AggregateOneObject(packed4, "Category", "ProductId");
+
+            pivot1.MergeWith(pivot2);
+
+            Console.WriteLine(pivot1);
+
+            // check that an aggregate is equal to the sum of the children
+            var sum1 = pivot1.AggregatedValues.First(v => v.ColumnName == "Amount").Sum;
+            var sum2 = pivot1.Children.Sum(c=> c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum) ;
+
+            Assert.AreEqual(sum1, sum2);
+
+
+
         }
     }
 }

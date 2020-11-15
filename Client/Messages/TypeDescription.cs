@@ -82,7 +82,7 @@ namespace Client.Messages
         ///     The only constructor is internal to prevent explicit instantiation
         /// </summary>
         /// <param name="description"> </param>
-        internal TypeDescription(ClientSideTypeDescription description)
+        internal  TypeDescription(ClientSideTypeDescription description)
         {
             PrimaryKeyField = description.PrimaryKeyField.AsKeyInfo;
             _uniqueKeyFields = new List<KeyInfo>();
@@ -355,7 +355,7 @@ namespace Client.Messages
 
             if (serverSideVisible)
             {
-                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ServerSideValue, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
+                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
             }
 
             return @this;
@@ -370,7 +370,7 @@ namespace Client.Messages
 
         public static TypeDescription AddServerSideValue(this TypeDescription @this, string name)
         {
-            @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ServerSideValue, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
+            @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
 
             return @this;
         }

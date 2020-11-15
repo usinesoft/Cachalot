@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Client.Core;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Queries;
 
 #endregion
@@ -126,6 +127,14 @@ namespace Client.Interface
         /// <param name="query"></param>
         /// <returns>number of items effectively removed</returns>
         int RemoveMany(OrQuery query);
+
+        /// <summary>
+        /// Compute a pivot table server-side
+        /// </summary>
+        /// <param name="filter">the items for which the pivot is computed</param>
+        /// <param name="axis">ordered axis list for pivot calculation</param>
+        /// <returns></returns>
+        PivotLevel ComputePivot(OrQuery filter, params string[] axis);
 
         /// <summary>
         ///     Clears the cache for a given data type and also resets the hit ratio

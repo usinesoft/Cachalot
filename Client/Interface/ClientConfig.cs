@@ -192,6 +192,7 @@ namespace Client.Interface
                     var useCompression = StringFromXpath(node, "@useCompression");
                     typeDescription.UseCompression = IsYes(useCompression);
 
+                    
                     typeDescription.FullTypeName = typeName;
                     typeDescription.AssemblyName = assemblyName;
 
@@ -201,8 +202,11 @@ namespace Client.Interface
                         {
                             var propertyName = StringFromXpath(propertyNode, "@name");
                             var propertyType = StringFromXpath(propertyNode, "@keyType");
+
+                            var serverSideValue = StringFromXpath(propertyNode, "@serverSide");
+                            bool serverSide = IsYes(serverSideValue);
                             
-                            KeyType keyType = KeyType.ServerSideValue;
+                            KeyType keyType = KeyType.None;
                             switch (propertyType.ToUpper())
                             {
                                 case "PRIMARY":
@@ -216,6 +220,10 @@ namespace Client.Interface
                                     break;
                                 case "LIST":
                                     keyType = KeyType.ListIndex;
+                                    break;
+
+                                default:
+                                    serverSide = true;
                                     break;
                             }
 
@@ -252,7 +260,7 @@ namespace Client.Interface
                             var fullTextIndexed = fullText.ToUpper() == "TRUE";
 
 
-                            typeDescription.Add(propertyName, keyType, dataType, ordered, fullTextIndexed);
+                            typeDescription.Add(propertyName, keyType, dataType, ordered, fullTextIndexed, serverSide);
                         }
 
                     TypeDescriptions.Add(typeName, typeDescription);

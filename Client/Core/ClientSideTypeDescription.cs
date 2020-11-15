@@ -155,9 +155,7 @@ namespace Client.Core
                 if (key.IndexedAsFulltext)
                     result.FullTextIndexed.Add(key);
 
-                if (key.KeyType == KeyType.None)
-                    continue;
-
+                
                 if (key.KeyType == KeyType.Primary)
                     result.PrimaryKeyField = key;
                 else if (key.KeyType == KeyType.Unique)
@@ -166,7 +164,8 @@ namespace Client.Core
                     result._indexFields.Add(key);
                 else if (key.KeyType == KeyType.ListIndex)
                     result._listFields.Add(key);
-                else if (key.KeyType == KeyType.ServerSideValue)
+                
+                if (key.IsServerSideVisible)
                     result._serverSideValues.Add(key);
             }
 
@@ -212,9 +211,7 @@ namespace Client.Core
 
                     var key = new ClientSideKeyInfo(info, propertyDescription);
 
-                    if (key.KeyType == KeyType.None)
-                        continue;
-
+                    
                     if (key.KeyType == KeyType.Primary)
                         result.PrimaryKeyField = key;
                     else if (key.KeyType == KeyType.Unique)
@@ -223,7 +220,8 @@ namespace Client.Core
                         result._indexFields.Add(key);
                     else if (key.KeyType == KeyType.ListIndex)
                         result._listFields.Add(key);
-                    else if (key.KeyType == KeyType.ServerSideValue)
+                    
+                    if (key.IsServerSideVisible)
                         result._serverSideValues.Add(key);
                 }
 

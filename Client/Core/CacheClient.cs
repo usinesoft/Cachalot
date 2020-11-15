@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Queries;
 using Client.Tools;
 using JetBrains.Annotations;
@@ -474,6 +475,26 @@ namespace Client.Core
                 throw new CacheException("Invalid type of response received in RemoveMany()");
 
             return countResponse.ItemsCount;
+        }
+
+        public PivotLevel ComputePivot(OrQuery filter, params string[] axis)
+        {
+            if (filter == null)
+                throw new ArgumentNullException(nameof(filter));
+
+            var request = new PivotRequest(filter);
+
+            request.AxisList.AddRange(axis);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error in RemoveMany", exResponse.Message, exResponse.CallStack);
+
+            if (!(response is PivotResponse pivotResponse))
+                throw new CacheException("Invalid type of response received in ComputePivot()");
+
+            return pivotResponse.Root;
         }
 
 

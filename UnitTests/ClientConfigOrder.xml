@@ -21,7 +21,8 @@
   <typeDescriptions>
     <type fullName="UnitTests.TestData.Order" assembly="UnitTests">
       <property name="Id"  keyType="primary" />
-      <property name="Amount" />
+      <property name="Amount" keyType="index" serverSide ="true" ordered="true" />
+      <!--server side value, no index-->
       <property name="Quantity" />
       <property name="Category" keyType="index"/>
       <property name="ProductId" keyType="index" />

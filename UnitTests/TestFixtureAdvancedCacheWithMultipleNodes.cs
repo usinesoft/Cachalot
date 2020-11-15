@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -329,6 +330,61 @@ namespace UnitTests
             finally
             {
                 provider.Shutdown();
+            }
+        }
+
+        [Test]
+        public void Test_pivot()
+        {
+            const int items = 100000;
+            using (var connector = new Connector(_clientConfig))
+            {
+                connector.AdminInterface().DropDatabase();
+
+                var dataSource = connector.DataSource<Order>();
+
+
+                List<Order> orders = new List<Order>();
+
+                // generate orders for three categories
+                for (int i = 0; i < items; i++)
+                {
+                    var order = new Order
+                    {
+                        Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now,
+                        Category = "geek", ProductId = 1000 + i % 10, Quantity = 2
+                    };
+
+                    if (i % 5 == 0)
+                    {
+                        order.Category = "sf";
+                    }
+                    else if (i % 5 == 1)
+                    {
+                        order.Category = "science";
+                    }
+
+                    orders.Add(order);
+                }
+
+
+
+                dataSource.PutMany(orders);
+
+
+                var watch = new Stopwatch();
+                watch.Start();
+                var pivot = dataSource.ComputePivot(null, o => o.Category, o => o.ProductId);
+                watch.Stop();
+
+                Console.WriteLine(
+                    $"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
+
+                Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
+
+                pivot.CheckPivot();
+
+                Console.WriteLine(pivot);
             }
         }
     }

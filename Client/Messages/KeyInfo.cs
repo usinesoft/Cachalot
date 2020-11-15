@@ -38,13 +38,14 @@ namespace Client.Messages
         /// <param name="isOrdered"></param>
         /// <param name="isFullText"></param>
         public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered = false,
-            bool isFullText = false)
+            bool isFullText = false, bool serverSide = false)
         {
             KeyDataType = keyDataType;
             KeyType = keyType;
             Name = name;
             IsOrdered = isOrdered;
             IsFullTextIndexed = isFullText;
+            IsServerSideVisible = serverSide;
         }
 
 
@@ -88,6 +89,8 @@ namespace Client.Messages
         public bool IsOrdered { get; set; }
 
         [ProtoMember(5)] public bool IsFullTextIndexed { get; set; }
+
+        [ProtoMember(6)] public bool IsServerSideVisible { get; set; }
 
         public bool Equals(KeyInfo keyInfo)
         {
@@ -138,7 +141,7 @@ namespace Client.Messages
         public override string ToString()
         {
             return
-                $"| {Name,25} | {KeyType,13} | {KeyDataType,9} | {IsOrdered,8} |{IsFullTextIndexed,8} |";
+                $"| {Name,25} | {KeyType,13} | {KeyDataType,9} | {IsOrdered,8} |{IsFullTextIndexed,8} |{IsServerSideVisible,8} |";
         }
 
 

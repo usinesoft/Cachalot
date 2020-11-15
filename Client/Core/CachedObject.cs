@@ -463,5 +463,19 @@ namespace Client.Core
         {
             return !Equals(left, right);
         }
+
+        public KeyValue this[string name]
+        {
+            get
+            {
+                if (PrimaryKey.KeyName == name)
+                {
+                    return PrimaryKey;
+                }
+
+                return IndexKeys.FirstOrDefault(k => k.KeyName == name) ??
+                       UniqueKeys.FirstOrDefault(k => k.KeyName == name) ?? throw new KeyNotFoundException($"Can not find the property {name}");
+            }
+        }
     }
 }

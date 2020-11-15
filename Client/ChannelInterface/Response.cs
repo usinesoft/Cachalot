@@ -1,4 +1,5 @@
 using Client.Messages;
+using Client.Messages.Pivot;
 using ProtoBuf;
 
 namespace Client.ChannelInterface
@@ -16,6 +17,7 @@ namespace Client.ChannelInterface
     [ProtoInclude(506, typeof(ServerDescriptionResponse))]
     [ProtoInclude(507, typeof(GenerateUniqueIdsResponse))]
     [ProtoInclude(508, typeof(ReadyResponse))]
+    [ProtoInclude(509, typeof(PivotResponse))]
     public abstract class Response
     {
         /// <summary>

@@ -268,5 +268,10 @@ namespace Client.Core
         {
             return left.CompareTo(right) > 0;
         }
+
+        /// <summary>
+        /// Readable key value for keys that where int or string (not meaningful for dates, floats)
+        /// </summary>
+        public string AxisValue => KeyDataType == KeyDataType.IntKey ? _intValue.ToString() : _stringValue;
     }
 }

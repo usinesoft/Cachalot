@@ -35,7 +35,7 @@ namespace Client.Interface
             bool fullTextIndexed = false, bool serverSideVisible = false)
         {
             _keys.Add(propertyName,
-                new PropertyDescription(propertyName, keyType, keyDataType, ordered, fullTextIndexed));
+                new PropertyDescription(propertyName, keyType, keyDataType, ordered, fullTextIndexed, serverSideVisible));
         }
     }
 }

@@ -5,6 +5,9 @@ namespace Client.Interface
     /// </summary>
     public class PropertyDescription
     {
+
+        public bool ServerSideVisible { get; set; }
+
         /// <summary>
         /// </summary>
         /// <param name="propertyName">name of the property</param>
@@ -12,15 +15,16 @@ namespace Client.Interface
         /// <param name="keyDataType">integer or string</param>
         /// <param name="ordered">create ordered index for this property</param>
         /// <param name="fullTextIndexed">create full-text index for this property</param>
-        
+        /// <param name="serverSideValue">can the property be used for server-side aggregation</param>
         public PropertyDescription(string propertyName, KeyType keyType, KeyDataType keyDataType, bool ordered,
-            bool fullTextIndexed)
+            bool fullTextIndexed, bool serverSideValue)
         {
             PropertyName = propertyName;
             Ordered = ordered;
             KeyType = keyType;
             KeyDataType = keyDataType;
             FullTextIndexed = fullTextIndexed;
+            ServerSideVisible = serverSideValue;
         }
 
         public bool FullTextIndexed { get; }

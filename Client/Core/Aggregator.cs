@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Queries;
 using Client.Tools;
 
@@ -884,6 +885,29 @@ namespace Client.Core
             }
 
             return sum;
+        }
+
+        public PivotLevel ComputePivot(OrQuery filter, params string[] axis)
+        {
+            var result = new PivotLevel();
+
+            try
+            {
+                Parallel.ForEach(CacheClients, client =>
+                {
+                    var pivot = client.ComputePivot(filter, axis);
+                    lock (result)
+                    {
+                        result.MergeWith(pivot);
+                    }
+                });
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
+
+            return result;
         }
 
         /// <summary>

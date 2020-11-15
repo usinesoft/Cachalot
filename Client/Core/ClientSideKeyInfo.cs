@@ -28,6 +28,8 @@ namespace Client.Core
             new Dictionary<Type, List<Func<object, object>>>();
 
 
+        public bool IsServerSideVisible { get; } = false;
+
         /// <summary>
         ///     Build from PropertyInfo
         ///     The complementary information is stored as custom attributes
@@ -46,9 +48,15 @@ namespace Client.Core
 
                 if (fullText != null) IndexedAsFulltext = true;
 
+                //check if it is visible server-side
+                var attributes = propertyInfo.GetCustomAttributes(typeof(ServerSideVisibleAttribute), true);
+                if (attributes.Length == 1)
+                {
+                    IsServerSideVisible = true;
+                }
 
                 //check if primary key
-                var attributes = propertyInfo.GetCustomAttributes(typeof(PrimaryKeyAttribute), true);
+                attributes = propertyInfo.GetCustomAttributes(typeof(PrimaryKeyAttribute), true);
                 if (attributes.Length == 1)
                 {
                     KeyType = KeyType.Primary;
@@ -96,14 +104,7 @@ namespace Client.Core
                     return;
                 }
 
-                //check if it is visible server-side
-                attributes = propertyInfo.GetCustomAttributes(typeof(ServerSideVisibleAttribute), true);
-                if (attributes.Length == 1)
-                {
-                    KeyType = KeyType.ServerSideValue;
-
-                    return;
-                }
+                
 
                 KeyType = KeyType.None;
             }
@@ -130,6 +131,7 @@ namespace Client.Core
             KeyDataType = propertyDescription.KeyDataType;
             IsOrdered = propertyDescription.Ordered;
             IndexedAsFulltext = propertyDescription.FullTextIndexed;
+            IsServerSideVisible = propertyDescription.ServerSideVisible; 
 
             AsKeyInfo = new KeyInfo(KeyDataType, KeyType, Info.Name, IsOrdered, IndexedAsFulltext);
         }

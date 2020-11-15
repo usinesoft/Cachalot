@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Queries;
 using JetBrains.Annotations;
 using Remotion.Linq;
@@ -175,6 +176,20 @@ namespace Cachalot.Linq
             var query = PredicateToQuery(where);
 
             _client.RemoveMany(query);
+        }
+
+
+        /// <summary>
+        /// Compute a pivot table for a subset of the data. At leas one property mast be server-side visible
+        /// </summary>
+        /// <param name="filter">subset of data to compute the pivot for; if null all data is taken into account</param>
+        /// <param name="axis">optional list of axis; if none is specified the global sum and count is computed for each server-side property</param>
+        /// <returns></returns>
+        public PivotLevel ComputePivot(Expression<Func<T, bool>> filter = null, params Expression<Func<T, object>>[] axis)
+        {
+            var query = filter != null ? PredicateToQuery(filter) : new OrQuery(typeof(T));
+
+            return _client.ComputePivot(query, axis.Select(ExpressionTreeHelper.PropertyName).ToArray());
         }
 
         public OrQuery PredicateToQuery(Expression<Func<T, bool>> where)

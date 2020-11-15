@@ -1,6 +1,7 @@
 using System;
 using Client.ChannelInterface;
 using Client.Core;
+using Client.Messages.Pivot;
 using ProtoBuf;
 
 namespace Client.Messages
@@ -19,6 +20,7 @@ namespace Client.Messages
     [ProtoInclude(610, typeof(RemoveManyRequest))]
     [ProtoInclude(611, typeof(RemoveRequest))]
     [ProtoInclude(612, typeof(EvictionSetupRequest))]
+    [ProtoInclude(613, typeof(PivotRequest))]
     public abstract class DataRequest : Request
     {
         /// <summary>

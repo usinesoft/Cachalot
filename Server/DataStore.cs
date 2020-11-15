@@ -10,6 +10,7 @@ using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Profiling;
 using Client.Queries;
 using Client.Tools;
@@ -27,15 +28,12 @@ namespace Server
     /// </summary>
     public class DataStore
     {
-
         public ISet<string> GetMostFrequentTokens(int max)
         {
-            if (_fullTextIndex == null)
-            {
-                return new HashSet<string>();
-            }
+            if (_fullTextIndex == null) return new HashSet<string>();
 
-            return new HashSet<string>(_fullTextIndex.PositionsByToken.OrderByDescending(p => p.Value.Count).Select(p => p.Key).Take(max));
+            return new HashSet<string>(_fullTextIndex.PositionsByToken.OrderByDescending(p => p.Value.Count)
+                .Select(p => p.Key).Take(max));
         }
 
         /// <summary>
@@ -121,13 +119,11 @@ namespace Server
 
             // create the full-text index if required
             if (typeDescription.FullText.Count > 0)
-            {
                 _fullTextIndex = new FullTextIndex(config.FullTextConfig)
                 {
                     // a function that allows the full text engine to find the original line of text
                     LineProvider = pointer => _dataByPrimaryKey[pointer.PrimaryKey].TokenizedFullText[pointer.Line]
                 };
-            }
         }
 
         public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
@@ -145,7 +141,7 @@ namespace Server
 
         public long Count => Interlocked.Read(ref _count);
 
-        public EvictionPolicy EvictionPolicy { get; set; }
+        public EvictionPolicy EvictionPolicy { get; private set; }
 
         public Profiler Profiler { private get; set; }
 
@@ -490,11 +486,8 @@ namespace Server
 
             // important decision after lots of thinking. A get many on a datastore does not make much sense so we will considered 
             // the item "touched" only if its a single one. Otherwise the eviction order may be shuffled as the primary key index is not ordered
-            if (result.Count == 1)
-            {
-                EvictionPolicy.Touch(result);
-            }
-            
+            if (result.Count == 1) EvictionPolicy.Touch(result);
+
 
             return result;
         }
@@ -508,7 +501,7 @@ namespace Server
                 // copy the score the CachedObject
                 var item = _dataByPrimaryKey[r.PrimaryKey];
                 item.Rank = r.Score;
-                return item ;
+                return item;
             }).ToList();
         }
 
@@ -736,7 +729,7 @@ namespace Server
             }
 
             // do not work too hard if the most specific index returned 0
-            if(minimumItemsMatched == 0)
+            if (minimumItemsMatched == 0)
                 return new List<CachedObject>();
 
             // Get a primary set directly using the index
@@ -770,7 +763,9 @@ namespace Server
             if (primaryQuery != null)
                 simplifiedQuery.Elements.Remove(primaryQuery);
 
-            return count > 0 ? primarySet.Where(simplifiedQuery.Match).Take(count).ToList() : primarySet.Where(simplifiedQuery.Match).ToList();
+            return count > 0
+                ? primarySet.Where(simplifiedQuery.Match).Take(count).ToList()
+                : primarySet.Where(simplifiedQuery.Match).ToList();
         }
 
 
@@ -796,12 +791,10 @@ namespace Server
                 InternalBeginBulkInsert(isBulkOperation);
 
                 foreach (var item in items)
-                {
                     if (_dataByPrimaryKey.ContainsKey(item.PrimaryKey))
                         toUpdate.Add(item);
                     else
                         InternalAddNew(item, excludeFromEviction);
-                }
             }
             finally
             {
@@ -820,16 +813,10 @@ namespace Server
                     foreach (var cachedObject in toUpdate) InternalUpdate(cachedObject);
                 }
 
-                foreach (var cachedObject in toUpdate)
-                {
-                    EvictionPolicy.Touch(cachedObject);
-                }
+                foreach (var cachedObject in toUpdate) EvictionPolicy.Touch(cachedObject);
 
 
                 Dbg.Trace($"end InternalPutMany with {items.Count} object");
-
-                
-                
             }
         }
 
@@ -1000,7 +987,9 @@ namespace Server
 
                         EvictionPolicy = evictionSetup.Type == EvictionType.LessRecentlyUsed
                             ? new LruEvictionPolicy(evictionSetup.Limit, evictionSetup.ItemsToEvict)
-                            : evictionSetup.Type == EvictionType.LessRecentlyUsed ? new TtlEvictionPolicy(TimeSpan.FromMilliseconds(evictionSetup.TimeToLiveInMilliseconds)) 
+                            : evictionSetup.Type == EvictionType.LessRecentlyUsed
+                                ? new TtlEvictionPolicy(
+                                    TimeSpan.FromMilliseconds(evictionSetup.TimeToLiveInMilliseconds))
                                 : (EvictionPolicy) new NullEvictionPolicy();
                     }
 
@@ -1014,89 +1003,121 @@ namespace Server
                             client.SendResponse(toSend);
                         }
                 }
-                else
+                else // read-only requests
                 {
-                    if (dataRequest is GetRequest getRequest1)
+                    switch (dataRequest)
                     {
-                        var query = getRequest1.Query;
-                        var result = InternalGetMany(query, query.OnlyIfComplete);
+                        case GetRequest getRequest:
 
+                            var result = InternalGetMany(getRequest.Query, getRequest.Query.OnlyIfComplete);
 
-                        requestDescription = "\n       --> " + query;
-                        processedItems = result.Count;
-                        requestType = "GET";
+                            requestDescription = "\n       --> " + getRequest.Query;
+                            processedItems = result.Count;
+                            requestType = "GET";
 
-                        //we don't know how many items were expected so consider it as an atomic operation
-                        //for the read counter
+                            //we don't know how many items were expected so consider it as an atomic operation
+                            //for the read counter
 
-                        Interlocked.Increment(ref _readCount);
+                            Interlocked.Increment(ref _readCount);
 
-                        if (result.Count >= 1)
-                            Interlocked.Increment(ref _hitCount);
+                            if (result.Count >= 1)
+                                Interlocked.Increment(ref _hitCount);
 
-                        client.SendMany(result);
-                    }
-                    else
-                    {
-                        if (dataRequest is GetDescriptionRequest getRequest)
-                        {
-                            var query = getRequest.Query;
-                            var result = InternalGetMany(query);
+                            client.SendMany(result);
+                            break;
+
+                        case GetDescriptionRequest getDescriptionRequest:
+                            var query = getDescriptionRequest.Query;
+                            var result1 = InternalGetMany(query);
 
 
                             requestDescription = query.ToString();
-                            processedItems = result.Count;
+                            processedItems = result1.Count;
                             requestType = "SELECT";
 
-                            client.SendManyGeneric(result);
-                        }
-                        else
-                        {
-                            if (dataRequest is EvalRequest request1)
+                            client.SendManyGeneric(result1);
+                            break;
+
+                        case EvalRequest evalRequest:
+
+                            var count = InternalEval(evalRequest.Query);
+
+                            var completeDataAvailable = false;
+
+                            if (_domainDescription != null)
+                                completeDataAvailable =
+                                    evalRequest.Query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
+
+                            requestDescription = evalRequest.Query.ToString();
+                            processedItems = count;
+                            requestType = "EVAL";
+
+                            var response = new EvalResponse {Items = count, Complete = completeDataAvailable};
+                            client.SendResponse(response);
+                            break;
+
+                        case PivotRequest pivotRequest:
+
+                            var filtered = InternalFind(pivotRequest.Query);
+
+                            requestDescription = "PIVOT on: " +  pivotRequest.Query.ToString();
+
+                            requestType = "PIVOT";
+
+                            var pr = new PivotResponse();
+
+                            // partition data to allow for parallel calculation
+                            var groupBy = filtered.GroupBy(i => i.PrimaryKey.GetHashCode() % 10);
+
+                            
+                            Parallel.ForEach(groupBy, new ParallelOptions { MaxDegreeOfParallelism = 10 },
+                                objects =>
                             {
-                                var query = request1.Query;
-                                var count = InternalEval(query);
+                                var pivot = new PivotLevel();
 
-                                var completeDataAvailable = false;
-
-                                if (_domainDescription != null)
-                                    completeDataAvailable = query.IsSubsetOf(_domainDescription.DescriptionAsQuery);
-
-                                requestDescription = query.ToString();
-                                processedItems = count;
-                                requestType = "EVAL";
-
-                                var response = new EvalResponse {Items = count, Complete = completeDataAvailable};
-                                client.SendResponse(response);
-                            }
-
-                            else
-                            {
-                                if (dataRequest is GetAvailableRequest request)
+                                foreach (var o in objects)
                                 {
-                                    var missingObjects = new List<KeyValue>();
-                                    var foundObjects = new List<CachedObject>();
-
-                                    InternalGetAvailableObjects(request.PrimaryKeys, request.MoreCriteria,
-                                        missingObjects,
-                                        foundObjects);
-
-                                    foreach (var _ in missingObjects)
-                                        Interlocked.Increment(ref _readCount);
-                                    foreach (var _ in foundObjects)
-                                    {
-                                        Interlocked.Increment(ref _readCount);
-                                        Interlocked.Increment(ref _hitCount);
-                                    }
-
-                                    requestDescription = "GET AVAILABLE: " + request.PrimaryKeys.Count;
-                                    processedItems = foundObjects.Count;
-                                    requestType = "GET MANY";
-
-                                    client.SendMany(missingObjects, foundObjects);
+                                    pivot.AggregateOneObject(o, pivotRequest.AxisList.ToArray());    
                                 }
+
+                                lock (pr)
+                                {
+                                    pr.Root.MergeWith(pivot);
+                                }
+                                
+                            });
+
+                            //foreach (var cachedObject in filtered)
+                            //{
+                            //    pr.Root.AggregateOneObject(cachedObject, pivotRequest.AxisList.ToArray());
+                            //}
+
+                            client.SendResponse(pr);
+                            break;
+
+                        case GetAvailableRequest getAvailableRequest:
+                            var missingObjects = new List<KeyValue>();
+                            var foundObjects = new List<CachedObject>();
+
+                            InternalGetAvailableObjects(getAvailableRequest.PrimaryKeys,
+                                getAvailableRequest.MoreCriteria,
+                                missingObjects,
+                                foundObjects);
+
+                            foreach (var _ in missingObjects)
+                                Interlocked.Increment(ref _readCount);
+                            foreach (var _ in foundObjects)
+                            {
+                                Interlocked.Increment(ref _readCount);
+                                Interlocked.Increment(ref _hitCount);
                             }
-                        }
+
+                            requestDescription = "GET AVAILABLE: " + getAvailableRequest.PrimaryKeys.Count;
+                            processedItems = foundObjects.Count;
+                            requestType = "GET MANY";
+
+                            client.SendMany(missingObjects, foundObjects);
+                            break;
                     }
                 }
             }

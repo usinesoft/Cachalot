@@ -29,6 +29,7 @@ namespace AdminConsole.Commands
 
                 var port = 4848;
 
+                if (Params.Count > 0) server = Params[0];
                 if (Params.Count > 1) port = int.Parse(Params[1]);
 
 

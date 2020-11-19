@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.ServiceProcess;
 using System.Threading;
+using System.Threading.Tasks;
 using Server;
 using Server.HostServices;
 
@@ -21,7 +22,8 @@ namespace WindowsService
 
             _service = new HostedService(HostServices.Log, _stopEvent);
 
-            _service.Start(null);
+            // allow for longer startup times
+            Task.Factory.StartNew(() => _service.Start(null));
 
             base.OnStart(args);
         }

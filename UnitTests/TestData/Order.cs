@@ -36,5 +36,8 @@ namespace UnitTests.TestData
         
         [Index]
         public int Year => Date.Year;
+
+        [Index]
+        public bool IsDelivered { get; set; }
     }
 }

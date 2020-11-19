@@ -355,7 +355,7 @@ namespace Client.Messages
 
             if (serverSideVisible)
             {
-                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
+                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = false});
             }
 
             return @this;

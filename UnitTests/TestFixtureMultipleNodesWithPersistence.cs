@@ -397,7 +397,7 @@ namespace UnitTests
         }
 
 
-         [Test]
+        [Test]
         public void Dump_and_import_compressed_data_with_multiple_servers()
         {
             var dumpPath = "dump";
@@ -448,6 +448,84 @@ namespace UnitTests
 
                 var after = dataSource.Count();
                 Assert.AreEqual(100, after);
+                
+            }
+        }
+
+        [Test]
+        public void Dump_and_import_with_server_side_values()
+        {
+            var dumpPath = "dump";
+
+            if (Directory.Exists(dumpPath))
+                Directory.Delete(dumpPath, true);
+
+            Directory.CreateDirectory(dumpPath);
+
+            decimal sum1 = 0;
+            
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<Order>();
+
+                List<Order> orders = new List<Order>();
+
+                // generate orders for three categories
+                for (int i = 0; i < 100; i++)
+                {
+                    var order = new Order{Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i+10, Date = DateTimeOffset.Now, Category = "geek", ProductId = 1000 + i%10, Quantity = 2};
+
+                    if (i % 5 == 0)
+                    {
+                        order.Category = "sf";
+                    }
+                    else if(i % 5 == 1)
+                    {
+                        order.Category = "science";
+                    }
+
+                    orders.Add(order);
+                }
+
+                dataSource.PutMany(orders);
+
+                var pivot = dataSource.ComputePivot(null, o => o.ClientId);
+                sum1 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
+
+                var admin = connector.AdminInterface();
+                admin.Dump(dumpPath);
+
+                
+
+                dataSource.Put(new Order{Id = Guid.NewGuid(), Amount = 10.15, ClientId = 2, Date = DateTimeOffset.Now, Category = "youpee", ProductId = 5, Quantity = 2});
+            }
+
+            StopServers();
+            StartServers();
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var dataSource = connector.DataSource<Order>();
+
+                var afterDump = dataSource.Where(o=>o.ClientId == 2).ToList();
+                Assert.True(afterDump.Count == 1);
+
+                var admin = connector.AdminInterface();
+                admin.ImportDump(dumpPath);
+
+                // this time it should not be found as it was added after the backup and backup was restored
+                afterDump = dataSource.Where(o=>o.ClientId == 2).ToList();
+                Assert.True(afterDump.Count == 0);
+
+                var after = dataSource.Count();
+                Assert.AreEqual(100, after);
+
+                // the pivot should be identical 
+                var pivot = dataSource.ComputePivot(null, o => o.ClientId);
+                var sum2 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
+
+                Assert.AreEqual(sum2, sum2);
                 
             }
         }

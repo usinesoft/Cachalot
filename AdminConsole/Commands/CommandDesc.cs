@@ -103,11 +103,11 @@ namespace AdminConsole.Commands
         {
             Logger.Write("");
             Logger.Write("{0} ({1})", desc.TypeName.ToUpper(), desc.FullTypeName);
-            Logger.Write("------------------------------------------------------------------------------");
-            var header = $"| {"property",25} | {"index type",13} | {"data type",9} | {"ordered",8} | {"full txt",8}|";
+            Logger.Write("-------------------------------------------------------------------------------------------");
+            var header = $"| {"property",25} | {"index type",13} | {"data type",9} | {"ordered",8} | {"full txt",8}| {"server-side",10}|";
 
             Logger.Write(header);
-            Logger.Write("------------------------------------------------------------------------------");
+            Logger.Write("-------------------------------------------------------------------------------------------");
 
             Logger.Write(desc.PrimaryKeyField.ToString());
 
@@ -117,7 +117,9 @@ namespace AdminConsole.Commands
 
             foreach (var keyInfo in desc.ListFields) Logger.Write(keyInfo.ToString());
 
-            Logger.Write("------------------------------------------------------------------------------");
+            foreach (var keyInfo in desc.ServerSideValues) Logger.Write(keyInfo.ToString());
+
+            Logger.Write("-------------------------------------------------------------------------------------------");
         }
     }
 }

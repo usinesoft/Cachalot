@@ -31,6 +31,7 @@
       <property name="DayOfWeek" keyType="index" />
       <property name="Month" keyType="index" />
       <property name="Year" keyType="index" />
+      <property name="IsDelivered" keyType="index" />
     </type>
    
   </typeDescriptions>

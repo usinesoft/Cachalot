@@ -172,6 +172,29 @@ namespace Client.Core
             return result;
         }
 
+        public static bool CanBeConvertedToLong(JToken jToken)
+        {
+            // null converted to long is 0
+            if (jToken == null) return false;
+
+
+            var valueToken = jToken.HasValues ? jToken.First : jToken;
+
+            if (valueToken == null)
+            {
+                return false;
+            }
+
+            var type = valueToken.Type;
+
+            if (type == JTokenType.Boolean || type == JTokenType.Date || type == JTokenType.Float ||
+                type == JTokenType.Integer)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         public static long JTokenToLong(JToken jToken)
         {
@@ -235,6 +258,17 @@ namespace Client.Core
             return (string) jToken;
         }
 
+
+        //public static CachedObject PackDictionary(IDictionary<string, object> propertyValues,
+        //    TypeDescription description)
+        //{
+        //    CachedObject result = new CachedObject();
+
+
+
+        //    return result;
+        //}
+
         public static CachedObject PackJson(string json, TypeDescription typeDescription)
         {
             var jObject = JObject.Parse(json);
@@ -244,7 +278,7 @@ namespace Client.Core
             CachedObject result;
 
             var jPrimary = jObject.Property(typeDescription.PrimaryKeyField.Name);
-            if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.IntKey)
+            if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.IntKey || (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jPrimary)))
             {
                 var primaryKey = new KeyValue(JTokenToLong(jPrimary), typeDescription.PrimaryKeyField);
                 result = new CachedObject(primaryKey);
@@ -262,7 +296,7 @@ namespace Client.Core
             foreach (var uniqueField in typeDescription.UniqueKeyFields)
             {
                 var jKey = jObject.Property(uniqueField.Name);
-                var key = uniqueField.KeyDataType == KeyDataType.IntKey
+                var key = uniqueField.KeyDataType == KeyDataType.IntKey || (uniqueField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
                     ? new KeyValue(JTokenToLong(jKey), uniqueField)
                     : new KeyValue(JTokenToString(jKey), uniqueField);
 
@@ -275,7 +309,7 @@ namespace Client.Core
             foreach (var indexField in typeDescription.IndexFields)
             {
                 var jKey = jObject.Property(indexField.Name);
-                var key = indexField.KeyDataType == KeyDataType.IntKey
+                var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
                     ? new KeyValue(JTokenToLong(jKey), indexField)
                     : new KeyValue(JTokenToString(jKey), indexField);
 
@@ -291,7 +325,7 @@ namespace Client.Core
                 if (jArray != null)
                     foreach (var jKey in jArray.Value.Children())
                     {
-                        var key = indexField.KeyDataType == KeyDataType.IntKey
+                        var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
                             ? new KeyValue(JTokenToLong(jKey), indexField)
                             : new KeyValue(JTokenToString(jKey), indexField);
 

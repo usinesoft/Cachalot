@@ -271,7 +271,8 @@ namespace UnitTests
                 .AddIndex("Date")
                 .AddIndex("DayOfWeek")
                 .AddIndex("Month")
-                .AddIndex("Year");
+                .AddIndex("Year")
+                .AddIndex("IsDelivered");
 
             var description1 = ClientSideTypeDescription.RegisterType<Order>().AsTypeDescription;
 
@@ -417,8 +418,6 @@ namespace UnitTests
             var sum2 = pivot1.Children.Sum(c=> c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum) ;
 
             Assert.AreEqual(sum1, sum2);
-
-
 
         }
     }

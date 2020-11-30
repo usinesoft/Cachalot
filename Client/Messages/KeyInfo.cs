@@ -23,6 +23,9 @@ namespace Client.Messages
     [ProtoContract]
     public class KeyInfo : IEquatable<KeyInfo>
     {
+
+        public const string DefaultNameForPrimaryKey = "id";
+
         [UsedImplicitly]
         public KeyInfo()
         {
@@ -37,9 +40,14 @@ namespace Client.Messages
         /// <param name="name"> </param>
         /// <param name="isOrdered"></param>
         /// <param name="isFullText"></param>
-        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name, bool isOrdered = false,
+        public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name = DefaultNameForPrimaryKey, bool isOrdered = false,
             bool isFullText = false, bool serverSide = false)
         {
+            if (keyDataType == KeyDataType.Generate && keyType != KeyType.Primary)
+            {
+                throw new NotSupportedException("Only the primary key can be automatically generated");
+            }
+
             KeyDataType = keyDataType;
             KeyType = keyType;
             Name = name;

@@ -33,7 +33,9 @@ namespace Server.Persistence
 
             list.Add(item);
 
-            if (!_dataContainer.DataStores.ContainsKey(item.FullTypeName))
+            var store = _dataContainer.TryGetByName(item.FullTypeName);
+
+            if (store == null)
                 throw new NotSupportedException($"The type {item.FullTypeName} is not present in the database schema");
         }
 
@@ -43,7 +45,7 @@ namespace Server.Persistence
             HashSet<string> frequentTokens = new HashSet<string>();
             foreach (var pair in _temporaryStorage)
             {
-                var store = _dataContainer.DataStores[pair.Key];
+                var store = _dataContainer. TryGetByName(pair.Key);
                 store.InternalPutMany(pair.Value, true, null);
                 frequentTokens.UnionWith(store.GetMostFrequentTokens(100));
                 

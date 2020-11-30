@@ -342,6 +342,21 @@ namespace Client.Messages
             return @this;
         }
 
+        public static TypeDescription AutomaticPrimaryKey(this TypeDescription @this, string name = KeyInfo.DefaultNameForPrimaryKey)
+        {
+
+            @this.PrimaryKeyField = new KeyInfo
+            {
+                Name = name,
+                KeyType = KeyType.Primary,
+                KeyDataType = KeyDataType.Generate,
+                IsOrdered = false,
+                IsFullTextIndexed = false
+            };
+
+            return @this;
+        }
+
         public static TypeDescription AddUniqueKey(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
         {
             @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = KeyType.Unique, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});

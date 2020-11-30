@@ -28,6 +28,8 @@ namespace Server
     /// </summary>
     public class DataStore
     {
+        private readonly NodeConfig _config;
+
         public ISet<string> GetMostFrequentTokens(int max)
         {
             if (_fullTextIndex == null) return new HashSet<string>();
@@ -84,6 +86,8 @@ namespace Server
         /// <param name="config"></param>
         public DataStore(TypeDescription typeDescription, EvictionPolicy evictionPolicy, NodeConfig config)
         {
+            _config = config;
+
             TypeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
 
             EvictionPolicy = evictionPolicy ?? throw new ArgumentNullException(nameof(evictionPolicy));
@@ -821,6 +825,54 @@ namespace Server
         }
 
 
+        /// <summary>
+        /// Like a bulk insert on an empty datastore. Used internally to reindex data when type description changed
+        /// </summary>
+        /// <param name="items"></param>
+        internal void InternalReindex(IEnumerable<CachedObject> items)
+        {
+            
+            var toUpdate = new List<CachedObject>();
+
+            try
+            {
+             
+                InternalBeginBulkInsert(true);
+
+                foreach (var item in items)
+                    InternalAddNew(item, true);
+            }
+            finally
+            {
+                InternalEndBulkInsert(true);
+
+                // update items outside the bulk insert
+
+                if (toUpdate.Count > Constants.BulkThreshold) // bulk optimization for updates
+                {
+                    InternalRemoveMany(toUpdate);
+
+                    InternalPutMany(toUpdate, true, null); // the transaction is already persisted
+                }
+                else
+                {
+                    foreach (var cachedObject in toUpdate) InternalUpdate(cachedObject);
+                }
+
+                foreach (var cachedObject in toUpdate) EvictionPolicy.Touch(cachedObject);
+
+            }
+        }
+
+        IEnumerable<string> InternalEnumerateAsJson()
+        {
+            foreach (var cachedObject in DataByPrimaryKey)
+            {
+                yield return cachedObject.Value.Json;
+            }
+        }
+
+
         private void ProcessEviction()
         {
             if (EvictionPolicy.IsEvictionRequired)
@@ -1141,6 +1193,18 @@ namespace Server
 
                 ProcessEviction();
             }
+        }
+
+
+        public static DataStore Reindex(DataStore old, TypeDescription newDescription)
+        {
+            var result = new DataStore(newDescription, old.EvictionPolicy, old._config) {Profiler = old.Profiler};
+
+
+            result.InternalReindex(old.InternalEnumerateAsJson().Select(json=> CachedObject.PackJson(json, newDescription)));
+
+
+            return result;
         }
 
         private void InternalUpdateIf(CachedObject newValue, OrQuery test, Action<Transaction> persistTransaction)

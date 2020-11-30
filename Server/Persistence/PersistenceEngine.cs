@@ -142,7 +142,7 @@ namespace Server.Persistence
             
             if (item.FullText != null && item.FullText.Length > 0)
             {
-                Container.DataStores.TryGetValue(item.FullTypeName, out var dataStore);
+                var dataStore = Container.TryGetByName(item.FullTypeName);
 
                 if (dataStore != null)
                 {

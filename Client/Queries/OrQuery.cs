@@ -61,7 +61,7 @@ namespace Client.Queries
         /// </summary>
         public IList<AndQuery> Elements => _elements;
 
-        [field: ProtoMember(2)] public string TypeName { get; }
+        [field: ProtoMember(2)] public string TypeName { get; set; }
 
         public bool MultipleWhereClauses { get; set; }
         [ProtoMember(3)] public int Take { get; set; }
@@ -80,6 +80,11 @@ namespace Client.Queries
         public static OrQuery Empty<T>()
         {
             return new OrQuery(typeof(T).FullName);
+        }
+
+        public static OrQuery Empty(string collectionName)
+        {
+            return new OrQuery(collectionName);
         }
 
         public bool IsSubsetOf(OrQuery query)

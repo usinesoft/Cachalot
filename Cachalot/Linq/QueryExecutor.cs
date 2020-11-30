@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Client;
+using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
+using Newtonsoft.Json.Linq;
 using Remotion.Linq;
 
 namespace Cachalot.Linq
@@ -13,11 +15,11 @@ namespace Cachalot.Linq
     {
         private static Action<OrQuery> _customAction;
 
-        private readonly ICacheClient _client;
+        private readonly IDataClient _client;
         private readonly TypeDescription _typeDescription;
 
 
-        public QueryExecutor(ICacheClient client, TypeDescription typeDescription)
+        public QueryExecutor(IDataClient client, TypeDescription typeDescription)
         {
             _client = client;
             _typeDescription = typeDescription;
@@ -36,7 +38,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            if (expression.CountOnly) return (T) (object) _client.EvalQuery(expression).Value;
+            if (expression.CountOnly) return (T) (object) _client.EvalQuery(expression).Item2;
 
             throw new NotSupportedException("Only Count scalar method is implemented");
         }
@@ -62,7 +64,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            return _client.GetMany<T>(visitor.RootExpression);
+            return _client.GetMany(visitor.RootExpression).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
         }
 
         public static void Probe(Action<OrQuery> action)

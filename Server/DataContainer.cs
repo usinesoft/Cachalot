@@ -29,18 +29,8 @@ namespace Server
     {
         private readonly NodeConfig _config;
 
-        /// <summary>
-        ///     <see cref="DataStore" /> by TypeDescription
-        /// </summary>
-        private readonly Dictionary<string, DataStore> _dataStores;
 
         private readonly JsonSerializer _jsonSerializer;
-
-        /// <summary>
-        ///     List of registered types (as <see cref="TypeDescription" />) indexed by
-        ///     fullTypeName
-        /// </summary>
-        private readonly Dictionary<string, TypeDescription> _knownTypes;
 
 
         private readonly JsonSerializerSettings _schemaSerializerSettings = new JsonSerializerSettings
@@ -56,9 +46,6 @@ namespace Server
             _config = config;
             Profiler = profiler;
 
-            _dataStores = new Dictionary<string, DataStore>();
-            _knownTypes = new Dictionary<string, TypeDescription>();
-
             _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
             _jsonSerializer.Converters.Add(new StringEnumConverter());
         }
@@ -66,7 +53,9 @@ namespace Server
         /// <summary>
         ///     <see cref="DataStore" /> by <see cref="TypeDescription" />
         /// </summary>
-        public IDictionary<string, DataStore> DataStores => _dataStores;
+        private IDictionary<string, DataStore> DataStores {get;} = new Dictionary<string, DataStore>();
+
+
 
         public long ActiveConnections { private get; set; }
 
@@ -149,7 +138,11 @@ namespace Server
             var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.FullTypeName).Distinct().ToList();
             var types = typesToPut.Union(typesToDelete).Distinct().ToList();
 
-            if (types.Any(t => !DataStores.ContainsKey(t))) throw new NotSupportedException("Type not registered");
+
+            lock (DataStores)
+            {
+                if (types.Any(t => !DataStores.ContainsKey(t))) throw new NotSupportedException("Type not registered");
+            }
 
 
             // do not work too hard if it's single stage
@@ -175,7 +168,13 @@ namespace Server
                 {
                     if (!condition.IsEmpty())
                     {
-                        var ds = DataStores[condition.TypeName];
+                        DataStore ds;
+
+
+                        lock (DataStores)
+                        {
+                            ds = DataStores[condition.TypeName];
+                        }
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
                     }
@@ -204,9 +203,7 @@ namespace Server
                 // failed to write a durable transaction so stop here
 
                 // unlock
-                foreach (var type in types)
-                    if (DataStores[type].Lock.IsWriteLockHeld)
-                        DataStores[type].Lock.ExitWriteLock();
+                RemoveWriteLocks(types);
                 return;
             }
             catch (Exception e)
@@ -216,9 +213,8 @@ namespace Server
                 // failed to write a durable transaction so stop here
 
                 // unlock
-                foreach (var type in types)
-                    if (DataStores[type].Lock.IsWriteLockHeld)
-                        DataStores[type].Lock.ExitWriteLock();
+                RemoveWriteLocks(types);
+                
                 return;
             }
 
@@ -238,10 +234,18 @@ namespace Server
 
                         foreach (var dataRequest in dataRequests)
                         {
-                            if (!DataStores.ContainsKey(dataRequest.FullTypeName))
-                                throw new NotSupportedException(
-                                    $"The type {dataRequest.FullTypeName} is not registered");
-                            DataStores[dataRequest.FullTypeName].ProcessRequest(dataRequest, client, null);
+                            DataStore store;
+
+                            lock (DataStores)
+                            {
+                                if (!DataStores.ContainsKey(dataRequest.FullTypeName))
+                                    throw new NotSupportedException(
+                                        $"The type {dataRequest.FullTypeName} is not registered");
+                                
+                                store = DataStores[dataRequest.FullTypeName];
+                            }
+
+                            store.ProcessRequest(dataRequest, client, null);
                         }
 
                         ServerLog.LogInfo(
@@ -268,9 +272,7 @@ namespace Server
 
 
             // unlock
-            foreach (var type in types)
-                if (DataStores[type].Lock.IsWriteLockHeld)
-                    DataStores[type].Lock.ExitWriteLock();
+            RemoveWriteLocks(types);
         }
 
         private void ProcessSingleStageTransactionRequest(TransactionRequest transactionRequest, IClient client)
@@ -283,8 +285,9 @@ namespace Server
             var typeList = types.ToList();
             try
             {
-                foreach (var type in typeList)
-                    if (!DataStores[type].Lock.TryEnterWriteLock(Constants.DelayForLock))
+                var stores = Stores(typeList);
+                foreach (var store in stores)
+                    if (!store.Lock.TryEnterWriteLock(Constants.DelayForLock))
                         throw new CacheException("Failed to acquire write locks for single-stage transaction",
                             ExceptionType.FailedToAcquireLock);
 
@@ -297,7 +300,12 @@ namespace Server
                 {
                     if (!condition.IsEmpty())
                     {
-                        var ds = DataStores[condition.TypeName];
+                        DataStore ds;
+
+                        lock (DataStores)
+                        {
+                            ds = DataStores[condition.TypeName];
+                        }
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
                     }
@@ -318,10 +326,18 @@ namespace Server
 
                 foreach (var dataRequest in dataRequests)
                 {
-                    if (!DataStores.ContainsKey(dataRequest.FullTypeName))
-                        throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
 
-                    DataStores[dataRequest.FullTypeName].ProcessRequest(dataRequest, client, null);
+                    DataStore ds;
+
+                    lock (DataStores)
+                    {
+                        if (!DataStores.TryGetValue(dataRequest.FullTypeName, out ds))
+                        {
+                            throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
+                        }
+                    }
+
+                    ds.ProcessRequest(dataRequest, client, null);
                 }
 
                 client.SendResponse(new NullResponse());
@@ -341,18 +357,48 @@ namespace Server
             finally
             {
                 // release acquired locks
-                foreach (var type in typeList)
-                    if (DataStores[type].Lock.IsWriteLockHeld)
-                        DataStores[type].Lock.ExitWriteLock();
+                RemoveWriteLocks(typeList);
             }
+        }
+
+        public DataStore TryGetByName(string name)
+        {
+            lock (DataStores)
+            {
+                if (DataStores.TryGetValue(name, out var store))
+                    return store;
+            }
+
+
+            return null;
+        }
+
+        public IList<DataStore> Stores(IList<string> types = null)
+        {
+            List<DataStore> result = new List<DataStore>();
+            lock (DataStores)
+            {
+                if (types == null || !types.Any())
+                    return new List<DataStore>(DataStores.Values);
+
+
+                foreach (var type in types)
+                {
+                    result.Add(DataStores[type]);
+                }
+            }
+
+            return result;
         }
 
         private bool AcquireWriteLock(IClient client, List<string> types, string transactionId)
         {
             var result = true;
 
-            foreach (var type in types)
-                if (!DataStores[type].Lock.TryEnterWriteLock(Constants.DelayForLock))
+            var stores = Stores(types);
+
+            foreach (var store in stores)
+                if (!store.Lock.TryEnterWriteLock(Constants.DelayForLock))
                 {
                     result = false;
                     break;
@@ -377,9 +423,7 @@ namespace Server
             Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
 
             // first unlock everything to avoid deadlocks
-            foreach (var type in types)
-                if (DataStores[type].Lock.IsWriteLockHeld)
-                    DataStores[type].Lock.ExitWriteLock();
+            RemoveWriteLocks(types);
 
             Dbg.Trace($"S: Release all locks on server {ShardIndex}  transaction {transactionId}.");
 
@@ -404,6 +448,16 @@ namespace Server
                 InternalProcessRegisterType(request);
         }
 
+        void RemoveWriteLocks(IList<string> types)
+        {
+            var stores = Stores(types);
+            foreach (var store in stores)
+            {
+                if (store.Lock.IsWriteLockHeld)
+                    store.Lock.ExitWriteLock();
+            }
+                
+        }
 
         private void ProcessRegisterType(RegisterTypeRequest request, IClient client)
         {
@@ -426,6 +480,9 @@ namespace Server
         {
             var typeDescription = request.TypeDescription;
 
+            // TODO temporary fallback
+            var collectionName = request.CollectionName ?? typeDescription.FullTypeName;
+
             if (ShardCount == 0) // not initialized
             {
                 ShardIndex = request.ShardIndex;
@@ -438,31 +495,37 @@ namespace Server
                         $"Cluster configuration changed. This node was shard {ShardIndex} / {ShardCount} and now is {request.ShardIndex} / {request.ShardsInCluster}");
             }
 
-            if (_knownTypes.ContainsKey(typeDescription.FullTypeName)) //type already registered
+            if (DataStores.ContainsKey(collectionName)) //type already registered
             {
-                //check that the type description is the same
-                if (!typeDescription.Equals(_knownTypes[typeDescription.FullTypeName]))
+                //if the type description changed reindex
+                if (!typeDescription.Equals(DataStores[collectionName].TypeDescription))
                 {
-                    var message =
-                        $"The type {typeDescription.FullTypeName} is already registered but the type description is different";
-                    throw new NotSupportedException(message);
+                    lock (DataStores)
+                    {
+                        var olDataStore = DataStores[collectionName];
+
+                        var newDataStore = DataStore.Reindex(olDataStore, typeDescription);
+
+                        DataStores[collectionName] = newDataStore;
+
+                    }
+
+                    PersistenceEngine?.UpdateSchema(GenerateSchema());
+                    
                 }
             }
             else // new type, store it in the type dictionary and initialize its DataStore
             {
-                _knownTypes.Add(typeDescription.FullTypeName, typeDescription);
-
-                PersistenceEngine?.UpdateSchema(GenerateSchema());
-
-
+                
                 var newDataStore =
                     new DataStore(typeDescription, new NullEvictionPolicy(), _config);
-
 
                 Dbg.CheckThat(Profiler != null);
 
                 newDataStore.Profiler = Profiler;
-                DataStores.Add(typeDescription.FullTypeName, newDataStore);
+                DataStores.Add(collectionName, newDataStore);
+
+                PersistenceEngine?.UpdateSchema(GenerateSchema());
             }
         }
 
@@ -678,7 +741,7 @@ namespace Server
                         // ignore (race condition between nodes)
                     }
 
-                Parallel.ForEach(_dataStores, ds => ds.Value.Dump(request, ShardIndex));
+                Parallel.ForEach(DataStores, ds => ds.Value.Dump(request, ShardIndex));
 
 
                 // only the first node in the cluster should dump the schema as all shards have identical copies
@@ -711,41 +774,40 @@ namespace Server
         }
 
 
+        
         private void GetKnownTypes(IClient client)
-        {
-            lock (DataStores)
-            {
-                InternalGetKnownTypes(client);
-            }
-        }
-
-        private void InternalGetKnownTypes(IClient client)
         {
             try
             {
                 var response = new ServerDescriptionResponse();
 
+                IList<DataStore> stores;
 
-                foreach (var pair in _dataStores)
+
+                lock (DataStores)
                 {
-                    response.AddTypeDescription(pair.Value.TypeDescription);
+                    stores = new List<DataStore>(DataStores.Values);
+                }
 
-                    var dataStore = pair.Value;
+                foreach (var store in stores)
+                {
+                    response.AddTypeDescription(store.TypeDescription);
 
+                    
                     var info = new DataStoreInfo
                     {
-                        Count = dataStore.Count,
-                        EvictionPolicy = dataStore.EvictionType,
+                        Count = store.Count,
+                        EvictionPolicy = store.EvictionType,
                         EvictionPolicyDescription =
-                            dataStore.EvictionPolicy.ToString(),
-                        FullTypeName = dataStore.TypeDescription.FullTypeName,
+                            store.EvictionPolicy.ToString(),
+                        FullTypeName = store.TypeDescription.FullTypeName,
                         AvailableData =
-                            dataStore.DomainDescription ??
+                            store.DomainDescription ??
                             new DomainDescription(null),
-                        DataCompression = dataStore.TypeDescription.UseCompression,
+                        DataCompression = store.TypeDescription.UseCompression,
 
-                        HitCount = dataStore.HitCount,
-                        ReadCount = dataStore.ReadCount
+                        HitCount = store.HitCount,
+                        ReadCount = store.ReadCount
                     };
 
                     response.AddDataStoreInfo(info);
@@ -832,13 +894,24 @@ namespace Server
 
         public string GenerateSchema()
         {
-            var schema = new Schema
-                {ShardIndex = ShardIndex, ShardCount = ShardCount, TypeDescriptions = _knownTypes.Values.ToList()};
-            var sb = new StringBuilder();
+            lock (DataStores)
+            {
+                var collectionsDescriptions = new Dictionary<string, TypeDescription>();
 
-            _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
+                foreach (var store in DataStores)
+                {
+                    collectionsDescriptions.Add(store.Key, store.Value.TypeDescription);
+                }
 
-            return sb.ToString();
+                var schema = new Schema
+                    {ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions};
+
+                var sb = new StringBuilder();
+
+                _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
+
+                return sb.ToString();
+            }
         }
 
         public void LoadSchema(string path)
@@ -852,10 +925,10 @@ namespace Server
 
             if (schema != null)
             {
-                foreach (var typeDescription in schema.TypeDescriptions)
+                foreach (var description in schema.CollectionsDescriptions)
                 {
-                    ServerLog.LogInfo($"registering type {typeDescription.FullTypeName}");
-                    RegisterType(new RegisterTypeRequest(typeDescription, schema.ShardIndex, schema.ShardCount), null);
+                    ServerLog.LogInfo($"declaring collection {description.Key}");
+                    RegisterType(new RegisterTypeRequest(description.Value, schema.ShardIndex, schema.ShardCount, description.Key), null);
                 }
 
                 ShardIndex = schema.ShardIndex;

@@ -21,6 +21,11 @@ namespace Client.Interface
         /// <summary>
         ///     string key
         /// </summary>
-        StringKey //
+        StringKey,
+
+        /// <summary>
+        /// Applies only to primary key in json mode. Automatically generate a primary key
+        /// </summary>
+        Generate
     }
 }

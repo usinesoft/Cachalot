@@ -15,7 +15,7 @@ namespace Client.Core
 {
     public static class SerializationHelper
     {
-        private static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
+        public static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
 
         /// <summary>
         ///     Create a serializer that produces human readable json
@@ -61,6 +61,7 @@ namespace Client.Core
                 var zInStream = new GZipInputStream(stream);
                 reader = new JsonTextReader(new StreamReader(zInStream));
 
+                
                 return Serializer.Deserialize<TItem>(reader);
             }
 

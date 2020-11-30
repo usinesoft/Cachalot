@@ -242,6 +242,8 @@ namespace Client.Interface
         /// <returns></returns>
         ClientSideTypeDescription RegisterType(Type type, ClientSideTypeDescription typeDescription, bool forceReindex = false);
 
+        void RegisterType(TypeDescription typeDescription);
+
         
         /// <summary>
         ///     Count the items matching the query and check for data completeness.

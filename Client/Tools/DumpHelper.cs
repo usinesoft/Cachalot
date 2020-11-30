@@ -45,6 +45,36 @@ namespace Client.Tools
             }
         }
 
+        internal static IEnumerable<CachedObject> LoadObjects(string jsonPath, IDataClient client)
+        {
+            var json = File.ReadAllText(jsonPath);
+
+            var array = JArray.Parse(json);
+
+            var info = client.GetClusterInformation();
+            var typesByName = info.Schema.ToDictionary(td => td.FullTypeName);
+
+            TypeDescription typeDescription = null;
+
+            foreach (var item in array.Children<JObject>())
+            {
+                // Get the type description only once. All should have the same
+                if (typeDescription == null)
+                {
+                    var type = item.Property("$type")?.Value?.ToString();
+                    if (type == null) throw new FormatException("Type information not found");
+                    var parts = type.Split(',');
+                    if (parts.Length != 2) throw new FormatException("Can not parse type information:" + type);
+
+                    typeDescription = typesByName[parts[0].Trim()];
+                }
+
+
+                var cachedObject = CachedObject.PackJson(item.ToString(), typeDescription);
+                yield return cachedObject;
+            }
+        }
+
 
         /// <summary>
         ///     Helper function. Enumerate all the objects in the dump

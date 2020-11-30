@@ -7,6 +7,7 @@ using Client.Core.TypeConverters;
 using Client.Interface;
 using Client.Messages;
 using ICSharpCode.SharpZipLib.GZip;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
 
@@ -36,7 +37,7 @@ namespace Client.Core
         ///     The one and only primary key
         /// </summary>
         [field: ProtoMember(2)]
-        public KeyValue PrimaryKey { get; }
+        public KeyValue PrimaryKey { get; set; }
 
         [field: ProtoMember(3)] public KeyValue[] UniqueKeys { get; private set; }
 
@@ -175,7 +176,7 @@ namespace Client.Core
         public static bool CanBeConvertedToLong(JToken jToken)
         {
             // null converted to long is 0
-            if (jToken == null) return false;
+            if (jToken == null) return true;
 
 
             var valueToken = jToken.HasValues ? jToken.First : jToken;
@@ -221,6 +222,23 @@ namespace Client.Core
             return (long) valueToken;
         }
 
+        public string Json
+        {
+            get
+            {
+                
+                var stream = new MemoryStream(ObjectData);
+                if (UseCompression)
+                {
+                    var zInStream = new GZipInputStream(stream);
+                    return new StreamReader(zInStream).ReadToEnd();
+
+                }
+
+
+                return new StreamReader(stream).ReadToEnd();
+            }
+        }
         public static decimal JTokenToDecimal(JToken jToken)
         {
             // null converted to long is 0
@@ -259,15 +277,21 @@ namespace Client.Core
         }
 
 
-        //public static CachedObject PackDictionary(IDictionary<string, object> propertyValues,
-        //    TypeDescription description)
-        //{
-        //    CachedObject result = new CachedObject();
+        /// <summary>
+        /// Pack data that is not represented as a dotnet object
+        /// </summary>
+        /// <param name="propertyValues"></param>
+        /// <param name="description"></param>
+        /// <returns></returns>
+        public static CachedObject PackDictionary(IDictionary<string, object> propertyValues,
+            TypeDescription description)
+        {
+            
+            var json = JsonConvert.SerializeObject(propertyValues);
 
+            return PackJson(json, description);
 
-
-        //    return result;
-        //}
+        }
 
         public static CachedObject PackJson(string json, TypeDescription typeDescription)
         {
@@ -278,43 +302,64 @@ namespace Client.Core
             CachedObject result;
 
             var jPrimary = jObject.Property(typeDescription.PrimaryKeyField.Name);
-            if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.IntKey || (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jPrimary)))
+
+            if (jPrimary == null && typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Generate)
             {
-                var primaryKey = new KeyValue(JTokenToLong(jPrimary), typeDescription.PrimaryKeyField);
-                result = new CachedObject(primaryKey);
+                result = new CachedObject(new KeyValue(Guid.NewGuid().ToString(), typeDescription.PrimaryKeyField));
             }
             else
             {
-                var primaryKey = new KeyValue(JTokenToString(jPrimary), typeDescription.PrimaryKeyField);
-                result = new CachedObject(primaryKey);
+                if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.IntKey ||
+                    (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Default &&
+                     CanBeConvertedToLong(jPrimary)))
+                {
+                    var primaryKey = new KeyValue(JTokenToLong(jPrimary), typeDescription.PrimaryKeyField);
+                    result = new CachedObject(primaryKey);
+                }
+                else
+                {
+                    var primaryKey = new KeyValue(JTokenToString(jPrimary), typeDescription.PrimaryKeyField);
+                    result = new CachedObject(primaryKey);
+                }    
             }
 
+            
+            
 
-            result.UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count];
 
-            var pos = 0;
+            var uniqueKeys = new List<KeyValue>(typeDescription.UniqueKeyFields.Count);
+            
             foreach (var uniqueField in typeDescription.UniqueKeyFields)
             {
                 var jKey = jObject.Property(uniqueField.Name);
+
+                
                 var key = uniqueField.KeyDataType == KeyDataType.IntKey || (uniqueField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
                     ? new KeyValue(JTokenToLong(jKey), uniqueField)
                     : new KeyValue(JTokenToString(jKey), uniqueField);
 
-                result.UniqueKeys[pos++] = key;
+                uniqueKeys.Add(key);
+            
             }
 
+            result.UniqueKeys = uniqueKeys.ToArray();
 
-            result.IndexKeys = new KeyValue[typeDescription.IndexFields.Count];
-            pos = 0;
+
+            
+            var indexKeys = new List<KeyValue>(typeDescription.IndexFields.Count);
+
             foreach (var indexField in typeDescription.IndexFields)
             {
                 var jKey = jObject.Property(indexField.Name);
-                var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
-                    ? new KeyValue(JTokenToLong(jKey), indexField)
-                    : new KeyValue(JTokenToString(jKey), indexField);
+               
+                    var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
+                        ? new KeyValue(JTokenToLong(jKey), indexField)
+                        : new KeyValue(JTokenToString(jKey), indexField);
 
-                result.IndexKeys[pos++] = key;
+                    indexKeys.Add(key);
             }
+
+            result.IndexKeys = indexKeys.ToArray();
 
             // process indexed collections
             var listValues = new List<KeyValue>();
@@ -339,7 +384,6 @@ namespace Client.Core
             // process server side values
 
             var serverValues = new List<ServerSideValue>();
-            pos = 0;
             foreach (var value in typeDescription.ServerSideValues)
             {
                 var jKey = jObject.Property(value.Name);

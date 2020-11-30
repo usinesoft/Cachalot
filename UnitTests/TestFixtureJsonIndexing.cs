@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -233,6 +235,103 @@ namespace UnitTests
             Assert.IsFalse(CachedObject.CanBeConvertedToLong(jo.Property("InstrumentName")));
             sval = CachedObject.JTokenToString(jo.Property("InstrumentName"));
             Assert.AreEqual("IRS", sval);
+        }
+
+        [Test]
+        public void Pack_json_with_missing_properties()
+        {
+
+            var json = @"{
+                    'Id': 123,
+                    }";
+
+            var description = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>().AsTypeDescription;
+
+            var packed = CachedObject.PackJson(json, description);
+
+            Assert.AreEqual("123", packed.PrimaryKey.AxisValue);
+
+        }
+
+
+        [Test]
+        public void Pack_json_with_automatic_primary_key()
+        {
+
+            var json = @"{
+                    'name':'toto',
+                    'age':16
+
+                    }";
+
+            var description = Description.New("people").AutomaticPrimaryKey().AddIndex("name", fullTextSearchEnabled:true).AddIndex("age", true);
+
+            var packed = CachedObject.PackJson(json, description);
+
+            // properties that where not found should not be indexed
+            Assert.AreEqual(2, packed.IndexKeys.Length);
+
+            json = packed.Json;
+                    
+            var repacked = CachedObject.PackJson(json, description);
+
+            // check than repacking the object gives tha same result (except for the auto generated primary key)
+            repacked.PrimaryKey = packed.PrimaryKey;
+            Assert.AreEqual(packed.ToString(), repacked.ToString());
+        }
+
+
+        [Test]
+        public void Pack_speed_comparison()
+        {
+            var description1 = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>();
+
+            var description2 = description1.AsTypeDescription;
+
+            var now = DateTime.Now;
+            
+            var testObj = new AllKindsOfProperties
+            {
+                ValueDate = now.Date,
+                AnotherDate = now.Date.AddDays(1),
+                LastUpdate = now,
+                Nominal = 156.32,
+                Quantity = 35,
+                InstrumentName = "IRS",
+                AreYouSure = Fuzzy.Maybe,
+                IsDeleted = true
+            };
+
+
+            const int items = 100_000;
+
+            Stopwatch watch = new Stopwatch();
+
+            watch.Start();
+
+            for (int i = 0; i < items; i++)
+            {
+                var _ = CachedObject.Pack(testObj, description1);
+            }
+
+            watch.Stop();
+
+            var ms = watch.ElapsedMilliseconds;
+
+            Console.WriteLine($"packing {items} objects in binary mode took {ms} milliseconds");
+
+            watch.Restart();
+
+            for (int i = 0; i < items; i++)
+            {
+                var _ = CachedObject.Pack(testObj, description2);
+            }
+
+            watch.Stop();
+
+            ms = watch.ElapsedMilliseconds;
+
+            Console.WriteLine($"packing {items} objects in json mode took {ms} milliseconds");
         }
     }
 }

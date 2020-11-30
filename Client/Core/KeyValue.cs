@@ -94,6 +94,7 @@ namespace Client.Core
             _isNotNull = true;
         }
 
+       
 
         /// <summary>
         ///     string or int

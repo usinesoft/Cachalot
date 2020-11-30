@@ -24,7 +24,7 @@ namespace UnitTests
         [Test]
         public void Expression_tree_processing()
         {
-            var homes = new DataSource<Home>(null, ClientSideTypeDescription.RegisterType<Home>());
+            var homes = new DataSource<Home>(null);
 
             var towns = new[] {"Paris", "Nice"};
 

@@ -246,6 +246,18 @@ namespace Client.Core
 
             var value = Info.GetValue(instance, null);
 
+            if (KeyDataType == KeyDataType.Generate)
+            {
+                if (value is Guid guid)
+                {
+                    if (guid == Guid.Empty)
+                    {
+                        value = Guid.NewGuid();
+                    }
+                }
+                
+            }
+
             return KeyInfo.ValueToKeyValue(value, AsKeyInfo);
         }
 

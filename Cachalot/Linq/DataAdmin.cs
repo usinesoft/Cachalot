@@ -7,9 +7,9 @@ namespace Cachalot.Linq
     /// </summary>
     public class DataAdmin
     {
-        private readonly ICacheClient _client;
+        private readonly IDataClient _client;
 
-        internal DataAdmin(ICacheClient client)
+        internal DataAdmin(IDataClient client)
         {
             _client = client;
         }

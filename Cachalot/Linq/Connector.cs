@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Channel;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using Server;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -11,7 +12,69 @@ namespace Cachalot.Linq
 {
     public class Connector : IDisposable
     {
-        
+        readonly Dictionary<string, TypeDescription> _collectionSchema = new Dictionary<string, TypeDescription>();
+
+
+        /// <summary>
+        /// Declare a collection with explicit schema
+        /// </summary>
+        /// <param name="collectionName"></param>
+        /// <param name="schema"></param>
+        public void DeclareCollection(string collectionName, TypeDescription schema)
+        {
+            
+            lock (_collectionSchema)
+            {
+                if (_collectionSchema.TryGetValue(collectionName, out var oldSchema))
+                {
+                    if (!schema.Equals(oldSchema))
+                    {
+                        throw new CacheException($"Schema declaration conflict for collection {collectionName}");
+                    }
+                }
+                else
+                {
+                    _collectionSchema[collectionName] = schema;
+                }
+
+                // redeclare anyway in case the server is a non persistent cache and it has restarted since the last declaration
+                Client.DeclareCollection(collectionName, schema);
+            }
+        }
+
+        /// <summary>
+        /// Declare collection with implicit schema (inferred from the type)
+        /// If the collection name is not specified, the full name of the type is used
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collectionName"></param>
+        public void DeclareCollection<T>(string collectionName = null)
+        {
+            collectionName ??= typeof(T).FullName;
+
+            var description = TypeDescriptionsCache.GetDescription(typeof(T));
+            
+            var schema = description.AsTypeDescription;
+            
+            Client.DeclareCollection(collectionName, schema);
+
+            lock (_collectionSchema)
+            {
+                _collectionSchema[collectionName] = schema;
+            }
+        }
+
+        public TypeDescription GetCollectionSchema(string collectionName)
+        {
+            lock (_collectionSchema)
+            {
+                if (_collectionSchema.TryGetValue(collectionName, out var schema))
+                    return schema;
+
+                return null;
+            }
+        }
+
         private Server.Server _server;
 
 
@@ -26,7 +89,7 @@ namespace Cachalot.Linq
                 if (config.Servers == null || config.Servers.Count == 0)
                 {
                     var channel = new InProcessChannel();
-                    Client = new CacheClient {Channel = channel};
+                    Client = new DataClient{Channel = channel};
 
                     _server = new Server.Server(new NodeConfig {IsPersistent = config.IsPersistent})
                         {Channel = channel};
@@ -39,11 +102,11 @@ namespace Cachalot.Linq
 
                     var channel = new TcpClientChannel(new TcpClientPool(4, 1, serverCfg.Host, serverCfg.Port));
 
-                    Client = new CacheClient {Channel = channel};
+                    Client = new DataClient {Channel = channel};
                 }
                 else // multiple servers
                 {
-                    var aggregator = new Aggregator();
+                    var aggregator = new DataAggregator();
 
                     var index = 0;
                     foreach (var serverConfig in config.Servers)
@@ -51,7 +114,7 @@ namespace Cachalot.Linq
                         var channel =
                             new TcpClientChannel(new TcpClientPool(4, 1, serverConfig.Host, serverConfig.Port));
 
-                        var client = new CacheClient
+                        var client = new DataClient
                         {
                             Channel = channel,
                             ShardIndex = index,
@@ -71,13 +134,14 @@ namespace Cachalot.Linq
             foreach (var description in config.TypeDescriptions)
             {
                 var type = Type.GetType(description.Value.FullTypeName + ", " + description.Value.AssemblyName);
-                var typeDescription = Client.RegisterTypeIfNeeded(type, description.Value);
+                
+                var typeDescription = ClientSideTypeDescription.RegisterType(type, description.Value);
 
                 TypeDescriptionsCache.AddExplicitTypeDescription(type, typeDescription);
             }
         }
 
-        private ICacheClient Client { get; set; }
+        internal IDataClient Client { get; private set; }
 
 
         public void Dispose()
@@ -94,7 +158,7 @@ namespace Cachalot.Linq
 
         public Transaction BeginTransaction()
         {
-            return new Transaction(Client);
+            return new Transaction(this);
         }
 
 
@@ -107,6 +171,10 @@ namespace Cachalot.Linq
         /// <param name="quantity">number of unique ids to generate</param>
         public int[] GenerateUniqueIds(string generatorName, int quantity)
         {
+            if (quantity == 0)
+            {
+                throw new CacheException("When generating unique ids quantity must be at least 1");
+            }
             return Client.GenerateUniqueIds(generatorName, quantity);
         }
 
@@ -115,13 +183,9 @@ namespace Cachalot.Linq
             return Client.GetClusterInformation();
         }
 
-        public DataSource<T> DataSource<T>()
+        public DataSource<T> DataSource<T>(string collectionName = null, TypeDescription description = null)
         {
-            ClientSideTypeDescription typeDescription = TypeDescriptionsCache.GetDescription(typeof(T));
-            
-            typeDescription = Client.RegisterType(typeof(T), typeDescription);
-            
-            return new DataSource<T>(Client, typeDescription);
+            return new DataSource<T>(this, collectionName, description);
         }
 
         public DataAdmin AdminInterface()

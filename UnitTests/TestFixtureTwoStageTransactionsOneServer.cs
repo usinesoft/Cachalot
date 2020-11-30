@@ -104,6 +104,9 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
 
                 accountIds = connector.GenerateUniqueIds("account_id", 2);
@@ -203,6 +206,9 @@ namespace UnitTests
             // check that everything is persisted ok
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];
                 var dst = accounts[accountIds[1]];
@@ -223,6 +229,9 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
@@ -280,6 +289,9 @@ namespace UnitTests
             StartServers();
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
                 var myAccounts = accounts.ToList();
                 Assert.AreEqual(2, myAccounts.Count);
@@ -301,6 +313,9 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);

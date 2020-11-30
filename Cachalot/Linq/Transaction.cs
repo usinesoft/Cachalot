@@ -13,31 +13,41 @@ namespace Cachalot.Linq
     /// </summary>
     public class Transaction
     {
-        private readonly ICacheClient _client;
+        private readonly IDataClient _client;
 
         private readonly List<OrQuery> _conditions = new List<OrQuery>();
 
+        
+        
+
         private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
+        private readonly List<string> _collectionsForDelete = new List<string>();
 
         private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
+        private readonly List<string> _collectionsForPut = new List<string>();
+        
+        private readonly Connector _connector;
 
-        HashSet<Type> _types = new HashSet<Type>();
 
-
-        internal Transaction(ICacheClient client)
+        internal Transaction(Connector connector)
         {
-            _client = client;
+            _connector = connector;
+            _client = connector.Client;
         }
 
 
-        public void Put<T>(T item)
+        public void Put<T>(T item, string collectionName = null)
         {
-            var packed = Pack(item);
+            collectionName ??= typeof(T).FullName;
+
+            var packed = Pack(item, collectionName);
 
             _itemsToPut.Add(packed);
+            
+            _collectionsForPut.Add(collectionName);
+
             _conditions.Add(new OrQuery()); // empty condition
 
-            _types.Add(typeof(T));
         }
 
         /// <summary>
@@ -46,90 +56,59 @@ namespace Cachalot.Linq
         /// <typeparam name="T"></typeparam>
         /// <param name="newValue"></param>
         /// <param name="test"></param>
-        public void UpdateIf<T>(T newValue, Expression<Func<T, bool>> test)
+        /// <param name="collectionName"></param>
+        public void UpdateIf<T>(T newValue, Expression<Func<T, bool>> test, string collectionName = null)
         {
-            var desc = TypeDescriptionsCache.GetDescription(typeof(T));
+            collectionName ??= typeof(T).FullName;
 
-            var packed = Pack(newValue);
+            
+            var packed = Pack(newValue, collectionName);
 
             _itemsToPut.Add(packed);
 
-            var dataSource = new DataSource<T>(_client, desc);
+            _collectionsForPut.Add(collectionName);
+
+            var dataSource = new DataSource<T>(null);
             var testAsQuery = dataSource.PredicateToQuery(test);
 
             _conditions.Add(testAsQuery);
 
-            _types.Add(typeof(T));
         }
 
 
-        //TODO add unit test for timestamp synchronization (coverage)
-        /// <summary>
-        ///     Optimistic synchronization using a timestamp property
-        ///     Works like an UpdateIf that checks the previous value of a property of type DateTime named "Timestamp"
-        ///     It also updates this property withe DateTime.Now
-        ///     If you use this you should never modify the timestamp manually when updating the object
-        /// </summary>
-        /// <param name="newValue"></param>
-        public void UpdateWithTimestampSynchronization<T>(T newValue)
+       
+        public void Delete<T>(T item, string collectionName = null)
         {
-            var prop = newValue.GetType().GetProperty("Timestamp");
-            if (prop == null) throw new CacheException($"No Timestamp property found on type {typeof(T).Name}");
+            collectionName ??= typeof(T).FullName;
 
-            if (!prop.CanWrite)
-                throw new CacheException($"The Timestamp property of type {typeof(T).Name} is not writable");
-
-            var oldTimestamp = prop.GetValue(newValue);
-
-            var kv = KeyInfo.ValueToKeyValue(oldTimestamp,
-                new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "Timestamp"));
-
-            var q = new AtomicQuery(kv);
-            var andQuery = new AndQuery();
-            andQuery.Elements.Add(q);
-            var orq = new OrQuery(typeof(T));
-            orq.Elements.Add(andQuery);
-
-            var now = DateTime.Now;
-            var newTimestamp = now.AddTicks(1); // add one to be sure its different
-
-
-            prop.SetValue(newValue, newTimestamp);
-
-            var packed = Pack(newValue);
-
-            _itemsToPut.Add(packed);
-
-            _conditions.Add(orq);
-        }
-
-
-        public void Delete<T>(T item)
-        {
-            var packed = Pack(item);
+            var packed = Pack(item, collectionName);
 
             _itemsToDelete.Add(packed);
 
-            _types.Add(typeof(T));
+            _collectionsForDelete.Add(collectionName);
+          
         }
 
 
         public void Commit()
         {
-            foreach (var type in _types)
-            {
-                var description = TypeDescriptionsCache.GetDescription(type);
-                _client.RegisterType(type, description);
-
-            }
+            // TODO manage collection names
             _client.ExecuteTransaction(_itemsToPut, _conditions, _itemsToDelete);
         }
 
 
-        private CachedObject Pack<T>(T item)
+        private CachedObject Pack<T>(T item, string collectionName = null)
         {
-            var packed = CachedObject.Pack(item, TypeDescriptionsCache.GetDescription(typeof(T)));
+            var schema = _connector.GetCollectionSchema(collectionName);
+
+            if (schema == null)
+            {
+                throw new CacheException($"Unknown collection {collectionName}. Use Connector.DeclareCollection");
+            }
+
+            var packed = CachedObject.Pack(item, schema);
+
             return packed;
         }
     }
-}
+} 

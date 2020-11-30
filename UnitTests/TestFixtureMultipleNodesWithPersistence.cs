@@ -9,6 +9,7 @@ using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server;
@@ -150,8 +151,7 @@ namespace UnitTests
         [Test]
         public void Conditional_put()
         {
-            var config = new ClientConfig();
-            config.LoadFromFile("inprocess_persistent_config.xml");
+           
 
             using (var connector = new Connector(_clientConfig))
             {
@@ -188,8 +188,7 @@ namespace UnitTests
         [Test]
         public void Conditional_update()
         {
-            var config = new ClientConfig();
-            config.LoadFromFile("inprocess_persistent_config.xml");
+            
 
             using (var connector = new Connector(_clientConfig))
             {
@@ -225,6 +224,66 @@ namespace UnitTests
 
                 // check that the updated value is persistent
                 Assert.AreEqual(160, reloaded.Value);
+            }
+        }
+
+        [Test]
+        public void Reindex_existing_collection()
+        {
+           
+            using (var connector = new Connector(_clientConfig))
+            {
+                var description1 = Description.New("order").PrimaryKey("Id").AddIndex("Category")
+                    .AddServerSideValue("Amount");
+
+                var orders = connector.DataSource<Order>("orders", description1);
+
+                orders.Put(new Order
+                {
+                    Id = Guid.NewGuid(),
+                    Category = "geek",
+                    Amount = 110.3,
+                    ProductId = 101,
+                    IsDelivered = false
+                });
+
+                orders.Put(new Order
+                {
+                    Id = Guid.NewGuid(),
+                    Category = "geek",
+                    Amount = 110.3,
+                    ProductId = 101,
+                    IsDelivered = true
+                });
+
+                var all = orders.ToList();
+                var found = orders.Where(o => o.Category == "geek").ToList();
+
+                Assert.AreEqual(2, found.Count);
+
+                Assert.Throws<CacheException>(() => orders.Where(o => o.IsDelivered == true).ToList());
+
+            }
+
+            using (var connector = new Connector(_clientConfig))
+            {
+                var description1 = Description.New("order").PrimaryKey("Id").AddIndex("Category")
+                    .AddServerSideValue("Amount").AddIndex("IsDelivered");
+
+                var orders = connector.DataSource<Order>("orders", description1);
+
+                
+                var all = orders.ToList();
+                var found = orders.Where(o => o.Category == "geek").ToList();
+
+                Assert.AreEqual(2, found.Count);
+
+                // now it should work as collection schema changed. Now it contains IsDelivered index
+                var delivered = orders.Where(o => o.IsDelivered == true).ToList();
+                Assert.AreEqual(1, delivered.Count);
+
+                
+
             }
         }
 
@@ -814,7 +873,7 @@ namespace UnitTests
             {
                 Parallel.For(0, 1000, i =>
                 {
-                    var ids = connector.GenerateUniqueIds("test", rand.Next(100));
+                    var ids = connector.GenerateUniqueIds("test", rand.Next(100) + 1);
 
                     lock (all)
                     {
@@ -1030,10 +1089,9 @@ namespace UnitTests
         }
 
         [Test]
-        public void optimistic_synchronization_with_timestamp()
+        public void Optimistic_synchronization_with_timestamp()
         {
-            var config = new ClientConfig();
-            config.LoadFromFile("inprocess_persistent_config.xml");
+           
 
             using (var connector = new Connector(_clientConfig))
             {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Security;
 using Client.Messages;
 
 namespace Client.Core
@@ -15,6 +16,6 @@ namespace Client.Core
         /// </summary>
         public int ShardCount { get; set; }
 
-        public IList<TypeDescription> TypeDescriptions { get; set; } = new List<TypeDescription>();
+        public IDictionary<string,  TypeDescription> CollectionsDescriptions { get; set; } = new Dictionary<string, TypeDescription>();
     }
 }

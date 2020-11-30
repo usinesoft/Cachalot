@@ -19,6 +19,16 @@ namespace UnitTests
     [TestFixture]
     public class TestFixtureCacheableObject
     {
+
+        public class TestData
+        {
+            [PrimaryKey(keyDataType:KeyDataType.Generate)]
+            public Guid Id { get; set; }
+
+            [Index]
+            public string Name { get; set; }
+            
+        }
         public static Func<TObject, object> GetPropGetter<TObject>(string propertyName)
         {
             var paramExpression = Expression.Parameter(typeof(TObject), "value");
@@ -418,6 +428,18 @@ namespace UnitTests
             var sum2 = pivot1.Children.Sum(c=> c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum) ;
 
             Assert.AreEqual(sum1, sum2);
+
+        }
+
+        [Test]
+        public void PackWithAutomaticPrimaryKey()
+        {
+            var obj = new TestData {Name = "toto"};
+            var packed = CachedObject.Pack(obj);
+
+            var pk = Guid.Parse(packed.PrimaryKey.ToString());
+
+            Assert.AreNotEqual(Guid.Empty, pk);
 
         }
     }

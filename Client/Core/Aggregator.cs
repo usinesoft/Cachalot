@@ -204,7 +204,7 @@ namespace Client.Core
 
             var schema = SerializationHelper.DeserializeJson<Schema>(json);
 
-            foreach (var typeDescription in schema.TypeDescriptions)
+            foreach (var typeDescription in schema.CollectionsDescriptions.Values) 
             {
                 // register the type on the server
 
@@ -611,6 +611,11 @@ namespace Client.Core
             foreach (var client in CacheClients) result = client.RegisterType(type, typeDescription);
 
             return result;
+        }
+
+        public void RegisterType(TypeDescription typeDescription)
+        {
+            foreach (var client in CacheClients) client.RegisterType(typeDescription);
         }
 
         public KeyValuePair<bool, int> EvalQuery(OrQuery query)

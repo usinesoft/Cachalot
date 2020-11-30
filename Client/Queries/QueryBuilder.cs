@@ -165,7 +165,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(object value)
         {
-            var keyValue = _typeDescription.MakePrimaryKeyValue(value);
+            var keyValue = value as KeyValue ?? _typeDescription.MakePrimaryKeyValue(value);
 
             var query = new OrQuery(_typeDescription.FullTypeName);
             var andQuery = new AndQuery();

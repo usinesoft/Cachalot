@@ -174,11 +174,11 @@ namespace Client.Core
 
             var schema = SerializationHelper.DeserializeJson<Schema>(json);
 
-            foreach (var typeDescription in schema.TypeDescriptions)
+            foreach (var typeDescription in schema.CollectionsDescriptions)
             {
                 // register the type on the server
 
-                var request = new RegisterTypeRequest(typeDescription);
+                var request = new RegisterTypeRequest(typeDescription.Value);
 
                 var response = Channel.SendRequest(request);
 
@@ -186,7 +186,7 @@ namespace Client.Core
                     throw new CacheException("Error while registering a type on the server", exResponse.Message,
                         exResponse.CallStack);
 
-                FeedMany(DumpHelper.ObjectsInDump(path, typeDescription), true);
+                FeedMany(DumpHelper.ObjectsInDump(path, typeDescription.Value), true);
             }
 
             // reinitialize the sequences. As the shard count has probably changed reinitialize all the sequences in each shard
@@ -683,6 +683,18 @@ namespace Client.Core
                     exResponse.CallStack);
 
             return typeDescription;
+        }
+
+        public void RegisterType(TypeDescription typeDescription)
+        {
+            var request = new RegisterTypeRequest(typeDescription, ShardIndex, ShardsCount);
+
+            var response = Channel.SendRequest(request);
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while registering a type on the server", exResponse.Message,
+                    exResponse.CallStack);
+
         }
 
 

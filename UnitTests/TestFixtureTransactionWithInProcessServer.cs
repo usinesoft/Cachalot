@@ -34,6 +34,9 @@ namespace UnitTests
 
             using (var connector = new Connector(new ClientConfig()))
             {
+                  connector.DeclareCollection<Account>();  
+                  connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
 
                 accountIds = connector.GenerateUniqueIds("account_id", 2);
@@ -131,6 +134,9 @@ namespace UnitTests
             // check that everything is persisted ok
             using (var connector = new Connector(new ClientConfig()))
             {
+                connector.DeclareCollection<Account>();  
+                connector.DeclareCollection<MoneyTransfer>();  
+
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];
                 var dst = accounts[accountIds[1]];

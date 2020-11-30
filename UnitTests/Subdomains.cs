@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Resources;
 using Cachalot.Linq;
 using Client.Core;
 using Client.Queries;
@@ -13,7 +14,7 @@ namespace UnitTests
         [Test]
         public void Test_subset_on_queries()
         {
-            var datastore = new DataSource<TradeLike>(null, ClientSideTypeDescription.RegisterType<TradeLike>());
+            var datastore = new DataSource<TradeLike>(null, null,  ClientSideTypeDescription.RegisterType<TradeLike>().AsTypeDescription);
 
             {
                 var q1 = datastore.PredicateToQuery(t => t.ValueDate == DateTime.Today);

@@ -8,6 +8,7 @@ using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
 using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
 using Remotion.Linq;
 using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
 using Remotion.Linq.Parsing.Structure;
@@ -21,21 +22,71 @@ namespace Cachalot.Linq
     /// <typeparam name="T"></typeparam>
     public class DataSource<T> : QueryableBase<T>
     {
-        
         public void Truncate()
         {
-            _client.Truncate<T>();
+            _client.Truncate(_collectionName);
         }
 
-        private readonly ICacheClient _client;
-        private readonly ClientSideTypeDescription _typeDescription;
+        private readonly IDataClient _client;
+        
+        /// <summary>
+        /// This one is mandatory
+        /// </summary>
+        private readonly TypeDescription _typeDescription;
+        
+        /// <summary>
+        /// Thi one is optional, but if present it allow for faster packing
+        /// </summary>
+        private readonly ClientSideTypeDescription _description;
 
-        internal DataSource(ICacheClient client, ClientSideTypeDescription typeDescription)
-            : base(CreateParser(), new QueryExecutor(client, typeDescription.AsTypeDescription))
+        private readonly string _collectionName;
+        private readonly Connector _connector;
+
+        CachedObject Pack(T item)
         {
-            _client = client;
+            if(_description != null)
+                return CachedObject.Pack(item, _description);
 
-            _typeDescription = typeDescription;
+            return CachedObject.Pack(item, _typeDescription);
+        }
+
+        /// <summary>
+        /// If all the parameters are null the DataSource can be used only to convert an expression to a query, not to manipulate data 
+        /// </summary>
+        /// <param name="connector"></param>
+        /// <param name="collectionName"></param>
+        /// <param name="typeDescription"></param>
+        internal DataSource(Connector connector, string collectionName = null, TypeDescription typeDescription= null)
+            : base(CreateParser(), new QueryExecutor(connector?.Client, typeDescription ?? TypeDescriptionsCache.GetDescription(typeof(T)).AsTypeDescription))
+        {
+            _client = connector?.Client;
+
+            _connector = connector;
+
+            _collectionName = collectionName ?? typeof(T).FullName;
+
+            if (typeDescription != null)
+            {
+                _typeDescription = typeDescription;
+            }
+            else // no explicit schema
+            {
+                // first check that one was registered in the connector
+                var availableDescription = _connector?.GetCollectionSchema(_collectionName);
+                if (availableDescription != null)
+                {
+                    _typeDescription = availableDescription;
+                }
+                else // if none available get the metadata from attributes 
+                {
+                    _description =  TypeDescriptionsCache.GetDescription(typeof(T));
+                    _typeDescription = _description.AsTypeDescription;    
+                }
+                
+            }
+
+            _connector?.DeclareCollection(_collectionName, _typeDescription);
+            
         }
 
 
@@ -55,7 +106,15 @@ namespace Cachalot.Linq
         /// </summary>
         /// <param name="primaryKey"></param>
         /// <returns></returns>
-        public T this[object primaryKey] => _client.GetOne<T>(primaryKey);
+        public T this[object primaryKey]
+        {
+            get
+            {
+                var query = new QueryBuilder(_typeDescription).GetOne(primaryKey);
+                query.TypeName = _collectionName;
+                return _client.GetMany( query).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer)).FirstOrDefault();
+            }
+        }
 
         private static QueryParser CreateParser()
         {
@@ -97,6 +156,8 @@ namespace Cachalot.Linq
 
             var query = PredicateToQuery(domainDefinition);
 
+            query.TypeName = _collectionName;
+
             var domain = new DomainDescription(query, false, humanReadableDescription);
 
             _client.DeclareDomain(domain);
@@ -117,7 +178,7 @@ namespace Cachalot.Linq
             if (evictionType == EvictionType.LessRecentlyUsed && limit == 0)
                 throw new ArgumentException("If LRU eviction is used, a positive limit must be specified");
 
-            _client.ConfigEviction(typeof(T).FullName, evictionType, limit, itemsToRemove, timeLimitInMilliseconds);
+            _client.ConfigEviction(_collectionName, evictionType, limit, itemsToRemove, timeLimitInMilliseconds);
         }
 
 
@@ -128,7 +189,8 @@ namespace Cachalot.Linq
         /// </summary>
         public void DeclareFullyLoaded(bool fullyLoaded = true)
         {
-            var domain = new DomainDescription(OrQuery.Empty<T>(), fullyLoaded);
+            var emptyQuery = new OrQuery(_collectionName);
+            var domain = new DomainDescription(emptyQuery, fullyLoaded);
 
             _client.DeclareDomain(domain);
         }
@@ -141,7 +203,7 @@ namespace Cachalot.Linq
         /// <param name="excludedFromEviction">In cache-only mode,if tue the item is never evicted from the cache</param>
         public void Put(T item, bool excludedFromEviction = false) 
         {
-            _client.Put(item, excludedFromEviction);
+            _client.Put(_collectionName, Pack(item), excludedFromEviction);
         }
 
 
@@ -152,7 +214,7 @@ namespace Cachalot.Linq
         /// <returns>true if added, false if already present</returns>
         public bool TryAdd(T item)
         {
-            return _client.TryAdd(item);
+            return _client.TryAdd(_collectionName, Pack(item));
         }
 
         /// <summary>
@@ -161,8 +223,11 @@ namespace Cachalot.Linq
         /// <param name="item"></param>
         public void Delete(T item)
         {
-            var packed = CachedObject.Pack(item, _typeDescription);
-            _client.Remove<T>(packed.PrimaryKey);
+            var packed = Pack(item);
+            var query = new QueryBuilder(_typeDescription).GetOne(packed.PrimaryKey);
+            query.TypeName = _collectionName;
+
+            _client.RemoveMany(query);
         }
 
 
@@ -174,6 +239,7 @@ namespace Cachalot.Linq
         public void DeleteMany(Expression<Func<T, bool>> where)
         {
             var query = PredicateToQuery(where);
+            query.TypeName = _collectionName;
 
             _client.RemoveMany(query);
         }
@@ -196,12 +262,15 @@ namespace Cachalot.Linq
         {
             // create a fake queryable to force query parsing and capture resolution
 
-            var executor = new NullExecutor(_typeDescription.AsTypeDescription);
+            var executor = new NullExecutor(_typeDescription);
             var queryable = new NullQueryable<T>(executor);
 
             var unused = queryable.Where(where).ToList();
 
-            return executor.Expression;
+            var query = executor.Expression;
+            query.TypeName = _collectionName;
+
+            return query;
         }
 
 
@@ -217,7 +286,7 @@ namespace Cachalot.Linq
         {
             var testAsQuery = PredicateToQuery(test);
 
-            _client.UpdateIf(newValue, testAsQuery);
+            _client.UpdateIf(Pack(newValue), testAsQuery);
         }
 
         /// <summary>
@@ -243,7 +312,7 @@ namespace Cachalot.Linq
             var q = new AtomicQuery(kv);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(q);
-            var orq = new OrQuery(typeof(T));
+            var orq = new OrQuery(_collectionName);
             orq.Elements.Add(andQuery);
 
             var now = DateTime.Now;
@@ -252,7 +321,7 @@ namespace Cachalot.Linq
 
             prop.SetValue(newValue, newTimestamp);
 
-            _client.UpdateIf(newValue, orq);
+            _client.UpdateIf(Pack(newValue), orq);
         }
 
 
@@ -264,7 +333,7 @@ namespace Cachalot.Linq
         /// <param name="items"></param>
         public void PutMany(IEnumerable<T> items)
         {
-            _client.FeedMany(items, false, 10000);
+            _client.FeedMany(_collectionName, items.Select(Pack), false, 10000);
         }
     }
 }

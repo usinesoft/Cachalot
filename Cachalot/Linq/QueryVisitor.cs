@@ -36,6 +36,10 @@ namespace Cachalot.Linq
         private KeyValue AsKeyValue(MemberInfo member, object value)
         {
             var propertyDescription = _typeDescription.KeyByName(member.Name);
+            if (propertyDescription == null)
+            {
+                throw new CacheException($"property {member.Name} is not servers-side visible");
+            }
 
             var keyInfo = new KeyInfo(propertyDescription.KeyDataType, propertyDescription.KeyType,
                 propertyDescription.Name, propertyDescription.IsOrdered);

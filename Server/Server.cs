@@ -184,11 +184,11 @@ namespace Server
                             _persistenceEngine?.UpdateSchema(schema);
 
                             // fill the in-memory data stores
-                            Parallel.ForEach(_dataContainer.DataStores.Values,
+                            Parallel.ForEach(_dataContainer.Stores(),
                                 store => store.LoadFromDump(path, importRequest.ShardIndex));
 
                             // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
-                            foreach (var dataStore in _dataContainer.DataStores.Values)
+                            foreach (var dataStore in _dataContainer.Stores())  
                             foreach (var item in dataStore.DataByPrimaryKey)
                             {
                                 var itemData =

@@ -20,6 +20,8 @@ namespace UnitTests
 
 
             if (File.Exists(_backupPath)) File.Delete(_backupPath);
+
+            _typeDescription = ClientSideTypeDescription.RegisterType<Trade>();
         }
 
         private class TestProcessor : IPersistentObjectProcessor
@@ -40,6 +42,7 @@ namespace UnitTests
         }
 
         private readonly string _backupPath = Path.Combine("backup", ReliableStorage.StorageFileName);
+        
         private ClientSideTypeDescription _typeDescription;
 
         [OneTimeSetUp]
@@ -51,9 +54,6 @@ namespace UnitTests
             var config = new ClientConfig();
             config.LoadFromFile("inprocess_config.xml");
 
-            foreach (var typeDescription in config.TypeDescriptions)
-                if (typeDescription.Value.FullTypeName.Contains("Trade"))
-                    _typeDescription = ClientSideTypeDescription.RegisterType(typeof(Trade), typeDescription.Value);
         }
 
 

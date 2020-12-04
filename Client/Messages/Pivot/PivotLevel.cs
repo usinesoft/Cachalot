@@ -30,7 +30,7 @@ namespace Client.Messages.Pivot
         public void AggregateOneObject(CachedObject @object, params string[] axis)
         {
             if(@object.Values.Length == 0)
-                throw new NotSupportedException($"At least one property of type {@object.FullTypeName} must be declared as [ServerSideVisible]");
+                throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");
 
             foreach (var value in @object.Values)
             {
@@ -78,7 +78,7 @@ namespace Client.Messages.Pivot
             if (!Equals(AxisValue, null))
             {
                 builder.Append(padding);
-                builder.AppendLine($"{AxisValue.KeyName} = {AxisValue.AxisValue}");
+                builder.AppendLine($"{AxisValue.KeyName} = {AxisValue.StringValue}");
             }
 
             foreach (var aggregatedValue in AggregatedValues)

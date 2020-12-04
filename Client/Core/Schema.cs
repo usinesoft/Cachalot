@@ -16,6 +16,6 @@ namespace Client.Core
         /// </summary>
         public int ShardCount { get; set; }
 
-        public IDictionary<string,  TypeDescription> CollectionsDescriptions { get; set; } = new Dictionary<string, TypeDescription>();
+        public IDictionary<string,  CollectionSchema> CollectionsDescriptions { get; set; } = new Dictionary<string, CollectionSchema>();
     }
 }

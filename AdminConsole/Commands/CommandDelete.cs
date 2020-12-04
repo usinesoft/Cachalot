@@ -10,7 +10,7 @@ namespace AdminConsole.Commands
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return null;

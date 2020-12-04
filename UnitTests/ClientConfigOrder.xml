@@ -18,22 +18,6 @@
 
     </server>
   </servers>
-  <typeDescriptions>
-    <type fullName="UnitTests.TestData.Order" assembly="UnitTests">
-      <property name="Id"  keyType="primary" />
-      <property name="Amount" keyType="index" serverSide ="true" ordered="true" />
-      <!--server side value, no index-->
-      <property name="Quantity" />
-      <property name="Category" keyType="index"/>
-      <property name="ProductId" keyType="index" />
-      <property name="ClientId" keyType="index" />
-      <property name="Date" keyType="index" />
-      <property name="DayOfWeek" keyType="index" />
-      <property name="Month" keyType="index" />
-      <property name="Year" keyType="index" />
-      <property name="IsDelivered" keyType="index" />
-    </type>
-   
-  </typeDescriptions>
+  
 
 </cacheClient>

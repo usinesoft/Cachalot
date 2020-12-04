@@ -80,7 +80,7 @@ namespace UnitTests
             // now pack the same object as json
             var json = SerializationHelper.ObjectToJson(home);
 
-            var packed2 = CachedObject.PackJson(json, description.AsTypeDescription);
+            var packed2 = CachedObject.PackJson(json, description.AsCollectionSchema);
             Assert.AreEqual(7, packed2.FullText.Length);
             Assert.IsTrue(packed2.FullText.Any(t => t.Contains("chien qui fume")));
         }

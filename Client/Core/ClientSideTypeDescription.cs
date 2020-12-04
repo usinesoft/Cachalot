@@ -49,7 +49,7 @@ namespace Client.Core
         ///     Convert to a serializable form that can be used without any static dependency to
         ///     the original type
         /// </summary>
-        public TypeDescription AsTypeDescription { get; private set; }
+        public CollectionSchema AsCollectionSchema { get; private set; }
 
         /// <summary>
         ///     The one and only primary key
@@ -99,7 +99,7 @@ namespace Client.Core
             internal set
             {
                 _useCompression = value;
-                AsTypeDescription.UseCompression = true;
+                AsCollectionSchema.UseCompression = true;
             }
         }
 
@@ -174,64 +174,10 @@ namespace Client.Core
                 throw new NotSupportedException($"No primary key defined for type {type}");
 
 
-            result.AsTypeDescription = new TypeDescription(result);
+            result.AsCollectionSchema = new CollectionSchema(result);
 
             return result;
         }
 
-
-        /// <summary>
-        ///     Factory method used to create a precompiled type description.
-        ///     This version of the method uses an external description (no need to attach attributes to the public properties)
-        ///     In order to be cacheable, a type must be serializable and must have exactly one primary key
-        ///     Optionally it can have multiple unique keys and index keys
-        /// </summary>
-        /// <param name="type"> </param>
-        /// <param name="typeDescription"> </param>
-        /// <returns> </returns>
-        public static ClientSideTypeDescription RegisterType(Type type, TypeDescriptionConfig typeDescription)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            
-            var result = new ClientSideTypeDescription
-            {
-                TypeName = type.Name,
-                FullTypeName = type.FullName,
-                _useCompression = typeDescription.UseCompression
-            };
-
-            var props = type.GetProperties();
-
-            foreach (var info in props)
-                if (typeDescription.Keys.ContainsKey(info.Name))
-                {
-                    var propertyDescription = typeDescription.Keys[info.Name];
-
-                    var key = new ClientSideKeyInfo(info, propertyDescription);
-
-                    
-                    if (key.KeyType == KeyType.Primary)
-                        result.PrimaryKeyField = key;
-                    else if (key.KeyType == KeyType.Unique)
-                        result._uniqueKeyFields.Add(key);
-                    else if (key.KeyType == KeyType.ScalarIndex)
-                        result._indexFields.Add(key);
-                    else if (key.KeyType == KeyType.ListIndex)
-                        result._listFields.Add(key);
-                    
-                    if (key.IsServerSideVisible)
-                        result._serverSideValues.Add(key);
-                }
-
-            //check if the newly registered type is valid
-            if (result.PrimaryKeyField == null)
-                throw new NotSupportedException($"no primary key defined for type {type}");
-
-            result.AsTypeDescription = new TypeDescription(result);
-
-            return result;
-        }
     }
 }

@@ -19,11 +19,11 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandLineParser
     {
-        private readonly IDictionary<string, TypeDescription> _knownTypes;
+        private readonly IDictionary<string, CollectionSchema> _knownTypes;
 
         public CommandLineParser(ClusterInformation desc)
         {
-            _knownTypes = desc?.Schema.ToDictionary(t => t.FullTypeName);
+            _knownTypes = desc?.Schema.ToDictionary(t => t.CollectionName);
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace AdminConsole.Commands
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private TypeDescription GetTypeDescriptionByName(string name)
+        private CollectionSchema GetTypeDescriptionByName(string name)
         {
             foreach (var keyValuePair in _knownTypes)
                 if (keyValuePair.Value.TypeName.ToUpper() == name.ToUpper())
@@ -337,7 +337,7 @@ namespace AdminConsole.Commands
                     try
                     {
                         var typeDescription = GetTypeDescriptionByName(atoms[0]);
-                        result.Query = new OrQuery(typeDescription.FullTypeName);
+                        result.Query = new OrQuery(typeDescription.CollectionName);
                         result.Success = true;
                     }
                     catch (Exception ex)

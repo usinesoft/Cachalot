@@ -3,10 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using Channel;
-using Client.Core;
-using Client.Queries;
+using Client.Interface;
 using NUnit.Framework;
 using Server;
 using UnitTests.TestData;
@@ -28,12 +27,10 @@ namespace UnitTests
             _serverChannel.Start();
             _server.Start();
 
-            Thread.Sleep(500); //be sure the server is started
-
             _client = NewClient();
 
 
-            _client.RegisterTypeIfNeeded(typeof(CacheableTypeOk));
+            _client.DeclareCollection<CacheableTypeOk>();
         }
 
         [TearDown]
@@ -45,12 +42,12 @@ namespace UnitTests
 
         private TcpServerChannel _serverChannel;
         private Server.Server _server;
-        private CacheClient _client;
+        private DataClient _client;
         private int _serverPort;
 
-        private CacheClient NewClient()
+        private DataClient NewClient()
         {
-            var client = new CacheClient
+            var client = new DataClient
             {
                 Channel =
                     new TcpClientChannel(new TcpClientPool(4, 1,
@@ -62,69 +59,59 @@ namespace UnitTests
         }
 
 
-        private Semaphore _requestsFinished;
-
         [Test]
         public void DataAccess()
         {
-            var builder = new QueryBuilder(typeof(CacheableTypeOk));
-
             //add two new items
             var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.Put(item1);
+            _client.PutOne(item1);
 
             var item2 = new CacheableTypeOk(2, 1002, "aaa", new DateTime(2010, 10, 10), 1600);
-            _client.Put(item2);
+            _client.PutOne(item2);
 
-            var atomic = builder.MakeAtomicQuery("IndexKeyFolder", "aaa");
+            _client.DeclareDomain<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa");
 
-            var domainDeclaration = new DomainDescription(new OrQuery(typeof(CacheableTypeOk))
-                {Elements = {new AndQuery {Elements = {atomic}}}});
+            var eval = _client.IsComplete<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa");
+            Assert.IsTrue(eval); //domain is complete
 
-            _client.DeclareDomain(domainDeclaration);
 
-            var eval = _client.EvalQuery(builder.GetManyWhere("IndexKeyFolder == aaa"));
-            Assert.IsTrue(eval.Key); //domain is complete
-            Assert.AreEqual(eval.Value, 2);
+            eval = _client.IsComplete<CacheableTypeOk>(x => x.IndexKeyFolder == "bbb");
+            Assert.IsFalse(eval); //domain is incomplete
 
-            eval = _client.EvalQuery(builder.GetManyWhere("IndexKeyFolder == bbb"));
-            Assert.IsFalse(eval.Key); //domain is incomplete
-            Assert.AreEqual(eval.Value, 0);
 
             //reload the first one by primary key
-            var item1Reloaded = _client.GetOne<CacheableTypeOk>(1);
+            var item1Reloaded = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 1);
             Assert.AreEqual(item1, item1Reloaded);
 
             //reload both items by folder name
-            IList<CacheableTypeOk> itemsInAaa =
-                new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa"));
-            Assert.AreEqual(itemsInAaa.Count, 2);
+            var itemsInAaa = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
+
+            Assert.AreEqual(2, itemsInAaa.Count);
 
             //change the folder of the first item and put it back into the cache
             item1.IndexKeyFolder = "bbb";
-            _client.Put(item1);
+            _client.PutOne(item1);
 
             //now it should be only one item left in aaa
-            itemsInAaa = new List<CacheableTypeOk>(_client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa"));
-            Assert.AreEqual(itemsInAaa.Count, 1);
+            itemsInAaa = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
+            Assert.AreEqual(1, itemsInAaa.Count);
 
             //get both of them again by date
-            IList<CacheableTypeOk> allItems =
-                new List<CacheableTypeOk>(
-                    _client.GetManyWhere<CacheableTypeOk>($"IndexKeyDate ==  {new DateTime(2010, 10, 10).Ticks}"));
+            var allItems = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyDate == new DateTime(2010, 10, 10)).ToList();
             Assert.AreEqual(allItems.Count, 2);
 
             //get both of them using an In query
 
-            var q = builder.In("indexkeyfolder", "aaa", "bbb");
-            allItems = _client.GetMany<CacheableTypeOk>(q).ToList();
+            var folders = new[] {"aaa", "bbb"};
+
+            allItems = _client.GetMany<CacheableTypeOk>(x => folders.Contains(x.IndexKeyFolder)).ToList();
             Assert.AreEqual(allItems.Count, 2);
 
             //remove the first one
-            _client.Remove<CacheableTypeOk>(1);
+            _client.RemoveMany<CacheableTypeOk>(x => x.PrimaryKey == 1);
 
             //the previous query should now return only one item
-            allItems = _client.GetMany<CacheableTypeOk>(q).ToList();
+            allItems = _client.GetMany<CacheableTypeOk>(x => folders.Contains(x.IndexKeyFolder)).ToList();
             Assert.AreEqual(allItems.Count, 1);
         }
 
@@ -139,32 +126,14 @@ namespace UnitTests
             }
 
 
-            _client.FeedMany(items, true);
+            _client.PutMany(items, true);
 
             IList<CacheableTypeOk> itemsReloaded =
-                _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
+                _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
+
             Assert.AreEqual(itemsReloaded.Count, 113);
         }
 
-        [Test]
-        public void FeedDataToCacheUsingSessions()
-        {
-            var session = _client.BeginFeed<CacheableTypeOk>(10, false);
-            for (var i = 0; i < 113; i++)
-            {
-                var item1 = new CacheableTypeOk(i, 1000 + i, "aaa", new DateTime(2010, 10, 10), 1500);
-                _client.Add(session, item1);
-            }
-
-
-            _client.EndFeed<CacheableTypeOk>(session);
-
-            Thread.Sleep(300);
-
-            IList<CacheableTypeOk> itemsReloaded =
-                _client.GetManyWhere<CacheableTypeOk>("IndexKeyFolder == aaa").ToList();
-            Assert.AreEqual(itemsReloaded.Count, 113);
-        }
 
         [Test]
         public void MultiThreadedDataAccess()
@@ -173,60 +142,35 @@ namespace UnitTests
             for (var i = 0; i < 1000; i++)
             {
                 var item = new CacheableTypeOk(i, 10000 + i, "aaa", new DateTime(2010, 10, 10), 1500 + i);
-                _client.Put(item);
+                _client.PutOne(item);
             }
-
 
             const int clients = 10;
 
-            _requestsFinished = new Semaphore(0, clients);
+            // parallel requests, each client has its own channel 
+            Parallel.For(0, clients, i =>
+            {
+                using var client = new DataClient();
+                var clientChannel =
+                    new TcpClientChannel(new TcpClientPool(1, 1, "localhost",
+                        _serverPort));
 
-            //CLIENTS parallel requests: each one uses a channel
-            for (var i = 0; i < clients; i++)
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    Thread.CurrentThread.Name = "client thread";
-                    var client = new CacheClient();
-                    var clientChannel =
-                        new TcpClientChannel(new TcpClientPool(1, 1, "localhost",
-                            _serverPort));
+                client.Channel = clientChannel;
 
-                    client.Channel = clientChannel;
+                IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
+                Assert.AreEqual(items.Count, 200);
+            });
 
+            var sharedChannel = new TcpClientChannel(new TcpClientPool(1, 1, "localhost", _serverPort));
 
-                    //reload both items by folder name
-                    IList<CacheableTypeOk> items =
-                        new List<CacheableTypeOk>(
-                            client.GetManyWhere<CacheableTypeOk>("IndexKeyValue < 1700"));
-                    Assert.AreEqual(items.Count, 200);
+            // parallel requests, shared channel (a if it is used in a server back-end)
+            Parallel.For(0, clients, i =>
+            {
+                using var client = new DataClient {Channel = sharedChannel};
 
-                    _requestsFinished.Release();
-
-                    client.Dispose();
-                });
-
-
-            for (var i = 0; i < clients; i++) _requestsFinished.WaitOne();
-
-            //CLIENTS parallel requests shared channel
-
-            for (var i = 0; i < clients; i++)
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    Thread.CurrentThread.Name = "client thread";
-
-
-                    //reload both items by folder name
-                    IList<CacheableTypeOk> items =
-                        new List<CacheableTypeOk>(
-                            _client.GetManyWhere<CacheableTypeOk>("IndexKeyValue < 1700"));
-                    Assert.AreEqual(items.Count, 200);
-
-                    _requestsFinished.Release();
-                });
-
-
-            for (var i = 0; i < clients; i++) _requestsFinished.WaitOne();
+                IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
+                Assert.AreEqual(items.Count, 200);
+            });
         }
     }
 }

@@ -20,26 +20,18 @@ namespace Client.Queries
     {
         [ProtoMember(1)] private readonly List<AndQuery> _elements;
 
-        /// <summary>
-        ///     Create an empty query (called internally by the query builder)
-        /// </summary>
-        public OrQuery(Type type)
+        
+
+        public OrQuery(string collectionName)
         {
-            TypeName = type.FullName;
+            CollectionName = collectionName;
             _elements = new List<AndQuery>();
         }
 
 
-        public OrQuery(string typeName)
+        public OrQuery(CollectionSchema collectionSchema)
         {
-            TypeName = typeName;
-            _elements = new List<AndQuery>();
-        }
-
-
-        public OrQuery(TypeDescription typeDescription)
-        {
-            TypeName = typeDescription.FullTypeName;
+            CollectionName = collectionSchema.CollectionName;
             _elements = new List<AndQuery>();
         }
 
@@ -61,7 +53,7 @@ namespace Client.Queries
         /// </summary>
         public IList<AndQuery> Elements => _elements;
 
-        [field: ProtoMember(2)] public string TypeName { get; set; }
+        [field: ProtoMember(2)] public string CollectionName { get; set; }
 
         public bool MultipleWhereClauses { get; set; }
         [ProtoMember(3)] public int Take { get; set; }

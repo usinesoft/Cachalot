@@ -51,7 +51,7 @@ namespace Server
         }
 
         /// <summary>
-        ///     <see cref="DataStore" /> by <see cref="TypeDescription" />
+        ///     <see cref="DataStore" /> by <see cref="CollectionSchema" />
         /// </summary>
         private IDictionary<string, DataStore> DataStores {get;} = new Dictionary<string, DataStore>();
 
@@ -80,7 +80,7 @@ namespace Server
         /// <summary>
         ///     Dispatch the request to the appropriate consumer.
         ///     If it is a <see cref="DataRequest" /> dispatch it to its target
-        ///     <see cref="DataStore" /> according to its FullTypeName property
+        ///     <see cref="DataStore" /> according to its CollectionName property
         ///     If it is an administrative request process it directly.
         /// </summary>
         /// <param name="clientRequest"></param>
@@ -134,8 +134,8 @@ namespace Server
         {
             // First try to acquire a write lock on all concerned data stores
 
-            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.FullTypeName).Distinct().ToList();
-            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.FullTypeName).Distinct().ToList();
+            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.CollectionName).Distinct().ToList();
+            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
             var types = typesToPut.Union(typesToDelete).Distinct().ToList();
 
 
@@ -173,7 +173,7 @@ namespace Server
 
                         lock (DataStores)
                         {
-                            ds = DataStores[condition.TypeName];
+                            ds = DataStores[condition.CollectionName];
                         }
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
@@ -277,8 +277,8 @@ namespace Server
 
         private void ProcessSingleStageTransactionRequest(TransactionRequest transactionRequest, IClient client)
         {
-            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.FullTypeName).Distinct().ToList();
-            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.FullTypeName).Distinct().ToList();
+            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.CollectionName).Distinct().ToList();
+            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
             var types = typesToPut.Union(typesToDelete).Distinct();
 
 
@@ -304,7 +304,7 @@ namespace Server
 
                         lock (DataStores)
                         {
-                            ds = DataStores[condition.TypeName];
+                            ds = DataStores[condition.CollectionName];
                         }
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
@@ -478,10 +478,10 @@ namespace Server
 
         private void InternalProcessRegisterType(RegisterTypeRequest request)
         {
-            var typeDescription = request.TypeDescription;
+            var typeDescription = request.CollectionSchema;
 
             // TODO temporary fallback
-            var collectionName = request.CollectionName ?? typeDescription.FullTypeName;
+            var collectionName = request.CollectionName ?? typeDescription.CollectionName;
 
             if (ShardCount == 0) // not initialized
             {
@@ -498,7 +498,7 @@ namespace Server
             if (DataStores.ContainsKey(collectionName)) //type already registered
             {
                 //if the type description changed reindex
-                if (!typeDescription.Equals(DataStores[collectionName].TypeDescription))
+                if (!typeDescription.Equals(DataStores[collectionName].CollectionSchema))
                 {
                     lock (DataStores)
                     {
@@ -709,7 +709,7 @@ namespace Server
                     foreach (var dataStore in DataStores.Values)
                         if (!dataStore.Lock.TryEnterReadLock(Constants.DelayForLock))
                             throw new NotSupportedException(
-                                $"Can not acquire read-only lock for type {dataStore.TypeDescription.FullTypeName} on server {ShardIndex}");
+                                $"Can not acquire read-only lock for type {dataStore.CollectionSchema.CollectionName} on server {ShardIndex}");
 
                     InternalDump(request, client);
                 }
@@ -791,7 +791,7 @@ namespace Server
 
                 foreach (var store in stores)
                 {
-                    response.AddTypeDescription(store.TypeDescription);
+                    response.AddTypeDescription(store.CollectionSchema);
 
                     
                     var info = new DataStoreInfo
@@ -800,11 +800,11 @@ namespace Server
                         EvictionPolicy = store.EvictionType,
                         EvictionPolicyDescription =
                             store.EvictionPolicy.ToString(),
-                        FullTypeName = store.TypeDescription.FullTypeName,
+                        FullTypeName = store.CollectionSchema.CollectionName,
                         AvailableData =
                             store.DomainDescription ??
                             new DomainDescription(null),
-                        DataCompression = store.TypeDescription.UseCompression,
+                        DataCompression = store.CollectionSchema.UseCompression,
 
                         HitCount = store.HitCount,
                         ReadCount = store.ReadCount
@@ -896,11 +896,11 @@ namespace Server
         {
             lock (DataStores)
             {
-                var collectionsDescriptions = new Dictionary<string, TypeDescription>();
+                var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
 
                 foreach (var store in DataStores)
                 {
-                    collectionsDescriptions.Add(store.Key, store.Value.TypeDescription);
+                    collectionsDescriptions.Add(store.Key, store.Value.CollectionSchema);
                 }
 
                 var schema = new Schema

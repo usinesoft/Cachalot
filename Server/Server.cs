@@ -113,8 +113,6 @@ namespace Server
         }
 
 
-        //TODO add unit test for drop (coverage)
-
         private void ManageDropRequest()
         {
             Mode = ServerMode.ReadOnly;
@@ -188,12 +186,12 @@ namespace Server
                                 store => store.LoadFromDump(path, importRequest.ShardIndex));
 
                             // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
-                            foreach (var dataStore in _dataContainer.Stores())  
+                            foreach (var dataStore in _dataContainer.Stores())
                             foreach (var item in dataStore.DataByPrimaryKey)
                             {
                                 var itemData =
                                     SerializationHelper.ObjectToBytes(item.Value, SerializationMode.ProtocolBuffers,
-                                        dataStore.TypeDescription);
+                                        dataStore.CollectionSchema);
 
                                 storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
                             }
@@ -286,7 +284,7 @@ namespace Server
             Dbg.Trace("SERVER STOPPED");
         }
 
-        protected virtual void OnStopRequired()
+        private void OnStopRequired()
         {
             StopRequired?.Invoke(this, EventArgs.Empty);
         }

@@ -25,18 +25,18 @@ namespace Server.Persistence
 
             Dbg.Trace($"processing persistent object {data.Length} bytes {item}");
 
-            if (!_temporaryStorage.TryGetValue(item.FullTypeName, out var list))
+            if (!_temporaryStorage.TryGetValue(item.CollectionName, out var list))
             {
                 list = new List<CachedObject>();
-                _temporaryStorage[item.FullTypeName] = list;
+                _temporaryStorage[item.CollectionName] = list;
             }
 
             list.Add(item);
 
-            var store = _dataContainer.TryGetByName(item.FullTypeName);
+            var store = _dataContainer.TryGetByName(item.CollectionName);
 
             if (store == null)
-                throw new NotSupportedException($"The type {item.FullTypeName} is not present in the database schema");
+                throw new NotSupportedException($"The type {item.CollectionName} is not present in the database schema");
         }
 
         public void EndProcess(string dataPath = null)

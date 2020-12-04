@@ -24,13 +24,5 @@ namespace Cachalot.Linq
             }
         }
 
-        public static void AddExplicitTypeDescription(Type type, ClientSideTypeDescription typeDescription)
-        {
-            lock (TypeDescriptions)
-            {
-                TypeDescriptions[type] =  typeDescription;
-            }
-        }
-
     }
 }

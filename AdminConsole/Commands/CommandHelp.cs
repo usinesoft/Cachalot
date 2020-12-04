@@ -27,7 +27,7 @@ namespace AdminConsole.Commands
             Logger.Write("Floating point values with a mandatory '.' decimal separator like 200. or 200.0");
         }
 
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute) return null;
 

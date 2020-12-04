@@ -26,7 +26,7 @@ namespace Server
             _timeToLive = timeToLive;
         }
 
-        public override bool IsEvictionRequired => _evictionQueue.Count >0 && DateTimeOffset.Now - _evictionQueue.Peek().Item1 > _timeToLive ;
+        public override bool IsEvictionRequired => _evictionQueue.Count > 0 && DateTimeOffset.Now - _evictionQueue.Peek().Item1 > _timeToLive ;
 
 
         public override EvictionType Type => EvictionType.TimeToLive;

@@ -1,11 +1,12 @@
 using System;
 using Client.Interface;
+using Client.Messages;
 using ProtoBuf;
 
 namespace Client.Core
 {
     /// <summary>
-    ///     Contains complementary information about a data table(not contained in the <see cref="Messages.TypeDescription" />)
+    ///     Contains complementary information about a data table(not contained in the <see cref="CollectionSchema" />)
     /// </summary>
     [ProtoContract]
     [Serializable]

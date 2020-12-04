@@ -11,7 +11,7 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandDesc : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return null;
@@ -99,10 +99,10 @@ namespace AdminConsole.Commands
         }
 
 
-        private static void LogTypeInfo(TypeDescription desc)
+        private static void LogTypeInfo(CollectionSchema desc)
         {
             Logger.Write("");
-            Logger.Write("{0} ({1})", desc.TypeName.ToUpper(), desc.FullTypeName);
+            Logger.Write("{0} ({1})", desc.TypeName.ToUpper(), desc.CollectionName);
             Logger.Write("-------------------------------------------------------------------------------------------");
             var header = $"| {"property",25} | {"index type",13} | {"data type",9} | {"ordered",8} | {"full txt",8}| {"server-side",10}|";
 

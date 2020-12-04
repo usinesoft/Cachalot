@@ -16,19 +16,19 @@ namespace Cachalot.Linq
         private static Action<OrQuery> _customAction;
 
         private readonly IDataClient _client;
-        private readonly TypeDescription _typeDescription;
+        private readonly CollectionSchema _collectionSchema;
 
 
-        public QueryExecutor(IDataClient client, TypeDescription typeDescription)
+        public QueryExecutor(IDataClient client, CollectionSchema collectionSchema)
         {
             _client = client;
-            _typeDescription = typeDescription;
+            _collectionSchema = collectionSchema;
         }
 
         // Executes a query with a scalar result, i.e. a query that ends with a result operator such as Count, Sum, or Average.
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_typeDescription);
+            var visitor = new QueryVisitor(_collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -54,7 +54,7 @@ namespace Cachalot.Linq
         // Executes a query with a collection result.
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_typeDescription);
+            var visitor = new QueryVisitor(_collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 

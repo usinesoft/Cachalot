@@ -10,7 +10,7 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandLast : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return client;
@@ -39,7 +39,7 @@ namespace AdminConsole.Commands
                     Logger.Write("Maximum access time was:");
                 }
 
-                Logger.Write("The call took {0} miliseconds", profilerResult.TotalTimeMiliseconds);
+                Logger.Write("The call took {0} milliseconds", profilerResult.TotalTimeMiliseconds);
             }
             catch (Exception ex)
             {

@@ -7,7 +7,7 @@ namespace AdminConsole.Commands
 {
     public class CommandConnect : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return client;
@@ -35,7 +35,7 @@ namespace AdminConsole.Commands
 
                 if (singleServerMode)
                 {
-                    var newClient = new CacheClient();
+                    var newClient = new DataClient();
                     var channel = new TcpClientChannel(new TcpClientPool(1, 1, server, port));
                     newClient.Channel = channel;
 
@@ -48,7 +48,7 @@ namespace AdminConsole.Commands
                 }
                 else // the unique  parameter is a cluster configuration file: connect to multiple servers
                 {
-                    var aggregator = new Aggregator();
+                    var aggregator = new DataAggregator();
 
                     ClientConfig config;
 
@@ -69,7 +69,7 @@ namespace AdminConsole.Commands
                         var channel =
                             new TcpClientChannel(new TcpClientPool(4, 1, serverConfig.Host, serverConfig.Port));
 
-                        var oneClient = new CacheClient
+                        var oneClient = new DataClient
                         {
                             Channel = channel,
                             ShardIndex = index,

@@ -108,7 +108,7 @@ namespace Client.Interface
         /// <param name="collectionName"></param>
         /// <param name="schema"></param>
         /// <param name="shard">to specify only if the cluster configuration changed</param>
-        void DeclareCollection(string collectionName, TypeDescription schema, int shard = -1);
+        void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1);
 
 
         /// <summary>

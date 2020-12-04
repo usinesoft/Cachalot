@@ -5,7 +5,7 @@ namespace UnitTests
 {
     /// <summary>
     ///     Simulates a resource pool connected to a slow provider provider
-    ///     In this case, resource reciclying inside the pool should prevail
+    ///     In this case, resource recycling inside the pool should prevail
     /// </summary>
     internal class SlowProviderPool : PoolStrategy<SomeResource>
     {

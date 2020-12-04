@@ -116,7 +116,7 @@ namespace Channel
             Streamer.ToStream(stream, request);
         }
 
-        public Response SendRequest(Session session, Request request)
+        private Response SendRequest(Session session, Request request)
         {
             if (!(session is TcpSession tcpSession))
                 throw new ArgumentException("Invalid session type", nameof(session));
@@ -134,8 +134,7 @@ namespace Channel
 
             var response = Streamer.FromStream<Response>(stream);
 
-            //Streamer.SendAck(tcpSession.Client.GetStream());
-
+            
             return response;
         }
 
@@ -165,38 +164,7 @@ namespace Channel
             return response is ReadyResponse;
         }
 
-        public void GetStreamedCollection<TItemType>(Session session, DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            if (!(session is TcpSession tcpSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = tcpSession.Client;
-
-            if (client == null || client.Connected == false)
-                throw new CacheException("Not connected to server");
-
-            var stream = client.GetStream();
-
-            Streamer.FromStream(stream, dataHandler, exceptionHandler);
-        }
-
-
-        public TItem GetOneObject<TItem>(Session session)
-        {
-            if (!(session is TcpSession tcpSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = tcpSession.Client;
-
-            if (client == null || client.Connected == false)
-                throw new CacheException("Not connected to server");
-
-            var stream = client.GetStream();
-
-            return Streamer.FromStream<TItem>(stream);
-        }
-
+       
         public Response SendRequest(Request request)
         {
             if (request == null)
@@ -227,40 +195,6 @@ namespace Channel
             return response;
         }
 
-
-        public void SendStreamRequest<TItemType>(Request request, DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            if (request == null)
-                throw new ArgumentNullException(nameof(request));
-
-            var client = _connectionPool.Get();
-
-            if (client == null || client.Connected == false)
-                throw new CacheException("Not connected to server");
-
-            try
-            {
-                var stream = client.GetStream();
-
-                stream.WriteByte(Consts.RequestCookie);
-
-                Streamer.ToStream(stream, request);
-
-
-                Streamer.FromStream(stream, dataHandler, exceptionHandler);
-
-                Streamer.SendAck(stream);
-            }
-            catch (Exception ex)
-            {
-                throw new CacheException(ex.Message);
-            }
-            finally
-            {
-                _connectionPool.Put(client);
-            }
-        }
 
         #endregion
     }

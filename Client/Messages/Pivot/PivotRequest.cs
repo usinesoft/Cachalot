@@ -18,7 +18,7 @@ namespace Client.Messages.Pivot
         }
 
         public PivotRequest(OrQuery query)
-            : base(DataAccessType.Read, query.TypeName)
+            : base(DataAccessType.Read, query.CollectionName)
         {
             Query = query;
         }

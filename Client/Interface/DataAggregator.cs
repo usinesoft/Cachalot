@@ -14,7 +14,7 @@ using Client.Tools;
 
 namespace Client.Interface
 {
-    class DataAggregator : IDataClient
+    public class DataAggregator : IDataClient
     {
 
         private readonly object _transactionSync = new object();
@@ -446,7 +446,7 @@ namespace Client.Interface
             return answers.All(a => a);
         }
 
-        public void DeclareCollection(string collectionName, TypeDescription schema, int shard = -1)
+        public void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1)
         {
             Parallel.ForEach(CacheClients, client =>
             {
@@ -848,7 +848,7 @@ namespace Client.Interface
 
         public void Import(string collectionName, string jsonFile)
         {
-            var objects = DumpHelper.LoadObjects(jsonFile, this);
+            var objects = DumpHelper.LoadObjects(this, jsonFile, collectionName);
 
             FeedMany(collectionName, objects, true);
         }

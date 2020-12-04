@@ -57,7 +57,7 @@ namespace AdminConsole.Commands
         ///     The command execution may change the connection
         /// </summary>
         /// <returns></returns>
-        internal virtual ICacheClient TryExecute(ICacheClient client)
+        internal virtual IDataClient TryExecute(IDataClient client)
         {
             return client;
         }

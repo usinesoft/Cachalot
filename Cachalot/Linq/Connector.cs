@@ -12,7 +12,7 @@ namespace Cachalot.Linq
 {
     public class Connector : IDisposable
     {
-        readonly Dictionary<string, TypeDescription> _collectionSchema = new Dictionary<string, TypeDescription>();
+        readonly Dictionary<string, CollectionSchema> _collectionSchema = new Dictionary<string, CollectionSchema>();
 
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace Cachalot.Linq
         /// </summary>
         /// <param name="collectionName"></param>
         /// <param name="schema"></param>
-        public void DeclareCollection(string collectionName, TypeDescription schema)
+        public void DeclareCollection(string collectionName, CollectionSchema schema)
         {
             
             lock (_collectionSchema)
@@ -54,7 +54,7 @@ namespace Cachalot.Linq
 
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             
-            var schema = description.AsTypeDescription;
+            var schema = description.AsCollectionSchema;
             
             Client.DeclareCollection(collectionName, schema);
 
@@ -64,7 +64,7 @@ namespace Cachalot.Linq
             }
         }
 
-        public TypeDescription GetCollectionSchema(string collectionName)
+        public CollectionSchema GetCollectionSchema(string collectionName)
         {
             lock (_collectionSchema)
             {
@@ -129,16 +129,6 @@ namespace Cachalot.Linq
                 }
             }
 
-
-            // register types from client configuration
-            foreach (var description in config.TypeDescriptions)
-            {
-                var type = Type.GetType(description.Value.FullTypeName + ", " + description.Value.AssemblyName);
-                
-                var typeDescription = ClientSideTypeDescription.RegisterType(type, description.Value);
-
-                TypeDescriptionsCache.AddExplicitTypeDescription(type, typeDescription);
-            }
         }
 
         internal IDataClient Client { get; private set; }
@@ -183,7 +173,7 @@ namespace Cachalot.Linq
             return Client.GetClusterInformation();
         }
 
-        public DataSource<T> DataSource<T>(string collectionName = null, TypeDescription description = null)
+        public DataSource<T> DataSource<T>(string collectionName = null, CollectionSchema description = null)
         {
             return new DataSource<T>(this, collectionName, description);
         }

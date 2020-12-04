@@ -82,7 +82,7 @@ namespace UnitTests
 
             var description = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>();
 
-            var typeDescription = description.AsTypeDescription;
+            var typeDescription = description.AsCollectionSchema;
 
             var packed1 = CachedObject.Pack(testObj);
 
@@ -95,7 +95,7 @@ namespace UnitTests
 
             Assert.AreEqual(packed1, packed2); // only checks the primary key
 
-            Assert.AreEqual(packed1.FullTypeName, packed2.FullTypeName);
+            Assert.AreEqual(packed1.CollectionName, packed2.CollectionName);
 
             CollectionAssert.AreEqual(packed1.UniqueKeys, packed2.UniqueKeys);
             CollectionAssert.AreEqual(packed1.IndexKeys, packed2.IndexKeys);
@@ -119,7 +119,7 @@ namespace UnitTests
 
             var description = ClientSideTypeDescription.RegisterType<Order>();
 
-            var typeDescription = description.AsTypeDescription;
+            var typeDescription = description.AsCollectionSchema;
 
             var packed1 = CachedObject.Pack(testObj);
 
@@ -132,7 +132,7 @@ namespace UnitTests
 
             Assert.AreEqual(packed1, packed2); // only checks the primary key
 
-            Assert.AreEqual(packed1.FullTypeName, packed2.FullTypeName);
+            Assert.AreEqual(packed1.CollectionName, packed2.CollectionName);
 
             CollectionAssert.AreEqual(packed1.UniqueKeys, packed2.UniqueKeys);
             CollectionAssert.AreEqual(packed1.IndexKeys, packed2.IndexKeys);
@@ -245,11 +245,11 @@ namespace UnitTests
                     'Id': 123,
                     }";
 
-            var description = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>().AsTypeDescription;
+            var description = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>().AsCollectionSchema;
 
             var packed = CachedObject.PackJson(json, description);
 
-            Assert.AreEqual("123", packed.PrimaryKey.AxisValue);
+            Assert.AreEqual(123, packed.PrimaryKey.IntValue);
 
         }
 
@@ -286,7 +286,7 @@ namespace UnitTests
         {
             var description1 = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>();
 
-            var description2 = description1.AsTypeDescription;
+            var description2 = description1.AsCollectionSchema;
 
             var now = DateTime.Now;
             

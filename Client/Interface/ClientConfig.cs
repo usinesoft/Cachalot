@@ -23,15 +23,12 @@ namespace Client.Interface
             ConnectionPoolCapacity = 3;
         }
 
-        public Dictionary<string, TypeDescriptionConfig> TypeDescriptions { get; } =
-            new Dictionary<string, TypeDescriptionConfig>();
-
         public IList<ServerConfig> Servers => _servers;
 
 
-        public int ConnectionPoolCapacity { get;  set; }
+        public int ConnectionPoolCapacity { get; private set; }
 
-        public int PreloadedConnections { get; set; }
+        public int PreloadedConnections { get; private set; }
 
         public bool IsPersistent { get; set; } = true;
 
@@ -150,121 +147,11 @@ namespace Client.Interface
                     var host = StringFromXpath(node, "host");
                     cfg.Host = host;
 
-                    var weight = StringFromXpath(node, "weight");
-
-
+                    
                     Servers.Add(cfg);
                 }
 
-            //read converters
-            nodeList = doc.SelectNodes("//keyConverters/converter");
-
-
-            if (nodeList != null)
-                foreach (XmlNode node in nodeList)
-                {
-                    var converterTypeName = StringFromXpath(node, "@fullName");
-
-                    var converterType = Type.GetType(converterTypeName);
-                    if (converterType == null)
-                        throw new CacheException(
-                            $"Can not instantiate a key converter for type {converterTypeName}");
-
-                    if (!(Activator.CreateInstance(converterType) is IKeyConverter converter))
-                        throw new CacheException(
-                            $"Can not instantiate a key converter for type {converterTypeName}");
-                }
-
-            //type descriptions
-            nodeList = doc.SelectNodes("//typeDescriptions/type");
-            if (nodeList != null)
-                foreach (XmlNode node in nodeList)
-                {
-                    var typeDescription = new TypeDescriptionConfig();
-                    var typeName = StringFromXpath(node, "@fullName");
-                    if (string.IsNullOrEmpty(typeName))
-                        throw new CacheException("Missing fullName attribute on a type description");
-
-                    var assemblyName = StringFromXpath(node, "@assembly");
-                    if (string.IsNullOrEmpty(assemblyName))
-                        throw new CacheException("Missing assembly attribute on a type description");
-
-                    var useCompression = StringFromXpath(node, "@useCompression");
-                    typeDescription.UseCompression = IsYes(useCompression);
-
-                    
-                    typeDescription.FullTypeName = typeName;
-                    typeDescription.AssemblyName = assemblyName;
-
-                    var propertyNodes = node.SelectNodes("property");
-                    if (propertyNodes != null)
-                        foreach (XmlNode propertyNode in propertyNodes)
-                        {
-                            var propertyName = StringFromXpath(propertyNode, "@name");
-                            var propertyType = StringFromXpath(propertyNode, "@keyType");
-
-                            var serverSideValue = StringFromXpath(propertyNode, "@serverSide");
-                            bool serverSide = IsYes(serverSideValue);
-                            
-                            KeyType keyType = KeyType.None;
-                            switch (propertyType.ToUpper())
-                            {
-                                case "PRIMARY":
-                                    keyType = KeyType.Primary;
-                                    break;
-                                case "UNIQUE":
-                                    keyType = KeyType.Unique;
-                                    break;
-                                case "INDEX":
-                                    keyType = KeyType.ScalarIndex;
-                                    break;
-                                case "LIST":
-                                    keyType = KeyType.ListIndex;
-                                    break;
-
-                                default:
-                                    serverSide = true;
-                                    break;
-                            }
-
-                            var keyDataType = StringFromXpath(propertyNode, "@dataType");
-
-                            KeyDataType dataType = KeyDataType.Default;
-
-                            if (!string.IsNullOrWhiteSpace(keyDataType))
-                            {
-                                switch (keyDataType.ToUpper())
-                                {
-                                    case "INT":
-                                    case "INTEGER":
-                                        dataType = KeyDataType.IntKey;
-                                        break;
-                                    case "STRING":
-                                        dataType = KeyDataType.StringKey;
-                                        break;
-
-                                    case "DEFAULT":
-                                        dataType = KeyDataType.Default;
-                                        break;
-
-                                    default:
-                                        throw new CacheException(
-                                            $"Unknown key data type {keyDataType} for property{propertyName}");
-                                }
-                            }
-
-                            var orderedIndex = StringFromXpath(propertyNode, "@ordered");
-                            var ordered = orderedIndex.ToUpper() == "TRUE";
-
-                            var fullText = StringFromXpath(propertyNode, "@fullTextIndexed");
-                            var fullTextIndexed = fullText.ToUpper() == "TRUE";
-
-
-                            typeDescription.Add(propertyName, keyType, dataType, ordered, fullTextIndexed, serverSide);
-                        }
-
-                    TypeDescriptions.Add(typeName, typeDescription);
-                }
+            
         }
 
         private static string StringFromXpath(XmlNode element, string xpath)

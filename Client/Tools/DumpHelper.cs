@@ -6,6 +6,7 @@ using System.Text;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 
 namespace Client.Tools
@@ -15,62 +16,56 @@ namespace Client.Tools
         /// <summary>
         ///     Helper function. Deserialize and pack objects from a json file
         /// </summary>
-        internal static IEnumerable<CachedObject> LoadObjects(string jsonPath, ICacheClient client)
+        //internal static IEnumerable<CachedObject> LoadObjects(string jsonPath, ICacheClient client)
+        //{
+        //    var json = File.ReadAllText(jsonPath);
+
+        //    var array = JArray.Parse(json);
+
+        //    var info = client.GetClusterInformation();
+        //    var typesByName = info.Schema.ToDictionary(td => td.CollectionName);
+
+        //    CollectionSchema collectionSchema = null;
+
+        //    foreach (var item in array.Children<JObject>())
+        //    {
+        //        // Get the type description only once. All should have the same
+        //        if (collectionSchema == null)
+        //        {
+        //            var type = item.Property("$type")?.Value?.ToString();
+        //            if (type == null) throw new FormatException("Type information not found");
+        //            var parts = type.Split(',');
+        //            if (parts.Length != 2) throw new FormatException("Can not parse type information:" + type);
+
+        //            collectionSchema = typesByName[parts[0].Trim()];
+        //        }
+
+
+        //        var cachedObject = CachedObject.PackJson(item.ToString(), collectionSchema);
+        //        yield return cachedObject;
+        //    }
+        //}
+
+        internal static IEnumerable<CachedObject> LoadObjects(IDataClient @this, string jsonPath, [NotNull] string collectionName)
         {
+            if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));
+
             var json = File.ReadAllText(jsonPath);
 
             var array = JArray.Parse(json);
 
-            var info = client.GetClusterInformation();
-            var typesByName = info.Schema.ToDictionary(td => td.FullTypeName);
+            var info = @this.GetClusterInformation();
 
-            TypeDescription typeDescription = null;
+            var schemaByName = info.Schema.ToDictionary(td => td.CollectionName.ToLower());
 
-            foreach (var item in array.Children<JObject>())
-            {
-                // Get the type description only once. All should have the same
-                if (typeDescription == null)
-                {
-                    var type = item.Property("$type")?.Value?.ToString();
-                    if (type == null) throw new FormatException("Type information not found");
-                    var parts = type.Split(',');
-                    if (parts.Length != 2) throw new FormatException("Can not parse type information:" + type);
+            if(!schemaByName.ContainsKey(collectionName.ToLower()))
+                throw new CacheException($"Collection {collectionName} not found");
 
-                    typeDescription = typesByName[parts[0].Trim()];
-                }
-
-
-                var cachedObject = CachedObject.PackJson(item.ToString(), typeDescription);
-                yield return cachedObject;
-            }
-        }
-
-        internal static IEnumerable<CachedObject> LoadObjects(string jsonPath, IDataClient client)
-        {
-            var json = File.ReadAllText(jsonPath);
-
-            var array = JArray.Parse(json);
-
-            var info = client.GetClusterInformation();
-            var typesByName = info.Schema.ToDictionary(td => td.FullTypeName);
-
-            TypeDescription typeDescription = null;
+            CollectionSchema collectionSchema = schemaByName[collectionName];
 
             foreach (var item in array.Children<JObject>())
             {
-                // Get the type description only once. All should have the same
-                if (typeDescription == null)
-                {
-                    var type = item.Property("$type")?.Value?.ToString();
-                    if (type == null) throw new FormatException("Type information not found");
-                    var parts = type.Split(',');
-                    if (parts.Length != 2) throw new FormatException("Can not parse type information:" + type);
-
-                    typeDescription = typesByName[parts[0].Trim()];
-                }
-
-
-                var cachedObject = CachedObject.PackJson(item.ToString(), typeDescription);
+                var cachedObject = CachedObject.PackJson(item.ToString(), collectionSchema);
                 yield return cachedObject;
             }
         }
@@ -80,15 +75,15 @@ namespace Client.Tools
         ///     Helper function. Enumerate all the objects in the dump
         /// </summary>
         /// <param name="path">path of the dump</param>
-        /// <param name="typeDescription"></param>
+        /// <param name="collectionSchema"></param>
         /// <param name="shardIndex"></param>
         /// <returns></returns>
-        public static IEnumerable<CachedObject> ObjectsInDump(string path, TypeDescription typeDescription,
+        public static IEnumerable<CachedObject> ObjectsInDump(string path, CollectionSchema collectionSchema,
             int shardIndex = -1)
         {
             var fileMask = shardIndex != -1
-                ? $"{typeDescription.FullTypeName}_shard{shardIndex:D4}*.txt"
-                : $"{typeDescription.FullTypeName}_shard*.txt";
+                ? $"{collectionSchema.CollectionName}_shard{shardIndex:D4}*.txt"
+                : $"{collectionSchema.CollectionName}_shard*.txt";
 
             var files = Directory.GetFiles(path, fileMask);
 
@@ -101,13 +96,13 @@ namespace Client.Tools
 
                 foreach (var part in parts)
                 {
-                    var cachedObject = CachedObject.PackJson(part, typeDescription);
+                    var cachedObject = CachedObject.PackJson(part, collectionSchema);
                     yield return cachedObject;
                 }
             }
         }
 
-        public static void DumpObjects(string path, TypeDescription typeDescription, int shardIndex,
+        public static void DumpObjects(string path, CollectionSchema collectionSchema, int shardIndex,
             IEnumerable<CachedObject> objects)
         {
             if (!Directory.Exists(path)) throw new NotSupportedException("Dump path not found:" + path);
@@ -125,7 +120,7 @@ namespace Client.Tools
             else
             {
                 // clean the files corresponding to my type and shard
-                var fileMask = $"{typeDescription.FullTypeName}_shard{shardIndex:D4}_*.txt";
+                var fileMask = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_*.txt";
 
                 var files = Directory.GetFiles(fullPath, fileMask);
                 foreach (var file in files) File.Delete(file);
@@ -151,7 +146,7 @@ namespace Client.Tools
 
                 if (index == maxObjectsInFile)
                 {
-                    var fileName = $"{typeDescription.FullTypeName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
+                    var fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
                     var filePath = Path.Combine(fullPath, fileName);
                     File.WriteAllText(filePath, sb.ToString());
                     sb = new StringBuilder();
@@ -167,7 +162,7 @@ namespace Client.Tools
             var content = sb.ToString().Trim();
             if (!string.IsNullOrWhiteSpace(content))
             {
-                var fileName = $"{typeDescription.FullTypeName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
+                var fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
                 var filePath = Path.Combine(fullPath, fileName);
                 File.WriteAllText(filePath, content);
             }

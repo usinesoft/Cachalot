@@ -32,7 +32,7 @@ namespace Cachalot.Linq
         /// <summary>
         /// This one is mandatory
         /// </summary>
-        private readonly TypeDescription _typeDescription;
+        private readonly CollectionSchema _collectionSchema;
         
         /// <summary>
         /// Thi one is optional, but if present it allow for faster packing
@@ -40,14 +40,13 @@ namespace Cachalot.Linq
         private readonly ClientSideTypeDescription _description;
 
         private readonly string _collectionName;
-        private readonly Connector _connector;
 
         CachedObject Pack(T item)
         {
             if(_description != null)
-                return CachedObject.Pack(item, _description);
+                return CachedObject.Pack(item, _description, _collectionName);
 
-            return CachedObject.Pack(item, _typeDescription);
+            return CachedObject.Pack(item, _collectionSchema);
         }
 
         /// <summary>
@@ -55,37 +54,35 @@ namespace Cachalot.Linq
         /// </summary>
         /// <param name="connector"></param>
         /// <param name="collectionName"></param>
-        /// <param name="typeDescription"></param>
-        internal DataSource(Connector connector, string collectionName = null, TypeDescription typeDescription= null)
-            : base(CreateParser(), new QueryExecutor(connector?.Client, typeDescription ?? TypeDescriptionsCache.GetDescription(typeof(T)).AsTypeDescription))
+        /// <param name="collectionSchema"></param>
+        internal DataSource(Connector connector, string collectionName = null, CollectionSchema collectionSchema= null)
+            : base(CreateParser(), new QueryExecutor(connector?.Client, collectionSchema ?? TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema))
         {
             _client = connector?.Client;
 
-            _connector = connector;
-
             _collectionName = collectionName ?? typeof(T).FullName;
 
-            if (typeDescription != null)
+            if (collectionSchema != null)
             {
-                _typeDescription = typeDescription;
+                _collectionSchema = collectionSchema;
             }
             else // no explicit schema
             {
                 // first check that one was registered in the connector
-                var availableDescription = _connector?.GetCollectionSchema(_collectionName);
+                var availableDescription = connector?.GetCollectionSchema(_collectionName);
                 if (availableDescription != null)
                 {
-                    _typeDescription = availableDescription;
+                    _collectionSchema = availableDescription;
                 }
                 else // if none available get the metadata from attributes 
                 {
                     _description =  TypeDescriptionsCache.GetDescription(typeof(T));
-                    _typeDescription = _description.AsTypeDescription;    
+                    _collectionSchema = _description.AsCollectionSchema;    
                 }
                 
             }
 
-            _connector?.DeclareCollection(_collectionName, _typeDescription);
+            connector?.DeclareCollection(_collectionName, _collectionSchema);
             
         }
 
@@ -110,8 +107,8 @@ namespace Cachalot.Linq
         {
             get
             {
-                var query = new QueryBuilder(_typeDescription).GetOne(primaryKey);
-                query.TypeName = _collectionName;
+                var query = new QueryBuilder(_collectionSchema).GetOne(primaryKey);
+                query.CollectionName = _collectionName;
                 return _client.GetMany( query).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer)).FirstOrDefault();
             }
         }
@@ -156,7 +153,7 @@ namespace Cachalot.Linq
 
             var query = PredicateToQuery(domainDefinition);
 
-            query.TypeName = _collectionName;
+            query.CollectionName = _collectionName;
 
             var domain = new DomainDescription(query, false, humanReadableDescription);
 
@@ -224,8 +221,8 @@ namespace Cachalot.Linq
         public void Delete(T item)
         {
             var packed = Pack(item);
-            var query = new QueryBuilder(_typeDescription).GetOne(packed.PrimaryKey);
-            query.TypeName = _collectionName;
+            var query = new QueryBuilder(_collectionSchema).GetOne(packed.PrimaryKey);
+            query.CollectionName = _collectionName;
 
             _client.RemoveMany(query);
         }
@@ -239,7 +236,7 @@ namespace Cachalot.Linq
         public void DeleteMany(Expression<Func<T, bool>> where)
         {
             var query = PredicateToQuery(where);
-            query.TypeName = _collectionName;
+            query.CollectionName = _collectionName;
 
             _client.RemoveMany(query);
         }
@@ -253,7 +250,7 @@ namespace Cachalot.Linq
         /// <returns></returns>
         public PivotLevel ComputePivot(Expression<Func<T, bool>> filter = null, params Expression<Func<T, object>>[] axis)
         {
-            var query = filter != null ? PredicateToQuery(filter) : new OrQuery(typeof(T));
+            var query = filter != null ? PredicateToQuery(filter) : new OrQuery(_collectionName);
 
             return _client.ComputePivot(query, axis.Select(ExpressionTreeHelper.PropertyName).ToArray());
         }
@@ -262,13 +259,13 @@ namespace Cachalot.Linq
         {
             // create a fake queryable to force query parsing and capture resolution
 
-            var executor = new NullExecutor(_typeDescription);
+            var executor = new NullExecutor(_collectionSchema);
             var queryable = new NullQueryable<T>(executor);
 
             var unused = queryable.Where(where).ToList();
 
             var query = executor.Expression;
-            query.TypeName = _collectionName;
+            query.CollectionName = _collectionName;
 
             return query;
         }

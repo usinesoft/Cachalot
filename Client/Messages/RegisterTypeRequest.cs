@@ -18,13 +18,13 @@ namespace Client.Messages
 
         /// <summary>
         /// </summary>
-        /// <param name="typeDescription">The description of the type to be registered</param>
+        /// <param name="collectionSchema">The description of the type to be registered</param>
         /// <param name="shardIndex">Index of the node inside the cluster (0 based)</param>
         /// <param name="shardsInCluster">Nodes in cluster</param>
         /// <param name="collectionName"></param>
-        public RegisterTypeRequest(TypeDescription typeDescription, int shardIndex = 0, int shardsInCluster = 1, string collectionName = null) 
+        public RegisterTypeRequest(CollectionSchema collectionSchema, int shardIndex = 0, int shardsInCluster = 1, string collectionName = null) 
         {
-            TypeDescription = typeDescription;
+            CollectionSchema = collectionSchema;
             ShardIndex = shardIndex;
             ShardsInCluster = shardsInCluster;
             CollectionName = collectionName;
@@ -36,7 +36,7 @@ namespace Client.Messages
         ///     Get the description of the type to be registered
         /// </summary>
         [field: ProtoMember(1)]
-        public TypeDescription TypeDescription { get; }
+        public CollectionSchema CollectionSchema { get; }
 
         [field: ProtoMember(2)] public int ShardIndex { get; }
 

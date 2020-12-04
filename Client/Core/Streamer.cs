@@ -45,14 +45,14 @@ namespace Client.Core
             return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
         }
 
-        public static void ToStream<TItem>(Stream stream, TItem item, TypeDescription typeDescription = null)
+        public static void ToStream<TItem>(Stream stream, TItem item, CollectionSchema collectionSchema = null)
         {
             var bufferedStream = new BufferedStream(stream);
 
 
             var useProtocolBuffers =
-                typeDescription == null; // use protocol buffers only for requests not for business objects
-            var useCompression = typeDescription != null && typeDescription.UseCompression;
+                collectionSchema == null; // use protocol buffers only for requests not for business objects
+            var useCompression = collectionSchema != null && collectionSchema.UseCompression;
 
             var mode = SerializationMode.ProtocolBuffers;
             if (!useProtocolBuffers)
@@ -62,7 +62,7 @@ namespace Client.Core
 
             const int itemCount = 1;
             writer.Write(itemCount);
-            var data = SerializationHelper.ObjectToBytes(item, mode, typeDescription);
+            var data = SerializationHelper.ObjectToBytes(item, mode, collectionSchema);
             writer.Write(useProtocolBuffers);
             writer.Write(useCompression);
             writer.Write(0D);

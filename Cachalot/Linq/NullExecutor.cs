@@ -8,11 +8,11 @@ namespace Cachalot.Linq
 {
     public class NullExecutor : IQueryExecutor
     {
-        private readonly TypeDescription _typeDescription;
+        private readonly CollectionSchema _collectionSchema;
 
-        public NullExecutor(TypeDescription typeDescription)
+        public NullExecutor(CollectionSchema collectionSchema)
         {
-            _typeDescription = typeDescription;
+            _collectionSchema = collectionSchema;
         }
 
         public OrQuery Expression { get; private set; }
@@ -29,7 +29,7 @@ namespace Cachalot.Linq
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_typeDescription);
+            var visitor = new QueryVisitor(_collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 

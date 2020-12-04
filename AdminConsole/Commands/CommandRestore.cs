@@ -6,7 +6,7 @@ namespace AdminConsole.Commands
 {
     public class CommandRestore : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute) return client;
 

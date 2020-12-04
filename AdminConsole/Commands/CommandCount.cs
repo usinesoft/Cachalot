@@ -11,14 +11,14 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandCount : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return client;
 
             Dbg.CheckThat(Params.Count == 2 || Params.Count == 1);
 
-            var result = new KeyValuePair<bool, int>();
+            var result = new Tuple<bool, int>(false, 0);
             try
             {
                 Dbg.CheckThat(Query != null);
@@ -42,7 +42,7 @@ namespace AdminConsole.Commands
                 var profilerResult = Profiler.End();
 
 
-                Logger.Write("Found {0} items. The call took {1:F4} miliseconds", result.Value,
+                Logger.Write("Found {0} items. The call took {1:F4} miliseconds", result.Item2,
                     profilerResult.TotalTimeMiliseconds);
             }
 

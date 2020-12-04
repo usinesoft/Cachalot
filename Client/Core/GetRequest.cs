@@ -9,7 +9,7 @@ namespace Client.Core
     public class GetRequest : DataRequest
     {
         public GetRequest(OrQuery query)
-            : base(DataAccessType.Read, query.TypeName)
+            : base(DataAccessType.Read, query.CollectionName)
         {
             Query = query;
         }

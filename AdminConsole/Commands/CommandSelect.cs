@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Newtonsoft.Json.Linq;
 
 namespace AdminConsole.Commands
 {
@@ -15,14 +17,14 @@ namespace AdminConsole.Commands
         /// <summary>
         /// </summary>
         /// <returns></returns>
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute)
                 return client;
 
             Dbg.CheckThat(Params.Count >= 2);
 
-            IList<CachedObject> listResult = null;
+            IList<JObject> listResult = null;
 
             try
             {
@@ -31,7 +33,7 @@ namespace AdminConsole.Commands
                 Profiler.IsActive = true;
                 Profiler.Start("SELECT");
 
-                listResult = client.GetObjectDescriptions(Query);
+                listResult = client.GetMany(Query).Select(r=>r.Item).Cast<JObject>().ToList();
 
                 var dumpOk = true;
 
@@ -43,7 +45,7 @@ namespace AdminConsole.Commands
                     Logger.Write("[");
                     for (var i = 0; i < listResult.Count; i++)
                     {
-                        Logger.Write(listResult[i].AsJson());
+                        Logger.Write(listResult[i].ToString());
                         if (i < listResult.Count - 1) Logger.Write(",");
                     }
 

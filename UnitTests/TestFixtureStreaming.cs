@@ -53,7 +53,7 @@ namespace UnitTests
         public void SerializationWithCompression()
         {
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
+            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
             desc.UseCompression = true;
             var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc);
             var item1Reloaded =
@@ -77,7 +77,7 @@ namespace UnitTests
         [Test]
         public void SerializationWithOutCompression()
         {
-            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
+            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
             var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc);
@@ -195,7 +195,7 @@ namespace UnitTests
             var oneItemList = new List<CacheableTypeOk>();
             oneItemList.Add(item);
 
-            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
+            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
 
             using (var stream = new MemoryStream())
             {
@@ -231,7 +231,7 @@ namespace UnitTests
         public void StreamOneUnstreamMany()
         {
             var item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsTypeDescription;
+            var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
             using (var stream = new MemoryStream())
             {
                 Streamer.ToStream(stream, item, desc);
@@ -307,7 +307,7 @@ namespace UnitTests
             var item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
 
             var typeDescription =
-                ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsTypeDescription;
+                ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
             put.Items.Add(CachedObject.Pack(item));
 
             var remove = new RemoveRequest(typeof(CacheableTypeOk), typeDescription.MakePrimaryKeyValue(1));
@@ -394,9 +394,9 @@ namespace UnitTests
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             stream.Seek(0, SeekOrigin.Begin);
             var t1 = Serializer.DeserializeWithLengthPrefix<CachedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t1.IndexKeys[2].ToString(), "#0");
+            Assert.AreEqual(t1.IndexKeys[2].ToString(), "0");
             var t2 = Serializer.DeserializeWithLengthPrefix<CachedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t2.IndexKeys[2].ToString(), "#0");
+            Assert.AreEqual(t2.IndexKeys[2].ToString(), "0");
         }
     }
 }

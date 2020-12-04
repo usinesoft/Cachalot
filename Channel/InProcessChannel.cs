@@ -156,18 +156,6 @@ namespace Channel
         }
 
 
-        public void SendStreamRequest<TItemType>(Request request, DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            if (RequestReceived != null)
-            {
-                var client = new ClientData();
-                RequestReceived(this, new RequestEventArgs(request, client));
-                var stream = client.WaitForData();
-                Streamer.FromStream(stream, dataHandler, exceptionHandler);
-            }
-        }
-
         public IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request)
         {
             if (RequestReceived != null)
@@ -203,31 +191,7 @@ namespace Channel
             RequestReceived?.Invoke(this, new RequestEventArgs(request, client));
         }
 
-        public Response SendRequest(Session session, Request request)
-        {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = inProcessSession.ClientData;
-            var rcvRequest = request;
-
-            Response response = null;
-
-
-            if (RequestReceived != null)
-            {
-                RequestReceived(this, new RequestEventArgs(rcvRequest, client));
-                var stream = client.WaitForData();
-
-                response = Streamer.FromStream<Response>(stream);
-            }
-
-            if (response == null)
-                return new NullResponse();
-
-            return response;
-        }
-
+        
         public Response GetResponse(Session session)
         {
             if (!(session is InProcessSession inProcessSession))
@@ -246,27 +210,7 @@ namespace Channel
             return response;
         }
 
-        public void GetStreamedCollection<TItemType>(Session session, DataHandler<TItemType> dataHandler,
-            ExceptionHandler exceptionHandler)
-        {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = inProcessSession.ClientData;
-            var stream = client.WaitForData();
-            Streamer.FromStream(stream, dataHandler, exceptionHandler);
-        }
-
-
-        public TItem GetOneObject<TItem>(Session session)
-        {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = inProcessSession.ClientData;
-            var stream = client.WaitForData();
-            return Streamer.FromStream<TItem>(stream);
-        }
+        
 
         public bool Continue(Session session, bool ok)
         {

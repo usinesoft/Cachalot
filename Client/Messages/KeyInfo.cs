@@ -40,6 +40,7 @@ namespace Client.Messages
         /// <param name="name"> </param>
         /// <param name="isOrdered"></param>
         /// <param name="isFullText"></param>
+        /// <param name="serverSide"></param>
         public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name = DefaultNameForPrimaryKey, bool isOrdered = false,
             bool isFullText = false, bool serverSide = false)
         {

@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Client.Interface
 {
-    internal class DataClient : IDataClient
+    public class DataClient : IDataClient
     {
         public int ShardIndex { get; set; }
 
@@ -156,6 +156,7 @@ namespace Client.Interface
                     else
                     {
                         endLoop = true;
+                        enumerator.Dispose();
                         break;
                     }
 
@@ -256,9 +257,9 @@ namespace Client.Interface
             }
         }
 
-        public void DeclareCollection(string collectionName, TypeDescription schema, int shard = -1)
+        public void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1)
         {
-            schema.FullTypeName = collectionName;
+            schema.CollectionName = collectionName;
             schema.TypeName = collectionName;
 
             var request = new RegisterTypeRequest(schema, shard == -1 ? ShardIndex:shard, ShardsCount);
@@ -411,7 +412,7 @@ namespace Client.Interface
                     throw new CacheException("Error while registering a type on the server", exResponse.Message,
                         exResponse.CallStack);
 
-                FeedMany(typeDescription.Value.FullTypeName, DumpHelper.ObjectsInDump(path, typeDescription.Value), true, 100);
+                FeedMany(typeDescription.Value.CollectionName, DumpHelper.ObjectsInDump(path, typeDescription.Value), true, 100);
             }
 
             // reinitialize the sequences. As the shard count has probably changed reinitialize all the sequences in each shard
@@ -488,7 +489,7 @@ namespace Client.Interface
 
         public void Import(string collectionName, string jsonFile)
         {
-            var objects = DumpHelper.LoadObjects(jsonFile, this);
+            var objects = DumpHelper.LoadObjects(this, jsonFile, collectionName);
 
             FeedMany(collectionName, objects, true);
         }
@@ -520,7 +521,7 @@ namespace Client.Interface
                 throw new ArgumentNullException(nameof(newValue));
 
 
-            var request = new PutRequest(testAsQuery.TypeName) {ExcludeFromEviction = true, Predicate = testAsQuery};
+            var request = new PutRequest(testAsQuery.CollectionName) {ExcludeFromEviction = true, Predicate = testAsQuery};
 
             request.Items.Add(newValue);
 
@@ -568,8 +569,8 @@ namespace Client.Interface
             if (domain == null)
                 throw new ArgumentNullException(nameof(domain));
 
-            if (domain.DescriptionAsQuery.TypeName == null)
-                throw new ArgumentNullException(nameof(domain), "TypeName not specified");
+            if (domain.DescriptionAsQuery.CollectionName == null)
+                throw new ArgumentNullException(nameof(domain), "CollectionName not specified");
 
             var request = new DomainDeclarationRequest(domain);
             var response = Channel.SendRequest(request);

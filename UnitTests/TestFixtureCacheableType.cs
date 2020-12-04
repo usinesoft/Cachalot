@@ -40,7 +40,7 @@ namespace UnitTests
         public void TestTypeDescriptionIsSerializable()
         {
             var typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
-            var serializableDescription = typeDescription.AsTypeDescription;
+            var serializableDescription = typeDescription.AsCollectionSchema;
 
             using (var stream = new MemoryStream())
             {
@@ -49,7 +49,7 @@ namespace UnitTests
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                var deserializedDescription = SerializationHelper.ObjectFromStream<TypeDescription>(stream,
+                var deserializedDescription = SerializationHelper.ObjectFromStream<CollectionSchema>(stream,
                     SerializationMode
                         .ProtocolBuffers,
                     false);

@@ -19,15 +19,15 @@ namespace UnitTests
         [SetUp]
         public void SetUp()
         {
-            _typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsTypeDescription;
+            _collectionSchema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
 
 
-            _dataStore = new DataStore(_typeDescription, new NullEvictionPolicy(), new NodeConfig());
+            _dataStore = new DataStore(_collectionSchema, new NullEvictionPolicy(), new NodeConfig());
         }
 
         private DataStore _dataStore;
 
-        private TypeDescription _typeDescription;
+        private CollectionSchema _collectionSchema;
 
 
         [Test]
@@ -53,22 +53,22 @@ namespace UnitTests
 
             var result =
                 _dataStore.InternalGetMany(
-                    _typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
+                    _collectionSchema.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
                     QueryOperator.Le);
             Assert.AreEqual(result.Count, 5);
 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8),
+            result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("IndexKeyValue", 8),
                 QueryOperator.Ge);
             Assert.AreEqual(result.Count, 3);
 
-            _dataStore.RemoveByPrimaryKey(_typeDescription.MakePrimaryKeyValue(2));
+            _dataStore.RemoveByPrimaryKey(_collectionSchema.MakePrimaryKeyValue(2));
 
             result = _dataStore.InternalGetMany(
-                _typeDescription.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
+                _collectionSchema.MakeIndexKeyValue("IndexKeyDate", new DateTime(2010, 10, 01)),
                 QueryOperator.Le);
             Assert.AreEqual(result.Count, 4);
 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("IndexKeyValue", 8),
+            result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("IndexKeyValue", 8),
                 QueryOperator.Ge);
             Assert.AreEqual(result.Count, 2);
         }
@@ -78,7 +78,7 @@ namespace UnitTests
         {
             var item1 = new NewCacheableTypeOk(1, 1001, "AHA", new DateTime(2010, 10, 01), 55);
             Assert.Throws<InvalidOperationException>(() => _dataStore.InternalAddNew(CachedObject.Pack(item1), false));
-            ;
+            
         }
 
         [Test]
@@ -88,7 +88,7 @@ namespace UnitTests
             _dataStore.InternalAddNew(CachedObject.Pack(item1), false);
 
             //get one by primary key
-            var cachedItem1 = _dataStore.InternalGetOne(_typeDescription.MakePrimaryKeyValue(1));
+            var cachedItem1 = _dataStore.InternalGetOne(_collectionSchema.MakePrimaryKeyValue(1));
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(1));
             var item1Reloaded = CachedObject.Unpack<CacheableTypeOk>(cachedItem1);
             Assert.AreEqual(item1, item1Reloaded);
@@ -219,22 +219,22 @@ namespace UnitTests
             _dataStore.InternalAddNew(CachedObject.Pack(item2), false);
 
             //this get one should return the first item
-            var cachedItem1 = _dataStore.InternalGetOne(_typeDescription.MakePrimaryKeyValue(2));
+            var cachedItem1 = _dataStore.InternalGetOne(_collectionSchema.MakePrimaryKeyValue(2));
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(2));
 
             //this GetMany() should return the two items 
-            var result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("indexkeyfolder", "AHA"));
+            var result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("indexkeyfolder", "AHA"));
             Assert.AreEqual(result.Count, 2);
 
             //remove the first item
-            _dataStore.RemoveByPrimaryKey(_typeDescription.MakePrimaryKeyValue(2));
+            _dataStore.RemoveByPrimaryKey(_collectionSchema.MakePrimaryKeyValue(2));
 
             //it should not be there any more
-            var shouldBeNull = _dataStore.InternalGetOne(_typeDescription.MakePrimaryKeyValue(2));
+            var shouldBeNull = _dataStore.InternalGetOne(_collectionSchema.MakePrimaryKeyValue(2));
             Assert.IsNull(shouldBeNull);
 
             //this GetMany() should return one item
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("indexkeyfolder", "AHA"));
+            result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("indexkeyfolder", "AHA"));
             Assert.AreEqual(result.Count, 1);
         }
 
@@ -252,7 +252,7 @@ namespace UnitTests
 
             _dataStore.InternalTruncate();
             //this GetMany() should return no item cause the data was truncated
-            var result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("indexkeyfolder", "AHA"));
+            var result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("indexkeyfolder", "AHA"));
             Assert.AreEqual(result.Count, 0);
 
             //put the items back
@@ -260,22 +260,22 @@ namespace UnitTests
             _dataStore.InternalAddNew(CachedObject.Pack(item2), false);
 
             //this get one should return the first item
-            var cachedItem1 = _dataStore.InternalGetOne(_typeDescription.MakePrimaryKeyValue(2));
+            var cachedItem1 = _dataStore.InternalGetOne(_collectionSchema.MakePrimaryKeyValue(2));
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(2));
 
             //this GetMany() should return the two items 
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("indexkeyfolder", "AHA"));
+            result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("indexkeyfolder", "AHA"));
             Assert.AreEqual(result.Count, 2);
 
             //remove the first item
-            _dataStore.RemoveByPrimaryKey(_typeDescription.MakePrimaryKeyValue(2));
+            _dataStore.RemoveByPrimaryKey(_collectionSchema.MakePrimaryKeyValue(2));
 
             //it should not be there any more
-            var shouldBeNull = _dataStore.InternalGetOne(_typeDescription.MakePrimaryKeyValue(2));
+            var shouldBeNull = _dataStore.InternalGetOne(_collectionSchema.MakePrimaryKeyValue(2));
             Assert.IsNull(shouldBeNull);
 
             //this GetMany() should return one item
-            result = _dataStore.InternalGetMany(_typeDescription.MakeIndexKeyValue("indexkeyfolder", "AHA"));
+            result = _dataStore.InternalGetMany(_collectionSchema.MakeIndexKeyValue("indexkeyfolder", "AHA"));
             Assert.AreEqual(result.Count, 1);
         }
     }

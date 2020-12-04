@@ -23,12 +23,7 @@ namespace UnitTests
             return new List<KeyValue> {new KeyValue(value, type)};
         }
 
-        private static IList<KeyValue> MakeStringValue(string value, KeyInfo type)
-        {
-            return new List<KeyValue> {new KeyValue(value, type)};
-        }
-
-        private static void checkLE(IndexBase indexByValue)
+        private static void CheckLe(IndexBase indexByValue)
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
@@ -76,7 +71,7 @@ namespace UnitTests
                     indexByValue.GetMany(MakeIntValue(1, keyType), QueryOperator.Le).OrderBy(o => o.PrimaryKey)
                         .ToList();
                 Assert.AreEqual(result1.Count, 1);
-                Assert.AreEqual(result1[0].PrimaryKey.ToString(), "#1");
+                Assert.AreEqual(result1[0].PrimaryKey.ToString(), "1");
 
 
                 var count = indexByValue.GetCount(MakeIntValue(1, keyType), QueryOperator.Le);
@@ -84,7 +79,7 @@ namespace UnitTests
             }
         }
 
-        private static void checkLS(IndexBase indexByValue)
+        private static void CheckLs(IndexBase indexByValue)
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "IndexKeyValue", true);
 
@@ -95,9 +90,9 @@ namespace UnitTests
                         .OrderBy(o => o.PrimaryKey)
                         .ToList();
                 Assert.AreEqual(result1.Count, 3);
-                Assert.AreEqual(result1[0].PrimaryKey.ToString(), "#1");
-                Assert.AreEqual(result1[1].PrimaryKey.ToString(), "#2");
-                Assert.AreEqual(result1[2].PrimaryKey.ToString(), "#3");
+                Assert.AreEqual(result1[0].PrimaryKey.ToString(), "1");
+                Assert.AreEqual(result1[1].PrimaryKey.ToString(), "2");
+                Assert.AreEqual(result1[2].PrimaryKey.ToString(), "3");
 
                 var count = indexByValue.GetCount(MakeIntValue(12, keyType), QueryOperator.Lt);
                 Assert.AreEqual(count, 3);
@@ -110,7 +105,7 @@ namespace UnitTests
                         .OrderBy(o => o.PrimaryKey)
                         .ToList();
                 Assert.AreEqual(result1.Count, 3);
-                Assert.AreEqual(result1[2].PrimaryKey.ToString(), "#3");
+                Assert.AreEqual(result1[2].PrimaryKey.ToString(), "3");
 
                 var count = indexByValue.GetCount(MakeIntValue(12, keyType), QueryOperator.Lt);
                 Assert.AreEqual(count, 3);
@@ -151,9 +146,9 @@ namespace UnitTests
             }
         }
 
-        private static OrderedIndex populate(params int[] valueKeys)
+        private static OrderedIndex Populate(params int[] valueKeys)
         {
-            //register the type to get a valid TypeDescription
+            //register the type to get a valid CollectionSchema
             //the type description is used to create CachedObjects from objects of the registered type
             var typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
 
@@ -173,21 +168,13 @@ namespace UnitTests
         }
 
 
-        private bool IsOrdered(List<int> list, Comparison<int> compare)
-        {
-            for (var i = 0; i < list.Count - 1; i++)
-                if (compare(list[i], list[i + 1]) > 0)
-                    return false;
-
-            return true;
-        }
 
         [Test]
         public void Between()
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
-            var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
+            var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             {
                 var count = idx1.GetCount(new List<KeyValue> {new KeyValue(3, keyType), new KeyValue(3, keyType)},
@@ -231,12 +218,12 @@ namespace UnitTests
         }
 
         [Test]
-        public void EQ()
+        public void Eq()
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
             //many in the middle
-            var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
+            var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             IList<CachedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
@@ -250,7 +237,7 @@ namespace UnitTests
 
 
             //many at the end
-            var idx2 = populate(1, 2, 3, 3, 3);
+            var idx2 = Populate(1, 2, 3, 3, 3);
 
             result1 = idx2.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -262,7 +249,7 @@ namespace UnitTests
             Assert.AreEqual(count, 3);
 
             //many at the beginning
-            var idx3 = populate(3, 3, 3, 4, 4, 80);
+            var idx3 = Populate(3, 3, 3, 4, 4, 80);
 
             result1 = idx3.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -274,7 +261,7 @@ namespace UnitTests
             Assert.AreEqual(count, 3);
 
             //all equal
-            var idx4 = populate(3, 3, 3);
+            var idx4 = Populate(3, 3, 3);
 
             result1 = idx4.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -286,7 +273,7 @@ namespace UnitTests
             Assert.AreEqual(count, 3);
 
             //one in the middle
-            var idx5 = populate(1, 3, 5, 7, 9, 111);
+            var idx5 = Populate(1, 3, 5, 7, 9, 111);
             result1 = idx5.GetMany(MakeIntValue(7, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 1);
             Assert.AreEqual(result1[0].PrimaryKey, 3);
@@ -309,7 +296,7 @@ namespace UnitTests
 
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
-            IndexBase index = populate();
+            IndexBase index = Populate();
             var result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -323,7 +310,7 @@ namespace UnitTests
 
 
             //one element index, value not found
-            index = populate(15);
+            index = Populate(15);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -337,7 +324,7 @@ namespace UnitTests
 
 
             //one element index, value found
-            index = populate(12);
+            index = Populate(12);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -350,7 +337,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 1);
 
             //two element index (different values)
-            index = populate(12, 15);
+            index = Populate(12, 15);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 1);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -364,7 +351,7 @@ namespace UnitTests
 
 
             //two element index (same value)
-            index = populate(12, 12);
+            index = Populate(12, 12);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 2);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -378,7 +365,7 @@ namespace UnitTests
 
 
             //three element index (same value ==)
-            index = populate(12, 12, 12);
+            index = Populate(12, 12, 12);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 3);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -391,7 +378,7 @@ namespace UnitTests
             Assert.AreEqual(result.Count, 3);
 
             //three element index (same value !=)
-            index = populate(15, 15, 15);
+            index = Populate(15, 15, 15);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
             Assert.AreEqual(result.Count, 0);
             result = index.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt);
@@ -406,12 +393,12 @@ namespace UnitTests
 
 
         [Test]
-        public void GE()
+        public void Ge()
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
             //many in the middle
-            var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
+            var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             IList<CachedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
@@ -424,7 +411,7 @@ namespace UnitTests
             Assert.AreEqual(count, 5);
 
             //many at the end
-            var idx2 = populate(1, 2, 3, 3, 3);
+            var idx2 = Populate(1, 2, 3, 3, 3);
 
             result1 = idx2.GetMany(MakeIntValue(3, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -436,7 +423,7 @@ namespace UnitTests
             Assert.AreEqual(count, 3);
 
             //many at the beginning
-            var idx3 = populate(3, 3, 3, 4, 4, 80);
+            var idx3 = Populate(3, 3, 3, 4, 4, 80);
 
             result1 = idx3.GetMany(MakeIntValue(3, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 6);
@@ -451,7 +438,7 @@ namespace UnitTests
             Assert.AreEqual(count, 6);
 
             //all equal
-            var idx4 = populate(3, 3, 3);
+            var idx4 = Populate(3, 3, 3);
 
             result1 = idx4.GetMany(MakeIntValue(3, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -464,7 +451,7 @@ namespace UnitTests
 
 
             //one in the middle
-            var idx5 = populate(1, 3, 5, 7, 9, 111);
+            var idx5 = Populate(1, 3, 5, 7, 9, 111);
             result1 = idx5.GetMany(MakeIntValue(7, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 3);
@@ -487,12 +474,12 @@ namespace UnitTests
 
 
         [Test]
-        public void GT()
+        public void Gt()
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
             //many in the middle
-            var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
+            var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             IList<CachedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
@@ -505,7 +492,7 @@ namespace UnitTests
 
 
             //many at the end
-            var idx2 = populate(1, 2, 3, 3, 3);
+            var idx2 = Populate(1, 2, 3, 3, 3);
 
             result1 = idx2.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 0);
@@ -514,7 +501,7 @@ namespace UnitTests
             Assert.AreEqual(count, 0);
 
             //many at the beginning
-            var idx3 = populate(3, 3, 3, 4, 4, 80);
+            var idx3 = Populate(3, 3, 3, 4, 4, 80);
 
             result1 = idx3.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
@@ -525,7 +512,7 @@ namespace UnitTests
             Assert.AreEqual(count, 3);
 
             //all equal
-            var idx4 = populate(3, 3, 3);
+            var idx4 = Populate(3, 3, 3);
 
             result1 = idx4.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 0);
@@ -534,7 +521,7 @@ namespace UnitTests
 
 
             //one in the middle
-            var idx5 = populate(1, 3, 5, 7, 9, 111);
+            var idx5 = Populate(1, 3, 5, 7, 9, 111);
             result1 = idx5.GetMany(MakeIntValue(7, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 2);
             Assert.AreEqual(result1[0].PrimaryKey, 4);
@@ -559,7 +546,7 @@ namespace UnitTests
         [Test]
         public void Lesser()
         {
-            //register the type to get a valid TypeDescription
+            //register the type to get a valid CollectionSchema
             //the type description is used to create CachedObjects from objects of the registered type
             var typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
 
@@ -583,8 +570,8 @@ namespace UnitTests
                 indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14)));
                 indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80)));
 
-                checkLE(indexByValue);
-                checkLS(indexByValue);
+                CheckLe(indexByValue);
+                CheckLs(indexByValue);
             }
 
             //fill out of order
@@ -599,8 +586,8 @@ namespace UnitTests
                 indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6)));
 
 
-                checkLE(indexByValue);
-                checkLS(indexByValue);
+                CheckLe(indexByValue);
+                CheckLs(indexByValue);
             }
 
             //fill out of order transactional
@@ -617,8 +604,8 @@ namespace UnitTests
                 indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6)));
                 indexByValue.EndFill();
 
-                checkLE(indexByValue);
-                checkLS(indexByValue);
+                CheckLe(indexByValue);
+                CheckLs(indexByValue);
             }
 
 
@@ -665,7 +652,7 @@ namespace UnitTests
         {
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
-            var idx1 = populate(1, 2, 3, 3, 3, 4, 5);
+            var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             IList<CachedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();

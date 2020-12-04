@@ -112,7 +112,7 @@ namespace Server.Persistence
             ServerLog.LogInfo("end compacting the persistence storage");
 
             ServerLog.LogInfo("begin load data");
-            // Stage 4 load data from persisent storage to memory
+            // Stage 4 load data from persistent storage to memory
             _storage.LoadPersistentData();
             ServerLog.LogInfo("end load data");
         }
@@ -142,7 +142,7 @@ namespace Server.Persistence
             
             if (item.FullText != null && item.FullText.Length > 0)
             {
-                var dataStore = Container.TryGetByName(item.FullTypeName);
+                var dataStore = Container.TryGetByName(item.CollectionName);
 
                 if (dataStore != null)
                 {

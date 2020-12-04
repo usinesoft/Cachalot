@@ -81,14 +81,14 @@ namespace Server
         /// <summary>
         ///     Initialize an empty datastore from a type description
         /// </summary>
-        /// <param name="typeDescription"></param>
+        /// <param name="collectionSchema"></param>
         /// <param name="evictionPolicy"></param>
         /// <param name="config"></param>
-        public DataStore(TypeDescription typeDescription, EvictionPolicy evictionPolicy, NodeConfig config)
+        public DataStore(CollectionSchema collectionSchema, EvictionPolicy evictionPolicy, NodeConfig config)
         {
             _config = config;
 
-            TypeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
+            CollectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
 
             EvictionPolicy = evictionPolicy ?? throw new ArgumentNullException(nameof(evictionPolicy));
 
@@ -99,14 +99,14 @@ namespace Server
             //initialize the unique keys dictionaries (one by unique key) 
             _dataByUniqueKey = new Dictionary<string, Dictionary<KeyValue, CachedObject>>();
 
-            foreach (var keyInfo in typeDescription.UniqueKeyFields)
+            foreach (var keyInfo in collectionSchema.UniqueKeyFields)
                 _dataByUniqueKey.Add(keyInfo.Name, new Dictionary<KeyValue, CachedObject>());
 
             //initialize the indexes (one by index key)
             _dataByIndexKey = new Dictionary<string, IndexBase>();
 
             // scalar indexed fields
-            foreach (var indexField in typeDescription.IndexFields)
+            foreach (var indexField in collectionSchema.IndexFields)
             {
                 var index = IndexFactory.CreateIndex(indexField);
                 _dataByIndexKey.Add(indexField.Name, index);
@@ -114,7 +114,7 @@ namespace Server
 
 
             // list indexed fields
-            foreach (var indexField in typeDescription.ListFields)
+            foreach (var indexField in collectionSchema.ListFields)
             {
                 var index = IndexFactory.CreateIndex(indexField);
                 _dataByIndexKey.Add(indexField.Name, index);
@@ -122,7 +122,7 @@ namespace Server
 
 
             // create the full-text index if required
-            if (typeDescription.FullText.Count > 0)
+            if (collectionSchema.FullText.Count > 0)
                 _fullTextIndex = new FullTextIndex(config.FullTextConfig)
                 {
                     // a function that allows the full text engine to find the original line of text
@@ -139,7 +139,7 @@ namespace Server
             private set => _lastExecutionPlan.Value = value;
         }
 
-        public TypeDescription TypeDescription { get; }
+        public CollectionSchema CollectionSchema { get; }
 
         public EvictionType EvictionType => EvictionPolicy.Type;
 
@@ -193,9 +193,9 @@ namespace Server
 
         private void InternalAddNew(CachedObject cachedObject)
         {
-            if (cachedObject.FullTypeName != TypeDescription.FullTypeName)
+            if (cachedObject.CollectionName != CollectionSchema.CollectionName)
                 throw new InvalidOperationException(
-                    $"An object of type {cachedObject.FullTypeName} can not be stored in DataStore of type {TypeDescription.FullTypeName}");
+                    $"An object of type {cachedObject.CollectionName} can not be stored in DataStore of type {CollectionSchema.CollectionName}");
 
 
             var primaryKey = cachedObject.PrimaryKey;
@@ -225,7 +225,7 @@ namespace Server
 
         internal void LoadFromDump(string path, int shardIndex)
         {
-            foreach (var cachedObject in DumpHelper.ObjectsInDump(path, TypeDescription, shardIndex))
+            foreach (var cachedObject in DumpHelper.ObjectsInDump(path, CollectionSchema, shardIndex))
             {
                 InternalAddNew(cachedObject);
 
@@ -236,7 +236,7 @@ namespace Server
 
         private void InternalDump(string path, int shardIndex)
         {
-            DumpHelper.DumpObjects(path, TypeDescription, shardIndex, _dataByPrimaryKey.Values);
+            DumpHelper.DumpObjects(path, CollectionSchema, shardIndex, _dataByPrimaryKey.Values);
         }
 
         /// <summary>
@@ -445,7 +445,7 @@ namespace Server
                         if (_dataByUniqueKey[value.KeyName].TryGetValue(value, out var cachedObject))
                             result[cachedObject.PrimaryKey] = cachedObject;
                     }
-                    else if (TypeDescription.PrimaryKeyField.Name == value.KeyName)
+                    else if (CollectionSchema.PrimaryKeyField.Name == value.KeyName)
                     {
                         if (_dataByPrimaryKey.TryGetValue(value, out var cachedObject))
                             result[cachedObject.PrimaryKey] = cachedObject;
@@ -523,7 +523,7 @@ namespace Server
 
 
                 if (!dataIsComplete)
-                    throw new CacheException("Full data is not available for type " + TypeDescription.FullTypeName);
+                    throw new CacheException("Full data is not available for type " + CollectionSchema.CollectionName);
             }
 
 
@@ -532,7 +532,7 @@ namespace Server
             {
                 if (!query.IsFullTextQuery)
                 {
-                    Dbg.Trace($"InternalFind with empty query: return all {query.TypeName}");
+                    Dbg.Trace($"InternalFind with empty query: return all {query.CollectionName}");
 
                     return (query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values)
                         .ToList();
@@ -696,6 +696,11 @@ namespace Server
             {
                 if (atomicQuery.Value?.KeyType == KeyType.Primary)
                 {
+                    // TODO allow other operators
+                    if (atomicQuery.Operator != QueryOperator.Eq)
+                    {
+                        throw new NotSupportedException("On primary key only EQUALS operator is supported");
+                    }
                     if (_dataByPrimaryKey.TryGetValue(atomicQuery.Value, out var val))
                     {
                         foundWithUniqueKeys.Add(val);
@@ -708,6 +713,12 @@ namespace Server
 
                 if (atomicQuery.Value?.KeyType == KeyType.Unique)
                 {
+                    // TODO allow other operators
+                    if (atomicQuery.Operator != QueryOperator.Eq)
+                    {
+                        throw new NotSupportedException("On unique key only EQUALS operator is supported");
+                    }
+
                     if (_dataByUniqueKey[atomicQuery.Value.KeyName].TryGetValue(atomicQuery.Value, out var val))
                     {
                         foundWithUniqueKeys.Add(val);
@@ -996,7 +1007,7 @@ namespace Server
                             var items = _dataByPrimaryKey.Count;
 
                             InternalTruncate();
-                            requestDescription = string.Format(TypeDescription.TypeName.ToUpper());
+                            requestDescription = string.Format(CollectionSchema.TypeName.ToUpper());
                             processedItems = items;
                             requestType = "TRUNCATE";
 
@@ -1039,7 +1050,7 @@ namespace Server
 
                         EvictionPolicy = evictionSetup.Type == EvictionType.LessRecentlyUsed
                             ? new LruEvictionPolicy(evictionSetup.Limit, evictionSetup.ItemsToEvict)
-                            : evictionSetup.Type == EvictionType.LessRecentlyUsed
+                            : evictionSetup.Type == EvictionType.TimeToLive
                                 ? new TtlEvictionPolicy(
                                     TimeSpan.FromMilliseconds(evictionSetup.TimeToLiveInMilliseconds))
                                 : (EvictionPolicy) new NullEvictionPolicy();
@@ -1196,7 +1207,7 @@ namespace Server
         }
 
 
-        public static DataStore Reindex(DataStore old, TypeDescription newDescription)
+        public static DataStore Reindex(DataStore old, CollectionSchema newDescription)
         {
             var result = new DataStore(newDescription, old.EvictionPolicy, old._config) {Profiler = old.Profiler};
 
@@ -1212,12 +1223,12 @@ namespace Server
             try
             {
                 Dbg.Trace(
-                    $"begin InternalUpdateIf with primary key {newValue.PrimaryKey} for type{newValue.FullTypeName}");
+                    $"begin InternalUpdateIf with primary key {newValue.PrimaryKey} for type{newValue.CollectionName}");
 
                 if (!_dataByPrimaryKey.ContainsKey(newValue.PrimaryKey))
                 {
                     Dbg.Trace(
-                        $"item {newValue.PrimaryKey} for type{newValue.FullTypeName} not found. Conditional update failed");
+                        $"item {newValue.PrimaryKey} for type{newValue.CollectionName} not found. Conditional update failed");
                     throw new CacheException("Item not found. Conditional update failed");
                 }
 
@@ -1244,11 +1255,11 @@ namespace Server
         {
             try
             {
-                Dbg.Trace($"begin InternalTryAdd with primary key {item.PrimaryKey} for type{item.FullTypeName}");
+                Dbg.Trace($"begin InternalTryAdd with primary key {item.PrimaryKey} for type{item.CollectionName}");
 
                 if (_dataByPrimaryKey.ContainsKey(item.PrimaryKey))
                 {
-                    Dbg.Trace($"item {item.PrimaryKey} for type{item.FullTypeName} already present");
+                    Dbg.Trace($"item {item.PrimaryKey} for type{item.CollectionName} already present");
                     return 0;
                 }
 
@@ -1342,12 +1353,12 @@ namespace Server
             {
                 if (!condition.Match(item))
                     throw new CacheException(
-                        $"Condition not satisfied for item {primaryKey} of type {TypeDescription.FullTypeName}",
+                        $"Condition not satisfied for item {primaryKey} of type {CollectionSchema.CollectionName}",
                         ExceptionType.ConditionNotSatisfied);
             }
             else
             {
-                throw new CacheException($"Item {primaryKey} of type {TypeDescription.FullTypeName} not found");
+                throw new CacheException($"Item {primaryKey} of type {CollectionSchema.CollectionName} not found");
             }
         }
     }

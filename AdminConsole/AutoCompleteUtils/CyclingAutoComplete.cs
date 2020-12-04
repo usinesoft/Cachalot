@@ -33,7 +33,7 @@ namespace AdminConsole.AutoCompleteUtils
         private List<string> _autoCompleteList;
         private string _previousAutoComplete = string.Empty;
 
-        public IList<TypeDescription> KnownTypes { get; set; } = new List<TypeDescription>();
+        public IList<CollectionSchema> KnownTypes { get; set; } = new List<CollectionSchema>();
 
         public string AutoComplete(string line, CyclingDirections cyclingDirection = CyclingDirections.Forward,
             bool ignoreCase = true)

@@ -14,7 +14,7 @@ namespace UnitTests
         [Test]
         public void Test_subset_on_queries()
         {
-            var datastore = new DataSource<TradeLike>(null, null,  ClientSideTypeDescription.RegisterType<TradeLike>().AsTypeDescription);
+            var datastore = new DataSource<TradeLike>(null, null,  ClientSideTypeDescription.RegisterType<TradeLike>().AsCollectionSchema);
 
             {
                 var q1 = datastore.PredicateToQuery(t => t.ValueDate == DateTime.Today);

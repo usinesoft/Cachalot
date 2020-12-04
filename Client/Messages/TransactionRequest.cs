@@ -54,7 +54,7 @@ namespace Client.Messages
         {
             var result = new List<DataRequest>();
 
-            var groups = ItemsToPut.GroupBy(i => i.FullTypeName);
+            var groups = ItemsToPut.GroupBy(i => i.CollectionName);
             foreach (var group in groups)
             {
                 var request = new PutRequest(group.Key)
@@ -64,7 +64,7 @@ namespace Client.Messages
                 result.Add(request);
             }
 
-            groups = ItemsToDelete.GroupBy(i => i.FullTypeName);
+            groups = ItemsToDelete.GroupBy(i => i.CollectionName);
             foreach (var group in groups)
             {
                 var items = group.ToList();

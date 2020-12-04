@@ -17,7 +17,7 @@ namespace Client.Queries
     /// </summary>
     public class QueryBuilder
     {
-        private readonly TypeDescription _typeDescription;
+        private readonly CollectionSchema _collectionSchema;
 
         /// <summary>
         ///     Initialize for a specified cacheable data type
@@ -27,16 +27,16 @@ namespace Client.Queries
         {
             var clientTypeDescription = ClientSideTypeDescription.RegisterType(type);
 
-            _typeDescription = clientTypeDescription.AsTypeDescription;
+            _collectionSchema = clientTypeDescription.AsCollectionSchema;
         }
 
         /// <summary>
-        ///     Create from a <see cref="TypeDescription" />
+        ///     Create from a <see cref="CollectionSchema" />
         /// </summary>
-        /// <param name="typeDescription"></param>
-        public QueryBuilder(TypeDescription typeDescription)
+        /// <param name="collectionSchema"></param>
+        public QueryBuilder(CollectionSchema collectionSchema)
         {
-            _typeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
+            _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Client.Queries
         /// <returns></returns>
         public KeyValue MakeKeyValue(string propertyName, object propertyValue)
         {
-            return _typeDescription.MakeKeyValue(propertyName, propertyValue);
+            return _collectionSchema.MakeKeyValue(propertyName, propertyValue);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Client.Queries
         /// <returns></returns>
         public AtomicQuery MakeAtomicQuery(string propertyName, QueryOperator oper, object value)
         {
-            var keyValue = _typeDescription.MakeKeyValue(propertyName, value);
+            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
 
             return new AtomicQuery(keyValue, oper);
         }
@@ -73,8 +73,8 @@ namespace Client.Queries
         /// <returns></returns>
         public AtomicQuery MakeAtomicQuery(string propertyName, object value, object value2)
         {
-            var keyValue = _typeDescription.MakeKeyValue(propertyName, value);
-            var keyValue2 = _typeDescription.MakeKeyValue(propertyName, value2);
+            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
+            var keyValue2 = _collectionSchema.MakeKeyValue(propertyName, value2);
 
             return new AtomicQuery(keyValue, keyValue2);
         }
@@ -87,7 +87,7 @@ namespace Client.Queries
         /// <returns></returns>
         public AtomicQuery MakeAtomicQuery(string propertyName, object value)
         {
-            var keyValue = _typeDescription.MakeKeyValue(propertyName, value);
+            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
 
             return new AtomicQuery(keyValue);
         }
@@ -101,7 +101,7 @@ namespace Client.Queries
         /// <returns></returns>
         public AtomicQuery MakeAtomicInQuery(string propertyName, IEnumerable values)
         {
-            return new AtomicQuery(values.Cast<object>().Select(v => _typeDescription.MakeKeyValue(propertyName, v)));
+            return new AtomicQuery(values.Cast<object>().Select(v => _collectionSchema.MakeKeyValue(propertyName, v)));
         }
 
 
@@ -119,12 +119,12 @@ namespace Client.Queries
 
         public OrQuery MakeOrQuery()
         {
-            return new OrQuery(_typeDescription.FullTypeName);
+            return new OrQuery(_collectionSchema.CollectionName);
         }
 
         public OrQuery MakeOrQuery(AndQuery andQuery)
         {
-            var q = new OrQuery(_typeDescription.FullTypeName);
+            var q = new OrQuery(_collectionSchema.CollectionName);
             q.Elements.Add(andQuery);
 
             return q;
@@ -132,7 +132,7 @@ namespace Client.Queries
 
         public OrQuery MakeOrQuery(AtomicQuery atomicQuery)
         {
-            var orQuery = new OrQuery(_typeDescription.FullTypeName);
+            var orQuery = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(atomicQuery);
             orQuery.Elements.Add(andQuery);
@@ -147,9 +147,9 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(string keyName, object value)
         {
-            var keyValue = _typeDescription.MakeUniqueKeyValue(keyName, value);
+            var keyValue = _collectionSchema.MakeUniqueKeyValue(keyName, value);
 
-            var query = new OrQuery(_typeDescription.FullTypeName);
+            var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
             query.Elements.Add(andQuery);
             andQuery.Elements.Add(new AtomicQuery(keyValue));
@@ -165,9 +165,9 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(object value)
         {
-            var keyValue = value as KeyValue ?? _typeDescription.MakePrimaryKeyValue(value);
+            var keyValue = value as KeyValue ?? _collectionSchema.MakePrimaryKeyValue(value);
 
-            var query = new OrQuery(_typeDescription.FullTypeName);
+            var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
             query.Elements.Add(andQuery);
             andQuery.Elements.Add(new AtomicQuery(keyValue));
@@ -177,7 +177,7 @@ namespace Client.Queries
 
         public KeyValue MakePrimaryKeyValue(object value)
         {
-            return _typeDescription.MakePrimaryKeyValue(value);
+            return _collectionSchema.MakePrimaryKeyValue(value);
         }
 
 
@@ -190,13 +190,13 @@ namespace Client.Queries
         ///// <returns></returns>
         //public OrQuery In(string keyName, params object[] values)
         //{
-        //    var query = new OrQuery(_typeDescription.FullTypeName);
+        //    var query = new OrQuery(_collectionSchema.CollectionName);
 
         //    foreach (var value in values)
         //    {
         //        var andQuery = new AndQuery();
         //        query.Elements.Add(andQuery);
-        //        var keyValue = _typeDescription.MakeKeyValue(keyName, value);
+        //        var keyValue = _collectionSchema.MakeKeyValue(keyName, value);
         //        andQuery.Elements.Add(new AtomicQuery(keyValue));
         //    }
 
@@ -210,13 +210,13 @@ namespace Client.Queries
         ///// <returns></returns>
         //public OrQuery In(params object[] values)
         //{
-        //    var query = new OrQuery(_typeDescription.FullTypeName);
+        //    var query = new OrQuery(_collectionSchema.CollectionName);
 
         //    foreach (var value in values)
         //    {
         //        var andQuery = new AndQuery();
         //        query.Elements.Add(andQuery);
-        //        var keyValue = _typeDescription.MakePrimaryKeyValue(value);
+        //        var keyValue = _collectionSchema.MakePrimaryKeyValue(value);
         //        andQuery.Elements.Add(new AtomicQuery(keyValue));
         //    }
 
@@ -232,12 +232,12 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery Contains(string keyName, params object[] values)
         {
-            var keyValues = _typeDescription.MakeIndexedListKeyValues(keyName, values).ToList();
+            var keyValues = _collectionSchema.MakeIndexedListKeyValues(keyName, values).ToList();
 
             if (keyValues.Count == 0)
                 throw new NotSupportedException("No list index called " + keyName + " found");
 
-            return new OrQuery(_typeDescription.FullTypeName)
+            return new OrQuery(_collectionSchema.CollectionName)
             {
                 Elements =
                 {
@@ -261,12 +261,12 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery In(string keyName, params object[] values)
         {
-            var keyValues = values.Select(value => _typeDescription.MakeKeyValue(keyName, value)).ToList();
+            var keyValues = values.Select(value => _collectionSchema.MakeKeyValue(keyName, value)).ToList();
 
             if (keyValues.Count == 0)
                 throw new NotSupportedException("No index called " + keyName + " found");
 
-            return new OrQuery(_typeDescription.FullTypeName)
+            return new OrQuery(_collectionSchema.CollectionName)
             {
                 Elements =
                 {
@@ -288,10 +288,10 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery In(params object[] values)
         {
-            var keyValues = values.Select(value => _typeDescription.MakePrimaryKeyValue(value)).ToList();
+            var keyValues = values.Select(value => _collectionSchema.MakePrimaryKeyValue(value)).ToList();
 
 
-            return new OrQuery(_typeDescription.FullTypeName)
+            return new OrQuery(_collectionSchema.CollectionName)
             {
                 Elements =
                 {
@@ -316,9 +316,9 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetMany(string keyName, object value, QueryOperator oper = QueryOperator.Eq)
         {
-            var keyValue = _typeDescription.MakeIndexKeyValue(keyName, value);
+            var keyValue = _collectionSchema.MakeIndexKeyValue(keyName, value);
 
-            var query = new OrQuery(_typeDescription.FullTypeName);
+            var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
             query.Elements.Add(andQuery);
             andQuery.Elements.Add(new AtomicQuery(keyValue, oper));
@@ -334,7 +334,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetMany(params string[] binaryExpressions)
         {
-            var query = new OrQuery(_typeDescription.FullTypeName);
+            var query = new OrQuery(_collectionSchema.CollectionName);
 
             if (binaryExpressions.Length > 0)
             {
@@ -390,22 +390,22 @@ namespace Client.Queries
 
             KeyInfo keyInfo = null;
 
-            if (_typeDescription.PrimaryKeyField.Name.ToUpper() == left.ToUpper())
-                keyInfo = _typeDescription.PrimaryKeyField;
+            if (_collectionSchema.PrimaryKeyField.Name.ToUpper() == left.ToUpper())
+                keyInfo = _collectionSchema.PrimaryKeyField;
 
             if (keyInfo == null)
-                foreach (var uniqueField in _typeDescription.UniqueKeyFields)
+                foreach (var uniqueField in _collectionSchema.UniqueKeyFields)
                     if (uniqueField.Name.ToUpper() == left.ToUpper())
                         keyInfo = uniqueField;
 
             if (keyInfo == null)
-                if (_typeDescription.IndexFields != null)
-                    foreach (var indexField in _typeDescription.IndexFields)
+                if (_collectionSchema.IndexFields != null)
+                    foreach (var indexField in _collectionSchema.IndexFields)
                         if (indexField.Name.ToUpper() == left.ToUpper())
                             keyInfo = indexField;
 
             if (keyInfo == null)
-                foreach (var indexField in _typeDescription.ListFields)
+                foreach (var indexField in _collectionSchema.ListFields)
                     if (indexField.Name.ToUpper() == left.ToUpper())
                         keyInfo = indexField;
 

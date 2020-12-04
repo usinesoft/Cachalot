@@ -11,7 +11,7 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandDump : CommandBase
     {
-        internal override ICacheClient TryExecute(ICacheClient client)
+        internal override IDataClient TryExecute(IDataClient client)
         {
             if (!CanExecute) return client;
 

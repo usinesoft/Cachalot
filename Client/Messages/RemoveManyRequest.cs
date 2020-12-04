@@ -15,7 +15,7 @@ namespace Client.Messages
         }
 
         public RemoveManyRequest(OrQuery query)
-            : base(DataAccessType.Write, query.TypeName)
+            : base(DataAccessType.Write, query.CollectionName)
         {
             Query = query;
         }

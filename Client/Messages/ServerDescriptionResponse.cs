@@ -13,14 +13,14 @@ namespace Client.Messages
         [ProtoMember(3)] private readonly Dictionary<string, DataStoreInfo> _dataStoreInfoByFullName =
             new Dictionary<string, DataStoreInfo>();
 
-        [ProtoMember(2)] private readonly Dictionary<string, TypeDescription> _knownTypesByFullName =
-            new Dictionary<string, TypeDescription>();
+        [ProtoMember(2)] private readonly Dictionary<string, CollectionSchema> _knownTypesByFullName =
+            new Dictionary<string, CollectionSchema>();
 
         [ProtoMember(1)] private ServerInfo _serverProcessInfo;
 
         public override ResponseType ResponseType => ResponseType.Data;
 
-        public IDictionary<string, TypeDescription> KnownTypesByFullName => _knownTypesByFullName;
+        public IDictionary<string, CollectionSchema> KnownTypesByFullName => _knownTypesByFullName;
 
         public IDictionary<string, DataStoreInfo> DataStoreInfoByFullName => _dataStoreInfoByFullName;
 
@@ -30,9 +30,9 @@ namespace Client.Messages
             set => _serverProcessInfo = value;
         }
 
-        public void AddTypeDescription(TypeDescription description)
+        public void AddTypeDescription(CollectionSchema description)
         {
-            KnownTypesByFullName.Add(description.FullTypeName, description);
+            KnownTypesByFullName.Add(description.CollectionName, description);
         }
 
         public void AddDataStoreInfo(DataStoreInfo info)

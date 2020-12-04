@@ -15,12 +15,12 @@ namespace Cachalot.Linq
 {
     public class QueryVisitor : QueryModelVisitorBase
     {
-        private readonly TypeDescription _typeDescription;
+        private readonly CollectionSchema _collectionSchema;
 
-        public QueryVisitor(TypeDescription typeDescription)
+        public QueryVisitor(CollectionSchema collectionSchema)
         {
-            _typeDescription = typeDescription ?? throw new ArgumentNullException(nameof(typeDescription));
-            RootExpression = new OrQuery(_typeDescription);
+            _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
+            RootExpression = new OrQuery(_collectionSchema);
         }
 
         public OrQuery RootExpression { get; }
@@ -35,7 +35,7 @@ namespace Cachalot.Linq
 
         private KeyValue AsKeyValue(MemberInfo member, object value)
         {
-            var propertyDescription = _typeDescription.KeyByName(member.Name);
+            var propertyDescription = _collectionSchema.KeyByName(member.Name);
             if (propertyDescription == null)
             {
                 throw new CacheException($"property {member.Name} is not servers-side visible");

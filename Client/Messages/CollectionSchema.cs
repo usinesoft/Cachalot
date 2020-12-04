@@ -21,13 +21,13 @@ using ProtoBuf;
 namespace Client.Messages
 {
     /// <summary>
-    ///     Serializable version of <see cref="ClientSideTypeDescription" />
-    ///     Replaces all ClientSideKeyInfo by KeyInfo
-    ///     This class is immutable and can be generated only from a <see cref="ClientSideTypeDescription" />
-    ///     It can be used (and deserialized) in a context where the original type is not available
+    ///     Contains all information needed to create a collection on the server:
+    ///         All indexed properties (simple, unique, primary key) with indexing parameters
+    ///         Server-side values
+    ///         Usage of data compression
     /// </summary>
     [ProtoContract]
-    public class TypeDescription : IEquatable<TypeDescription>
+    public class CollectionSchema : IEquatable<CollectionSchema>
     {
 
         /// <summary>
@@ -46,10 +46,10 @@ namespace Client.Messages
         [ProtoMember(5)] private List<KeyInfo> _serverSideVisible;
 
         /// <summary>
-        ///     Long type name (unique for a cache instance)
+        ///     Name of the collection (unique for a cache instance)
         /// </summary>
         [ProtoMember(6)]
-        public string FullTypeName { get; set; }
+        public string CollectionName { get; set; }
 
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Client.Messages
         /// <summary>
         ///     This one is used only for protobuf serialization
         /// </summary>
-        public TypeDescription()
+        public CollectionSchema()
         {
             _uniqueKeyFields = new List<KeyInfo>();
             _indexFields = new List<KeyInfo>();
@@ -82,7 +82,7 @@ namespace Client.Messages
         ///     The only constructor is internal to prevent explicit instantiation
         /// </summary>
         /// <param name="description"> </param>
-        internal  TypeDescription(ClientSideTypeDescription description)
+        internal  CollectionSchema(ClientSideTypeDescription description)
         {
             PrimaryKeyField = description.PrimaryKeyField.AsKeyInfo;
             _uniqueKeyFields = new List<KeyInfo>();
@@ -99,7 +99,7 @@ namespace Client.Messages
 
             foreach (var indexField in description.ServerSideValues) _serverSideVisible.Add(indexField.AsKeyInfo);
 
-            FullTypeName = description.FullTypeName;
+            CollectionName = description.FullTypeName;
             TypeName = description.TypeName;
 
             UseCompression = description.UseCompression;
@@ -133,42 +133,42 @@ namespace Client.Messages
 
         /// <summary>
         /// </summary>
-        /// <param name="typeDescription"> </param>
+        /// <param name="collectionSchema"> </param>
         /// <returns> </returns>
-        public bool Equals(TypeDescription typeDescription)
+        public bool Equals(CollectionSchema collectionSchema)
         {
-            if (typeDescription == null)
+            if (collectionSchema == null)
                 return false;
-            if (!Equals(PrimaryKeyField, typeDescription.PrimaryKeyField))
+            if (!Equals(PrimaryKeyField, collectionSchema.PrimaryKeyField))
                 return false;
-            if (!Equals(FullTypeName, typeDescription.FullTypeName))
+            if (!Equals(CollectionName, collectionSchema.CollectionName))
                 return false;
-            if (!Equals(TypeName, typeDescription.TypeName))
+            if (!Equals(TypeName, collectionSchema.TypeName))
                 return false;
-            if (!Equals(UseCompression, typeDescription.UseCompression))
+            if (!Equals(UseCompression, collectionSchema.UseCompression))
                 return false;
 
             //check all the unique keys
-            if (_uniqueKeyFields.Count != typeDescription._uniqueKeyFields.Count)
+            if (_uniqueKeyFields.Count != collectionSchema._uniqueKeyFields.Count)
                 return false;
 
             for (var i = 0; i < _uniqueKeyFields.Count; i++)
-                if (!_uniqueKeyFields[i].Equals(typeDescription._uniqueKeyFields[i]))
+                if (!_uniqueKeyFields[i].Equals(collectionSchema._uniqueKeyFields[i]))
                     return false;
 
             //check all the index keys
-            if (_indexFields.Count != typeDescription._indexFields.Count)
+            if (_indexFields.Count != collectionSchema._indexFields.Count)
                 return false;
 
             for (var i = 0; i < _indexFields.Count; i++)
-                if (!_indexFields[i].Equals(typeDescription._indexFields[i]))
+                if (!_indexFields[i].Equals(collectionSchema._indexFields[i]))
                     return false;
 
-            if (_listFields.Count != typeDescription._listFields.Count)
+            if (_listFields.Count != collectionSchema._listFields.Count)
                 return false;
 
             for (var i = 0; i < _listFields.Count; i++)
-                if (!_listFields[i].Equals(typeDescription._listFields[i]))
+                if (!_listFields[i].Equals(collectionSchema._listFields[i]))
                     return false;
 
 
@@ -278,7 +278,7 @@ namespace Client.Messages
         {
             if (ReferenceEquals(this, obj))
                 return true;
-            return Equals(obj as TypeDescription);
+            return Equals(obj as CollectionSchema);
         }
 
         /// <summary>
@@ -286,7 +286,7 @@ namespace Client.Messages
         /// <returns> </returns>
         public override int GetHashCode()
         {
-            return FullTypeName.GetHashCode();
+            return CollectionName.GetHashCode();
         }
 
         /// <summary>
@@ -321,13 +321,13 @@ namespace Client.Messages
     /// </summary>
     public static class Description
     {
-        public static TypeDescription New(string fullTypeName, bool useCompression = false)
+        public static CollectionSchema New(string fullTypeName, bool useCompression = false)
         {
             var name = fullTypeName.Split('.').Last();
-            return new TypeDescription{FullTypeName = fullTypeName, UseCompression = useCompression, TypeName = name};
+            return new CollectionSchema{CollectionName = fullTypeName, UseCompression = useCompression, TypeName = name};
         }
 
-        public static TypeDescription PrimaryKey(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
+        public static CollectionSchema PrimaryKey(this CollectionSchema @this, string name, bool fullTextSearchEnabled = false)
         {
 
             @this.PrimaryKeyField = new KeyInfo
@@ -342,7 +342,7 @@ namespace Client.Messages
             return @this;
         }
 
-        public static TypeDescription AutomaticPrimaryKey(this TypeDescription @this, string name = KeyInfo.DefaultNameForPrimaryKey)
+        public static CollectionSchema AutomaticPrimaryKey(this CollectionSchema @this, string name = KeyInfo.DefaultNameForPrimaryKey)
         {
 
             @this.PrimaryKeyField = new KeyInfo
@@ -357,14 +357,14 @@ namespace Client.Messages
             return @this;
         }
 
-        public static TypeDescription AddUniqueKey(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
+        public static CollectionSchema AddUniqueKey(this CollectionSchema @this, string name, bool fullTextSearchEnabled = false)
         {
             @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = KeyType.Unique, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
 
             return @this;
         }
 
-        public static TypeDescription AddIndex(this TypeDescription @this, string name, bool ordered = false,  bool serverSideVisible = false, bool fullTextSearchEnabled = false)
+        public static CollectionSchema AddIndex(this CollectionSchema @this, string name, bool ordered = false,  bool serverSideVisible = false, bool fullTextSearchEnabled = false)
         {
             @this.IndexFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = fullTextSearchEnabled});
 
@@ -376,14 +376,14 @@ namespace Client.Messages
             return @this;
         }
 
-        public static TypeDescription AddListIndex(this TypeDescription @this, string name, bool fullTextSearchEnabled = false)
+        public static CollectionSchema AddListIndex(this CollectionSchema @this, string name, bool fullTextSearchEnabled = false)
         {
             @this.ListFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
 
             return @this;
         }
 
-        public static TypeDescription AddServerSideValue(this TypeDescription @this, string name)
+        public static CollectionSchema AddServerSideValue(this CollectionSchema @this, string name)
         {
             @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
 

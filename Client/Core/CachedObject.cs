@@ -30,7 +30,7 @@ namespace Client.Core
         ///     Full name of the defining type
         /// </summary>
         [field: ProtoMember(1)]
-        public string FullTypeName { get; private set; }
+        public string CollectionName { get; private set; }
 
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Client.Core
         }
 
 
-        public string GlobalKey => FullTypeName + PrimaryKey;
+        public string GlobalKey => CollectionName + PrimaryKey;
 
         
         public bool MatchOneOf(ISet<KeyValue> values)
@@ -111,13 +111,16 @@ namespace Client.Core
         ///     The type of the object needs to be previously registered
         /// </summary>
         /// <returns> </returns>
-        public static CachedObject Pack<TObject>(TObject instance, ClientSideTypeDescription typeDescription = null)
+        public static CachedObject Pack<TObject>(TObject instance, ClientSideTypeDescription typeDescription = null, string collectionName = null)
         {
+
             if (instance == null) throw new ArgumentNullException(nameof(instance));
 
             var netType = instance.GetType();
 
             typeDescription ??= ClientSideTypeDescription.RegisterType<TObject>();
+
+            var collection = collectionName ?? typeDescription.FullTypeName;
 
             if (typeDescription == null)
                 throw new NotSupportedException(
@@ -165,13 +168,89 @@ namespace Client.Core
 
 
             result.ObjectData =
-                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsTypeDescription);
-            result.FullTypeName = typeDescription.FullTypeName;
+                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsCollectionSchema);
+            result.CollectionName = typeDescription.FullTypeName;
 
             result.UseCompression = typeDescription.UseCompression;
 
+            result.CollectionName = collection;
+
             return result;
         }
+
+        //public static CachedObject FastPack<TObject>(TObject instance, CollectionSchema typeDescription, string collectionName)
+        //{
+
+        //    if (instance == null) throw new ArgumentNullException(nameof(instance));
+
+        //    var netType = instance.GetType();
+
+
+        //    if (typeDescription == null)
+        //        throw new NotSupportedException(
+        //            $"Can not pack an object of type {netType} because the type was not registered");
+
+        //    var getter = ExpressionTreeHelper.Getter<TObject>(typeDescription.PrimaryKeyField.Name);
+
+        //    var result = new CachedObject(new KeyValue(getter(instance), typeDescription.PrimaryKeyField))
+        //    {
+        //        UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count]
+        //    };
+
+        //    var pos = 0;
+        //    foreach (var uniqueField in typeDescription.UniqueKeyFields)
+        //    {
+        //        getter = ExpressionTreeHelper.Getter<TObject>(uniqueField.Name);
+        //        result.UniqueKeys[pos++] = new KeyValue(getter(instance), uniqueField);
+        //    }
+                
+
+        //    result.IndexKeys = new KeyValue[typeDescription.IndexFields.Count];
+        //    pos = 0;
+        //    foreach (var indexField in typeDescription.IndexFields)
+        //    {
+        //        getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
+        //        result.IndexKeys[pos++] = new KeyValue(getter(instance), indexField);
+        //    }
+                
+
+        //    result.Values = new ServerSideValue[typeDescription.ServerValuesCount];
+        //    pos = 0;
+        //    foreach (var serverValue in typeDescription.ServerSideValues)
+        //        result.Values[pos++] = serverValue.GetServerValue(instance);
+
+        //    // process indexed collections
+
+        //    var listKeys = new List<KeyValue>();
+
+        //    foreach (var indexField in typeDescription.ListFields)
+        //    {
+        //        var values = indexField.GetCollectionValues(instance).ToArray();
+        //        listKeys.AddRange(values);
+        //    }
+
+        //    result.ListIndexKeys = listKeys.ToArray();
+
+
+        //    // process full text
+        //    var lines = new List<string>();
+
+        //    foreach (var fulltext in typeDescription.FullTextIndexed)
+        //        lines.AddRange(fulltext.GetStringValues(instance));
+
+        //    result.FullText = lines.ToArray();
+
+
+        //    result.ObjectData =
+        //        SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsCollectionSchema);
+        //    result.CollectionName = typeDescription.FullTypeName;
+
+        //    result.UseCompression = typeDescription.UseCompression;
+
+        //    result.CollectionName = collection;
+
+        //    return result;
+        //}
 
         public static bool CanBeConvertedToLong(JToken jToken)
         {
@@ -197,6 +276,7 @@ namespace Client.Core
             return false;
         }
 
+        // TODO move this logic to KeyValue
         public static long JTokenToLong(JToken jToken)
         {
             // null converted to long is 0
@@ -284,7 +364,7 @@ namespace Client.Core
         /// <param name="description"></param>
         /// <returns></returns>
         public static CachedObject PackDictionary(IDictionary<string, object> propertyValues,
-            TypeDescription description)
+            CollectionSchema description)
         {
             
             var json = JsonConvert.SerializeObject(propertyValues);
@@ -293,32 +373,38 @@ namespace Client.Core
 
         }
 
-        public static CachedObject PackJson(string json, TypeDescription typeDescription)
+        public static CachedObject PackJson(string json, CollectionSchema collectionSchema)
         {
             var jObject = JObject.Parse(json);
+            return PackJson(jObject, collectionSchema);
+        }
+        
+        public static CachedObject PackJson(JObject jObject, CollectionSchema collectionSchema)
+        {
+            
 
             if (jObject.Type == JTokenType.Array) throw new NotSupportedException("Pack called on a json array");
 
             CachedObject result;
 
-            var jPrimary = jObject.Property(typeDescription.PrimaryKeyField.Name);
+            var jPrimary = jObject.Property(collectionSchema.PrimaryKeyField.Name);
 
-            if (jPrimary == null && typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Generate)
+            if (jPrimary == null && collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.Generate)
             {
-                result = new CachedObject(new KeyValue(Guid.NewGuid().ToString(), typeDescription.PrimaryKeyField));
+                result = new CachedObject(new KeyValue(Guid.NewGuid().ToString(), collectionSchema.PrimaryKeyField));
             }
             else
             {
-                if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.IntKey ||
-                    (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Default &&
+                if (collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.IntKey ||
+                    (collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.Default &&
                      CanBeConvertedToLong(jPrimary)))
                 {
-                    var primaryKey = new KeyValue(JTokenToLong(jPrimary), typeDescription.PrimaryKeyField);
+                    var primaryKey = new KeyValue(JTokenToLong(jPrimary), collectionSchema.PrimaryKeyField);
                     result = new CachedObject(primaryKey);
                 }
                 else
                 {
-                    var primaryKey = new KeyValue(JTokenToString(jPrimary), typeDescription.PrimaryKeyField);
+                    var primaryKey = new KeyValue(JTokenToString(jPrimary), collectionSchema.PrimaryKeyField);
                     result = new CachedObject(primaryKey);
                 }    
             }
@@ -327,9 +413,9 @@ namespace Client.Core
             
 
 
-            var uniqueKeys = new List<KeyValue>(typeDescription.UniqueKeyFields.Count);
+            var uniqueKeys = new List<KeyValue>(collectionSchema.UniqueKeyFields.Count);
             
-            foreach (var uniqueField in typeDescription.UniqueKeyFields)
+            foreach (var uniqueField in collectionSchema.UniqueKeyFields)
             {
                 var jKey = jObject.Property(uniqueField.Name);
 
@@ -346,9 +432,9 @@ namespace Client.Core
 
 
             
-            var indexKeys = new List<KeyValue>(typeDescription.IndexFields.Count);
+            var indexKeys = new List<KeyValue>(collectionSchema.IndexFields.Count);
 
-            foreach (var indexField in typeDescription.IndexFields)
+            foreach (var indexField in collectionSchema.IndexFields)
             {
                 var jKey = jObject.Property(indexField.Name);
                
@@ -363,7 +449,7 @@ namespace Client.Core
 
             // process indexed collections
             var listValues = new List<KeyValue>();
-            foreach (var indexField in typeDescription.ListFields)
+            foreach (var indexField in collectionSchema.ListFields)
             {
                 var jArray = jObject.Property(indexField.Name);
 
@@ -384,7 +470,7 @@ namespace Client.Core
             // process server side values
 
             var serverValues = new List<ServerSideValue>();
-            foreach (var value in typeDescription.ServerSideValues)
+            foreach (var value in collectionSchema.ServerSideValues)
             {
                 var jKey = jObject.Property(value.Name);
 
@@ -400,7 +486,7 @@ namespace Client.Core
             // process full text
             var lines = new List<string>();
 
-            foreach (var fulltext in typeDescription.FullText)
+            foreach (var fulltext in collectionSchema.FullText)
             {
                 var jKey = jObject.Property(fulltext.Name);
 
@@ -430,34 +516,36 @@ namespace Client.Core
 
             result.FullText = lines.ToArray();
 
-            using (var output = new MemoryStream())
-            {
-                if (typeDescription.UseCompression)
-                {
-                    var outZStream = new GZipOutputStream(output) {IsStreamOwner = false};
-                    var encoded = Encoding.UTF8.GetBytes(json);
-                    outZStream.Write(encoded, 0, encoded.Length);
+            //using (var output = new MemoryStream())
+            //{
+            //    if (collectionSchema.UseCompression)
+            //    {
+            //        var outZStream = new GZipOutputStream(output) {IsStreamOwner = false};
+            //        var encoded = Encoding.UTF8.GetBytes(jObject.ToString());
+            //        outZStream.Write(encoded, 0, encoded.Length);
 
-                    outZStream.Flush();
-                }
-                else
-                {
-                    var encoded = Encoding.UTF8.GetBytes(json);
-                    output.Write(encoded, 0, encoded.Length);
-                }
+            //        outZStream.Flush();
+            //    }
+            //    else
+            //    {
+            //        var encoded = Encoding.UTF8.GetBytes(jObject.ToString());
+            //        output.Write(encoded, 0, encoded.Length);
+            //    }
 
 
-                result.ObjectData = output.ToArray();
-            }
+            //    result.ObjectData = output.ToArray();
+            //}
 
-            result.FullTypeName = typeDescription.FullTypeName;
+            result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema);
 
-            result.UseCompression = typeDescription.UseCompression;
+            result.CollectionName = collectionSchema.CollectionName;
+
+            result.UseCompression = collectionSchema.UseCompression;
 
             return result;
         }
 
-        public static CachedObject Pack(object obj, TypeDescription description)
+        public static CachedObject Pack(object obj, CollectionSchema description)
         {
             var json = SerializationHelper.ObjectToJson(obj);
             return PackJson(json, description);

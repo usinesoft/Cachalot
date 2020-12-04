@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Client.Interface;
 
 namespace UnitTests.TestData
 {
@@ -28,11 +29,11 @@ namespace UnitTests.TestData
         }
 
 
-        //[Index(KeyDataType.IntKey)]
+        [Index]
         public List<DateTime> FixingDates { get; set; } = new List<DateTime>();
 
 
-        //[PrimaryKey(KeyDataType.IntKey)]
+        [PrimaryKey]
         public int Id
         {
             get => _id;
@@ -40,7 +41,7 @@ namespace UnitTests.TestData
         }
 
 
-        //[Key(KeyDataType.IntKey)]
+        [Key]
         public int ContractId
         {
             get => _contractId;
@@ -48,7 +49,7 @@ namespace UnitTests.TestData
         }
 
 
-        //[Index(KeyDataType.StringKey)]
+        [Index]
         public string Folder
         {
             get => _folder;
@@ -56,7 +57,7 @@ namespace UnitTests.TestData
         }
 
 
-        //[Index(KeyDataType.IntKey, true)]
+        [Index(KeyDataType.IntKey, true)]
         public DateTime ValueDate
         {
             get => _valueDate;
@@ -71,7 +72,7 @@ namespace UnitTests.TestData
         }
 
 
-        //[Index(KeyDataType.IntKey)]
+        [Index]
         public IList<int> Accounts
         {
             get => _accounts;

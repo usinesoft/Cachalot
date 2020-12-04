@@ -16,7 +16,7 @@ namespace Client.Messages
         }
 
         public GetDescriptionRequest(OrQuery query)
-            : base(DataAccessType.Read, query.TypeName)
+            : base(DataAccessType.Read, query.CollectionName)
         {
             Query = query;
         }

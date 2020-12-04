@@ -43,7 +43,8 @@ namespace Client.Core
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                
             };
         }
 
@@ -130,12 +131,12 @@ namespace Client.Core
             }
         }
 
-        public static byte[] ObjectToBytes<TItem>(TItem obj, SerializationMode mode, TypeDescription typeDescription)
+        public static byte[] ObjectToBytes<TItem>(TItem obj, SerializationMode mode, CollectionSchema collectionSchema)
         {
             using (var output = new MemoryStream())
             {
                 if (mode == SerializationMode.Json)
-                    ObjectToStream(obj, output, mode, typeDescription.UseCompression);
+                    ObjectToStream(obj, output, mode, collectionSchema.UseCompression);
                 else
                     ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
 

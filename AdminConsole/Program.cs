@@ -27,7 +27,7 @@ namespace AdminConsole
 
 
             var channel = new TcpClientChannel(new TcpClientPool(1, 1, server, port));
-            ICacheClient client = new CacheClient {Channel = channel};
+            IDataClient client = new DataClient {Channel = channel};
 
 
             Logger.CommandLogger = new ConsoleLogger();

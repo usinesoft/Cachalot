@@ -12,6 +12,6 @@ namespace Client.Interface
         }
 
         public ServerInfo[] ServersStatus { get; }
-        public TypeDescription[] Schema { get; }
+        public CollectionSchema[] Schema { get; }
     }
 }

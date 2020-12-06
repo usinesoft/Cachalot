@@ -21,20 +21,7 @@ namespace Client.ChannelInterface
         /// <param name="items"></param>
         void SendMany(ICollection<CachedObject> items);
 
-        /// <summary>
-        ///     Send a generic collection of objects. They must be serializable
-        /// </summary>
-        /// <typeparam name="TItemType"></typeparam>
-        /// <param name="items"></param>
-        void SendManyGeneric<TItemType>(ICollection<TItemType> items) where TItemType : class;
-
-        /// <summary>
-        ///     Send a collection of <see cref="CachedObject" /> preceded by a header
-        /// </summary>
-        /// <param name="header">Application defined header data</param>
-        /// <param name="items"></param>
-        void SendMany<THeader>(THeader header, ICollection<CachedObject> items) where THeader : class;
-
+        
         /// <summary>
         ///     Wait for client confirmation (used in two-stage transactions).
         ///     If null has been returned the client did not answer in the limited amount of time
@@ -42,6 +29,5 @@ namespace Client.ChannelInterface
         /// <returns></returns>
         bool? ShouldContinue();
 
-        void WaitForAck();
     }
 }

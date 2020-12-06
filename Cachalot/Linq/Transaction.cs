@@ -18,7 +18,6 @@ namespace Cachalot.Linq
         private readonly List<OrQuery> _conditions = new List<OrQuery>();
 
         
-        
 
         private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
         private readonly List<string> _collectionsForDelete = new List<string>();
@@ -68,8 +67,8 @@ namespace Cachalot.Linq
 
             _collectionsForPut.Add(collectionName);
 
-            var dataSource = new DataSource<T>(null);
-            var testAsQuery = dataSource.PredicateToQuery(test);
+            
+            var testAsQuery = ExpressionTreeHelper.PredicateToQuery(test, collectionName);
 
             _conditions.Add(testAsQuery);
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Cachalot.Linq;
+using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
@@ -38,6 +39,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256"));
@@ -58,6 +61,8 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var reloaded = (FixingEvent) events[1];
@@ -75,6 +80,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
@@ -101,6 +108,8 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var reloaded = (FixingEvent) events[1];
@@ -119,6 +128,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
 
@@ -132,6 +143,8 @@ namespace UnitTests
             // for an in-process configuration disposing the connector will dispose the server
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
                 {
@@ -162,6 +175,8 @@ namespace UnitTests
             var max = 0;
             using (var connector = new Connector(config))
             {
+                
+
                 var ids = connector.GenerateUniqueIds("test", 12);
 
                 Assert.AreEqual(12, ids.Length);
@@ -196,6 +211,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -219,6 +236,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -249,6 +268,7 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -285,6 +305,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
 
@@ -301,6 +323,7 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
                 var dataSource = connector.DataSource<ProductEvent>();
 
 
@@ -318,6 +341,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -345,6 +370,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
                 dataSource.Put(new Trade(1, 5465, "TATA", DateTime.Now.Date, 150));
@@ -381,6 +408,7 @@ namespace UnitTests
             // for an in-process configuration disposing the connector will dispose the server
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
                 var dataSource = connector.DataSource<Trade>();
 
                 {
@@ -406,6 +434,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -441,6 +471,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -464,6 +496,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -502,7 +536,10 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+
                 connector.AdminInterface().DropDatabase();
+
+                connector.DeclareCollection<Home>();
 
                 var ids = connector.GenerateUniqueIds("home_id", 103);
 
@@ -528,7 +565,7 @@ namespace UnitTests
                 // manually add some items for full-text search testing
                 var h1 = new Home
                 {
-                    Id = ids[ids.Length - 3],
+                    Id = ids[^3],
                     Address = "14 rue de la mort qui tue",
                     Bathrooms = 2,
                     CountryCode = "FR",
@@ -544,7 +581,7 @@ namespace UnitTests
 
                 var h2 = new Home
                 {
-                    Id = ids[ids.Length - 2],
+                    Id = ids[^2],
                     Address = "15 allée de l'amour",
                     Bathrooms = 1,
                     CountryCode = "FR",
@@ -560,7 +597,7 @@ namespace UnitTests
 
                 var h3 = new Home
                 {
-                    Id = ids[ids.Length - 1],
+                    Id = ids[^1],
                     Address = "156 db du gral Le Clerc",
                     Bathrooms = 2,
                     CountryCode = "FR",

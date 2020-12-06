@@ -9,6 +9,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Tools;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 
 #endregion
 
@@ -37,10 +38,19 @@ namespace Client.Core
         /// <param name="propertyInfo"> </param>
         public ClientSideKeyInfo(PropertyInfo propertyInfo)
         {
+            string name = propertyInfo.Name;
+
             try
             {
                 Info = propertyInfo;
 
+                
+                // the name can be altered by a [JsonProperty] attribute
+                var jsonAttribute = propertyInfo.GetCustomAttributes(typeof(JsonPropertyAttribute), true).Cast<JsonPropertyAttribute>().FirstOrDefault();
+                if (jsonAttribute != null)
+                {
+                    name = jsonAttribute.PropertyName;
+                }
 
                 // full text indexation can be applied to any type of key or event to non indexed properties
                 var fullText = propertyInfo.GetCustomAttributes(typeof(FullTextIndexationAttribute), true)
@@ -110,7 +120,7 @@ namespace Client.Core
             }
             finally
             {
-                AsKeyInfo = new KeyInfo(KeyDataType, KeyType, Info.Name, IsOrdered, IndexedAsFulltext);
+                AsKeyInfo = new KeyInfo(KeyDataType, KeyType, name, IsOrdered, IndexedAsFulltext);
             }
         }
 

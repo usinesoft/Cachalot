@@ -120,6 +120,8 @@ namespace Client.Core
             _data[0] = (byte) OriginalType.Null;
         }
 
+        public bool IsNull => _data[0] == (int) OriginalType.Null;
+
         /// <summary>
         /// Thi kind of date needs to be serialized to two longs to be reconstructed identically
         /// </summary>

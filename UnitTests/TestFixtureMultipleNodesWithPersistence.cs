@@ -8,6 +8,7 @@ using Cachalot.Linq;
 using Channel;
 using Client;
 using Client.Core;
+using Client.Core.Linq;
 using Client.Interface;
 using Client.Messages;
 using Newtonsoft.Json;
@@ -119,6 +120,9 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -155,6 +159,10 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256"));
@@ -175,6 +183,8 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
+
+                connector.DeclareCollection<ProductEvent>();
                 var events = connector.DataSource<ProductEvent>();
 
                 var reloaded = (FixingEvent) events[1];
@@ -192,6 +202,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
@@ -218,6 +230,8 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var reloaded = (FixingEvent) events[1];
@@ -236,7 +250,9 @@ namespace UnitTests
                 var description1 = Description.New("order").PrimaryKey("Id").AddIndex("Category")
                     .AddServerSideValue("Amount");
 
-                var orders = connector.DataSource<Order>("orders", description1);
+                connector.DeclareCollection("orders", description1);
+
+                var orders = connector.DataSource<Order>("orders");
 
                 orders.Put(new Order
                 {
@@ -270,7 +286,9 @@ namespace UnitTests
                 var description1 = Description.New("order").PrimaryKey("Id").AddIndex("Category")
                     .AddServerSideValue("Amount").AddIndex("IsDelivered");
 
-                var orders = connector.DataSource<Order>("orders", description1);
+                connector.DeclareCollection("orders", description1);
+
+                var orders = connector.DataSource<Order>("orders");
 
                 
                 var all = orders.ToList();
@@ -293,6 +311,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -324,6 +344,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var clusterDescription = connector.GetClusterDescription();
 
                 Assert.AreEqual(_servers.Count, clusterDescription.ServersStatus.Length);
@@ -363,6 +385,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
@@ -386,6 +410,8 @@ namespace UnitTests
             int maxId2;
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -428,6 +454,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var eventAfterDump = dataSource[55555];
@@ -468,6 +496,7 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<CompressedItem>();
                 var dataSource = connector.DataSource<CompressedItem>();
 
                 var items = new List<CompressedItem>();
@@ -493,6 +522,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<CompressedItem>();
+
                 var dataSource = connector.DataSource<CompressedItem>();
 
                 var afterDump = dataSource[133];
@@ -526,6 +557,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Order>();
+
                 var dataSource = connector.DataSource<Order>();
 
                 List<Order> orders = new List<Order>();
@@ -565,6 +598,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Order>();
+
                 var dataSource = connector.DataSource<Order>();
 
                 var afterDump = dataSource.Where(o=>o.ClientId == 2).ToList();
@@ -606,6 +641,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -665,6 +702,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var admin = connector.AdminInterface();
 
                 var date = DateTime.Today.ToString("yyyy-MM-dd");
@@ -703,6 +742,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var countAfter = dataSource.Count(e => e.EventType == "INCREASE");
@@ -717,6 +758,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Home>();
+
                 var dataSource = connector.DataSource<Home>();
 
                 dataSource.PutMany(new[]
@@ -783,6 +826,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Home>();
+
                 var homes = connector.DataSource<Home>();
 
                 var result1 = homes.FullTextSearch("rue de la pompe").ToList();
@@ -925,6 +970,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Business>();
+
                 var data = connector.DataSource<Business>();
 
                 data.PutMany(businesses);
@@ -958,6 +1005,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -988,6 +1037,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var eventAfterDump = dataSource[55555];
@@ -1033,6 +1084,8 @@ namespace UnitTests
             // check thatr everything is persisted
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new[] {55555, 66666};
@@ -1048,6 +1101,7 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Home>();
                 var dataSource = connector.DataSource<Home>();
 
                 dataSource.PutMany(new[]
@@ -1095,6 +1149,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
@@ -1123,6 +1179,8 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var events = connector.DataSource<ProductEvent>();
 
                 var reloaded = (FixingEvent) events[1];
@@ -1138,6 +1196,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -1174,6 +1234,8 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
@@ -1202,6 +1264,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();

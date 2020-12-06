@@ -16,6 +16,8 @@ namespace UnitTests
         {
             _connector = new Connector(config);
 
+            _connector.DeclareCollection<Trade>();
+
             var trades = _connector.DataSource<Trade>();
 
             // remove 500 items every time the limit of 500_000 is reached

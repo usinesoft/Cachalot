@@ -16,10 +16,7 @@ namespace Server
 
         private readonly HashSet<CachedObject> _removed = new HashSet<CachedObject>();
 
-        /// <summary>
-        /// Mostly for tests
-        /// </summary>
-        public int PendingRemoveCount => _removed.Count;
+       
 
         public TtlEvictionPolicy(TimeSpan timeToLive)
         {

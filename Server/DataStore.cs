@@ -193,6 +193,9 @@ namespace Server
 
         private void InternalAddNew(CachedObject cachedObject)
         {
+            if(cachedObject.PrimaryKey.IsNull)
+                throw new NotSupportedException($"Can not insert an object with null primary key: collection {CollectionSchema.CollectionName}");
+
             if (cachedObject.CollectionName != CollectionSchema.CollectionName)
                 throw new InvalidOperationException(
                     $"An object of type {cachedObject.CollectionName} can not be stored in DataStore of type {CollectionSchema.CollectionName}");
@@ -357,7 +360,7 @@ namespace Server
         {
             CachedObject result = null;
 
-            if (keyValue == (KeyValue) null)
+            if (keyValue == null)
                 throw new ArgumentNullException(nameof(keyValue));
 
             if (keyValue.KeyType == KeyType.Primary)
@@ -390,7 +393,7 @@ namespace Server
         /// <returns></returns>
         internal IList<CachedObject> InternalGetMany(KeyValue key)
         {
-            if (key == (KeyValue) null)
+            if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
             if (key.KeyType != KeyType.ScalarIndex)
@@ -840,7 +843,7 @@ namespace Server
         /// Like a bulk insert on an empty datastore. Used internally to reindex data when type description changed
         /// </summary>
         /// <param name="items"></param>
-        internal void InternalReindex(IEnumerable<CachedObject> items)
+        private void InternalReindex(IEnumerable<CachedObject> items)
         {
             
             var toUpdate = new List<CachedObject>();
@@ -1060,8 +1063,7 @@ namespace Server
                     if (client != null)
                         if (!insideTransaction) // if inside a transaction the response is sent by the higher level
                         {
-                            if (toSend == null)
-                                toSend = new NullResponse();
+                            toSend ??= new NullResponse();
 
                             client.SendResponse(toSend);
                         }
@@ -1089,18 +1091,7 @@ namespace Server
                             client.SendMany(result);
                             break;
 
-                        case GetDescriptionRequest getDescriptionRequest:
-                            var query = getDescriptionRequest.Query;
-                            var result1 = InternalGetMany(query);
-
-
-                            requestDescription = query.ToString();
-                            processedItems = result1.Count;
-                            requestType = "SELECT";
-
-                            client.SendManyGeneric(result1);
-                            break;
-
+                        
                         case EvalRequest evalRequest:
 
                             var count = InternalEval(evalRequest.Query);
@@ -1123,7 +1114,7 @@ namespace Server
 
                             var filtered = InternalFind(pivotRequest.Query);
 
-                            requestDescription = "PIVOT on: " +  pivotRequest.Query.ToString();
+                            requestDescription = "PIVOT on: " +  pivotRequest.Query;
 
                             requestType = "PIVOT";
 
@@ -1158,29 +1149,7 @@ namespace Server
                             client.SendResponse(pr);
                             break;
 
-                        case GetAvailableRequest getAvailableRequest:
-                            var missingObjects = new List<KeyValue>();
-                            var foundObjects = new List<CachedObject>();
-
-                            InternalGetAvailableObjects(getAvailableRequest.PrimaryKeys,
-                                getAvailableRequest.MoreCriteria,
-                                missingObjects,
-                                foundObjects);
-
-                            foreach (var _ in missingObjects)
-                                Interlocked.Increment(ref _readCount);
-                            foreach (var _ in foundObjects)
-                            {
-                                Interlocked.Increment(ref _readCount);
-                                Interlocked.Increment(ref _hitCount);
-                            }
-
-                            requestDescription = "GET AVAILABLE: " + getAvailableRequest.PrimaryKeys.Count;
-                            processedItems = foundObjects.Count;
-                            requestType = "GET MANY";
-
-                            client.SendMany(missingObjects, foundObjects);
-                            break;
+                        
                     }
                 }
             }
@@ -1192,8 +1161,8 @@ namespace Server
             {
                 var data = Profiler.End();
 
-                var needsPlan = dataRequest is GetRequest || dataRequest is EvalRequest ||
-                                dataRequest is GetDescriptionRequest;
+                var needsPlan = dataRequest is GetRequest || dataRequest is EvalRequest;
+                                
 
                 if (LastExecutionPlan != null && needsPlan)
                     requestDescription += "[ plan=" + LastExecutionPlan + "]";
@@ -1294,58 +1263,7 @@ namespace Server
         }
 
 
-        /// <summary>
-        ///     Get all available objects and return the missing ones
-        ///     Each element from <see cref="keyValues" /> plus <see cref="moreCriteria" /> should match at most one object
-        ///     If <see cref="moreCriteria" /> is null, then the keyValues should be unique ones
-        /// </summary>
-        /// <param name="keyValues"></param>
-        /// <param name="moreCriteria"></param>
-        /// <param name="missingObjects"></param>
-        /// <param name="foundObjects"></param>
-        private void InternalGetAvailableObjects(IEnumerable<KeyValue> keyValues, Query moreCriteria,
-            ICollection<KeyValue> missingObjects, IList<CachedObject> foundObjects)
-        {
-            if (moreCriteria == null) //optimize search for unique keys
-                foreach (var keyValue in keyValues)
-                {
-                    if (keyValue.KeyType != KeyType.Primary && keyValue.KeyType != KeyType.Unique)
-                        throw new NotSupportedException("Not an unique key : " + keyValue.KeyName);
-
-                    var found = InternalGetOne(keyValue);
-                    if (found != null)
-                        foundObjects.Add(found);
-                    else
-                        missingObjects.Add(keyValue);
-                }
-            else
-                foreach (var keyValue in keyValues)
-                {
-                    IList<CachedObject> objects;
-
-                    if (keyValue.KeyType == KeyType.ScalarIndex)
-                    {
-                        objects = InternalGetMany(keyValue);
-                    }
-                    else
-                    {
-                        var obj = InternalGetOne(keyValue);
-                        objects = new List<CachedObject>();
-                        if (obj != null)
-                            objects.Add(obj);
-                    }
-
-                    var matchingObject = objects.FirstOrDefault(moreCriteria.Match);
-
-                    if (matchingObject != null)
-                        foundObjects.Add(matchingObject);
-                    else
-                        missingObjects.Add(keyValue);
-                }
-
-            EvictionPolicy.Touch(foundObjects);
-        }
-
+        
 
         public void CheckCondition(KeyValue primaryKey, OrQuery condition)
         {

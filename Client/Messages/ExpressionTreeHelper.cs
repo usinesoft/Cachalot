@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Client.Core;
+using Client.Core.Linq;
+using Client.Queries;
 
 namespace Client.Messages
 {
@@ -80,7 +84,22 @@ namespace Client.Messages
         }
 
 
+        public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
+        {
+            
+            var schema = TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema;
 
+            // create a fake queryable to force query parsing and capture resolution
+            var executor = new NullExecutor(schema);
+            var queryable = new NullQueryable<T>(executor);
+
+            var unused = queryable.Where(where).ToList();
+
+            var query = executor.Expression;
+            query.CollectionName = collectionName??  typeof(T).FullName;
+
+            return query;
+        }
     }
 
     

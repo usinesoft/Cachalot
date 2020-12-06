@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Client.Core;
+using Client.Core.Linq;
 using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
@@ -34,18 +35,11 @@ namespace Cachalot.Linq
         /// </summary>
         private readonly CollectionSchema _collectionSchema;
         
-        /// <summary>
-        /// Thi one is optional, but if present it allow for faster packing
-        /// </summary>
-        private readonly ClientSideTypeDescription _description;
-
+        
         private readonly string _collectionName;
 
         CachedObject Pack(T item)
         {
-            if(_description != null)
-                return CachedObject.Pack(item, _description, _collectionName);
-
             return CachedObject.Pack(item, _collectionSchema);
         }
 
@@ -55,35 +49,22 @@ namespace Cachalot.Linq
         /// <param name="connector"></param>
         /// <param name="collectionName"></param>
         /// <param name="collectionSchema"></param>
-        internal DataSource(Connector connector, string collectionName = null, CollectionSchema collectionSchema= null)
+        internal DataSource([NotNull] Connector connector, [NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
             : base(CreateParser(), new QueryExecutor(connector?.Client, collectionSchema ?? TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema))
         {
-            _client = connector?.Client;
+            if (connector == null) throw new ArgumentNullException(nameof(connector));
 
-            _collectionName = collectionName ?? typeof(T).FullName;
+            _client = connector.Client;
 
-            if (collectionSchema != null)
-            {
-                _collectionSchema = collectionSchema;
-            }
-            else // no explicit schema
-            {
-                // first check that one was registered in the connector
-                var availableDescription = connector?.GetCollectionSchema(_collectionName);
-                if (availableDescription != null)
-                {
-                    _collectionSchema = availableDescription;
-                }
-                else // if none available get the metadata from attributes 
-                {
-                    _description =  TypeDescriptionsCache.GetDescription(typeof(T));
-                    _collectionSchema = _description.AsCollectionSchema;    
-                }
-                
-            }
+            _collectionName = collectionName ?? throw new ArgumentNullException(nameof(collectionName));
+
+            _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
 
             connector?.DeclareCollection(_collectionName, _collectionSchema);
             
+            // in case a non persistent cache was rebooted
+            _client?.DeclareCollection(collectionName, collectionSchema);
+
         }
 
 
@@ -257,8 +238,8 @@ namespace Cachalot.Linq
 
         public OrQuery PredicateToQuery(Expression<Func<T, bool>> where)
         {
+         
             // create a fake queryable to force query parsing and capture resolution
-
             var executor = new NullExecutor(_collectionSchema);
             var queryable = new NullQueryable<T>(executor);
 

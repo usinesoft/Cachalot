@@ -5,7 +5,7 @@ using Remotion.Linq.Parsing.Structure;
 
 // ReSharper disable UnusedMember.Global
 
-namespace Cachalot.Linq
+namespace Client.Core.Linq
 {
     /// <summary>
     ///     Dummy queryable used to parse queries without executing them

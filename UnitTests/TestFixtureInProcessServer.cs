@@ -23,6 +23,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(new ClientConfig()))
             {
+                connector.DeclareCollection<Person>();
+
                 var tids = connector.GenerateUniqueIds("id", 1);
 
                 var myself = new Person(tids[0], "Dan", "IONESCU");
@@ -36,6 +38,8 @@ namespace UnitTests
 
             using (var connector = new Connector(new ClientConfig()))
             {
+                connector.DeclareCollection<Person>();
+
                 var persons = connector.DataSource<Person>();
 
                 var reloaded = persons.First(t => t.First == "Dan");

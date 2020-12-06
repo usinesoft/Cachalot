@@ -226,38 +226,6 @@ namespace Channel
             }
 
 
-            // TODO: check if really useful
-            public void SendManyGeneric<TItemType>(ICollection<TItemType> items) where TItemType : class
-            {
-                try
-                {
-                    Stream stream = _tcpClient.GetStream();
-
-                    if (items.Count < Consts.StreamingThreshold)
-                    {
-                        var memStream = new MemoryStream();
-                        Streamer.ToStreamGeneric(memStream, items);
-                        ThreadPool.QueueUserWorkItem(delegate(object state)
-                        {
-                            var networkStream = (Stream) state;
-
-                            memStream.Seek(0, SeekOrigin.Begin);
-                            networkStream.Write(memStream.GetBuffer(), 0,
-                                (int) memStream.Length);
-                        }, stream);
-                    }
-                    else // switch to streaming mode. Potentially more lock time but avoids memory overuse
-                    {
-                        Streamer.ToStreamGeneric(stream, items);
-                    }
-                }
-// ReSharper disable EmptyGeneralCatchClause
-                catch (Exception)
-// ReSharper restore EmptyGeneralCatchClause
-                {
-                }
-            }
-
             public void SendMany(ICollection<CachedObject> items)
             {
                 try
@@ -288,29 +256,6 @@ namespace Channel
                 }
             }
 
-
-            public void SendMany<THeader>(THeader header, ICollection<CachedObject> items) where THeader : class
-            {
-                try
-                {
-                    Stream stream = _tcpClient.GetStream();
-
-                    var memStream = new MemoryStream();
-                    Streamer.ToStream(memStream, header, items);
-                    ThreadPool.QueueUserWorkItem(delegate(object state)
-                    {
-                        var networkStream = (Stream) state;
-                        memStream.Seek(0, SeekOrigin.Begin);
-                        networkStream.Write(memStream.GetBuffer(), 0,
-                            (int) memStream.Length);
-                    }, stream);
-                }
-// ReSharper disable EmptyGeneralCatchClause
-                catch (Exception)
-// ReSharper restore EmptyGeneralCatchClause
-                {
-                }
-            }
 
             #endregion
         }

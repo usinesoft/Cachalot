@@ -446,6 +446,7 @@ namespace UnitTests
 
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();
                 var accounts = connector.DataSource<Account>();
 
 
@@ -462,6 +463,7 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Account>();
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);

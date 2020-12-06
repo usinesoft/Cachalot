@@ -4,6 +4,7 @@ using System.Linq;
 using Cachalot.Linq;
 using Client;
 using Client.Interface;
+using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
 using UnitTests.TestData;
@@ -33,6 +34,53 @@ namespace UnitTests
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
         }
 
+
+        [Test]
+        public void Export_collection_to_file_and_reload_it()
+        {
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_persistent_config.xml");
+
+            const string dumpPath = "export";
+
+            if (Directory.Exists(dumpPath)) Directory.Delete(dumpPath, true);
+
+            Directory.CreateDirectory(dumpPath);
+
+
+            using var connector = new Connector(config);
+            
+            connector.DeclareCollection<Trade>("trades");
+
+            var dataSource = connector.DataSource<Trade>("trades");
+
+            for (var i = 0; i < 1010; i++)
+                if (i % 10 == 0)
+                    dataSource.Put(new Trade(i, 1000 + i, "TOTO", DateTime.Now.Date, 150));
+                else
+                    dataSource.Put(new Trade(i, 1000 + i, "TATA", DateTime.Now.Date, 150));
+
+
+            var trades = dataSource.ToList();
+
+            var json = JsonConvert.SerializeObject(trades);
+
+            var path = Path.Combine(dumpPath, "trades.json");
+
+            File.WriteAllText(path, json);
+
+            dataSource.Truncate();
+
+            var zero = dataSource.Count();
+            Assert.AreEqual(0, zero);
+
+            connector.Client.Import("trades", path);
+
+            var count= dataSource.Count();
+            Assert.AreEqual(1010, count);
+
+        }
+
         [Test]
         public void Dump_all_data_and_restore_from_dump()
         {
@@ -49,6 +97,7 @@ namespace UnitTests
             int maxId2;
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
                 var dataSource = connector.DataSource<Trade>();
 
 
@@ -91,6 +140,8 @@ namespace UnitTests
             // first import a dump in a non empty database 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var admin = connector.AdminInterface();
 
                 admin.ImportDump(dumpPath);
@@ -146,6 +197,8 @@ namespace UnitTests
             // reload and check your data is still there
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
                 var folders = new[] {"TATA", "TOTO"};
@@ -161,6 +214,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var admin = connector.AdminInterface();
 
                 admin.ImportDump(dumpPath);
@@ -181,6 +236,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var admin = connector.AdminInterface();
 
                 admin.InitializeFromDump(dumpPath);
@@ -216,6 +273,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
 
@@ -238,6 +297,8 @@ namespace UnitTests
             // simulate exception during dump import
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var admin = connector.AdminInterface();
 
                 Dbg.ActivateSimulation(100);

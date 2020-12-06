@@ -4,13 +4,13 @@ using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Clauses.StreamedData;
 
-namespace Cachalot.Linq
+namespace Client.Core.Linq
 {
-    public class OnlyIfAvailableResultOperator
+    public class FullTextSearchResultOperator
         : SequenceTypePreservingResultOperatorBase
 
     {
-        public OnlyIfAvailableResultOperator(Expression parameter)
+        public FullTextSearchResultOperator(Expression parameter)
 
         {
             Parameter = parameter;
@@ -23,14 +23,14 @@ namespace Cachalot.Linq
         public override string ToString()
 
         {
-            return "Only if available";
+            return "Full text search";
         }
 
 
         public override ResultOperatorBase Clone(CloneContext cloneContext)
 
         {
-            return new OnlyIfAvailableResultOperator(Parameter);
+            return new FullTextSearchResultOperator(Parameter);
         }
 
 

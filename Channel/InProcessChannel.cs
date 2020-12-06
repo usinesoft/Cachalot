@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using Client.ChannelInterface;
@@ -30,36 +29,23 @@ namespace Channel
 
         public long Connections => 1;
 
-        #endregion
-
-        #region IServerChannel Members
 
         public event EventHandler<RequestEventArgs> RequestReceived;
 
         #endregion
 
-        private class InProcessSession : Session
-        {
-            public InProcessSession(ClientData clientData)
-            {
-                ClientData = clientData;
-            }
-
-            public ClientData ClientData { get; }
-        }
+       
 
         private class ClientData : IClient
         {
-            private readonly ManualResetEvent _clientResponseReceived;
+            
             private readonly ManualResetEvent _dataReceived;
             private readonly MemoryStream _stream;
-
-            private bool? _shouldContinue;
 
             public ClientData()
             {
                 _dataReceived = new ManualResetEvent(false);
-                _clientResponseReceived = new ManualResetEvent(false);
+            
                 _stream = new MemoryStream();
             }
 
@@ -79,39 +65,12 @@ namespace Channel
             }
 
 
-            public void SendManyGeneric<TItemType>(ICollection<TItemType> items) where TItemType : class
-            {
-                Streamer.ToStreamGeneric(_stream, items);
-                _stream.Seek(0, SeekOrigin.Begin);
-                _dataReceived.Set();
-            }
-
-
-            public void SendMany<THeader>(THeader header, ICollection<CachedObject> items) where THeader : class
-            {
-                Streamer.ToStream(_stream, header, items);
-                _stream.Seek(0, SeekOrigin.Begin);
-                _dataReceived.Set();
-            }
-
-            //  TODO test transactions with in-process channel (coverage)
+            
             public bool? ShouldContinue()
             {
-                _shouldContinue = null; // reset
-
-                SendResponse(new ReadyResponse());
-
-                var answerReceived = _clientResponseReceived.WaitOne(Consts.ClientTimeoutInMilliseconds);
-
-                if (!answerReceived) return null;
-
-                Debug.Assert(_shouldContinue != null, nameof(_shouldContinue) + " != null");
-                return _shouldContinue.Value;
+                throw new NotImplementedException("Should never be called for this class");
             }
 
-            public void WaitForAck()
-            {
-            }
 
             #region methods called on the client side
 
@@ -119,12 +78,6 @@ namespace Channel
             {
                 _dataReceived.WaitOne();
                 return _stream;
-            }
-
-            public void Continue(bool ok)
-            {
-                _shouldContinue = ok;
-                _clientResponseReceived.Set();
             }
 
             #endregion
@@ -173,54 +126,30 @@ namespace Channel
 
         public Session BeginSession()
         {
-            var client = new ClientData();
-            return new InProcessSession(client);
+            throw new NotImplementedException("Should never be called for this class");
         }
 
         public void EndSession(Session session)
         {
-            //nothing to do
+            throw new NotImplementedException("Should never be called for this class");
         }
 
         public void PushRequest(Session session, Request request)
         {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = inProcessSession.ClientData;
-            RequestReceived?.Invoke(this, new RequestEventArgs(request, client));
+            throw new NotImplementedException("Should never be called for this class");
         }
 
         
         public Response GetResponse(Session session)
         {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            var client = inProcessSession.ClientData;
-
-
-            var stream = client.WaitForData();
-
-            var response = Streamer.FromStream<Response>(stream);
-
-            if (response == null)
-                return new NullResponse();
-
-            return response;
+            throw new NotImplementedException("Should never be called for thi class");
         }
 
         
 
         public bool Continue(Session session, bool ok)
         {
-            if (!(session is InProcessSession inProcessSession))
-                throw new ArgumentException("Invalid session type", nameof(session));
-
-            inProcessSession.ClientData.Continue(ok);
-
-            // the return value is used only for two stage transaction (never used in an in-process server)
-            return true;
+            throw new NotImplementedException("Should never be called for this class");
         }
 
         #endregion

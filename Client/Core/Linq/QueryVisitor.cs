@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
-using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
@@ -11,7 +10,7 @@ using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
 
-namespace Cachalot.Linq
+namespace Client.Core.Linq
 {
     public class QueryVisitor : QueryModelVisitorBase
     {

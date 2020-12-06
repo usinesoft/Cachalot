@@ -1,7 +1,6 @@
 #region
 
 using System;
-using System.Collections;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Client.Core;
@@ -50,19 +49,7 @@ namespace Client.Queries
             return _collectionSchema.MakeKeyValue(propertyName, propertyValue);
         }
 
-        /// <summary>
-        ///     Create an atomic query (propertyName oper value)
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="oper"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public AtomicQuery MakeAtomicQuery(string propertyName, QueryOperator oper, object value)
-        {
-            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
-
-            return new AtomicQuery(keyValue, oper);
-        }
+       
 
         /// <summary>
         ///     Create an atomic "between" query
@@ -79,85 +66,7 @@ namespace Client.Queries
             return new AtomicQuery(keyValue, keyValue2);
         }
 
-        /// <summary>
-        ///     Create an atomic query (propertyName = value)
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public AtomicQuery MakeAtomicQuery(string propertyName, object value)
-        {
-            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
-
-            return new AtomicQuery(keyValue);
-        }
-
-
-        /// <summary>
-        ///     Make an IN query
-        /// </summary>
-        /// <param name="propertyName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public AtomicQuery MakeAtomicInQuery(string propertyName, IEnumerable values)
-        {
-            return new AtomicQuery(values.Cast<object>().Select(v => _collectionSchema.MakeKeyValue(propertyName, v)));
-        }
-
-
-        public AndQuery MakeAndQuery()
-        {
-            return new AndQuery();
-        }
-
-        public AndQuery MakeAndQuery(AtomicQuery atomicQuery)
-        {
-            var q = new AndQuery();
-            q.Elements.Add(atomicQuery);
-            return q;
-        }
-
-        public OrQuery MakeOrQuery()
-        {
-            return new OrQuery(_collectionSchema.CollectionName);
-        }
-
-        public OrQuery MakeOrQuery(AndQuery andQuery)
-        {
-            var q = new OrQuery(_collectionSchema.CollectionName);
-            q.Elements.Add(andQuery);
-
-            return q;
-        }
-
-        public OrQuery MakeOrQuery(AtomicQuery atomicQuery)
-        {
-            var orQuery = new OrQuery(_collectionSchema.CollectionName);
-            var andQuery = new AndQuery();
-            andQuery.Elements.Add(atomicQuery);
-            orQuery.Elements.Add(andQuery);
-            return orQuery;
-        }
-
-        /// <summary>
-        ///     Get one by unique key
-        /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public OrQuery GetOne(string keyName, object value)
-        {
-            var keyValue = _collectionSchema.MakeUniqueKeyValue(keyName, value);
-
-            var query = new OrQuery(_collectionSchema.CollectionName);
-            var andQuery = new AndQuery();
-            query.Elements.Add(andQuery);
-            andQuery.Elements.Add(new AtomicQuery(keyValue));
-
-            return query;
-        }
-
-
+        
         /// <summary>
         ///     Get one by primary key
         /// </summary>
@@ -173,83 +82,6 @@ namespace Client.Queries
             andQuery.Elements.Add(new AtomicQuery(keyValue));
 
             return query;
-        }
-
-        public KeyValue MakePrimaryKeyValue(object value)
-        {
-            return _collectionSchema.MakePrimaryKeyValue(value);
-        }
-
-
-        ///// <summary>
-        /////     Create a query of the type:  where key In (value1, value2, value3)
-        /////     Works for every type of key
-        ///// </summary>
-        ///// <param name="keyName"></param>
-        ///// <param name="values"></param>
-        ///// <returns></returns>
-        //public OrQuery In(string keyName, params object[] values)
-        //{
-        //    var query = new OrQuery(_collectionSchema.CollectionName);
-
-        //    foreach (var value in values)
-        //    {
-        //        var andQuery = new AndQuery();
-        //        query.Elements.Add(andQuery);
-        //        var keyValue = _collectionSchema.MakeKeyValue(keyName, value);
-        //        andQuery.Elements.Add(new AtomicQuery(keyValue));
-        //    }
-
-        //    return query;
-        //}
-
-        ///// <summary>
-        /////     Create a query of the type:  where primary_key In (value1, value2, value3)
-        ///// </summary>
-        ///// <param name="values"></param>
-        ///// <returns></returns>
-        //public OrQuery In(params object[] values)
-        //{
-        //    var query = new OrQuery(_collectionSchema.CollectionName);
-
-        //    foreach (var value in values)
-        //    {
-        //        var andQuery = new AndQuery();
-        //        query.Elements.Add(andQuery);
-        //        var keyValue = _collectionSchema.MakePrimaryKeyValue(value);
-        //        andQuery.Elements.Add(new AtomicQuery(keyValue));
-        //    }
-
-        //    return query;
-        //}
-
-
-        /// <summary>
-        ///     Used to search by indexed list property. Find all the objects
-        /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public OrQuery Contains(string keyName, params object[] values)
-        {
-            var keyValues = _collectionSchema.MakeIndexedListKeyValues(keyName, values).ToList();
-
-            if (keyValues.Count == 0)
-                throw new NotSupportedException("No list index called " + keyName + " found");
-
-            return new OrQuery(_collectionSchema.CollectionName)
-            {
-                Elements =
-                {
-                    new AndQuery
-                    {
-                        Elements =
-                        {
-                            new AtomicQuery(keyValues)
-                        }
-                    }
-                }
-            };
         }
 
 

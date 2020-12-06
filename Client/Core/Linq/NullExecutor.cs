@@ -4,7 +4,7 @@ using Client.Messages;
 using Client.Queries;
 using Remotion.Linq;
 
-namespace Cachalot.Linq
+namespace Client.Core.Linq
 {
     public class NullExecutor : IQueryExecutor
     {

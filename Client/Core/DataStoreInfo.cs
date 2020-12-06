@@ -53,17 +53,7 @@ namespace Client.Core
             set => _fullTypeName = value;
         }
 
-        /// <summary>
-        ///     Upper case short name of the data type
-        /// </summary>
-        public string TableName
-        {
-            get
-            {
-                var nameParts = _fullTypeName.Split('.');
-                return nameParts[nameParts.Length - 1].ToUpper();
-            }
-        }
+        
 
         /// <summary>
         ///     Number of items in the datastore

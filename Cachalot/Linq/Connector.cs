@@ -42,6 +42,8 @@ namespace Cachalot.Linq
             }
         }
 
+       
+
         /// <summary>
         /// Declare collection with implicit schema (inferred from the type)
         /// If the collection name is not specified, the full name of the type is used
@@ -173,9 +175,19 @@ namespace Cachalot.Linq
             return Client.GetClusterInformation();
         }
 
-        public DataSource<T> DataSource<T>(string collectionName = null, CollectionSchema description = null)
+        public DataSource<T> DataSource<T>(string collectionName = null)
         {
-            return new DataSource<T>(this, collectionName, description);
+            collectionName ??= typeof(T).FullName;
+
+            lock (_collectionSchema)
+            {
+                if (_collectionSchema.TryGetValue(collectionName, out var schema))
+                {
+                    return new DataSource<T>(this, collectionName, schema);
+                } 
+            }
+
+            throw new CacheException($"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
         }
 
         public DataAdmin AdminInterface()

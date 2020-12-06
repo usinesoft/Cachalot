@@ -76,7 +76,7 @@ namespace UnitTests
         [Test]
         public void PutDifferentType()
         {
-            var item1 = new NewCacheableTypeOk(1, 1001, "AHA", new DateTime(2010, 10, 01), 55);
+            var item1 = new Order();
             Assert.Throws<InvalidOperationException>(() => _dataStore.InternalAddNew(CachedObject.Pack(item1), false));
             
         }

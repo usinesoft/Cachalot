@@ -3,19 +3,19 @@ using System.Reflection;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
-namespace Cachalot.Linq
+namespace Client.Core.Linq
 {
-    public class FullTextSearchExpressionNode : ResultOperatorExpressionNodeBase
+    public class OnlyIfCompleteExpressionNode : ResultOperatorExpressionNodeBase
 
     {
         public static readonly MethodInfo[] SupportedMethods =
-            {typeof(MyQueryExtensions).GetMethod("FullTextSearch")};
+            {typeof(MyQueryExtensions).GetMethod("OnlyIfComplete")};
 
 
         private readonly Expression _parameterLambda;
 
 
-        public FullTextSearchExpressionNode(
+        public OnlyIfCompleteExpressionNode(
             MethodCallExpressionParseInfo parseInfo, Expression parameter)
             : base(parseInfo, null, null)
 
@@ -33,7 +33,7 @@ namespace Cachalot.Linq
             //    _parameterLambda.Body,
             //    clauseGenerationContext);
 
-            return new FullTextSearchResultOperator(_parameterLambda);
+            return new OnlyIfAvailableResultOperator(_parameterLambda);
         }
 
 

@@ -13,8 +13,6 @@ namespace Client.Messages
     [ProtoContract]
     [ProtoInclude(604, typeof(DomainDeclarationRequest))]
     [ProtoInclude(605, typeof(EvalRequest))]
-    [ProtoInclude(606, typeof(GetAvailableRequest))]
-    [ProtoInclude(607, typeof(GetDescriptionRequest))]
     [ProtoInclude(608, typeof(GetRequest))]
     [ProtoInclude(609, typeof(PutRequest))]
     [ProtoInclude(610, typeof(RemoveManyRequest))]

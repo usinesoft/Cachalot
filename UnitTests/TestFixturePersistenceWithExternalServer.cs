@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Cachalot.Linq;
+using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using UnitTests.TestData;
@@ -107,6 +108,9 @@ namespace UnitTests
         {
             using (var connector = new Connector(_config))
             {
+                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Trade>();
+
                 connector.AdminInterface().DropDatabase();
 
                 var events = connector.DataSource<ProductEvent>();
@@ -151,7 +155,10 @@ namespace UnitTests
         {
             using (var connector = new Connector(_config))
             {
+                
                 connector.AdminInterface().DropDatabase();
+
+                connector.DeclareCollection<Home>();
 
                 var ids = connector.GenerateUniqueIds("home_id", 100);
 
@@ -183,6 +190,7 @@ namespace UnitTests
             using (var connector = new Connector(_config))
             {
                 connector.AdminInterface().DropDatabase();
+                connector.DeclareCollection<Home>();
 
                 var ids = connector.GenerateUniqueIds("home_id", 103);
 
@@ -274,6 +282,7 @@ namespace UnitTests
             using (var connector = new Connector(_config))
             {
                 connector.AdminInterface().DropDatabase();
+                connector.DeclareCollection<ProductEvent>();
 
                 var dataSource = connector.DataSource<ProductEvent>();
 
@@ -318,6 +327,8 @@ namespace UnitTests
             using (var connector = new Connector(_config))
             {
                 connector.AdminInterface().DropDatabase();
+
+                connector.DeclareCollection<Order>();
 
                 var dataSource = connector.DataSource<Order>();
 

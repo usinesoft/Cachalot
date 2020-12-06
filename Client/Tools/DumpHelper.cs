@@ -11,41 +11,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Client.Tools
 {
-    public class DumpHelper
+    public static class DumpHelper
     {
-        /// <summary>
-        ///     Helper function. Deserialize and pack objects from a json file
-        /// </summary>
-        //internal static IEnumerable<CachedObject> LoadObjects(string jsonPath, ICacheClient client)
-        //{
-        //    var json = File.ReadAllText(jsonPath);
-
-        //    var array = JArray.Parse(json);
-
-        //    var info = client.GetClusterInformation();
-        //    var typesByName = info.Schema.ToDictionary(td => td.CollectionName);
-
-        //    CollectionSchema collectionSchema = null;
-
-        //    foreach (var item in array.Children<JObject>())
-        //    {
-        //        // Get the type description only once. All should have the same
-        //        if (collectionSchema == null)
-        //        {
-        //            var type = item.Property("$type")?.Value?.ToString();
-        //            if (type == null) throw new FormatException("Type information not found");
-        //            var parts = type.Split(',');
-        //            if (parts.Length != 2) throw new FormatException("Can not parse type information:" + type);
-
-        //            collectionSchema = typesByName[parts[0].Trim()];
-        //        }
-
-
-        //        var cachedObject = CachedObject.PackJson(item.ToString(), collectionSchema);
-        //        yield return cachedObject;
-        //    }
-        //}
-
+        
         internal static IEnumerable<CachedObject> LoadObjects(IDataClient @this, string jsonPath, [NotNull] string collectionName)
         {
             if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));

@@ -7,6 +7,7 @@ using System.Threading;
 using Cachalot.Linq;
 using Channel;
 using Client;
+using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
@@ -95,7 +96,11 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Home>();
+                connector.DeclareCollection<Trade>();
+
                 var homes = connector.DataSource<Home>();
+                
 
                 homes.Put(new Home
                     {Id = 1, CountryCode = "FR", PriceInEuros = 150, Town = "Paris", Rooms = 3, Bathrooms = 1});
@@ -176,6 +181,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -239,6 +246,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<ProductEvent >();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 var events = new List<ProductEvent>();
@@ -272,6 +281,8 @@ namespace UnitTests
         {
             using (var connector = new Connector(_clientConfig))
             {
+                connector.DeclareCollection<Trade>();
+
                 var trades = connector.DataSource<Trade>();
                 trades.ConfigEviction(EvictionType.LessRecentlyUsed, 50, 5);
 
@@ -340,6 +351,8 @@ namespace UnitTests
             using (var connector = new Connector(_clientConfig))
             {
                 connector.AdminInterface().DropDatabase();
+
+                connector.DeclareCollection<Order>();
 
                 var dataSource = connector.DataSource<Order>();
 

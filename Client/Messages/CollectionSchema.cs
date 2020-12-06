@@ -1,7 +1,6 @@
 #region
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
@@ -199,19 +198,7 @@ namespace Client.Messages
             throw new ArgumentException("Not an index key", nameof(keyName));
         }
 
-        /// <summary>
-        ///     helper function. Creates a valid collection of key values for an indexed collection property
-        /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public IEnumerable<KeyValue> MakeIndexedListKeyValues(string keyName, IEnumerable values)
-        {
-            foreach (var value in values)
-            foreach (var indexField in _listFields)
-                if (indexField.Name.ToUpper() == keyName.ToUpper())
-                    yield return KeyInfo.ValueToKeyValue(value, indexField);
-        }
+        
 
         /// <summary>
         ///     Helper function, generate a valid unique <see cref="KeyValue" /> by key name

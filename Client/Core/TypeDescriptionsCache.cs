@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Client.Core;
 
-namespace Cachalot.Linq
+namespace Client.Core
 {
     /// <summary>
     /// Used to minimize reflection when registering dynamic types

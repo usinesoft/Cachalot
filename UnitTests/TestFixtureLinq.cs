@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Cachalot.Linq;
 using Client.Core;
+using Client.Core.Linq;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
@@ -24,12 +25,11 @@ namespace UnitTests
         [Test]
         public void Expression_tree_processing()
         {
-            var homes = new DataSource<Home>(null);
-
+            
             var towns = new[] {"Paris", "Nice"};
 
             // not supposed to be optimal; improving coverage (constant at left + extension at root level)
-            var query = homes.PredicateToQuery(h => towns.Contains(h.Town) || "Toronto" == h.Town);
+            var query = UtExtensions.PredicateToQuery<Home>(h => towns.Contains(h.Town) || "Toronto" == h.Town);
 
             Assert.AreEqual(2, query.Elements.Count);
 
@@ -37,7 +37,7 @@ namespace UnitTests
             Assert.AreEqual("Toronto",  query.Elements.Last().Elements.Single().Value.ToString());
 
             // check reversed "Contains" at root
-            query = homes.PredicateToQuery(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
+            query = UtExtensions.PredicateToQuery<Home>(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
             Assert.AreEqual(2, query.Elements.Count);
 
             Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
@@ -53,6 +53,9 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                
+                connector.DeclareCollection<Trade>();
+
                 var trades = connector.DataSource<Trade>();
 
                 var today = DateTime.Today;
@@ -78,6 +81,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var trades = connector.DataSource<Trade>();
 
                 var q = trades.PredicateToQuery(t =>
@@ -106,8 +111,11 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 try
                 {
+
                     var trades = connector.DataSource<Trade>();
 
                     QueryExecutor.Probe(query =>
@@ -156,6 +164,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]
@@ -213,6 +223,7 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
                 var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]
@@ -258,6 +269,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<ProductEvent>();
+
                 var dataSource = connector.DataSource<ProductEvent>();
 
                 dataSource.PutMany(new ProductEvent[]
@@ -300,6 +313,8 @@ namespace UnitTests
 
             using (var connector = new Connector(config))
             {
+                connector.DeclareCollection<Trade>();
+
                 var dataSource = connector.DataSource<Trade>();
 
                 dataSource.PutMany(new[]

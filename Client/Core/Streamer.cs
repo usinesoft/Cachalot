@@ -281,40 +281,5 @@ namespace Client.Core
             return ack == Ack;
         }
 
-        public static void ToStream<THeader>(MemoryStream stream, THeader header, ICollection<CachedObject> items)
-            where THeader : class
-        {
-            var bufferedStream = new BufferedStream(stream);
-            var writer = new BinaryWriter(bufferedStream);
-
-            using (var memStream = new MemoryStream())
-            {
-                const int oneItemCount = 1;
-                writer.Write(oneItemCount);
-                SerializationHelper.ObjectToStream(header, memStream, SerializationMode.ProtocolBuffers, false);
-                var data = memStream.GetBuffer();
-                writer.Write(true); //protocol buffers used for header serialization
-                writer.Write(false); //the header is not compressed
-                writer.Write(data.Length);
-                writer.Write(data);
-            }
-
-            writer.Flush();
-
-            var itemCount = items.Count;
-            writer.Write(itemCount);
-
-            foreach (var item in items)
-            {
-                var data = item.ObjectData;
-                writer.Write(false); // no protobuf for objects
-                writer.Write(item.UseCompression);
-                writer.Write(item.Rank);
-                writer.Write(data.Length);
-                writer.Write(data);
-            }
-
-            writer.Flush();
-        }
     }
 }

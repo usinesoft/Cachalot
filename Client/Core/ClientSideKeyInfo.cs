@@ -271,7 +271,7 @@ namespace Client.Core
             return KeyInfo.ValueToKeyValue(value, AsKeyInfo);
         }
 
-        public ServerSideValue GetServerValue(object instance)
+        public KeyValue GetServerValue(object instance)
         {
             //TODO use precompiled accessors
             if (instance == null)
@@ -279,9 +279,9 @@ namespace Client.Core
 
             var value = Info.GetValue(instance, null);
 
-            var val = Convert.ToDecimal(value); 
+            var val = Convert.ToDouble(value); 
 
-            return new ServerSideValue{Name = Info.Name, Value = val};
+            return new KeyValue(val, AsKeyInfo);
         }
 
         /// <summary>

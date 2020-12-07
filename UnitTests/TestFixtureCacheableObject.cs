@@ -239,10 +239,10 @@ namespace UnitTests
 
             var packed = CachedObject.Pack(order, description);
             Assert.AreEqual(2, packed.Values.Length);
-            Assert.AreEqual("Amount", packed.Values[0].Name);
-            Assert.AreEqual(order.Amount, packed.Values[0].Value);
-            Assert.AreEqual("Quantity", packed.Values[1].Name);
-            Assert.AreEqual(order.Quantity, packed.Values[1].Value);
+            Assert.AreEqual("Amount", packed.Values[0].KeyName);
+            Assert.AreEqual(order.Amount, packed.Values[0].NumericValue);
+            Assert.AreEqual("Quantity", packed.Values[1].KeyName);
+            Assert.AreEqual(order.Quantity, packed.Values[1].NumericValue);
 
             // TODO review after refactoring
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -66,7 +67,7 @@ namespace Client.Core
         [field: ProtoMember(10)]
         public IList<TokenizedLine> TokenizedFullText { get; set; }
 
-        [field: ProtoMember(11)] public ServerSideValue[] Values { get; private set; }
+        [field: ProtoMember(11)] public KeyValue[] Values { get; private set; }
 
         /// <summary>
         ///     Default constructor for serialization only
@@ -140,7 +141,7 @@ namespace Client.Core
             foreach (var indexField in typeDescription.IndexFields)
                 result.IndexKeys[pos++] = indexField.GetValue(instance);
 
-            result.Values = new ServerSideValue[typeDescription.ServerValuesCount];
+            result.Values = new KeyValue[typeDescription.ServerValuesCount];
             pos = 0;
             foreach (var serverValue in typeDescription.ServerSideValues)
                 result.Values[pos++] = serverValue.GetServerValue(instance);
@@ -203,7 +204,7 @@ namespace Client.Core
         //        getter = ExpressionTreeHelper.Getter<TObject>(uniqueField.Name);
         //        result.UniqueKeys[pos++] = new KeyValue(getter(instance), uniqueField);
         //    }
-                
+
 
         //    result.IndexKeys = new KeyValue[typeDescription.IndexFields.Count];
         //    pos = 0;
@@ -212,12 +213,12 @@ namespace Client.Core
         //        getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
         //        result.IndexKeys[pos++] = new KeyValue(getter(instance), indexField);
         //    }
-                
 
-        //    result.Values = new ServerSideValue[typeDescription.ServerValuesCount];
+
+        //    result.Values = new KeyValue[typeDescription.ServerSideValues.Count];
         //    pos = 0;
         //    foreach (var serverValue in typeDescription.ServerSideValues)
-        //        result.Values[pos++] = serverValue.GetServerValue(instance);
+        //        result.Values[pos++] = new KeyValue(getter(instance), serverValue);
 
         //    // process indexed collections
 
@@ -225,8 +226,15 @@ namespace Client.Core
 
         //    foreach (var indexField in typeDescription.ListFields)
         //    {
-        //        var values = indexField.GetCollectionValues(instance).ToArray();
-        //        listKeys.AddRange(values);
+        //        getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
+        //        var collection = getter(instance);
+
+        //        if (!(collection is IEnumerable<object> values))
+        //            throw new NotSupportedException($"Property {indexField.Name} can not be converted to IEnumerable");
+
+        //        var keyValues = values.Select(v => new KeyValue(v, indexField));
+                
+        //        listKeys.AddRange(keyValues);
         //    }
 
         //    result.ListIndexKeys = listKeys.ToArray();
@@ -235,7 +243,7 @@ namespace Client.Core
         //    // process full text
         //    var lines = new List<string>();
 
-        //    foreach (var fulltext in typeDescription.FullTextIndexed)
+        //    foreach (var fulltext in typeDescription.FullText)
         //        lines.AddRange(fulltext.GetStringValues(instance));
 
         //    result.FullText = lines.ToArray();
@@ -469,7 +477,7 @@ namespace Client.Core
 
             // process server side values
 
-            var serverValues = new List<ServerSideValue>();
+            var serverValues = new List<KeyValue>();
             foreach (var value in collectionSchema.ServerSideValues)
             {
                 var jKey = jObject.Property(value.Name);
@@ -477,7 +485,7 @@ namespace Client.Core
                 var val = JTokenToDecimal(jKey);
 
 
-                serverValues.Add( new ServerSideValue{Name = value.Name, Value = val});
+                serverValues.Add( new KeyValue(val, value));
             }
 
             result.Values = serverValues.ToArray();

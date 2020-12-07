@@ -35,15 +35,15 @@ namespace Client.Messages.Pivot
             foreach (var value in @object.Values)
             {
                 // first aggregate the root level
-                var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.Name);
+                var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.KeyName);
                 if (agg == null)
                 {
-                    agg = new AggregatedValue {ColumnName = value.Name};
+                    agg = new AggregatedValue {ColumnName = value.KeyName};
                     AggregatedValues.Add(agg);
                 }
 
                 agg.Count++;
-                agg.Sum += value.Value;
+                agg.Sum += (decimal) value.NumericValue;
 
             }
 

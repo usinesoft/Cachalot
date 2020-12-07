@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Resources;
-using Cachalot.Linq;
-using Client.Core;
 using Client.Queries;
 using NUnit.Framework;
 using UnitTests.TestData;

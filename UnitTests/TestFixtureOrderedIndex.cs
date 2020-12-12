@@ -81,6 +81,8 @@ namespace UnitTests
 
         private static void CheckLs(IndexBase indexByValue)
         {
+            
+
             var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "IndexKeyValue", true);
 
             //non existent value in the middle
@@ -148,6 +150,8 @@ namespace UnitTests
 
         private static OrderedIndex Populate(params int[] valueKeys)
         {
+            var schema = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
+
             //register the type to get a valid CollectionSchema
             //the type description is used to create CachedObjects from objects of the registered type
             var typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
@@ -162,7 +166,7 @@ namespace UnitTests
 
             var index = new OrderedIndex(valueKey);
             for (var i = 0; i < valueKeys.Length; i++)
-                index.Put(CachedObject.Pack(new CacheableTypeOk(i, 106, "A", DateTime.Now, valueKeys[i])));
+                index.Put(CachedObject.Pack(new CacheableTypeOk(i, 106, "A", DateTime.Now, valueKeys[i]), schema));
 
             return index;
         }
@@ -546,6 +550,8 @@ namespace UnitTests
         [Test]
         public void Lesser()
         {
+            var schema = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
+
             //register the type to get a valid CollectionSchema
             //the type description is used to create CachedObjects from objects of the registered type
             var typeDescription = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
@@ -563,12 +569,12 @@ namespace UnitTests
             {
                 var indexByValue = new OrderedIndex(valueKey);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80)));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
 
                 CheckLe(indexByValue);
                 CheckLs(indexByValue);
@@ -578,12 +584,12 @@ namespace UnitTests
             {
                 var indexByValue = new OrderedIndex(valueKey);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6)));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
 
 
                 CheckLe(indexByValue);
@@ -596,12 +602,12 @@ namespace UnitTests
 
                 indexByValue.BeginFill();
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6)));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
                 indexByValue.EndFill();
 
                 CheckLe(indexByValue);
@@ -615,12 +621,12 @@ namespace UnitTests
 
                 var keyType = new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "test", true);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 45)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 45)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 45)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 45)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 45)));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 45)));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 45), schema));
 
                 //value not fount (too small)
                 var result1 = indexByValue.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);

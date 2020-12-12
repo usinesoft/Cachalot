@@ -46,7 +46,8 @@ namespace Client.Queries
         /// <returns></returns>
         public KeyValue MakeKeyValue(string propertyName, object propertyValue)
         {
-            return _collectionSchema.MakeKeyValue(propertyName, propertyValue);
+            var info = _collectionSchema.KeyByName(propertyName);
+            return new KeyValue(propertyValue, info);
         }
 
        
@@ -60,8 +61,8 @@ namespace Client.Queries
         /// <returns></returns>
         public AtomicQuery MakeAtomicQuery(string propertyName, object value, object value2)
         {
-            var keyValue = _collectionSchema.MakeKeyValue(propertyName, value);
-            var keyValue2 = _collectionSchema.MakeKeyValue(propertyName, value2);
+            var keyValue = MakeKeyValue(propertyName, value);
+            var keyValue2 = MakeKeyValue(propertyName, value2);
 
             return new AtomicQuery(keyValue, keyValue2);
         }
@@ -74,7 +75,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(object value)
         {
-            var keyValue = value as KeyValue ?? _collectionSchema.MakePrimaryKeyValue(value);
+            var keyValue = value as KeyValue ?? new KeyValue(value, _collectionSchema.PrimaryKeyField);
 
             var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
@@ -93,7 +94,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery In(string keyName, params object[] values)
         {
-            var keyValues = values.Select(value => _collectionSchema.MakeKeyValue(keyName, value)).ToList();
+            var keyValues = values.Select(value => MakeKeyValue(keyName,value)).ToList();
 
             if (keyValues.Count == 0)
                 throw new NotSupportedException("No index called " + keyName + " found");
@@ -120,7 +121,8 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery In(params object[] values)
         {
-            var keyValues = values.Select(value => _collectionSchema.MakePrimaryKeyValue(value)).ToList();
+            var primary = _collectionSchema.PrimaryKeyField;
+            var keyValues = values.Select(value => new KeyValue(value, primary)).ToList();
 
 
             return new OrQuery(_collectionSchema.CollectionName)
@@ -139,25 +141,7 @@ namespace Client.Queries
         }
 
 
-        /// <summary>
-        ///     Crate o query of the type "where IndexKey oper value"
-        /// </summary>
-        /// <param name="keyName"></param>
-        /// <param name="value"></param>
-        /// <param name="oper"></param>
-        /// <returns></returns>
-        public OrQuery GetMany(string keyName, object value, QueryOperator oper = QueryOperator.Eq)
-        {
-            var keyValue = _collectionSchema.MakeIndexKeyValue(keyName, value);
-
-            var query = new OrQuery(_collectionSchema.CollectionName);
-            var andQuery = new AndQuery();
-            query.Elements.Add(andQuery);
-            andQuery.Elements.Add(new AtomicQuery(keyValue, oper));
-
-            return query;
-        }
-
+        
 
         /// <summary>
         ///     Get many by multiple indexes
@@ -263,7 +247,7 @@ namespace Client.Queries
                         if (!decimal.TryParse(right, out var floatValue))
                             throw new ArgumentException(right + " can not be converted to float");
 
-                        keyValue = KeyInfo.ValueToKeyValue(floatValue, keyInfo);
+                        keyValue = new KeyValue(floatValue, keyInfo);
                     }
                     else // integer value
                     {
@@ -271,7 +255,7 @@ namespace Client.Queries
                             throw new ArgumentException(right + " can not be converted to long");
 
 
-                        keyValue = KeyInfo.ValueToKeyValue(longValue, keyInfo);
+                        keyValue = new KeyValue(longValue, keyInfo);
                     }
                 }
             }

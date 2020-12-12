@@ -43,11 +43,11 @@ namespace Client.Core.Linq
             var keyInfo = new KeyInfo(propertyDescription.KeyDataType, propertyDescription.KeyType,
                 propertyDescription.Name, propertyDescription.IsOrdered);
 
-            if (keyInfo.KeyType == KeyType.None)
-                throw new NotSupportedException(
-                    $"Property {member.Name} of type {member.DeclaringType?.Name} is not an index");
+            
+            //var propertyValue = ExpressionTreeHelper.Getter(member.DeclaringType, member.Name)(value);
 
-            return keyInfo.Value(value);
+
+            return new KeyValue(value, keyInfo);
         }
 
 
@@ -65,6 +65,14 @@ namespace Client.Core.Linq
             if (whereClause.Predicate is BinaryExpression expression)
             {
                 VisitBinaryExpression(expression, RootExpression);
+            }
+            else if (whereClause.Predicate is MemberExpression memberExpression)
+            {
+                if (memberExpression.Type == typeof(bool))
+                {
+                    // Generalize for more complex expressions
+                    VisitMemberExpression(memberExpression, RootExpression);
+                }
             }
             else
             {
@@ -305,6 +313,29 @@ namespace Client.Core.Linq
                 throw new NotSupportedException("Query too complex");
             }
         }
+
+        private void VisitMemberExpression(MemberExpression expression, OrQuery rootExpression)
+        {
+            AndQuery andExpression;
+
+            if (!rootExpression.MultipleWhereClauses)
+            {
+                andExpression = new AndQuery();
+                rootExpression.Elements.Add(andExpression);
+            }
+            else // if multiple where clauses consider them as expressions linked by AND
+            {
+                andExpression = rootExpression.Elements[0];
+            }
+
+            var kval = AsKeyValue(expression.Member, true);
+
+            andExpression.Elements.Add( new AtomicQuery(kval));
+
+
+
+        }
+
 
         //TODO add unit test for OR expression with Contains
         /// <summary>

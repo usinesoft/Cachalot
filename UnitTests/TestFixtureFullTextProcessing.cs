@@ -72,7 +72,7 @@ namespace UnitTests
                 Contacts = {"mail", "phone"}
             };
 
-            var packed = CachedObject.Pack(home);
+            var packed = CachedObject.Pack(home, description.AsCollectionSchema);
 
             Assert.AreEqual(7, packed.FullText.Length);
             Assert.IsTrue(packed.FullText.Any(t => t.Contains("chien qui fume")));
@@ -135,7 +135,7 @@ namespace UnitTests
             };
 
 
-            var desc = ClientSideTypeDescription.RegisterType<Home>();
+            var desc = ClientSideTypeDescription.RegisterType<Home>().AsCollectionSchema;
             const int objects = 10_000;
 
             {
@@ -187,6 +187,42 @@ namespace UnitTests
                 Console.WriteLine(
                     $"Packing + unpacking {objects} objects with compression took {watch.ElapsedMilliseconds} ms");
             }
+        }
+
+        [Test]
+        public void Compare_packing_result_for_different_methods()
+        {
+            var home = new Home
+            {
+                Address = "14 rue du chien qui fume",
+                Bathrooms = 2,
+                Rooms = 4,
+                PriceInEuros = 200,
+                CountryCode = "FR",
+                Comments =
+                {
+                    new Comment {Text = "Wonderful place", User = "foo"},
+                    new Comment {Text = "Very nice apartment"}
+                }
+            };
+
+
+            var desc = ClientSideTypeDescription.RegisterType<Home>();
+            
+            //// warm up
+            //var unused = CachedObject.Pack(home, desc);
+            //var v1 = unused.ToString();
+
+            var unused = CachedObject.Pack(home, desc.AsCollectionSchema);
+            var v2 = unused.ToString();
+
+            var json = SerializationHelper.ObjectToJson(home);
+            unused = CachedObject.PackJson(json, desc.AsCollectionSchema);
+            var v3 = unused.ToString();
+
+            //Assert.AreEqual(v1, v2);
+            Assert.AreEqual(v2, v3);
+
         }
 
 

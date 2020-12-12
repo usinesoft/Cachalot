@@ -57,39 +57,7 @@ namespace UnitTests
         }
 
 
-        [Test]
-        public void CompareTypedAndUntypedPacking()
-        {
-            var obj = GetObject1();
-            var description = ClientSideTypeDescription.RegisterType<CacheableTypeOk>();
-
-            var packed1 = CachedObject.Pack(obj, description);
-
-            var packed2 = CachedObject.Pack(obj, description.AsCollectionSchema);
-
-            Assert.AreEqual(packed1, packed2);
-
-            const int iterations = 100000;
-
-            var watch = new Stopwatch();
-            watch.Start();
-
-
-            for (var i = 0; i < iterations; i++) packed1 = CachedObject.Pack(obj, description);
-
-
-            Console.WriteLine($"{iterations} iterations with reflexion took {watch.ElapsedMilliseconds} ms");
-
-            var desc = description.AsCollectionSchema;
-
-            watch.Restart();
-
-
-            for (var i = 0; i < iterations; i++) packed2 = CachedObject.Pack(obj, desc);
-
-            Console.WriteLine($"{iterations} iterations with json packing took {watch.ElapsedMilliseconds} ms");
-        }
-
+        
         [Test]
         public void TestCompiledGetterVsReflexion()
         {
@@ -149,9 +117,9 @@ namespace UnitTests
         public void TestPackObject()
         {
             var object1 = GetObject1();
-            ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
+            var description = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk));
 
-            var cached = CachedObject.Pack(object1);
+            var cached = CachedObject.Pack(object1, description.AsCollectionSchema);
 
             Assert.IsNotNull(cached);
             Assert.IsNotNull(cached.PrimaryKey);
@@ -195,7 +163,7 @@ namespace UnitTests
             
             var schema = ClientSideTypeDescription.RegisterType(typeof(Person)).AsCollectionSchema;
 
-            var packed = CachedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"});
+            var packed = CachedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
 
             var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema);
 
@@ -237,7 +205,7 @@ namespace UnitTests
                 Quantity = 2
             };
 
-            var packed = CachedObject.Pack(order, description);
+            var packed = CachedObject.Pack(order, description.AsCollectionSchema);
             Assert.AreEqual(2, packed.Values.Length);
             Assert.AreEqual("Amount", packed.Values[0].KeyName);
             Assert.AreEqual(order.Amount, packed.Values[0].NumericValue);
@@ -291,6 +259,9 @@ namespace UnitTests
         [Test]
         public void ComputePivotWithServerValues()
         {
+
+            var description = ClientSideTypeDescription.RegisterType(typeof(Order));
+
             var order1 = new Order
             {
                 Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
@@ -305,8 +276,8 @@ namespace UnitTests
                 Quantity = 2
             };
 
-            var packed1 = CachedObject.Pack(order1);
-            var packed2 = CachedObject.Pack(order2);
+            var packed1 = CachedObject.Pack(order1, description.AsCollectionSchema);
+            var packed2 = CachedObject.Pack(order2, description.AsCollectionSchema);
 
             var pivot = new PivotLevel();
 
@@ -329,6 +300,8 @@ namespace UnitTests
         [Test]
         public void ComputePivotWithMultipleAxis()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(Order)).AsCollectionSchema;
+
             var order1 = new Order
             {
                 Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
@@ -350,9 +323,9 @@ namespace UnitTests
                 Quantity = 2
             };
 
-            var packed1 = CachedObject.Pack(order1);
-            var packed2 = CachedObject.Pack(order2);
-            var packed3 = CachedObject.Pack(order3);
+            var packed1 = CachedObject.Pack(order1, schema);
+            var packed2 = CachedObject.Pack(order2, schema);
+            var packed3 = CachedObject.Pack(order3, schema);
 
 
             // first test with one single axis
@@ -404,7 +377,7 @@ namespace UnitTests
                 Quantity = 1
             };
 
-            var packed4 = CachedObject.Pack(order4);
+            var packed4 = CachedObject.Pack(order4, schema);
 
             var pivot1 = new PivotLevel();
 
@@ -433,8 +406,10 @@ namespace UnitTests
         [Test]
         public void PackWithAutomaticPrimaryKey()
         {
+            var description = ClientSideTypeDescription.RegisterType(typeof(TestData)).AsCollectionSchema;
+
             var obj = new TestData {Name = "toto"};
-            var packed = CachedObject.Pack(obj);
+            var packed = CachedObject.Pack(obj, description);
 
             var pk = Guid.Parse(packed.PrimaryKey.ToString());
 

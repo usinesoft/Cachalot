@@ -99,7 +99,7 @@ namespace UnitTests
         [Test]
         public void SerializeCachedObjectUsingProtocolBuffers()
         {
-            ClientSideTypeDescription.RegisterType(typeof(TradeLike));
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
             var randGen = new Random();
 
 
@@ -107,7 +107,7 @@ namespace UnitTests
             for (var i = 0; i < 5000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 1);
-                var packed = CachedObject.Pack(obj);
+                var packed = CachedObject.Pack(obj, schema);
 
                 var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, null);
                 var reloaded =
@@ -126,7 +126,7 @@ namespace UnitTests
             for (var i = 0; i < 1000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), randGen.Next(1000));
-                var packed = CachedObject.Pack(obj);
+                var packed = CachedObject.Pack(obj, schema);
                 items.Add(packed);
             }
 
@@ -154,16 +154,18 @@ namespace UnitTests
         [Test]
         public void StreamManyUnstreamMany()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
+
             var items = new List<CachedObject>(3);
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item1));
+            items.Add(CachedObject.Pack(item1, schema));
 
             var item2 = new CacheableTypeOk(2, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item2));
+            items.Add(CachedObject.Pack(item2, schema));
 
             var item3 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item3));
+            items.Add(CachedObject.Pack(item3, schema));
 
             using (var stream = new MemoryStream())
             {
@@ -192,9 +194,7 @@ namespace UnitTests
         public void StreamManyUnstreamOne()
         {
             var item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var oneItemList = new List<CacheableTypeOk>();
-            oneItemList.Add(item);
-
+            
             var desc = ClientSideTypeDescription.RegisterType<CacheableTypeOk>().AsCollectionSchema;
 
             using (var stream = new MemoryStream())
@@ -211,10 +211,11 @@ namespace UnitTests
         [Test]
         public void StreamManyUnstreamOneCacheable()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
+
             var item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it = CachedObject.Pack(item);
-            var oneItemList = new List<CachedObject>();
-            oneItemList.Add(it);
+            var it = CachedObject.Pack(item, schema);
+            var oneItemList = new List<CachedObject> {it};
 
             using (var stream = new MemoryStream())
             {
@@ -258,18 +259,20 @@ namespace UnitTests
         [Test]
         public void StreamUnstreamManyCacheable()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
+
             var items = new List<CachedObject>(3);
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it1 = CachedObject.Pack(item1);
+            var it1 = CachedObject.Pack(item1, schema);
             items.Add(it1);
 
             var item2 = new CacheableTypeOk(2, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it2 = CachedObject.Pack(item2);
+            var it2 = CachedObject.Pack(item2, schema);
             items.Add(it2);
 
             var item3 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it3 = CachedObject.Pack(item3);
+            var it3 = CachedObject.Pack(item3, schema);
             items.Add(it3);
 
             using (var stream = new MemoryStream())
@@ -296,11 +299,13 @@ namespace UnitTests
         }
 
         /// <summary>
-        ///     Test streaming and unstreaming of all requests and response types one at a time
+        ///     Test streaming and un streaming of all requests and response types one at a time
         /// </summary>
         [Test]
         public void StreamUnstreamMessagesOneByOne()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
+
             var qbuilder = new QueryBuilder(typeof(CacheableTypeOk));
 
             var put = new PutRequest(typeof(CacheableTypeOk));
@@ -308,9 +313,9 @@ namespace UnitTests
 
             var typeDescription =
                 ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
-            put.Items.Add(CachedObject.Pack(item));
+            put.Items.Add(CachedObject.Pack(item, schema));
 
-            var remove = new RemoveRequest(typeof(CacheableTypeOk), typeDescription.MakePrimaryKeyValue(1));
+            var remove = new RemoveRequest(typeof(CacheableTypeOk), new KeyValue(1, schema.PrimaryKeyField));
 
             var register = new RegisterTypeRequest(typeDescription);
 
@@ -356,28 +361,30 @@ namespace UnitTests
         [Test]
         public void StreamUnstreamOneCacheable()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(CacheableTypeOk)).AsCollectionSchema;
+
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
 
-            var it1 = CachedObject.Pack(item1);
+            var it1 = CachedObject.Pack(item1, schema);
 
-            using (var stream = new MemoryStream())
-            {
-                Streamer.ToStream(stream, it1);
+            using var stream = new MemoryStream();
+            Streamer.ToStream(stream, it1);
 
-                stream.Seek(0, SeekOrigin.Begin);
+            stream.Seek(0, SeekOrigin.Begin);
 
-                var reloaded = Streamer.FromStream<CachedObject>(stream);
-                var original = CachedObject.Unpack<CacheableTypeOk>(reloaded);
+            var reloaded = Streamer.FromStream<CachedObject>(stream);
+            var original = CachedObject.Unpack<CacheableTypeOk>(reloaded);
 
 
-                Assert.IsTrue(original is CacheableTypeOk);
-            }
+            Assert.IsTrue(original is CacheableTypeOk);
         }
 
 
         [Test]
         public void TestProtobufEncoding()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
+
             var builder = new QueryBuilder(typeof(TradeLike));
             var kval = builder.MakeKeyValue("Nominal", 0);
             var stream = new MemoryStream();
@@ -388,7 +395,7 @@ namespace UnitTests
 
             stream.Seek(0, SeekOrigin.Begin);
             var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 0);
-            var packed = CachedObject.Pack(obj);
+            var packed = CachedObject.Pack(obj, schema);
 
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);

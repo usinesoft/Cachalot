@@ -112,113 +112,39 @@ namespace Client.Core
         ///     The type of the object needs to be previously registered
         /// </summary>
         /// <returns> </returns>
-        public static CachedObject Pack<TObject>(TObject instance, ClientSideTypeDescription typeDescription = null, string collectionName = null)
-        {
-
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-
-            var netType = instance.GetType();
-
-            typeDescription ??= ClientSideTypeDescription.RegisterType<TObject>();
-
-            var collection = collectionName ?? typeDescription.FullTypeName;
-
-            if (typeDescription == null)
-                throw new NotSupportedException(
-                    $"Can not pack an object of type {netType} because the type was not registered");
-
-            var result = new CachedObject(typeDescription.PrimaryKeyField.GetValue(instance))
-            {
-                UniqueKeys = new KeyValue[typeDescription.UniqueKeysCount]
-            };
-
-            var pos = 0;
-            foreach (var uniqueField in typeDescription.UniqueKeyFields)
-                result.UniqueKeys[pos++] = uniqueField.GetValue(instance);
-
-            result.IndexKeys = new KeyValue[typeDescription.IndexCount];
-            pos = 0;
-            foreach (var indexField in typeDescription.IndexFields)
-                result.IndexKeys[pos++] = indexField.GetValue(instance);
-
-            result.Values = new KeyValue[typeDescription.ServerValuesCount];
-            pos = 0;
-            foreach (var serverValue in typeDescription.ServerSideValues)
-                result.Values[pos++] = serverValue.GetServerValue(instance);
-
-            // process indexed collections
-
-            var listKeys = new List<KeyValue>();
-
-            foreach (var indexField in typeDescription.ListFields)
-            {
-                var values = indexField.GetCollectionValues(instance).ToArray();
-                listKeys.AddRange(values);
-            }
-
-            result.ListIndexKeys = listKeys.ToArray();
-
-
-            // process full text
-            var lines = new List<string>();
-
-            foreach (var fulltext in typeDescription.FullTextIndexed)
-                lines.AddRange(fulltext.GetStringValues(instance));
-
-            result.FullText = lines.ToArray();
-
-
-            result.ObjectData =
-                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.AsCollectionSchema);
-            result.CollectionName = typeDescription.FullTypeName;
-
-            result.UseCompression = typeDescription.UseCompression;
-
-            result.CollectionName = collection;
-
-            return result;
-        }
-
-        //public static CachedObject FastPack<TObject>(TObject instance, CollectionSchema typeDescription, string collectionName)
+        //public static CachedObject Pack<TObject>(TObject instance, ClientSideTypeDescription typeDescription = null, string collectionName = null)
         //{
 
         //    if (instance == null) throw new ArgumentNullException(nameof(instance));
 
         //    var netType = instance.GetType();
 
+        //    typeDescription ??= ClientSideTypeDescription.RegisterType<TObject>();
+
+        //    var collection = collectionName ?? typeDescription.FullTypeName;
 
         //    if (typeDescription == null)
         //        throw new NotSupportedException(
         //            $"Can not pack an object of type {netType} because the type was not registered");
 
-        //    var getter = ExpressionTreeHelper.Getter<TObject>(typeDescription.PrimaryKeyField.Name);
-
-        //    var result = new CachedObject(new KeyValue(getter(instance), typeDescription.PrimaryKeyField))
+        //    var result = new CachedObject(typeDescription.PrimaryKeyField.GetValue(instance))
         //    {
-        //        UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count]
+        //        UniqueKeys = new KeyValue[typeDescription.UniqueKeysCount]
         //    };
 
         //    var pos = 0;
         //    foreach (var uniqueField in typeDescription.UniqueKeyFields)
-        //    {
-        //        getter = ExpressionTreeHelper.Getter<TObject>(uniqueField.Name);
-        //        result.UniqueKeys[pos++] = new KeyValue(getter(instance), uniqueField);
-        //    }
+        //        result.UniqueKeys[pos++] = uniqueField.GetValue(instance);
 
-
-        //    result.IndexKeys = new KeyValue[typeDescription.IndexFields.Count];
+        //    result.IndexKeys = new KeyValue[typeDescription.IndexCount];
         //    pos = 0;
         //    foreach (var indexField in typeDescription.IndexFields)
-        //    {
-        //        getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
-        //        result.IndexKeys[pos++] = new KeyValue(getter(instance), indexField);
-        //    }
+        //        result.IndexKeys[pos++] = indexField.GetValue(instance);
 
-
-        //    result.Values = new KeyValue[typeDescription.ServerSideValues.Count];
+        //    result.Values = new KeyValue[typeDescription.ServerValuesCount];
         //    pos = 0;
         //    foreach (var serverValue in typeDescription.ServerSideValues)
-        //        result.Values[pos++] = new KeyValue(getter(instance), serverValue);
+        //        result.Values[pos++] = serverValue.GetServerValue(instance);
 
         //    // process indexed collections
 
@@ -226,15 +152,8 @@ namespace Client.Core
 
         //    foreach (var indexField in typeDescription.ListFields)
         //    {
-        //        getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
-        //        var collection = getter(instance);
-
-        //        if (!(collection is IEnumerable<object> values))
-        //            throw new NotSupportedException($"Property {indexField.Name} can not be converted to IEnumerable");
-
-        //        var keyValues = values.Select(v => new KeyValue(v, indexField));
-                
-        //        listKeys.AddRange(keyValues);
+        //        var values = indexField.GetCollectionValues(instance).ToArray();
+        //        listKeys.AddRange(values);
         //    }
 
         //    result.ListIndexKeys = listKeys.ToArray();
@@ -243,7 +162,7 @@ namespace Client.Core
         //    // process full text
         //    var lines = new List<string>();
 
-        //    foreach (var fulltext in typeDescription.FullText)
+        //    foreach (var fulltext in typeDescription.FullTextIndexed)
         //        lines.AddRange(fulltext.GetStringValues(instance));
 
         //    result.FullText = lines.ToArray();
@@ -259,6 +178,97 @@ namespace Client.Core
 
         //    return result;
         //}
+
+        public static CachedObject Pack<TObject>(TObject instance, CollectionSchema typeDescription)
+        {
+
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
+
+            var netType = instance.GetType();
+
+
+            if (typeDescription == null)
+                throw new NotSupportedException(
+                    $"Can not pack an object of type {netType} because the type was not registered");
+
+            var getter = ExpressionTreeHelper.Getter<TObject>(typeDescription.PrimaryKeyField.Name);
+
+            var value = getter(instance);
+            if (typeDescription.PrimaryKeyField.KeyDataType == KeyDataType.Generate)
+            {
+                value = Guid.NewGuid();
+            }
+            var result = new CachedObject(new KeyValue(value, typeDescription.PrimaryKeyField));
+            
+
+            result.UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count];
+            var pos = 0;
+            foreach (var uniqueField in typeDescription.UniqueKeyFields)
+            {
+                getter = ExpressionTreeHelper.Getter<TObject>(uniqueField.Name);
+                result.UniqueKeys[pos++] = new KeyValue(getter(instance), uniqueField);
+            }
+
+
+            result.IndexKeys = new KeyValue[typeDescription.IndexFields.Count];
+            pos = 0;
+            foreach (var indexField in typeDescription.IndexFields)
+            {
+                getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
+                result.IndexKeys[pos++] = new KeyValue(getter(instance), indexField);
+            }
+
+
+            result.Values = new KeyValue[typeDescription.ServerSideValues.Count];
+            pos = 0;
+            foreach (var serverValue in typeDescription.ServerSideValues)
+            {
+                getter = ExpressionTreeHelper.Getter<TObject>(serverValue.Name);
+                result.Values[pos++] = new KeyValue(getter(instance), serverValue);
+            }
+                
+
+            // process indexed collections
+
+            var listKeys = new List<KeyValue>();
+
+            foreach (var indexField in typeDescription.ListFields)
+            {
+                getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
+                var collection = getter(instance);
+
+                if (!(collection is IEnumerable values))
+                    throw new NotSupportedException($"Property {indexField.Name} can not be converted to IEnumerable");
+
+                var keyValues = values.Cast<object>().Select(v => new KeyValue(v, indexField));
+
+                listKeys.AddRange(keyValues);
+            }
+
+            result.ListIndexKeys = listKeys.ToArray();
+
+
+            // process full text
+            var lines = new List<string>();
+
+            foreach (var fulltext in typeDescription.FullText)
+            {
+                lines.AddRange(ExpressionTreeHelper.GetStringValues(instance, fulltext.Name));
+            }
+                
+
+            result.FullText = lines.ToArray();
+
+
+            result.ObjectData =
+                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription);
+            result.CollectionName = typeDescription.CollectionName;
+
+            result.UseCompression = typeDescription.UseCompression;
+
+            
+            return result;
+        }
 
         public static bool CanBeConvertedToLong(JToken jToken)
         {
@@ -308,6 +318,37 @@ namespace Client.Core
             if (valueToken?.Type == JTokenType.Float) return new DoubleConverter().GetAsLong((double) valueToken);
 
             return (long) valueToken;
+        }
+
+        static KeyValue JTokenToKeyValue(JToken jToken, KeyInfo info)
+        {
+            if(jToken == null) return new KeyValue(0, info);
+
+            var valueToken = jToken.HasValues ? jToken.First : jToken;
+
+            if (valueToken?.Type == JTokenType.Integer)
+            {
+                return new KeyValue((long)valueToken, info);
+            }
+
+            if (valueToken?.Type == JTokenType.Float)
+            {
+                return new KeyValue((double)valueToken, info);
+            }
+
+
+            if (valueToken?.Type == JTokenType.Boolean)
+            {
+                return new KeyValue((bool)valueToken, info);
+            }
+
+            if (valueToken?.Type == JTokenType.Date)
+            {
+                return new KeyValue((DateTime)valueToken, info);
+            }
+
+            return new KeyValue((string)valueToken, info);
+
         }
 
         public string Json
@@ -395,7 +436,7 @@ namespace Client.Core
 
             CachedObject result;
 
-            var jPrimary = jObject.Property(collectionSchema.PrimaryKeyField.Name);
+            var jPrimary = jObject.Property(collectionSchema.PrimaryKeyField.JsonName);
 
             if (jPrimary == null && collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.Generate)
             {
@@ -403,37 +444,20 @@ namespace Client.Core
             }
             else
             {
-                if (collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.IntKey ||
-                    (collectionSchema.PrimaryKeyField.KeyDataType == KeyDataType.Default &&
-                     CanBeConvertedToLong(jPrimary)))
-                {
-                    var primaryKey = new KeyValue(JTokenToLong(jPrimary), collectionSchema.PrimaryKeyField);
-                    result = new CachedObject(primaryKey);
-                }
-                else
-                {
-                    var primaryKey = new KeyValue(JTokenToString(jPrimary), collectionSchema.PrimaryKeyField);
-                    result = new CachedObject(primaryKey);
-                }    
+                var primaryKey = JTokenToKeyValue(jPrimary, collectionSchema.PrimaryKeyField);
+
+                result = new CachedObject(primaryKey);
             }
 
             
-            
-
 
             var uniqueKeys = new List<KeyValue>(collectionSchema.UniqueKeyFields.Count);
             
             foreach (var uniqueField in collectionSchema.UniqueKeyFields)
             {
-                var jKey = jObject.Property(uniqueField.Name);
+                var jKey = jObject.Property(uniqueField.JsonName);
 
-                
-                var key = uniqueField.KeyDataType == KeyDataType.IntKey || (uniqueField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
-                    ? new KeyValue(JTokenToLong(jKey), uniqueField)
-                    : new KeyValue(JTokenToString(jKey), uniqueField);
-
-                uniqueKeys.Add(key);
-            
+                uniqueKeys.Add(JTokenToKeyValue(jKey, uniqueField));
             }
 
             result.UniqueKeys = uniqueKeys.ToArray();
@@ -444,13 +468,9 @@ namespace Client.Core
 
             foreach (var indexField in collectionSchema.IndexFields)
             {
-                var jKey = jObject.Property(indexField.Name);
+                var jKey = jObject.Property(indexField.JsonName);
                
-                    var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
-                        ? new KeyValue(JTokenToLong(jKey), indexField)
-                        : new KeyValue(JTokenToString(jKey), indexField);
-
-                    indexKeys.Add(key);
+                indexKeys.Add(JTokenToKeyValue(jKey, indexField));
             }
 
             result.IndexKeys = indexKeys.ToArray();
@@ -459,16 +479,12 @@ namespace Client.Core
             var listValues = new List<KeyValue>();
             foreach (var indexField in collectionSchema.ListFields)
             {
-                var jArray = jObject.Property(indexField.Name);
+                var jArray = jObject.Property(indexField.JsonName);
 
                 if (jArray != null)
                     foreach (var jKey in jArray.Value.Children())
                     {
-                        var key = indexField.KeyDataType == KeyDataType.IntKey || (indexField.KeyDataType == KeyDataType.Default && CanBeConvertedToLong(jKey))
-                            ? new KeyValue(JTokenToLong(jKey), indexField)
-                            : new KeyValue(JTokenToString(jKey), indexField);
-
-                        listValues.Add(key);
+                        listValues.Add(JTokenToKeyValue(jKey, indexField));
                     }
             }
 
@@ -480,12 +496,8 @@ namespace Client.Core
             var serverValues = new List<KeyValue>();
             foreach (var value in collectionSchema.ServerSideValues)
             {
-                var jKey = jObject.Property(value.Name);
-
-                var val = JTokenToDecimal(jKey);
-
-
-                serverValues.Add( new KeyValue(val, value));
+                var jKey = jObject.Property(value.JsonName);
+                serverValues.Add( JTokenToKeyValue(jKey, value));
             }
 
             result.Values = serverValues.ToArray();
@@ -496,7 +508,7 @@ namespace Client.Core
 
             foreach (var fulltext in collectionSchema.FullText)
             {
-                var jKey = jObject.Property(fulltext.Name);
+                var jKey = jObject.Property(fulltext.JsonName);
 
                 if (jKey == null)
                     continue;
@@ -524,26 +536,7 @@ namespace Client.Core
 
             result.FullText = lines.ToArray();
 
-            //using (var output = new MemoryStream())
-            //{
-            //    if (collectionSchema.UseCompression)
-            //    {
-            //        var outZStream = new GZipOutputStream(output) {IsStreamOwner = false};
-            //        var encoded = Encoding.UTF8.GetBytes(jObject.ToString());
-            //        outZStream.Write(encoded, 0, encoded.Length);
-
-            //        outZStream.Flush();
-            //    }
-            //    else
-            //    {
-            //        var encoded = Encoding.UTF8.GetBytes(jObject.ToString());
-            //        output.Write(encoded, 0, encoded.Length);
-            //    }
-
-
-            //    result.ObjectData = output.ToArray();
-            //}
-
+           
             result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema);
 
             result.CollectionName = collectionSchema.CollectionName;
@@ -553,44 +546,76 @@ namespace Client.Core
             return result;
         }
 
-        public static CachedObject Pack(object obj, CollectionSchema description)
-        {
-            var json = SerializationHelper.ObjectToJson(obj);
-            return PackJson(json, description);
-        }
-
+        
 
         public override string ToString()
         {
             var sb = new StringBuilder();
             sb.Append(PrimaryKey);
-            sb.Append(" {");
+            sb.AppendLine(" {");
 
-            if (UniqueKeys != null)
+            if (UniqueKeys != null && UniqueKeys.Length > 0)
+            {
+                sb.Append("  unique:");
                 foreach (var key in UniqueKeys)
                 {
                     sb.Append(key);
                     sb.Append(" ");
                 }
+                sb.AppendLine();
+            }
+                
 
-            if (IndexKeys != null)
+            if (IndexKeys != null && IndexKeys.Length > 0)
+            {
+                sb.Append("  scalar:");
                 foreach (var key in IndexKeys)
                 {
                     sb.Append(key);
                     sb.Append(" ");
                 }
+                sb.AppendLine();
+            }
+                
 
-            if (ListIndexKeys != null)
+            if (ListIndexKeys != null && ListIndexKeys.Length > 0)
+            {
+
+                sb.Append("  collections:");
                 foreach (var key in ListIndexKeys)
                 {
                     sb.Append(key);
                     sb.Append(" ");
                 }
+                sb.AppendLine();
+            }
 
-            sb.Append(" } ");
+            if (Values != null && Values.Length > 0)
+            {
+                sb.Append("  values:");
+                foreach (var key in Values)
+                {
+                    sb.Append(key);
+                    sb.Append(" ");
+                }
+                sb.AppendLine();
+            }
+
+            if (FullText != null && FullText.Length > 0)
+            {
+                sb.AppendLine("  full text:");
+                foreach (var key in FullText)
+                {
+                    sb.AppendLine($"    {key}");
+                    
+                }
+                sb.AppendLine();
+            }
+            
+            sb.AppendLine(" } ");
 
             if (ObjectData != null)
-                sb.Append(ObjectData.Length).Append(" bytes");
+                sb.AppendLine($"{ObjectData.Length} bytes");
 
             return sb.ToString();
         }

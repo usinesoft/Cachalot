@@ -5,6 +5,7 @@ using System.Reflection;
 using Client.Core;
 using Client.Interface;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 using ProtoBuf;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -41,8 +42,9 @@ namespace Client.Messages
         /// <param name="isOrdered"></param>
         /// <param name="isFullText"></param>
         /// <param name="serverSide"></param>
+        /// <param name="jsonName"></param>
         public KeyInfo(KeyDataType keyDataType, KeyType keyType, string name = DefaultNameForPrimaryKey, bool isOrdered = false,
-            bool isFullText = false, bool serverSide = false)
+            bool isFullText = false, bool serverSide = false, string jsonName = null)
         {
             if (keyDataType == KeyDataType.Generate && keyType != KeyType.Primary)
             {
@@ -55,23 +57,11 @@ namespace Client.Messages
             IsOrdered = isOrdered;
             IsFullTextIndexed = isFullText;
             IsServerSideVisible = serverSide;
+            JsonName = jsonName??name;
         }
 
 
-        /// <summary>
-        ///     Copy constructor
-        /// </summary>
-        /// <param name="right"> </param>
-        public KeyInfo(KeyInfo right)
-        {
-            if (right == null) throw new ArgumentNullException(nameof(right));
-
-            KeyDataType = right.KeyDataType;
-            IsOrdered = right.IsOrdered;
-            KeyType = right.KeyType;
-            Name = right.Name;
-            IsFullTextIndexed = right.IsFullTextIndexed;
-        }
+        
 
         /// <summary>
         ///     long or string as specified by <see cref="KeyDataType" />
@@ -100,6 +90,8 @@ namespace Client.Messages
         [ProtoMember(5)] public bool IsFullTextIndexed { get; set; }
 
         [ProtoMember(6)] public bool IsServerSideVisible { get; set; }
+        
+        [ProtoMember(7)]  public string JsonName { get; set; }
 
         public bool Equals(KeyInfo keyInfo)
         {
@@ -154,70 +146,6 @@ namespace Client.Messages
         }
 
 
-        public KeyValue Value(object value)
-        {
-            return ValueToKeyValue(value, this);
-        }
-
-        /// <summary>
-        ///     Helper method. Convert a value to a key value
-        /// </summary>
-        /// <param name="value"> </param>
-        /// <param name="info"> </param>
-        /// <returns> </returns>
-        public static KeyValue ValueToKeyValue(object value, KeyInfo info)
-        {
-            //check if directly assignable to int
-            if (info.KeyDataType == KeyDataType.IntKey || info.KeyDataType == KeyDataType.Default)
-            {
-                // default behavior for nullable values (works fine for dates)
-                if (value == null)
-                    return new KeyValue(0, info);
-
-                var propertyType = value.GetType();
-
-                //integer types
-                if (propertyType == typeof(int) || propertyType == typeof(short) || propertyType == typeof(long) ||
-                    propertyType == typeof(byte) || propertyType == typeof(char) || propertyType == typeof(bool) ||
-                    propertyType == typeof(IntPtr))
-                {
-                    var longVal = Convert.ToInt64(value);
-                    return new KeyValue(longVal, info);
-                }
-
-                if (propertyType.IsEnum)
-                {
-                    var longVal = Convert.ToInt64(value);
-                    return new KeyValue(longVal, info);
-                }
-
-
-                //other types. Can be used as keys if a key converter is provided
-                var converter = KeyConverters.GetIfAvailable(propertyType);
-                if (converter != null)
-                {
-                    //prefer conversion to long if available
-                    if (converter.CanConvertToLong) return new KeyValue(converter.GetAsLong(value), info);
-
-                    if (converter.CanConvertToString) return new KeyValue(converter.GetAsString(value), info);
-
-                    Dbg.CheckThat(false, "trying to use an invalid key converter");
-                }
-
-                if (info.KeyDataType == KeyDataType.Default)
-                {
-                    return new KeyValue(value.ToString(), info);
-                }
-            }
-            else
-            {
-                if (value != null)
-                    return new KeyValue(value.ToString(), info);
-                return new KeyValue(null, info);
-            }
-
-
-            throw new InvalidOperationException($"Can not compute key value for object {value}");
-        }
+       
     }
 }

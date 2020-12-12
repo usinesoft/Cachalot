@@ -118,45 +118,40 @@ namespace UnitTests
         [Test]
         public void Check_that_the_order_of_returned_items_is_stable()
         {
-            using (var connector = new Connector(_clientConfig))
-            {
-                
-                connector.DeclareCollection<ProductEvent>();
+            using var connector = new Connector(_clientConfig);
+            connector.DeclareCollection<ProductEvent>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+            var dataSource = connector.DataSource<ProductEvent>();
 
-                var events = new List<ProductEvent>();
-                for (var i = 0; i < 100; i++)
-                    switch (i % 3)
-                    {
-                        case 0:
-                            events.Add(new FixingEvent(i, "AXA", 150, "EQ-256"));
-                            break;
-                        case 1:
-                            events.Add(new FixingEvent(i, "TOTAL", 180, "IRD-400"));
-                            break;
-                        case 2:
-                            events.Add(new Increase(i, 180, "EQ-256"));
-                            break;
-                    }
-
-                dataSource.PutMany(events);
-
-
-                var fixings = dataSource.Where(e => e.EventType == "FIXING").ToList();
-                for (var i = 0; i < 10; i++)
+            var events = new List<ProductEvent>();
+            for (var i = 0; i < 100; i++)
+                switch (i % 3)
                 {
-                    var sameFixings = dataSource.Where(e => e.EventType == "FIXING").ToList();
-                    CollectionAssert.AreEqual(fixings, sameFixings);
+                    case 0:
+                        events.Add(new FixingEvent(i, "AXA", 150, "EQ-256"));
+                        break;
+                    case 1:
+                        events.Add(new FixingEvent(i, "TOTAL", 180, "IRD-400"));
+                        break;
+                    case 2:
+                        events.Add(new Increase(i, 180, "EQ-256"));
+                        break;
                 }
+
+            dataSource.PutMany(events);
+
+
+            var fixings = dataSource.Where(e => e.EventType == "FIXING").ToList();
+            for (var i = 0; i < 10; i++)
+            {
+                var sameFixings = dataSource.Where(e => e.EventType == "FIXING").ToList();
+                CollectionAssert.AreEqual(fixings, sameFixings);
             }
         }
 
         [Test]
         public void Conditional_put()
         {
-           
-
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<ProductEvent>();
@@ -183,7 +178,6 @@ namespace UnitTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
-
                 connector.DeclareCollection<ProductEvent>();
                 var events = connector.DataSource<ProductEvent>();
 
@@ -198,8 +192,6 @@ namespace UnitTests
         [Test]
         public void Conditional_update()
         {
-            
-
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<ProductEvent>();
@@ -244,7 +236,6 @@ namespace UnitTests
         [Test]
         public void Reindex_existing_collection()
         {
-           
             using (var connector = new Connector(_clientConfig))
             {
                 var description1 = Description.New("order").PrimaryKey("Id").AddIndex("Category")
@@ -272,13 +263,14 @@ namespace UnitTests
                     IsDelivered = true
                 });
 
-                var all = orders.ToList();
                 var found = orders.Where(o => o.Category == "geek").ToList();
 
                 Assert.AreEqual(2, found.Count);
 
-                Assert.Throws<CacheException>(() => orders.Where(o => o.IsDelivered == true).ToList());
-
+                Assert.Throws<CacheException>(() =>
+                {
+                    var unused = orders.Where(o => o.IsDelivered).ToList();
+                });
             }
 
             using (var connector = new Connector(_clientConfig))
@@ -290,18 +282,14 @@ namespace UnitTests
 
                 var orders = connector.DataSource<Order>("orders");
 
-                
-                var all = orders.ToList();
+
                 var found = orders.Where(o => o.Category == "geek").ToList();
 
                 Assert.AreEqual(2, found.Count);
 
                 // now it should work as collection schema changed. Now it contains IsDelivered index
-                var delivered = orders.Where(o => o.IsDelivered == true).ToList();
+                var delivered = orders.Where(o => o.IsDelivered).ToList();
                 Assert.AreEqual(1, delivered.Count);
-
-                
-
             }
         }
 
@@ -309,34 +297,32 @@ namespace UnitTests
         [Test]
         public void Connection_is_restored_when_a_server_restarts()
         {
-            using (var connector = new Connector(_clientConfig))
+            using var connector = new Connector(_clientConfig);
+            connector.DeclareCollection<ProductEvent>();
+
+            var dataSource = connector.DataSource<ProductEvent>();
+
+            dataSource.PutMany(new ProductEvent[]
             {
-                connector.DeclareCollection<ProductEvent>();
-
-                var dataSource = connector.DataSource<ProductEvent>();
-
-                dataSource.PutMany(new ProductEvent[]
-                {
-                    new FixingEvent(1, "AXA", 150, "EQ-256"),
-                    new FixingEvent(2, "TOTAL", 180, "IRD-400"),
-                    new Increase(3, 180, "EQ-256")
-                });
+                new FixingEvent(1, "AXA", 150, "EQ-256"),
+                new FixingEvent(2, "TOTAL", 180, "IRD-400"),
+                new Increase(3, 180, "EQ-256")
+            });
 
 
-                var events = dataSource.Where(evt => evt.DealId == "EQ-256").ToList();
+            var events = dataSource.Where(evt => evt.DealId == "EQ-256").ToList();
 
-                Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(2, events.Count);
 
-                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
+            events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
-                Assert.AreEqual(2, events.Count);
+            Assert.AreEqual(2, events.Count);
 
-                RestartOneServer();
+            RestartOneServer();
 
-                events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
+            events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
-                Assert.AreEqual(2, events.Count);
-            }
+            Assert.AreEqual(2, events.Count);
         }
 
         [Test]
@@ -466,15 +452,15 @@ namespace UnitTests
 
 
                 // generate unique ids after dump and check that they are higher than the one generated before dump
-                // meanig the unique id generators (sequences)  have been restored
+                // meaning the unique id generators (sequences)  have been restored
                 var minId1 = connector.GenerateUniqueIds("blahblah", 20).Max();
                 var minId2 = connector.GenerateUniqueIds("foobar", 20).Max();
 
-                Assert.Greater(minId1, maxId1, "the sequences ware not correctly retored from dump");
-                Assert.Greater(minId2, maxId2, "the sequences ware not correctly retored from dump");
+                Assert.Greater(minId1, maxId1, "the sequences ware not correctly restored from dump");
+                Assert.Greater(minId2, maxId2, "the sequences ware not correctly restored from dump");
 
                 eventAfterDump = dataSource[55555];
-                // now it should be null as it was added after dump and we reimported the dump
+                // now it should be null as it was added after dump and we re imported the dump
                 Assert.IsNull(eventAfterDump);
 
                 var fixings = dataSource.Count(e => e.EventType == "FIXING");
@@ -500,21 +486,16 @@ namespace UnitTests
                 var dataSource = connector.DataSource<CompressedItem>();
 
                 var items = new List<CompressedItem>();
-                for (var i = 0; i < 100; i++)
-                {
-                    items.Add(new CompressedItem{Id = i});
-                }
+                for (var i = 0; i < 100; i++) items.Add(new CompressedItem {Id = i});
 
                 dataSource.PutMany(items);
 
-                
-                
+
                 var admin = connector.AdminInterface();
                 admin.Dump(dumpPath);
 
-                
 
-                dataSource.Put(new CompressedItem{Id = 133});
+                dataSource.Put(new CompressedItem {Id = 133});
             }
 
             StopServers();
@@ -538,7 +519,6 @@ namespace UnitTests
 
                 var after = dataSource.Count();
                 Assert.AreEqual(100, after);
-                
             }
         }
 
@@ -552,8 +532,8 @@ namespace UnitTests
 
             Directory.CreateDirectory(dumpPath);
 
-            decimal sum1 = 0;
-            
+
+            decimal sum1;
 
             using (var connector = new Connector(_clientConfig))
             {
@@ -561,21 +541,20 @@ namespace UnitTests
 
                 var dataSource = connector.DataSource<Order>();
 
-                List<Order> orders = new List<Order>();
+                var orders = new List<Order>();
 
                 // generate orders for three categories
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
-                    var order = new Order{Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i+10, Date = DateTimeOffset.Now, Category = "geek", ProductId = 1000 + i%10, Quantity = 2};
+                    var order = new Order
+                    {
+                        Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now,
+                        Category = "geek", ProductId = 1000 + i % 10, Quantity = 2
+                    };
 
                     if (i % 5 == 0)
-                    {
                         order.Category = "sf";
-                    }
-                    else if(i % 5 == 1)
-                    {
-                        order.Category = "science";
-                    }
+                    else if (i % 5 == 1) order.Category = "science";
 
                     orders.Add(order);
                 }
@@ -583,14 +562,18 @@ namespace UnitTests
                 dataSource.PutMany(orders);
 
                 var pivot = dataSource.ComputePivot(null, o => o.ClientId);
+
                 sum1 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
                 var admin = connector.AdminInterface();
                 admin.Dump(dumpPath);
 
-                
 
-                dataSource.Put(new Order{Id = Guid.NewGuid(), Amount = 10.15, ClientId = 2, Date = DateTimeOffset.Now, Category = "youpee", ProductId = 5, Quantity = 2});
+                dataSource.Put(new Order
+                {
+                    Id = Guid.NewGuid(), Amount = 10.15, ClientId = 2, Date = DateTimeOffset.Now, Category = "youpee",
+                    ProductId = 5, Quantity = 2
+                });
             }
 
             StopServers();
@@ -602,14 +585,14 @@ namespace UnitTests
 
                 var dataSource = connector.DataSource<Order>();
 
-                var afterDump = dataSource.Where(o=>o.ClientId == 2).ToList();
+                var afterDump = dataSource.Where(o => o.ClientId == 2).ToList();
                 Assert.True(afterDump.Count == 1);
 
                 var admin = connector.AdminInterface();
                 admin.ImportDump(dumpPath);
 
                 // this time it should not be found as it was added after the backup and backup was restored
-                afterDump = dataSource.Where(o=>o.ClientId == 2).ToList();
+                afterDump = dataSource.Where(o => o.ClientId == 2).ToList();
                 Assert.True(afterDump.Count == 0);
 
                 var after = dataSource.Count();
@@ -619,8 +602,7 @@ namespace UnitTests
                 var pivot = dataSource.ComputePivot(null, o => o.ClientId);
                 var sum2 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
-                Assert.AreEqual(sum2, sum2);
-                
+                Assert.AreEqual(sum1, sum2);
             }
         }
 
@@ -730,8 +712,8 @@ namespace UnitTests
                 CollectionAssert.AllItemsAreUnique(ids, "identifiers are not unique");
                 var minId2 = ids.Max();
 
-                Assert.IsTrue(minId1 > maxId1, "the sequences were not resyncronised after reinitializing from dump");
-                Assert.IsTrue(minId2 > maxId2, "the sequences were not resyncronised after reinitializing from dump");
+                Assert.IsTrue(minId1 > maxId1, "the sequences were not resynchronized after reinitializing from dump");
+                Assert.IsTrue(minId2 > maxId2, "the sequences were not resynchronized after reinitializing from dump");
             }
 
             // restart and check that the query gives the same result
@@ -914,86 +896,84 @@ namespace UnitTests
             var all = new HashSet<int>();
             var rand = new Random(Environment.TickCount);
 
-            using (var connector = new Connector(_clientConfig))
+            using var connector = new Connector(_clientConfig);
+            Parallel.For(0, 1000, i =>
             {
-                Parallel.For(0, 1000, i =>
-                {
-                    var ids = connector.GenerateUniqueIds("test", rand.Next(100) + 1);
+                // ReSharper disable once AccessToDisposedClosure
+                var ids = connector.GenerateUniqueIds("test", rand.Next(100) + 1);
 
-                    lock (all)
+                lock (all)
+                {
+                    foreach (var id in ids)
                     {
-                        foreach (var id in ids)
-                        {
-                            var notAlreadyThere = all.Add(id);
-                            Assert.IsTrue(notAlreadyThere);
-                        }
+                        var notAlreadyThere = all.Add(id);
+                        Assert.IsTrue(notAlreadyThere);
                     }
-                });
-            }
+                }
+            });
         }
 
 
         [Test]
         public void Generated_ids_are_uniformly_distributed()
         {
-            using (var connector = new Connector(_clientConfig))
+            using var connector = new Connector(_clientConfig);
+            var objectsPerNode = new int[ServerCount];
+
+            for (var i = 0; i < 1000; i++)
             {
-                var objectsPerNode = new int[ServerCount];
-
-                for (var i = 0; i < 1000; i++)
-                {
-                    var id = connector.GenerateUniqueIds("xxx", 1)[0];
-                    var node = id % ServerCount;
-                    objectsPerNode[node]++;
-                }
-
-                Assert.IsTrue(objectsPerNode.All(o => o > 0));
+                var id = connector.GenerateUniqueIds("xxx", 1)[0];
+                var node = id % ServerCount;
+                objectsPerNode[node]++;
             }
+
+            Assert.IsTrue(objectsPerNode.All(o => o > 0));
         }
 
         [Test]
         public void Import_real_data_set()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(Business)).AsCollectionSchema;
+
             var serializer = new JsonSerializer();
 
             var businesses = serializer.Deserialize<List<Business>>(
                 new JsonTextReader(new StreamReader(new FileStream("TestData/yelp.json", FileMode.Open))));
 
-            Assert.IsTrue(businesses.Count > 0);
+            Assert.IsTrue(businesses?.Count > 0);
 
-            var packed = CachedObject.Pack(businesses[0]);
+            CachedObject.Pack(businesses[0], schema);
 
             var comments = businesses.SelectMany(b => b.Reviews).ToList();
 
             Assert.IsTrue(comments.Any(c => c.Text.Contains("Musashi")));
 
 
-            using (var connector = new Connector(_clientConfig))
-            {
-                connector.DeclareCollection<Business>();
+            using var connector = new Connector(_clientConfig);
 
-                var data = connector.DataSource<Business>();
+            connector.DeclareCollection<Business>();
 
-                data.PutMany(businesses);
+            var data = connector.DataSource<Business>();
 
-                var result = data.FullTextSearch("Musashi").ToList();
-                Assert.IsTrue(result.Any());
+            data.PutMany(businesses);
+
+            var result = data.FullTextSearch("Musashi").ToList();
+            Assert.IsTrue(result.Any());
 
 
-                result = data.FullTextSearch("enjoyable evening").ToList();
-                Assert.IsTrue(result.Count >= 1);
-                Assert.IsTrue(result[0].Reviews.Any(r => r.Text.Contains("enjoyable evening")),
-                    "the first result should contain the exact expression");
+            result = data.FullTextSearch("enjoyable evening").ToList();
+            Assert.IsTrue(result.Count >= 1);
+            Assert.IsTrue(result[0].Reviews.Any(r => r.Text.Contains("enjoyable evening")),
+                "the first result should contain the exact expression");
 
-                result = data.FullTextSearch("panera").ToList();
-                Assert.AreEqual(1, result.Count);
-            }
+            result = data.FullTextSearch("panera").ToList();
+            Assert.AreEqual(1, result.Count);
         }
 
 #if DEBUG
 // this test can work only in debug environment as failure simulations are deactivated in release
         [Test]
-        public void In_case_of_failure_during_dump_import_data_is_rollbacked()
+        public void In_case_of_failure_during_dump_import_data_is_rolled_back()
         {
             var dumpPath = "dump";
 
@@ -1066,7 +1046,7 @@ namespace UnitTests
                 Assert.NotNull(eventAfterDump);
 
 
-                // check that it is still woking fine after rollback
+                // check that it is still working fine after rollback
                 dataSource.Put(new FixingEvent(66666, "GLE", 180, "IRD-500"));
 
                 var events = new[] {55555, 66666};
@@ -1081,7 +1061,7 @@ namespace UnitTests
             StartServers();
 
 
-            // check thatr everything is persisted
+            // check that everything is persisted
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<ProductEvent>();
@@ -1145,8 +1125,6 @@ namespace UnitTests
         [Test]
         public void Optimistic_synchronization_with_timestamp()
         {
-           
-
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<ProductEvent>();

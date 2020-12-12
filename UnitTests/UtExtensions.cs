@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using Cachalot.Linq;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
@@ -56,7 +55,7 @@ namespace UnitTests
 
         public static T GetOne<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-            return @this.GetMany<T>(where).FirstOrDefault();
+            return @this.GetMany(where).FirstOrDefault();
         }
 
         public static void PutMany<T>(this IDataClient @this, IEnumerable<T> items, bool excludeFromEviction = false)
@@ -64,7 +63,7 @@ namespace UnitTests
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             var schema = description.AsCollectionSchema;
 
-            @this.FeedMany(schema.CollectionName, items.Select(i=> CachedObject.Pack(i, description)), excludeFromEviction);
+            @this.FeedMany(schema.CollectionName, items.Select(i=> CachedObject.Pack(i, schema)), excludeFromEviction);
         }
 
         public static void PutOne<T>(this IDataClient @this, T item, bool excludeFromEviction = false)
@@ -72,7 +71,7 @@ namespace UnitTests
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             var schema = description.AsCollectionSchema;
 
-            @this.Put(schema.CollectionName, CachedObject.Pack(item, description), excludeFromEviction);
+            @this.Put(schema.CollectionName, CachedObject.Pack(item, schema), excludeFromEviction);
         }
 
         public static int RemoveMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)

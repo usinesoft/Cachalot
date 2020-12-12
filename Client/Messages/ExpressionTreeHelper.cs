@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,6 +7,8 @@ using System.Reflection;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Queries;
+using Client.Tools;
+using JetBrains.Annotations;
 
 namespace Client.Messages
 {
@@ -43,9 +46,14 @@ namespace Client.Messages
 
         private static readonly  Dictionary<string, Func<object, object>> PrecompiledGetters = new Dictionary<string, Func<object, object>>();
 
-        public static Func<object, object> Getter<TEntity>(string name) 
+        public static Func<object, object> Getter<TEntity>(string name)
         {
-            var key = typeof(TEntity).FullName + "." + name;
+            return Getter(typeof(TEntity), name);
+        }
+
+        public static Func<object, object> Getter(Type declaringType, string name) 
+        {
+            var key = declaringType.FullName + "." + name;
 
             lock (PrecompiledGetters)
             {
@@ -54,7 +62,7 @@ namespace Client.Messages
                     return getter;
                 }
 
-                getter = CreateGetter<object>(name);
+                getter = CompileGetter(declaringType, name);
 
                 PrecompiledGetters[key] = getter;
 
@@ -62,27 +70,32 @@ namespace Client.Messages
             }
         }
 
-        public static Action<TEntity, object> CreateSetter<TEntity>(string name) where TEntity: class
+       
+        
+        private static Func<object, object> CompileGetter(Type declaringType, string propertyName)
         {
-            PropertyInfo propertyInfo = typeof(TEntity).GetProperty(name);
+            var instance = Expression.Parameter(typeof (object), "instance");
 
-            ParameterExpression instance = Expression.Parameter(typeof(TEntity), "instance");
-            ParameterExpression propertyValue = Expression.Parameter(typeof(object), "propertyValue");
+            
+            var propertyInfo = declaringType.GetProperty(propertyName);
+            if (propertyInfo == null)
+            {
+                throw new NotSupportedException($"Can not find property {propertyName} of type{declaringType.FullName}");
 
-            var body = Expression.Assign(Expression.Property(instance, name), propertyValue);
+            }
+            
+            var instanceCast = declaringType.IsValueType
+                ? Expression.TypeAs(instance, declaringType)
+                : Expression.Convert(instance, declaringType);
 
-            return Expression.Lambda<Action<TEntity, object>>(body, instance, propertyValue).Compile();
+            return
+                Expression.Lambda<Func<object, object>>(
+                        Expression.TypeAs(Expression.Call(instanceCast, propertyInfo.GetGetMethod()), typeof (object)),
+                        instance)
+                    .Compile();
         }
 
-        public static Func<TEntity, object> CreateGetter<TEntity>(string name) 
-        {
-            ParameterExpression instance = Expression.Parameter(typeof(TEntity), "instance");
-
-            var body = Expression.Property(instance, name);
-
-            return Expression.Lambda<Func<TEntity, object>>(body, instance).Compile();
-        }
-
+        
 
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
@@ -100,6 +113,102 @@ namespace Client.Messages
 
             return query;
         }
+
+
+        private static readonly Dictionary<Type, List<Func<object, object>>> StringGetterCache =
+            new Dictionary<Type, List<Func<object, object>>>();
+
+        /// <summary>
+        ///     Generate precompiled getters for a type. This will avoid using reflection for each call
+        /// </summary>
+        /// <param name="type"></param>
+        private static void GenerateAccessorsForType([NotNull] Type type)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
+            var accessors = new List<Func<object, object>>();
+            foreach (var property in type.GetProperties())
+                if (property.PropertyType == typeof(string))
+                    accessors.Add(property.CompileGetter());
+
+            StringGetterCache[type] = accessors;
+        }
+
+
+        /// <summary>
+        /// Used for full-text search
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="instance"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        public static IList<string> GetStringValues<TEntity>(TEntity instance, string propertyName)
+        {
+            var result = new List<string>();
+
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+
+            var value = Getter<TEntity>(propertyName)(instance);
+
+            if (value is string text
+            ) // string is also an IEnumerable but we do not want to be processed as a collection
+            {
+                result.Add(text);
+            }
+            else if (value is IEnumerable values)
+            {
+                foreach (var val in values) result.AddRange(ToStrings(val));
+            }
+            else
+            {
+                
+                if (value != null) result.AddRange(ToStrings(value));
+            }
+
+
+            return result;
+        }
+        /// <summary>
+        ///     Return a list off all the values of string properties
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <returns></returns>
+        private  static IList<string> ToStrings(object instance)
+        {
+            var result = new List<string>();
+            var type = instance.GetType();
+
+            if (type == typeof(string))
+            {
+                result.Add((string) instance);
+            }
+            else if (type.Namespace != null && type.Namespace.StartsWith("System"))
+            {
+                result.Add(instance.ToString());
+            }
+            else // some complex type
+            {
+                List<Func<object, object>> accessors;
+                lock (StringGetterCache)
+                {
+                    if (!StringGetterCache.ContainsKey(type)) GenerateAccessorsForType(type);
+                    accessors = StringGetterCache[type];
+                }
+
+                if (accessors != null)
+                    foreach (var accessor in accessors)
+                    {
+                        var val = accessor(instance);
+                        if (val != null) result.Add(val as string);
+                    }
+            }
+
+
+            return result;
+        }
+
     }
 
     

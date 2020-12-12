@@ -50,7 +50,7 @@ namespace Cachalot.Linq
         /// <param name="collectionName"></param>
         /// <param name="collectionSchema"></param>
         internal DataSource([NotNull] Connector connector, [NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
-            : base(CreateParser(), new QueryExecutor(connector?.Client, collectionSchema ?? TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema))
+            : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema ))
         {
             if (connector == null) throw new ArgumentNullException(nameof(connector));
 
@@ -60,19 +60,21 @@ namespace Cachalot.Linq
 
             _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
 
-            connector?.DeclareCollection(_collectionName, _collectionSchema);
+            connector.DeclareCollection(_collectionName, _collectionSchema);
             
             // in case a non persistent cache was rebooted
-            _client?.DeclareCollection(collectionName, collectionSchema);
+            _client.DeclareCollection(collectionName, collectionSchema);
 
         }
 
 
+        [UsedImplicitly]
         public DataSource(IQueryParser queryParser, IQueryExecutor executor)
             : base(new DefaultQueryProvider(typeof(DataSource<>), queryParser, executor))
         {
         }
 
+        [UsedImplicitly]
         public DataSource(IQueryProvider provider, Expression expression)
             : base(provider, expression)
         {
@@ -284,7 +286,8 @@ namespace Cachalot.Linq
 
             var oldTimestamp = prop.GetValue(newValue);
 
-            var kv = KeyInfo.ValueToKeyValue(oldTimestamp,
+
+            var kv = new KeyValue(oldTimestamp,
                 new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "Timestamp"));
 
             var q = new AtomicQuery(kv);

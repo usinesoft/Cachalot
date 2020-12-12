@@ -63,7 +63,7 @@ namespace UnitTests
 
             foreach (var item in items)
             {
-                var packed = CachedObject.Pack(item, _typeDescription);
+                var packed = CachedObject.Pack(item, _typeDescription.AsCollectionSchema);
                 transaction.Items.Add(packed);
             }
 
@@ -76,7 +76,7 @@ namespace UnitTests
 
             foreach (var item in items)
             {
-                var packed = CachedObject.Pack(item, _typeDescription);
+                var packed = CachedObject.Pack(item, _typeDescription.AsCollectionSchema);
                 transaction.ItemsToDelete.Add(packed);
             }
 

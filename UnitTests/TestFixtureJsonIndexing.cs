@@ -64,6 +64,7 @@ namespace UnitTests
             var today = DateTime.Today;
             var now = DateTime.Now;
 
+            var schema = ClientSideTypeDescription.RegisterType(typeof(AllKindsOfProperties)).AsCollectionSchema;
 
             var testObj = new AllKindsOfProperties
             {
@@ -84,7 +85,7 @@ namespace UnitTests
 
             var typeDescription = description.AsCollectionSchema;
 
-            var packed1 = CachedObject.Pack(testObj);
+            var packed1 = CachedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
 
@@ -108,7 +109,8 @@ namespace UnitTests
         [Test]
         public void Packing_a_binary_object_and_its_json_should_give_identical_results_with_default_index_type()
         {
-            
+            var schema = ClientSideTypeDescription.RegisterType(typeof(Order)).AsCollectionSchema;
+
             var testObj = new Order
             {
                 Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
@@ -121,7 +123,7 @@ namespace UnitTests
 
             var typeDescription = description.AsCollectionSchema;
 
-            var packed1 = CachedObject.Pack(testObj);
+            var packed1 = CachedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
 
@@ -281,57 +283,5 @@ namespace UnitTests
         }
 
 
-        [Test]
-        public void Pack_speed_comparison()
-        {
-            var description1 = ClientSideTypeDescription.RegisterType<AllKindsOfProperties>();
-
-            var description2 = description1.AsCollectionSchema;
-
-            var now = DateTime.Now;
-            
-            var testObj = new AllKindsOfProperties
-            {
-                ValueDate = now.Date,
-                AnotherDate = now.Date.AddDays(1),
-                LastUpdate = now,
-                Nominal = 156.32,
-                Quantity = 35,
-                InstrumentName = "IRS",
-                AreYouSure = Fuzzy.Maybe,
-                IsDeleted = true
-            };
-
-
-            const int items = 100_000;
-
-            Stopwatch watch = new Stopwatch();
-
-            watch.Start();
-
-            for (int i = 0; i < items; i++)
-            {
-                var _ = CachedObject.Pack(testObj, description1);
-            }
-
-            watch.Stop();
-
-            var ms = watch.ElapsedMilliseconds;
-
-            Console.WriteLine($"packing {items} objects in binary mode took {ms} milliseconds");
-
-            watch.Restart();
-
-            for (int i = 0; i < items; i++)
-            {
-                var _ = CachedObject.Pack(testObj, description2);
-            }
-
-            watch.Stop();
-
-            ms = watch.ElapsedMilliseconds;
-
-            Console.WriteLine($"packing {items} objects in json mode took {ms} milliseconds");
-        }
     }
 }

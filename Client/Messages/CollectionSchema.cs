@@ -176,87 +176,18 @@ namespace Client.Messages
 
         public KeyInfo KeyByName(string name)
         {
-            if (PrimaryKeyField.Name == name) return PrimaryKeyField;
+            name = name.ToLower();
 
-            return _indexFields.FirstOrDefault(k => k.Name == name) ??
-                   _listFields.FirstOrDefault(k => k.Name == name) ??
-                   _uniqueKeyFields.FirstOrDefault(k => k.Name == name);
+            if (PrimaryKeyField.Name.ToLower() == name) return PrimaryKeyField;
+
+            return _indexFields.FirstOrDefault(k => k.Name.ToLower() == name) ??
+                   _listFields.FirstOrDefault(k => k.Name.ToLower() == name) ??
+                   _uniqueKeyFields.FirstOrDefault(k => k.Name.ToLower() == name) ?? 
+                   _serverSideVisible.FirstOrDefault(k => k.Name.ToLower() == name);
         }
 
 
-        /// <summary>
-        ///     Helper function, generate a valid index <see cref="KeyValue" /> by key name
-        /// </summary>
-        /// <returns> </returns>
-        public KeyValue MakeIndexKeyValue(string keyName, object value)
-        {
-            foreach (var indexField in _indexFields)
-                if (indexField.Name.ToUpper() == keyName.ToUpper())
-                    return KeyInfo.ValueToKeyValue(value, indexField);
-
-
-            throw new ArgumentException("Not an index key", nameof(keyName));
-        }
-
-        
-
-        /// <summary>
-        ///     Helper function, generate a valid unique <see cref="KeyValue" /> by key name
-        /// </summary>
-        /// <param name="keyName"> case insensitive key name </param>
-        /// <param name="value"> value to convert </param>
-        /// <returns> </returns>
-        public KeyValue MakeUniqueKeyValue(string keyName, object value)
-        {
-            foreach (var uniqueKey in _uniqueKeyFields)
-                if (uniqueKey.Name.ToUpper() == keyName.ToUpper())
-                    return KeyInfo.ValueToKeyValue(value, uniqueKey);
-
-
-            throw new ArgumentException("Not a unique key", nameof(keyName));
-        }
-
-
-        /// <summary>
-        ///     Helper function, generate a valid <see cref="KeyValue" /> by key name
-        ///     (can be the name of a key of any type)
-        /// </summary>
-        /// <param name="keyName"> case insensitive key name </param>
-        /// <param name="value"> value to convert </param>
-        /// <returns> </returns>
-        public KeyValue MakeKeyValue(string keyName, object value)
-        {
-            if (PrimaryKeyField.Name.ToUpper() == keyName.ToUpper())
-                return KeyInfo.ValueToKeyValue(value, PrimaryKeyField);
-
-            foreach (var uniqueKey in _uniqueKeyFields)
-                if (uniqueKey.Name.ToUpper() == keyName.ToUpper())
-                    return KeyInfo.ValueToKeyValue(value, uniqueKey);
-
-            foreach (var indexKey in _indexFields)
-                if (indexKey.Name.ToUpper() == keyName.ToUpper())
-                    return KeyInfo.ValueToKeyValue(value, indexKey);
-
-            foreach (var indexKey in _listFields)
-                if (indexKey.Name.ToUpper() == keyName.ToUpper())
-                    return KeyInfo.ValueToKeyValue(value, indexKey);
-
-            throw new ArgumentException("Not an indexation key", nameof(keyName));
-        }
-
-        /// <summary>
-        ///     Helper method. Create a valid <see cref="KeyValue" /> for the primary key of this type
-        /// </summary>
-        /// <param name="value"> </param>
-        /// <returns> </returns>
-        public KeyValue MakePrimaryKeyValue(object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
-            return KeyInfo.ValueToKeyValue(value, PrimaryKeyField);
-        }
-
+       
         /// <summary>
         /// </summary>
         /// <param name="obj"> </param>
@@ -320,6 +251,7 @@ namespace Client.Messages
             @this.PrimaryKeyField = new KeyInfo
             {
                 Name = name,
+                JsonName = name, 
                 KeyType = KeyType.Primary,
                 KeyDataType = KeyDataType.Default,
                 IsOrdered = false,
@@ -335,6 +267,7 @@ namespace Client.Messages
             @this.PrimaryKeyField = new KeyInfo
             {
                 Name = name,
+                JsonName = name, 
                 KeyType = KeyType.Primary,
                 KeyDataType = KeyDataType.Generate,
                 IsOrdered = false,
@@ -346,18 +279,18 @@ namespace Client.Messages
 
         public static CollectionSchema AddUniqueKey(this CollectionSchema @this, string name, bool fullTextSearchEnabled = false)
         {
-            @this.UniqueKeyFields.Add(new KeyInfo{Name = name, KeyType = KeyType.Unique, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
+            @this.UniqueKeyFields.Add(new KeyInfo{Name = name,JsonName = name,  KeyType = KeyType.Unique, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
 
             return @this;
         }
 
         public static CollectionSchema AddIndex(this CollectionSchema @this, string name, bool ordered = false,  bool serverSideVisible = false, bool fullTextSearchEnabled = false)
         {
-            @this.IndexFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = fullTextSearchEnabled});
+            @this.IndexFields.Add(new KeyInfo{Name = name, JsonName = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = fullTextSearchEnabled});
 
             if (serverSideVisible)
             {
-                @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = false});
+                @this.ServerSideValues.Add(new KeyInfo{Name = name,JsonName = name,  KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  ordered, IsFullTextIndexed = false});
             }
 
             return @this;
@@ -365,14 +298,14 @@ namespace Client.Messages
 
         public static CollectionSchema AddListIndex(this CollectionSchema @this, string name, bool fullTextSearchEnabled = false)
         {
-            @this.ListFields.Add(new KeyInfo{Name = name, KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
+            @this.ListFields.Add(new KeyInfo{Name = name, JsonName = name,  KeyType = KeyType.ScalarIndex, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = fullTextSearchEnabled});
 
             return @this;
         }
 
         public static CollectionSchema AddServerSideValue(this CollectionSchema @this, string name)
         {
-            @this.ServerSideValues.Add(new KeyInfo{Name = name, KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
+            @this.ServerSideValues.Add(new KeyInfo{Name = name, JsonName = name,  KeyType = KeyType.None, KeyDataType = KeyDataType.Default, IsOrdered =  false, IsFullTextIndexed = false});
 
             return @this;
         }

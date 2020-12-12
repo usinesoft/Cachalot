@@ -19,6 +19,8 @@ namespace UnitTests
         [Test]
         public void AddMoreThanCapacity()
         {
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
+
             var queue = new EvictionQueue();
             queue.Capacity = 1000;
             queue.EvictionCount = 100;
@@ -26,7 +28,7 @@ namespace UnitTests
             for (var i = 0; i < 10000; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item);
+                var packedItem = CachedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
             }
 
@@ -46,11 +48,11 @@ namespace UnitTests
         [Test]
         public void AddTwiceRaisesAnException()
         {
-            var queue = new EvictionQueue();
-            queue.Capacity = 1000;
-            queue.EvictionCount = 100;
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
+
+            var queue = new EvictionQueue {Capacity = 1000, EvictionCount = 100};
             var item = new TradeLike(0, 1000, "aaa", DateTime.Now, 456);
-            var packedItem = CachedObject.Pack(item);
+            var packedItem = CachedObject.Pack(item, schema);
             queue.AddNew(packedItem);
 
             //this call should raise an exception
@@ -60,16 +62,16 @@ namespace UnitTests
         [Test]
         public void EvictionOrder()
         {
-            var queue = new EvictionQueue();
-            queue.Capacity = 9;
-            queue.EvictionCount = 2;
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
+
+            var queue = new EvictionQueue {Capacity = 9, EvictionCount = 2};
 
             var allItems = new List<CachedObject>();
 
             for (var i = 0; i < 10; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item);
+                var packedItem = CachedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }
@@ -105,16 +107,16 @@ namespace UnitTests
         [Test]
         public void Remove()
         {
-            var queue = new EvictionQueue();
-            queue.Capacity = 7;
-            queue.EvictionCount = 2;
+            var schema = ClientSideTypeDescription.RegisterType(typeof(TradeLike)).AsCollectionSchema;
+
+            var queue = new EvictionQueue {Capacity = 7, EvictionCount = 2};
 
             var allItems = new List<CachedObject>();
 
             for (var i = 0; i < 10; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item);
+                var packedItem = CachedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }

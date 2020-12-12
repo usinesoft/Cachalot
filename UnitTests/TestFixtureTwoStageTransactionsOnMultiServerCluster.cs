@@ -528,7 +528,7 @@ namespace UnitTests
                     Parallel.Invoke(
                         () =>
                         {
-                            Parallel.For(0, 100, i =>
+                            Parallel.For(0, 200, i =>
                             {
                                 // check the some of two balances is always 1000
                                 var myAccounts = accounts.ToList();
@@ -541,7 +541,7 @@ namespace UnitTests
                         {
                             var myAccounts = accounts.ToList();
 
-                            for (var i = 0; i < 80; i++)
+                            for (var i = 0; i < 200; i++)
                             {
                                 var transfer = new MoneyTransfer
                                 {
@@ -585,7 +585,7 @@ namespace UnitTests
                 var sum = myAccounts.Sum(acc => acc.Balance);
                 Assert.AreEqual(1000, sum);
 
-                Assert.IsTrue(myAccounts.All(acc => acc.Balance < 1000),
+                Assert.IsTrue(myAccounts.All(acc => acc.Balance != 1000),
                     "The balance is unchanged when reloading data");
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");

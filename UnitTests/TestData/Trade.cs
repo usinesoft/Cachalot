@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     [Serializable]
     public class Trade : IEquatable<Trade>
@@ -29,11 +30,11 @@ namespace UnitTests.TestData
         }
 
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public List<DateTime> FixingDates { get; set; } = new List<DateTime>();
 
 
-        [PrimaryKey]
+        [ServerSideValue(IndexType.Primary)]
         public int Id
         {
             get => _id;
@@ -41,7 +42,7 @@ namespace UnitTests.TestData
         }
 
 
-        [Key]
+        [ServerSideValue(IndexType.Unique)]
         public int ContractId
         {
             get => _contractId;
@@ -49,7 +50,7 @@ namespace UnitTests.TestData
         }
 
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Folder
         {
             get => _folder;
@@ -57,7 +58,7 @@ namespace UnitTests.TestData
         }
 
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public DateTime ValueDate
         {
             get => _valueDate;
@@ -72,7 +73,7 @@ namespace UnitTests.TestData
         }
 
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public IList<int> Accounts
         {
             get => _accounts;

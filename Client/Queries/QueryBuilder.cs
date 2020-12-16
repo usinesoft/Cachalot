@@ -24,9 +24,8 @@ namespace Client.Queries
         /// <param name="type"></param>
         public QueryBuilder(Type type)
         {
-            var clientTypeDescription = ClientSideTypeDescription.RegisterType(type);
-
-            _collectionSchema = clientTypeDescription.AsCollectionSchema;
+            
+            _collectionSchema = TypedSchemaFactory.FromType(type);
         }
 
         /// <summary>
@@ -220,50 +219,35 @@ namespace Client.Queries
                         if (indexField.Name.ToUpper() == left.ToUpper())
                             keyInfo = indexField;
 
-            if (keyInfo == null)
-                foreach (var indexField in _collectionSchema.ListFields)
-                    if (indexField.Name.ToUpper() == left.ToUpper())
-                        keyInfo = indexField;
+            
 
             if (keyInfo == null)
                 throw new ArgumentException(left + " is not an index field");
 
 
-            KeyValue keyValue;
-            if (keyInfo.KeyDataType == KeyDataType.IntKey)
+            KeyValue keyValue = null;
+            
+            // special processing for dates(must be in yyyy-mm-dd format)
+            var parts = right.Split('-');
+            if (parts.Length == 3)
             {
-                // special processing for dates(must be in yyyy-mm-dd format)
-                var parts = right.Split('-');
-                if (parts.Length == 3)
-                {
-                    var date = DateTime.Parse(right);
+                var date = DateTime.Parse(right);
 
-                    keyValue = new KeyValue(date.Ticks, keyInfo);
-                }
-                else
-                {
-                    if (right.Contains(".")) // floating point value
-                    {
-                        if (!decimal.TryParse(right, out var floatValue))
-                            throw new ArgumentException(right + " can not be converted to float");
-
-                        keyValue = new KeyValue(floatValue, keyInfo);
-                    }
-                    else // integer value
-                    {
-                        if (!long.TryParse(right, out var longValue))
-                            throw new ArgumentException(right + " can not be converted to long");
-
-
-                        keyValue = new KeyValue(longValue, keyInfo);
-                    }
-                }
+                keyValue = new KeyValue(date.Ticks, keyInfo);
             }
-            else
+            else if (right.Contains(".")) // floating point value
             {
-                keyValue = new KeyValue(right, keyInfo);
+                if (decimal.TryParse(right, out var floatValue))
+                    keyValue = new KeyValue(floatValue, keyInfo);
+            }
+            else // integer value
+            {
+                if (long.TryParse(right, out var longValue))
+                    keyValue = new KeyValue(longValue, keyInfo);
             }
 
+            keyValue ??= new KeyValue(right, keyInfo);
+        
 
             QueryOperator op;
             switch (oper.ToLower())

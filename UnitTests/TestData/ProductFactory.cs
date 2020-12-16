@@ -1,9 +1,9 @@
 ﻿using System;
 using Cachalot.Linq;
-using UnitTests.TestData.Events;
-using UnitTests.TestData.Instruments;
+using Tests.TestData.Events;
+using Tests.TestData.Instruments;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class ProductFactory
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnitTests.TestData.Events
+namespace Tests.TestData.Events
 {
     public class Increase : NegotiatedProductEvent
     {

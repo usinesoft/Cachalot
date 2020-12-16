@@ -1,24 +1,25 @@
 ﻿using System;
+using Client.Core;
 using Client.Interface;
 
 namespace StressTests
 {
     public class AbstractEntity
     {
-        [PrimaryKey]
+        [ServerSideValue(IndexType.Primary)]
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public Guid CollectionId { get; set; }
 
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int X { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int Y { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int Z { get; set; }
     }
 }

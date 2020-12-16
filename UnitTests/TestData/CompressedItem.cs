@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
 
     [Storage(true)]
     public class CompressedItem
     {
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Id { get; set; }
 
         public string Data { get; set; } = new string('a', 2000);

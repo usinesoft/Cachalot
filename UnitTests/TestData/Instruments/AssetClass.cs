@@ -1,4 +1,4 @@
-﻿namespace UnitTests.TestData.Instruments
+﻿namespace Tests.TestData.Instruments
 {
     public enum AssetClass
     {

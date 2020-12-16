@@ -1,43 +1,43 @@
 ﻿using System;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class Order
     {
 
-        [PrimaryKey]
+        [ServerSideValue(IndexType.Primary)]
         public Guid Id { get; set; }
 
-        [ServerSideVisible]
-        [Index(ordered:true)]
+        [ServerSideValue(IndexType.Ordered)]
         public double Amount { get; set; }
 
-        [ServerSideVisible]
+        [ServerSideValue()]
         public int Quantity { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Category { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int ProductId { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int ClientId { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public DateTimeOffset Date { get; set; }
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public DayOfWeek DayOfWeek => Date.DayOfWeek;
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int Month => Date.Month;
         
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public int Year => Date.Year;
 
-        [Index]
+        [ServerSideValue(IndexType.Dictionary)]
         public bool IsDelivered { get; set; }
     }
 }

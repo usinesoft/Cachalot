@@ -1,4 +1,5 @@
 using Client.ChannelInterface;
+using Client.Core;
 using ProtoBuf;
 
 namespace Client.Messages

@@ -106,7 +106,7 @@ namespace Client.Queries
             {
                 sb.Append(_elements[i]);
                 if (i != _elements.Count - 1)
-                    sb.Append(" OR");
+                    sb.Append(" OR ");
             }
 
             if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");

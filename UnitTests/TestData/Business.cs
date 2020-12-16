@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
+using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class Business
     {
-        [PrimaryKey(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Primary)]
         [JsonProperty("id")]
         public string Id { get; set; }
 
@@ -15,21 +16,21 @@ namespace UnitTests.TestData
         public string StreetAddress { get; set; }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         [JsonProperty("city")]
         public string City { get; set; }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         [JsonProperty("state")]
         public string State { get; set; }
 
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Dictionary)]
         [JsonProperty("stars")]
         public double Stars { get; set; }
 
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         [FullTextIndexation]
         [JsonProperty("categories")]
         public List<string> Categories { get; set; }

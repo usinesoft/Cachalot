@@ -1,4 +1,4 @@
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public enum QuoteType
     {

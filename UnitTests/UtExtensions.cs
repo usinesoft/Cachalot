@@ -5,11 +5,10 @@ using System.Linq.Expressions;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
-using Client.Messages;
 using Client.Queries;
 using Newtonsoft.Json.Linq;
 
-namespace UnitTests
+namespace Tests
 {
 
     /// <summary>
@@ -20,7 +19,7 @@ namespace UnitTests
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where)
         {
             
-            var schema = TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema;
+            var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
             var executor = new NullExecutor(schema);
@@ -37,9 +36,9 @@ namespace UnitTests
         public static CollectionSchema DeclareCollection<T>(this IDataClient @this)
         {
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
-            var schema = description.AsCollectionSchema;
+            var schema = description;
 
-            @this.DeclareCollection(description.FullTypeName, schema);
+            @this.DeclareCollection(description.CollectionName, schema);
 
             return schema;
         }
@@ -61,7 +60,7 @@ namespace UnitTests
         public static void PutMany<T>(this IDataClient @this, IEnumerable<T> items, bool excludeFromEviction = false)
         {
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
-            var schema = description.AsCollectionSchema;
+            var schema = description;
 
             @this.FeedMany(schema.CollectionName, items.Select(i=> CachedObject.Pack(i, schema)), excludeFromEviction);
         }
@@ -69,7 +68,7 @@ namespace UnitTests
         public static void PutOne<T>(this IDataClient @this, T item, bool excludeFromEviction = false)
         {
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
-            var schema = description.AsCollectionSchema;
+            var schema = description;
 
             @this.Put(schema.CollectionName, CachedObject.Pack(item, schema), excludeFromEviction);
         }

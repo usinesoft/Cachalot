@@ -1,4 +1,5 @@
 using System.Linq;
+using Client.Core;
 using Client.Messages;
 
 namespace Client.Interface

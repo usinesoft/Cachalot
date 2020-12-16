@@ -288,7 +288,7 @@ namespace Cachalot.Linq
 
 
             var kv = new KeyValue(oldTimestamp,
-                new KeyInfo(KeyDataType.IntKey, KeyType.ScalarIndex, "Timestamp"));
+                new KeyInfo( "Timestamp", 0, IndexType.Dictionary));
 
             var q = new AtomicQuery(kv);
             var andQuery = new AndQuery();

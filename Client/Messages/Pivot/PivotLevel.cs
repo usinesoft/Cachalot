@@ -32,7 +32,11 @@ namespace Client.Messages.Pivot
             if(@object.Values.Length == 0)
                 throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");
 
-            foreach (var value in @object.Values)
+            //TODO explicitly specify the valuesto be aggregated
+            var valuesForPivot = @object.Values
+                .Union(@object.IndexKeys.Where(k => k.Type == KeyValue.OriginalType.SomeFloat));
+
+            foreach (var value in valuesForPivot)
             {
                 // first aggregate the root level
                 var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.KeyName);

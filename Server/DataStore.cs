@@ -113,13 +113,6 @@ namespace Server
             }
 
 
-            // list indexed fields
-            foreach (var indexField in collectionSchema.ListFields)
-            {
-                var index = IndexFactory.CreateIndex(indexField);
-                _dataByIndexKey.Add(indexField.Name, index);
-            }
-
 
             // create the full-text index if required
             if (collectionSchema.FullText.Count > 0)
@@ -358,32 +351,36 @@ namespace Server
         /// <returns></returns>
         internal CachedObject InternalGetOne(KeyValue keyValue)
         {
-            CachedObject result = null;
+            CachedObject result;
+
+            if(keyValue.KeyType != IndexType.Primary && keyValue.KeyType != IndexType.Unique) throw new NotSupportedException(
+                $"GetOne() called with the key {keyValue.KeyName} which is neither primary nor unique");
 
             if (keyValue == null)
                 throw new ArgumentNullException(nameof(keyValue));
 
-            if (keyValue.KeyType == KeyType.Primary)
+            if (keyValue.KeyType ==  IndexType.Primary)
                 if (_dataByPrimaryKey.ContainsKey(keyValue))
                 {
                     result = _dataByPrimaryKey[keyValue];
                     EvictionPolicy.Touch(result);
+
+                    return result;
                 }
 
-            if (keyValue.KeyType == KeyType.Unique)
+            if (keyValue.KeyType == IndexType.Unique)
                 if (_dataByUniqueKey.ContainsKey(keyValue.KeyName))
                     if (_dataByUniqueKey[keyValue.KeyName].ContainsKey(keyValue))
                     {
                         result = _dataByUniqueKey[keyValue.KeyName][keyValue];
                         EvictionPolicy.Touch(result);
+
+                        return result;
                     }
 
+            // return null if not found
+            return null;
 
-            if (keyValue.KeyType == KeyType.Unique || keyValue.KeyType == KeyType.Primary) return result;
-
-
-            throw new NotSupportedException(
-                $"GetOne() called with the key {keyValue.KeyName} which is neither primary nor unique");
         }
 
         /// <summary>
@@ -396,7 +393,7 @@ namespace Server
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (key.KeyType != KeyType.ScalarIndex)
+            if (key.KeyType != IndexType.Ordered && key.KeyType != IndexType.Dictionary)
                 throw new ArgumentException("GetMany() called with a non index key", nameof(key));
 
             if (!_dataByIndexKey.ContainsKey(key.KeyName))
@@ -667,7 +664,7 @@ namespace Server
                 var atomicQuery = query.Elements[0];
 
                 // multiple result query
-                if (atomicQuery.IndexType == KeyType.ScalarIndex || atomicQuery.IndexType == KeyType.ListIndex ||
+                if (atomicQuery.IndexType == IndexType.Ordered || atomicQuery.IndexType == IndexType.Dictionary ||
                     atomicQuery.Operator == QueryOperator.In)
                 {
                     if (count > 0) return InternalFind(atomicQuery).Take(count).ToList();
@@ -697,7 +694,7 @@ namespace Server
 
             foreach (var atomicQuery in query.Elements)
             {
-                if (atomicQuery.Value?.KeyType == KeyType.Primary)
+                if (atomicQuery.Value?.KeyType == IndexType.Primary)
                 {
                     // TODO allow other operators
                     if (atomicQuery.Operator != QueryOperator.Eq)
@@ -714,7 +711,7 @@ namespace Server
                     return new CachedObject[0];
                 }
 
-                if (atomicQuery.Value?.KeyType == KeyType.Unique)
+                if (atomicQuery.Value?.KeyType == IndexType.Unique)
                 {
                     // TODO allow other operators
                     if (atomicQuery.Operator != QueryOperator.Eq)

@@ -269,7 +269,7 @@ namespace Server
                 _persistenceEngine = new PersistenceEngine(_dataContainer, _config.DataPath);
                 _dataContainer.PersistenceEngine = _persistenceEngine;
 
-                _persistenceEngine.Start();
+                 _persistenceEngine.Start();
             }
 
             _dataContainer.StartProcessingClientRequests();

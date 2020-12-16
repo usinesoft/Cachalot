@@ -1,19 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class Home
     {
-        [PrimaryKey(KeyDataType.IntKey)] public int Id { get; set; }
+        [ServerSideValue(IndexType.Primary)] public int Id { get; set; }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string CountryCode { get; set; }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Town { get; set; }
 
         [FullTextIndexation] public string Address { get; set; }
@@ -25,13 +26,13 @@ namespace UnitTests.TestData
 
         public string OwnerPhone { get; set; }
 
-        [Index(KeyDataType.IntKey, true)] public int Rooms { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public int Rooms { get; set; }
 
-        [Index(KeyDataType.IntKey)] public int Bathrooms { get; set; }
+        [ServerSideValue(IndexType.Dictionary)] public int Bathrooms { get; set; }
 
-        [Index(KeyDataType.IntKey, true)] public decimal PriceInEuros { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public decimal PriceInEuros { get; set; }
 
-        [Index(KeyDataType.IntKey)] public List<DateTime> AvailableDates { get; set; } = new List<DateTime>();
+        [ServerSideValue(IndexType.Dictionary)] public List<DateTime> AvailableDates { get; set; } = new List<DateTime>();
 
 
         [FullTextIndexation] public List<Comment> Comments { get; set; } = new List<Comment>();

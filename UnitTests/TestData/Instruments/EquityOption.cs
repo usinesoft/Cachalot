@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnitTests.TestData.Instruments
+namespace Tests.TestData.Instruments
 {
     public class EquityOption : IProduct
     {

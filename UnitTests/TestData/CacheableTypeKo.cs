@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     /// <summary>
     ///     No primary key so it can not be serialized

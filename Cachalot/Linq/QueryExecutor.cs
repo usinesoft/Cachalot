@@ -5,7 +5,6 @@ using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
-using Client.Messages;
 using Client.Queries;
 using Newtonsoft.Json.Linq;
 using Remotion.Linq;

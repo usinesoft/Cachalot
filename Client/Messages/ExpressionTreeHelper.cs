@@ -100,7 +100,7 @@ namespace Client.Messages
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
             
-            var schema = TypeDescriptionsCache.GetDescription(typeof(T)).AsCollectionSchema;
+            var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
             var executor = new NullExecutor(schema);

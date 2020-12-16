@@ -21,8 +21,7 @@ namespace Client.Core
     public sealed class KeyValue : IComparable<KeyValue>
     {
         
-
-        enum OriginalType:byte
+        public enum OriginalType:byte
         {
             SomeInteger = 0,
             SomeFloat = 1,
@@ -50,10 +49,17 @@ namespace Client.Core
         ///     uniqueness of the key (primary, unique, index)
         /// </summary>
         [field: ProtoMember(4)]
-        public KeyType KeyType { get; }
+        public IndexType KeyType { get; }
+
+        public OriginalType Type => (OriginalType) _data[0];
 
         public override string ToString()
         {
+            var date = DateValue;
+            if (date.HasValue)
+            {
+                return date.Value.ToString("yyyy-MM-dd H:mm:ss");
+            }
             return StringValue??IntValue.ToString();
         }
 
@@ -174,7 +180,7 @@ namespace Client.Core
             _data = new byte[1];
 
             KeyName = info.Name;
-            KeyType = info.KeyType;
+            KeyType = info.IndexType;
 
             if (value == null)
             {
@@ -228,7 +234,8 @@ namespace Client.Core
                 return;
             }
 
-            if (propertyType.Namespace != "System")
+            // ReSharper disable once PossibleNullReferenceException
+            if (!propertyType.Namespace.StartsWith("System"))
             {
                 throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
             }
@@ -320,6 +327,24 @@ namespace Client.Core
         }
 
         public long IntValue => _hashCode;
+
+        public DateTimeOffset? DateValue
+        {
+            get
+            {
+                if (Type != OriginalType.Date)
+                {
+                    return null;
+                }
+
+                if(_data.Length == 1)//no offset
+                    return new DateTimeOffset(new DateTime(_hashCode));
+                    
+                var offset = BitConverter.ToInt64(_data, 1);
+                return new DateTimeOffset(_hashCode, new TimeSpan(offset));
+
+            }
+        } 
 
         JValue JsonValue
         {
@@ -415,24 +440,6 @@ namespace Client.Core
         }
 
        
-
-        #region compatibility
-
-        public KeyDataType KeyDataType
-        {
-            get
-            {
-                var type = (OriginalType)_data[0];
-                if (type == OriginalType.String)
-                    return KeyDataType.StringKey;
-
-                return KeyDataType.IntKey;
-            }
-        }
-
-        
-
-        #endregion
     }
 
 

@@ -24,4 +24,6 @@ namespace Client.Queries
         /// <returns></returns>
         public abstract bool Match(CachedObject item);
     }
+
+    
 }

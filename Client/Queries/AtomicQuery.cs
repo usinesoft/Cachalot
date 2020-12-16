@@ -61,7 +61,7 @@ namespace Client.Queries
             Operator = QueryOperator.Btw; //the one and only binary operator
         }
 
-        public KeyType
+        public IndexType
             IndexType => Values.First().KeyType;
 
         public string IndexName => !ReferenceEquals(Value, null) ? Value.KeyName : InValues.First().KeyName;
@@ -101,23 +101,27 @@ namespace Client.Queries
                 if (Operator == QueryOperator.In && InValues.Count == 0)
                     return false;
 
+                // IN requires a list of values
+                if (Operator == QueryOperator.Nin && InValues.Count == 0)
+                    return false;
+
                 // only IN accepts a list of values
-                if (Operator != QueryOperator.In && InValues.Count > 0)
+                if (Operator != QueryOperator.In && Operator != QueryOperator.Nin && InValues.Count > 0)
                     return false;
 
                 // any operator except IN requires at least a value
-                if (Operator != QueryOperator.In && ReferenceEquals(Value, null))
+                if (Operator != QueryOperator.In && Operator != QueryOperator.Nin && ReferenceEquals(Value, null))
                     return false;
 
                 // all values should belong to the same index key
-                if (Operator == QueryOperator.In)
+                if (Operator == QueryOperator.In ||Operator == QueryOperator.Nin)
                 {
                     var name = IndexName;
                     if (InValues.Any(v => v.KeyName != name))
                         return false;
                 }
 
-
+                
                 return true;
             }
         }
@@ -262,7 +266,7 @@ namespace Client.Queries
             if (Value.KeyName != query.Value.KeyName)
                 return false;
 
-            Dbg.CheckThat(Value.KeyDataType == query.Value.KeyDataType);
+            Dbg.CheckThat(Value.Type == query.Value.Type);
 
             if (!AreOperatorsCompatible(Operator, rightOperator))
                 return false;
@@ -319,13 +323,32 @@ namespace Client.Queries
                 case QueryOperator.In:
                     result += " In ";
                     break;
+                case QueryOperator.Nin:
+                    result += " NOT In ";
+                    break;
                 case QueryOperator.Btw:
                     result += " Btw ";
+                    break;
+                
+                case QueryOperator.Neq:
+                    result += " != ";
+                    break;
+
+                case QueryOperator.StrStartsWith:
+                    result += " StartsWith ";
+                    break;
+
+                case QueryOperator.StrEndsWith:
+                    result += " EndsWith ";
+                    break;
+
+                case QueryOperator.StrContains:
+                    result += " Contains ";
                     break;
             }
 
 
-            if (Operator == QueryOperator.In)
+            if (Operator == QueryOperator.In ||Operator == QueryOperator.Nin )
             {
                 if (InValues.Count >= 4)
                 {
@@ -352,6 +375,10 @@ namespace Client.Queries
 
             return result;
         }
+
+        public bool IsComparison =>
+            Operator == QueryOperator.Eq || Operator == QueryOperator.Le || Operator == QueryOperator.Lt || Operator == QueryOperator.Ge ||
+            Operator == QueryOperator.Gt;
 
         /// <summary>
         ///     Check if an object matches the query
@@ -421,10 +448,10 @@ namespace Client.Queries
         /// <returns></returns>
         private KeyValue GetKeyOfObject(CachedObject item, KeyValue value)
         {
-            if (value.KeyType == KeyType.Primary)
+            if (value.KeyType == IndexType.Primary)
                 return item.PrimaryKey;
 
-            if (value.KeyType == KeyType.Unique)
+            if (value.KeyType == IndexType.Unique)
             {
                 foreach (var k in item.UniqueKeys)
                     if (k.KeyName == Value.KeyName)
@@ -433,7 +460,7 @@ namespace Client.Queries
                 throw new NotSupportedException($"Can not match this item {item} with key {Value}");
             }
 
-            if (value.KeyType == KeyType.ScalarIndex)
+            if (value.KeyType == IndexType.Ordered || value.KeyType == IndexType.Dictionary)
             {
                 foreach (var k in item.IndexKeys)
                     if (k.KeyName == Value.KeyName)

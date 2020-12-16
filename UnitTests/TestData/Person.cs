@@ -1,6 +1,7 @@
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     
     public class Person
@@ -16,13 +17,13 @@ namespace UnitTests.TestData
         {
         }
 
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Id { get; set; }
 
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string First { get; set; }
 
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Last { get; set; }
     }
 }

@@ -5,9 +5,6 @@ namespace Client.Core
 {
     public class StreamingException : Exception
     {
-        public StreamingException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
 
         public StreamingException(string message) : base(message)
         {

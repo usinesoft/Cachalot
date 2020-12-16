@@ -1,7 +1,8 @@
 ﻿using System;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     [Serializable]
     public class CacheableTypeOk : IEquatable<CacheableTypeOk>
@@ -30,14 +31,14 @@ namespace UnitTests.TestData
             _indexKeyValue = indexKeyValue;
         }
 
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int PrimaryKey
         {
             get => _primaryKey;
             set => _primaryKey = value;
         }
 
-        [Key(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Unique)]
         public int UniqueKey
         {
             get => _uniqueKey;
@@ -45,14 +46,14 @@ namespace UnitTests.TestData
         }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string IndexKeyFolder
         {
             get => _indexKeyFolder;
             set => _indexKeyFolder = value;
         }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public DateTime IndexKeyDate
         {
             get => _indexKeyDate;
@@ -69,14 +70,14 @@ namespace UnitTests.TestData
             set => _objectData = value;
         }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public int IndexKeyValue
         {
             get => _indexKeyValue;
             set => _indexKeyValue = value;
         }
 
-        [Index(KeyDataType.IntKey, true)] public DateTime? NullableDate { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public DateTime? NullableDate { get; set; }
 
 
         public bool Equals(CacheableTypeOk cacheableTypeOk)

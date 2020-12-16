@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public static class CloneExtensions
     {

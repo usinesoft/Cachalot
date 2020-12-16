@@ -115,8 +115,6 @@ namespace AdminConsole.Commands
 
             foreach (var keyInfo in desc.IndexFields) Logger.Write(keyInfo.ToString());
 
-            foreach (var keyInfo in desc.ListFields) Logger.Write(keyInfo.ToString());
-
             foreach (var keyInfo in desc.ServerSideValues) Logger.Write(keyInfo.ToString());
 
             Logger.Write("-------------------------------------------------------------------------------------------");

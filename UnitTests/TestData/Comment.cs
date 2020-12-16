@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class Comment
     {

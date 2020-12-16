@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Client.Interface;
@@ -40,11 +41,8 @@ namespace Client.Core.Linq
                 throw new CacheException($"property {member.Name} is not servers-side visible");
             }
 
-            var keyInfo = new KeyInfo(propertyDescription.KeyDataType, propertyDescription.KeyType,
-                propertyDescription.Name, propertyDescription.IsOrdered);
-
-            
-            //var propertyValue = ExpressionTreeHelper.Getter(member.DeclaringType, member.Name)(value);
+            var keyInfo = new KeyInfo(propertyDescription.Name, propertyDescription.Order,
+                propertyDescription.IndexType);
 
 
             return new KeyValue(value, keyInfo);
@@ -57,16 +55,34 @@ namespace Client.Core.Linq
                    || expression.NodeType == ExpressionType.GreaterThanOrEqual
                    || expression.NodeType == ExpressionType.LessThan
                    || expression.NodeType == ExpressionType.LessThanOrEqual
-                   || expression.NodeType == ExpressionType.Equal;
+                   || expression.NodeType == ExpressionType.Equal
+                   || expression.NodeType == ExpressionType.NotEqual
+                ;
         }
 
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
-            if (whereClause.Predicate is BinaryExpression expression)
+
+            if(whereClause.Predicate.NodeType == ExpressionType.Not)
+            {
+                var unary = (UnaryExpression) whereClause.Predicate;
+                InternalVisitWhereClause(unary.Operand, true);    
+            }
+            else
+            {
+                InternalVisitWhereClause(whereClause.Predicate,  false);    
+            }
+
+           
+        }
+
+        private void InternalVisitWhereClause(Expression whereClause, bool not = false)
+        {
+            if (whereClause is BinaryExpression expression)
             {
                 VisitBinaryExpression(expression, RootExpression);
             }
-            else if (whereClause.Predicate is MemberExpression memberExpression)
+            else if (whereClause is MemberExpression memberExpression)
             {
                 if (memberExpression.Type == typeof(bool))
                 {
@@ -74,26 +90,18 @@ namespace Client.Core.Linq
                     VisitMemberExpression(memberExpression, RootExpression);
                 }
             }
+            else if (whereClause is MethodCallExpression call)
+            {
+                VisitMethodCall(call, RootExpression);
+
+            }
             else
             {
-                if (whereClause.Predicate is SubQueryExpression subQuery)
+                if (whereClause is SubQueryExpression subQuery)
                 {
-                    AndQuery andExpression;
+                    var leaf = CreateAtomicQuery(RootExpression);
 
-                    if (!RootExpression.MultipleWhereClauses)
-                    {
-                        andExpression = new AndQuery();
-                        RootExpression.Elements.Add(andExpression);
-                    }
-                    else // multiple where clauses are joined by AND
-                    {
-                        andExpression = RootExpression.Elements[0];
-                    }
-
-                    var leaf = new AtomicQuery();
-                    andExpression.Elements.Add(leaf);
-
-                    VisitContainsExpression(subQuery, leaf);
+                    VisitContainsExpression(subQuery, leaf, not);
                 }
                 else
                 {
@@ -104,7 +112,7 @@ namespace Client.Core.Linq
 
             RootExpression.MultipleWhereClauses = true;
 
-            base.VisitWhereClause(whereClause, queryModel, index);
+            //base.VisitWhereClause(whereClause, queryModel, index);
         }
 
 
@@ -168,6 +176,10 @@ namespace Client.Core.Linq
             {
                 andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Left));
             }
+            else if(binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
+            {
+                VisitMemberExpression((MemberExpression) binaryExpression.Left, andExpression);
+            }
             else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
             {
                 VisitAndExpression((BinaryExpression) binaryExpression.Left, andExpression);
@@ -181,6 +193,21 @@ namespace Client.Core.Linq
                     VisitContainsExpression(subQuery, leaf);
                 }
             }
+            else if (binaryExpression.Left.NodeType == ExpressionType.Not)
+            {
+                var unary = (UnaryExpression) binaryExpression.Left;
+
+                if (unary.Operand is SubQueryExpression subQuery)
+                {
+                    var leaf = new AtomicQuery();
+                    andExpression.Elements.Add(leaf);
+                    VisitContainsExpression(subQuery, leaf, true);
+                }
+            }
+            else if(binaryExpression.Left is MethodCallExpression call)
+            {
+                VisitMethodCall(call, andExpression);
+            }
             else
             {
                 throw new NotSupportedException("Query too complex");
@@ -189,6 +216,10 @@ namespace Client.Core.Linq
             if (IsLeafExpression(binaryExpression.Right))
             {
                 andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Right));
+            }
+            else if(binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
+            {
+                VisitMemberExpression((MemberExpression) binaryExpression.Right, andExpression);
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
             {
@@ -199,13 +230,28 @@ namespace Client.Core.Linq
                     VisitContainsExpression(subQuery, leaf);
                 }
             }
+            else if (binaryExpression.Right.NodeType == ExpressionType.Not)
+            {
+                var unary = (UnaryExpression) binaryExpression.Right;
+
+                if (unary.Operand is SubQueryExpression subQuery)
+                {
+                    var leaf = new AtomicQuery();
+                    andExpression.Elements.Add(leaf);
+                    VisitContainsExpression(subQuery, leaf, true);
+                }
+            }
+            else if(binaryExpression.Right is MethodCallExpression call)
+            {
+                VisitMethodCall(call, andExpression);
+            }
             else
             {
                 throw new NotSupportedException("Query too complex");
             }
         }
 
-        private void VisitContainsExpression(SubQueryExpression subQuery, AtomicQuery leaf)
+        private void VisitContainsExpression(SubQueryExpression subQuery, AtomicQuery leaf, bool not = false)
         {
             if (subQuery.QueryModel.ResultOperators.Count != 1)
                 throw new NotSupportedException("Only Contains extension is supported");
@@ -223,7 +269,7 @@ namespace Client.Core.Linq
 
                     if (expression?.Value is IEnumerable values)
                     {
-                        leaf.Operator = QueryOperator.In;
+                        leaf.Operator = not? QueryOperator.Nin :QueryOperator.In;
 
                         foreach (var value in values)
                         {
@@ -256,11 +302,11 @@ namespace Client.Core.Linq
                             throw new NotSupportedException("Trying to use Contains extension on a scalar member");
 
 
-                        if (value is ConstantExpression valueExpession)
+                        if (value is ConstantExpression valueExpression)
                         {
-                            leaf.Operator = QueryOperator.In;
+                            leaf.Operator = not? QueryOperator.Nin :QueryOperator.In;
 
-                            var kval = AsKeyValue(expression.Member, valueExpession.Value);
+                            var kval = AsKeyValue(expression.Member, valueExpression.Value);
 
                             leaf.InValues.Add(kval);
 
@@ -293,18 +339,7 @@ namespace Client.Core.Linq
             // manage simple expressions like a > 10
             else if (IsLeafExpression(binaryExpression))
             {
-                AndQuery andExpression;
-
-                if (!rootExpression.MultipleWhereClauses)
-                {
-                    andExpression = new AndQuery();
-                    rootExpression.Elements.Add(andExpression);
-                }
-                else // if multiple where clauses consider them as expressions linked by AND
-                {
-                    andExpression = rootExpression.Elements[0];
-                }
-
+                var andExpression = AndExpression(rootExpression);
 
                 andExpression.Elements.Add(VisitLeafExpression(binaryExpression));
             }
@@ -316,28 +351,70 @@ namespace Client.Core.Linq
 
         private void VisitMemberExpression(MemberExpression expression, OrQuery rootExpression)
         {
-            AndQuery andExpression;
+            var andExpression = AndExpression(rootExpression);
 
-            if (!rootExpression.MultipleWhereClauses)
-            {
-                andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-            }
-            else // if multiple where clauses consider them as expressions linked by AND
-            {
-                andExpression = rootExpression.Elements[0];
-            }
-
-            var kval = AsKeyValue(expression.Member, true);
-
-            andExpression.Elements.Add( new AtomicQuery(kval));
-
-
+            VisitMemberExpression(expression, andExpression);
 
         }
 
+        private void VisitMemberExpression(MemberExpression expression, AndQuery parentExpress)
+        {
+            var kval = AsKeyValue(expression.Member, true);
 
-        //TODO add unit test for OR expression with Contains
+            parentExpress.Elements.Add( new AtomicQuery(kval));
+
+        }
+
+        private void VisitMethodCall(MethodCallExpression call, OrQuery rootExpression)
+        {
+            var andExpression = AndExpression(rootExpression);
+
+            VisitMethodCall(call, andExpression);
+
+        }
+
+        private void VisitMethodCall(MethodCallExpression call, AndQuery andExpression)
+        {
+            
+            var methodName = call.Method.Name;
+            var argument = call.Arguments.FirstOrDefault();
+
+            if (call.Object is MemberExpression member && argument is ConstantExpression constant)
+            {
+                var value = constant.Value.ToString();
+
+                var kval = AsKeyValue(member.Member, value);
+
+                QueryOperator op;
+                switch (methodName)
+                {
+                    case "StartsWith":
+                        op = QueryOperator.StrStartsWith;
+                        break;
+
+                    case "EndsWith":
+                        op = QueryOperator.StrEndsWith;
+                        break;
+
+                    case "Contains":
+                        op = QueryOperator.StrContains;
+                        break;
+
+                    default:
+                        throw new NotSupportedException($"Method {methodName} can not be used in a query");
+                }
+
+                andExpression.Elements.Add( new AtomicQuery(kval, op));
+            }
+            else
+            {
+                throw new NotSupportedException($"Error processing method call expression:{methodName}");
+            }
+
+        }
+
+       
+
         /// <summary>
         ///     OR expression can be present only at root level
         /// </summary>
@@ -353,6 +430,10 @@ namespace Client.Core.Linq
 
                 andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Left));
             }
+            else if(binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
+            {
+                VisitMemberExpression((MemberExpression) binaryExpression.Left, rootExpression);
+            }
             else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
             {
                 var andExpression = new AndQuery();
@@ -363,23 +444,20 @@ namespace Client.Core.Linq
             {
                 if (binaryExpression.Left is SubQueryExpression subQuery)
                 {
-                    AndQuery andExpression;
-
-                    if (!rootExpression.MultipleWhereClauses)
-                    {
-                        andExpression = new AndQuery();
-                        rootExpression.Elements.Add(andExpression);
-                    }
-                    else // multiple where clauses are joined by AND
-                    {
-                        andExpression = rootExpression.Elements[0];
-                    }
-
-
-                    var leaf = new AtomicQuery();
-                    andExpression.Elements.Add(leaf);
+                    var leaf = CreateAtomicQuery(rootExpression);
 
                     VisitContainsExpression(subQuery, leaf);
+                }
+            }
+            else if (binaryExpression.Left.NodeType == ExpressionType.Not)
+            {
+                var unary = (UnaryExpression) binaryExpression.Left;
+
+                if (unary.Operand is SubQueryExpression subQuery)
+                {
+                    var leaf = CreateAtomicQuery(rootExpression);
+
+                    VisitContainsExpression(subQuery, leaf, true);
                 }
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.OrElse)
@@ -391,6 +469,12 @@ namespace Client.Core.Linq
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
                 VisitAndExpression((BinaryExpression) binaryExpression.Left, andExpression);
+            }
+            else if(binaryExpression.Left is MethodCallExpression call)
+            {
+                var andExpression = new AndQuery();
+                rootExpression.Elements.Add(andExpression);
+                VisitMethodCall(call, andExpression);
             }
             else
             {
@@ -405,21 +489,28 @@ namespace Client.Core.Linq
 
                 andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Right));
             }
+            else if(binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
+            {
+                VisitMemberExpression((MemberExpression) binaryExpression.Right, rootExpression);
+            }
             else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
             {
                 if (binaryExpression.Right is SubQueryExpression subQuery)
                 {
-                    var andExpression = new AndQuery();
-                    rootExpression.Elements.Add(andExpression);
+                    var leaf = CreateAtomicQuery(rootExpression);
 
-                    if (rootExpression.MultipleWhereClauses)
-                        throw new NotSupportedException(
-                            "Multiple where clauses can be used only with simple expressions");
-
-
-                    var leaf = new AtomicQuery();
-                    andExpression.Elements.Add(leaf);
                     VisitContainsExpression(subQuery, leaf);
+                }
+            }
+            else if (binaryExpression.Right.NodeType == ExpressionType.Not)
+            {
+                var unary = (UnaryExpression) binaryExpression.Right;
+
+                if (unary.Operand is SubQueryExpression subQuery)
+                {
+                    var leaf = CreateAtomicQuery(rootExpression);
+
+                    VisitContainsExpression(subQuery, leaf, true);
                 }
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.OrElse)
@@ -432,14 +523,44 @@ namespace Client.Core.Linq
                 rootExpression.Elements.Add(andExpression);
                 VisitAndExpression((BinaryExpression) binaryExpression.Right, andExpression);
             }
+            else if(binaryExpression.Right is MethodCallExpression call)
+            {
+                var andExpression = new AndQuery();
+                rootExpression.Elements.Add(andExpression);
+                VisitMethodCall(call, andExpression);
+            }
             else
             {
                 throw new NotSupportedException("Query too complex");
             }
         }
 
-        // TODO add unit test for reverted expression : const = member
+        private static AtomicQuery CreateAtomicQuery(OrQuery rootExpression)
+        {
+            var andExpression = AndExpression(rootExpression);
 
+            var leaf = new AtomicQuery();
+            andExpression.Elements.Add(leaf);
+            return leaf;
+        }
+
+        private static AndQuery AndExpression(OrQuery rootExpression)
+        {
+            AndQuery andExpression;
+            if (!rootExpression.MultipleWhereClauses)
+            {
+                andExpression = new AndQuery();
+                rootExpression.Elements.Add(andExpression);
+            }
+            else // multiple where clauses are joined by AND
+            {
+                andExpression = rootExpression.Elements[0];
+            }
+
+            return andExpression;
+        }
+
+        
         /// <summary>
         ///     Manage simple expressions like left operator right
         /// </summary>
@@ -461,6 +582,8 @@ namespace Client.Core.Linq
 
                 if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Le;
 
+                if (binaryExpression.NodeType == ExpressionType.NotEqual) oper = QueryOperator.Neq;
+
                 return new AtomicQuery(kval, oper);
             }
 
@@ -475,13 +598,13 @@ namespace Client.Core.Linq
                 var oper = QueryOperator.Eq;
 
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Le;
+                if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Lt;
 
-                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Lt;
+                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Le;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Ge;
+                if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Gt;
 
-                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Gt;
+                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Ge;
 
                 return new AtomicQuery(kval, oper);
             }

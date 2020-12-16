@@ -1,19 +1,19 @@
 ﻿using System;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData.MoneyTransfer
+namespace Tests.TestData.MoneyTransfer
 {
     public class MoneyTransfer
     {
-        [PrimaryKey(KeyDataType.IntKey)] public int Id { get; set; }
+        [ServerSideValue(IndexType.Primary)] public int Id { get; set; }
 
-        [Index(KeyDataType.IntKey, true)] public decimal Amount { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public decimal Amount { get; set; }
 
-        [Index(KeyDataType.IntKey, true)] public DateTime Date { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public DateTime Date { get; set; }
 
-        [Index(KeyDataType.IntKey, true)] public int SourceAccount { get; set; }
+        [ServerSideValue(IndexType.Dictionary)] public int SourceAccount { get; set; }
 
-
-        [Index(KeyDataType.IntKey, true)] public int DestinationAccount { get; set; }
+        [ServerSideValue(IndexType.Dictionary)] public int DestinationAccount { get; set; }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     public class Review
     {

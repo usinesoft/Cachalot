@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Client.Core;
 using Client.Interface;
 
-namespace UnitTests.TestData
+namespace Tests.TestData
 {
     [Serializable]
     public class TradeLike 
@@ -32,28 +33,28 @@ namespace UnitTests.TestData
             _indexKeyValue = indexKeyValue;
         }
 
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Key
         {
             get => _primaryKey;
             set => _primaryKey = value;
         }
 
-        [Key(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Unique)]
         public int UniqueKey
         {
             get => _uniqueKey;
             set => _uniqueKey = value;
         }
 
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Folder
         {
             get => _indexKeyFolder;
             set => _indexKeyFolder = value;
         }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public DateTime ValueDate
         {
             get => _indexKeyDate;
@@ -61,7 +62,7 @@ namespace UnitTests.TestData
         }
 
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public int Nominal
         {
             get => _indexKeyValue;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Client.Messages;
 
 namespace Client.Core
 {
@@ -8,15 +9,15 @@ namespace Client.Core
     /// </summary>
     public static class TypeDescriptionsCache
     {
-        static readonly Dictionary<Type, ClientSideTypeDescription> TypeDescriptions = new Dictionary<Type, ClientSideTypeDescription>();
+        static readonly Dictionary<Type, CollectionSchema> TypeDescriptions = new Dictionary<Type, CollectionSchema>();
 
-        public static ClientSideTypeDescription GetDescription(Type type)
+        public static CollectionSchema GetDescription(Type type)
         {
             lock (TypeDescriptions)
             {
                 if (TypeDescriptions.TryGetValue(type, out var description)) return description;
                
-                description = ClientSideTypeDescription.RegisterType(type);
+                description = TypedSchemaFactory.FromType(type);
                 TypeDescriptions.Add(type, description);
 
                 return description;

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Client.Core;
 using Client.Messages;
 
 namespace AdminConsole.AutoCompleteUtils
@@ -150,7 +151,7 @@ namespace AdminConsole.AutoCompleteUtils
 
                         if (typeDescription != null)
                         {
-                            var allFields = typeDescription.IndexFields.Union(typeDescription.ListFields)
+                            var allFields = typeDescription.IndexFields
                                 .Union(typeDescription.UniqueKeyFields).ToList();
 
                             allFields.Add(typeDescription.PrimaryKeyField);

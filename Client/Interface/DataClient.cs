@@ -584,7 +584,7 @@ namespace Client.Interface
         {
             if (evictionType == EvictionType.LessRecentlyUsed && timeLimitInMilliseconds != 0)
             {
-                throw new ArgumentException($"{nameof(timeLimitInMilliseconds)} can be used only for TTL eviction");
+                throw new ArgumentException($"{nameof(timeLimitInMilliseconds)} can be used only for LRU eviction");
             }
 
             if (evictionType == EvictionType.TimeToLive && (limit != 0 || itemsToRemove != 0))

@@ -175,7 +175,7 @@ namespace Client.Interface
 
         private int WhichNode(KeyValue primaryKey)
         {
-            if (primaryKey.KeyType != KeyType.Primary)
+            if (primaryKey.KeyType != IndexType.Primary)
                 throw new NotSupportedException("Sharding may be applied only to primary keys");
 
             return primaryKey.GetHashCode() % CacheClients.Count;

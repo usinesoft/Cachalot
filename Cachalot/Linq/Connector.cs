@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Channel;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
 using Server;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -56,7 +55,7 @@ namespace Cachalot.Linq
 
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             
-            var schema = description.AsCollectionSchema;
+            var schema = description;
             
             Client.DeclareCollection(collectionName, schema);
 

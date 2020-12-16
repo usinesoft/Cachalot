@@ -1,4 +1,5 @@
 using System;
+using Client.Core;
 using Client.Messages;
 
 namespace Server
@@ -10,7 +11,10 @@ namespace Server
             if (keyInfo == null)
                 throw new ArgumentNullException(nameof(keyInfo));
 
-            if (keyInfo.IsOrdered)
+            if (keyInfo.IndexType == IndexType.None)
+                throw new ArgumentNullException(nameof(keyInfo), "Is not an index property");
+
+            if (keyInfo.IndexType == IndexType.Ordered)
                 return new OrderedIndex(keyInfo);
             return new DictionaryIndex(keyInfo);
         }

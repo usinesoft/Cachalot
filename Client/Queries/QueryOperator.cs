@@ -39,6 +39,30 @@ namespace Client.Queries
         /// <summary>
         ///     Applies to list keys
         /// </summary>
-        In
+        In,
+
+        /// <summary>
+        /// Not equal
+        /// </summary>
+        Neq,
+        /// <summary>
+        /// Not in
+        /// </summary>
+        Nin,
+
+        /// <summary>
+        /// StartsWith string method
+        /// </summary>
+        StrStartsWith, 
+
+        /// <summary>
+        /// EndsWith string method
+        /// </summary>
+        StrEndsWith, 
+
+        /// <summary>
+        /// EndsWith string method
+        /// </summary>
+        StrContains, 
     }
 }

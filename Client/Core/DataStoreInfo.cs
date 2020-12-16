@@ -1,6 +1,5 @@
 using System;
 using Client.Interface;
-using Client.Messages;
 using ProtoBuf;
 
 namespace Client.Core
@@ -36,12 +35,6 @@ namespace Client.Core
         [ProtoMember(8)] private long _hitCount;
 
         [ProtoMember(11)] private long _readCount;
-
-
-        /// <summary>
-        ///     True if all the loaders have finished loading data
-        /// </summary>
-        [ProtoMember(6)] private bool _ready;
 
 
         /// <summary>
@@ -82,14 +75,7 @@ namespace Client.Core
             set => _evictionPolicyDescription = value;
         }
 
-        /// <summary>
-        ///     True if all the loaders have finished loading data
-        /// </summary>
-        public bool Ready
-        {
-            get => _ready;
-            set => _ready = value;
-        }
+        
 
         /// <summary>
         ///     Description of the loaded data <seealso cref="DomainDescription" />

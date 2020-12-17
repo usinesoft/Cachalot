@@ -134,6 +134,31 @@ namespace Tests.UnitTests
             Assert.Throws<NotSupportedException>(() => UtExtensions.PredicateToQuery<Home>(h => h.Town.IndexOf("p", StringComparison.InvariantCulture) == 2));
         }
 
+
+        [Test]
+        public void Select()
+        {
+            var q = UtExtensions.Select<Home> (h => h.Town);
+
+            Assert.AreEqual(1, q.SelectedProperties.Count);
+            Assert.AreEqual("Town", q.SelectedProperties[0]);
+
+            q = UtExtensions.Select<Home> (h => new {Town = h.Town, Adress = h.Address});
+            Assert.AreEqual(2, q.SelectedProperties.Count);
+            Assert.AreEqual("Town", q.SelectedProperties[0]);
+
+            Assert.IsFalse(q.Distinct);
+
+            // check with distinct clause
+            q = UtExtensions.Select<Home> (h => new {Town = h.Town, Adress = h.Address}, true);
+
+            Assert.IsTrue(q.Distinct);
+
+            q = UtExtensions.OrderBy<Home> (h => h.PriceInEuros);
+        }
+
+        
+
         
 
         [Test]

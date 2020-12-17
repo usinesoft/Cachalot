@@ -55,6 +55,9 @@ namespace Client.Queries
 
         [field: ProtoMember(2)] public string CollectionName { get; set; }
 
+        /// <summary>
+        /// Non persistent, used during construction
+        /// </summary>
         public bool MultipleWhereClauses { get; set; }
         [ProtoMember(3)] public int Take { get; set; }
         public bool CountOnly { get; set; }
@@ -64,10 +67,11 @@ namespace Client.Queries
 
         [ProtoMember(5)] public bool OnlyIfComplete { get; set; }
         
-        [ProtoMember(6)] public bool Sum { get; set; }
+        [ProtoMember(6)] public IList<string>  SelectedProperties{ get; set; } = new List<string>();
 
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
+        [ProtoMember(7)] public bool Distinct { get; set; }
 
         public static OrQuery Empty<T>()
         {

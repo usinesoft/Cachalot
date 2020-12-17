@@ -33,6 +33,52 @@ namespace Tests
             return query;
         }
 
+        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false)
+        {
+            
+            var schema = TypeDescriptionsCache.GetDescription(typeof(T));
+
+            // create a fake queryable to force query parsing and capture resolution
+            var executor = new NullExecutor(schema);
+            var queryable = new NullQueryable<T>(executor);
+
+            if (!distinct)
+            {
+                var unused = queryable.Select(selector).ToList();
+            }
+            else
+            {
+                var unused = queryable.Select(selector).Distinct().ToList();
+            }
+            
+
+            var query = executor.Expression;
+            query.CollectionName = typeof(T).FullName;
+
+            return query;
+        }
+
+        public static OrQuery OrderBy<T>(Expression<Func<T, object>> selector)
+        {
+            
+            var schema = TypeDescriptionsCache.GetDescription(typeof(T));
+
+            // create a fake queryable to force query parsing and capture resolution
+            var executor = new NullExecutor(schema);
+            var queryable = new NullQueryable<T>(executor);
+
+            
+            var unused = queryable.OrderBy(selector).ToList();
+            
+            var query = executor.Expression;
+            
+            query.CollectionName = typeof(T).FullName;
+
+            return query;
+        }
+
+        
+
         public static CollectionSchema DeclareCollection<T>(this IDataClient @this)
         {
             var description = TypeDescriptionsCache.GetDescription(typeof(T));

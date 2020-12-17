@@ -60,6 +60,8 @@ namespace Client.Core.Linq
                 ;
         }
 
+
+
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
 
@@ -115,9 +117,38 @@ namespace Client.Core.Linq
             //base.VisitWhereClause(whereClause, queryModel, index);
         }
 
+        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
+        {
+            var expression = selectClause.Selector;
+            if (expression is MemberExpression member)
+            {
+                RootExpression.SelectedProperties.Add(member.Member.Name);
+            }
+            else if(expression is NewExpression @new)
+            {
+                foreach (var memberInfo in @new.Members)
+                {
+                    RootExpression.SelectedProperties.Add(memberInfo.Name);
+                }
+            }
+            
+            base.VisitSelectClause(selectClause, queryModel);
+        }
+
+        public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
+        {
+            base.VisitOrderByClause(orderByClause, queryModel, index);
+        }
 
         public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
         {
+
+            if (resultOperator is DistinctResultOperator)
+            {
+                RootExpression.Distinct = true;
+                return;
+            }
+
             if (resultOperator is FirstResultOperator)
             {
                 RootExpression.Take = 1;

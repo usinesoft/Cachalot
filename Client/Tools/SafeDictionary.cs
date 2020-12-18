@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Client.Tools
@@ -9,8 +10,16 @@ namespace Client.Tools
     /// </summary>
     /// <typeparam name="TKey"></typeparam>
     /// <typeparam name="TValue"></typeparam>
-    public class SafeDictionary<TKey, TValue> 
+    public class SafeDictionary<TKey, TValue>
     {
+
+        private readonly Func<TValue> _factory;
+
+        public SafeDictionary(Func<TValue> factory)
+        {
+            _factory = factory;
+        }
+
         private readonly Dictionary<TKey, TValue> _innerDictionary = new Dictionary<TKey, TValue>();
         
 
@@ -59,11 +68,16 @@ namespace Client.Tools
             }
         }
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public TValue TryGetValue(TKey key)
         {
             lock (_innerDictionary)
             {
-                return _innerDictionary.TryGetValue(key, out value);
+                if (_innerDictionary.TryGetValue(key, out var value))
+                {
+                    return value;
+                }
+                
+                return default;
             }
         }
 
@@ -84,5 +98,62 @@ namespace Client.Tools
                 }
             }
         }
+
+        public TValue GetOrCreate(TKey key)
+        {
+            if(_factory == null)
+                throw new NotSupportedException("Get or create called on a SafeDictionary instance that does not have a factory defined");
+            lock (_innerDictionary)
+            {
+                if (!_innerDictionary.TryGetValue(key, out var value))
+                {
+                    value = _factory();
+                    _innerDictionary[key] = value;
+                }
+                return value;
+            }
+        }
+
+        public ICollection<TValue> Values
+        {
+            get
+            {
+                lock (_innerDictionary)
+                {
+                    return new List<TValue>(_innerDictionary.Values);
+                }
+            }
+        }
+
+        public ICollection<TKey> Keys
+        {
+            get
+            {
+                lock (_innerDictionary)
+                {
+                    return new List<TKey>(_innerDictionary.Keys);
+                }
+            }
+        }
+
+        public IList<TValue> ForKeys(ICollection<TKey> keys)
+        {
+            var result = new List<TValue>();
+
+            lock (_innerDictionary)
+            {
+                foreach (var key in keys)
+                {
+                    if(_innerDictionary.TryGetValue(key, out var value))
+                    {
+                        result.Add(value);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+
     }
 }

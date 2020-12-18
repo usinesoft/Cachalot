@@ -66,6 +66,13 @@ namespace Tests.UnitTests
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
 
+            query = UtExtensions.PredicateToQuery<Order>(o =>  !o.IsDelivered );
+            Assert.AreEqual(1, query.Elements.Count);
+            Assert.AreEqual(1, query.Elements[0].Elements.Count);
+            var str = query.ToString();
+            Assert.AreEqual("IsDelivered = False", str);
+
+
             // check != operator
             query = UtExtensions.PredicateToQuery<Order>(o =>  o.ClientId != 15 );
             Assert.AreEqual(1, query.Elements.Count);

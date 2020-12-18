@@ -205,7 +205,7 @@ namespace Client.Core
 
         static KeyValue JTokenToKeyValue(JToken jToken, KeyInfo info)
         {
-            if(jToken == null) return new KeyValue(0, info);
+            if(jToken == null) return new KeyValue(null, info);
 
             var valueToken = jToken.HasValues ? jToken.First : jToken;
 

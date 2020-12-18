@@ -14,6 +14,7 @@ using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Profiling;
+using Client.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Server.Persistence;
@@ -53,8 +54,7 @@ namespace Server
         /// <summary>
         ///     <see cref="DataStore" /> by <see cref="CollectionSchema" />
         /// </summary>
-        private IDictionary<string, DataStore> DataStores {get;} = new Dictionary<string, DataStore>();
-
+        private SafeDictionary<string, DataStore> DataStores {get;} = new SafeDictionary<string, DataStore>(null);
 
 
         public long ActiveConnections { private get; set; }
@@ -65,9 +65,10 @@ namespace Server
         private Profiler Profiler { get; }
 
         public PersistenceEngine PersistenceEngine { private get; set; }
+
         public int ShardIndex { get; set; }
 
-        public int ShardCount { get; set; }
+        private int ShardCount { get; set; }
 
         public void StartProcessingClientRequests()
         {
@@ -139,10 +140,10 @@ namespace Server
             var types = typesToPut.Union(typesToDelete).Distinct().ToList();
 
 
-            lock (DataStores)
-            {
-                if (types.Any(t => !DataStores.ContainsKey(t))) throw new NotSupportedException("Type not registered");
-            }
+            var keys = DataStores.Keys;
+            
+            if (types.Any(t => !keys.Contains(t))) throw new NotSupportedException("Type not registered");
+            
 
 
             // do not work too hard if it's single stage
@@ -168,13 +169,7 @@ namespace Server
                 {
                     if (!condition.IsEmpty())
                     {
-                        DataStore ds;
-
-
-                        lock (DataStores)
-                        {
-                            ds = DataStores[condition.CollectionName];
-                        }
+                        var ds = DataStores[condition.CollectionName];
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
                     }
@@ -234,17 +229,12 @@ namespace Server
 
                         foreach (var dataRequest in dataRequests)
                         {
-                            DataStore store;
-
-                            lock (DataStores)
-                            {
-                                if (!DataStores.ContainsKey(dataRequest.FullTypeName))
+                            if (!DataStores.Keys.Contains(dataRequest.FullTypeName))
                                     throw new NotSupportedException(
                                         $"The type {dataRequest.FullTypeName} is not registered");
                                 
-                                store = DataStores[dataRequest.FullTypeName];
-                            }
-
+                            var store = DataStores[dataRequest.FullTypeName];
+                            
                             store.ProcessRequest(dataRequest, client, null);
                         }
 
@@ -300,12 +290,7 @@ namespace Server
                 {
                     if (!condition.IsEmpty())
                     {
-                        DataStore ds;
-
-                        lock (DataStores)
-                        {
-                            ds = DataStores[condition.CollectionName];
-                        }
+                        var ds = DataStores[condition.CollectionName];
 
                         ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
                     }
@@ -326,16 +311,14 @@ namespace Server
 
                 foreach (var dataRequest in dataRequests)
                 {
+                    var ds = DataStores.TryGetValue(dataRequest.FullTypeName);
 
-                    DataStore ds;
-
-                    lock (DataStores)
+                    
+                    if (ds == null)
                     {
-                        if (!DataStores.TryGetValue(dataRequest.FullTypeName, out ds))
-                        {
-                            throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
-                        }
+                        throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
                     }
+                
 
                     ds.ProcessRequest(dataRequest, client, null);
                 }
@@ -363,32 +346,15 @@ namespace Server
 
         public DataStore TryGetByName(string name)
         {
-            lock (DataStores)
-            {
-                if (DataStores.TryGetValue(name, out var store))
-                    return store;
-            }
-
-
-            return null;
+            return DataStores.TryGetValue(name);
         }
 
-        public IList<DataStore> Stores(IList<string> types = null)
+        public ICollection<DataStore> Stores(IList<string> types = null)
         {
-            List<DataStore> result = new List<DataStore>();
-            lock (DataStores)
-            {
-                if (types == null || !types.Any())
-                    return new List<DataStore>(DataStores.Values);
+            if (types == null)
+                return DataStores.Values;
 
-
-                foreach (var type in types)
-                {
-                    result.Add(DataStores[type]);
-                }
-            }
-
-            return result;
+            return DataStores.Values.Where(ds => types.Contains(ds.CollectionSchema.CollectionName)).ToList();
         }
 
         private bool AcquireWriteLock(IClient client, List<string> types, string transactionId)
@@ -442,10 +408,63 @@ namespace Server
         /// <param name="client"></param>
         private void RegisterType(RegisterTypeRequest request, IClient client)
         {
-            if (client != null) // client request
-                ProcessRegisterType(request, client);
-            else // called internally (while loading data)
-                InternalProcessRegisterType(request);
+             
+            try
+            {
+                var typeDescription = request.CollectionSchema;
+
+                // TODO temporary fallback
+                var collectionName = request.CollectionName ?? typeDescription.CollectionName;
+
+                var dataStore = DataStores.TryGetValue(collectionName);
+
+                
+                if (ShardCount == 0) // not initialized
+                {
+                    ShardIndex = request.ShardIndex;
+                    ShardCount = request.ShardsInCluster;
+                }
+                else // check it didn't change
+                {
+                    if (ShardIndex != request.ShardIndex || ShardCount != request.ShardsInCluster)
+                        throw new NotSupportedException(
+                            $"Cluster configuration changed. This node was shard {ShardIndex} / {ShardCount} and now is {request.ShardIndex} / {request.ShardsInCluster}");
+                }
+
+                if (dataStore != null) //type already registered
+                {
+                    //if the type description changed reindex
+                    if (!typeDescription.Equals(dataStore.CollectionSchema))
+                    {
+                      
+                        var newDataStore = DataStore.Reindex(dataStore, typeDescription);
+
+                        DataStores[collectionName] = newDataStore;
+
+                        PersistenceEngine?.UpdateSchema(GenerateSchema());
+                
+                    }
+                }
+                else // new type, store it in the type dictionary and initialize its DataStore
+                {
+            
+                    var newDataStore =
+                        new DataStore(typeDescription, new NullEvictionPolicy(), _config);
+
+                    Dbg.CheckThat(Profiler != null);
+
+                    newDataStore.Profiler = Profiler;
+                    DataStores.Add(collectionName, newDataStore);
+
+                    PersistenceEngine?.UpdateSchema(GenerateSchema());
+                }
+
+                client.SendResponse(new NullResponse());
+            }
+            catch (Exception e)
+            {
+                client?.SendResponse(new ExceptionResponse(e));
+            }
         }
 
         void RemoveWriteLocks(IList<string> types)
@@ -455,77 +474,6 @@ namespace Server
             {
                 if (store.Lock.IsWriteLockHeld)
                     store.Lock.ExitWriteLock();
-            }
-                
-        }
-
-        private void ProcessRegisterType(RegisterTypeRequest request, IClient client)
-        {
-            lock (DataStores)
-            {
-                try
-                {
-                    InternalProcessRegisterType(request);
-                    client.SendResponse(new NullResponse());
-                }
-                catch (Exception e)
-                {
-                    client.SendResponse(new ExceptionResponse(e));
-                }
-            }
-        }
-
-
-        private void InternalProcessRegisterType(RegisterTypeRequest request)
-        {
-            var typeDescription = request.CollectionSchema;
-
-            // TODO temporary fallback
-            var collectionName = request.CollectionName ?? typeDescription.CollectionName;
-
-            if (ShardCount == 0) // not initialized
-            {
-                ShardIndex = request.ShardIndex;
-                ShardCount = request.ShardsInCluster;
-            }
-            else // check it didn't change
-            {
-                if (ShardIndex != request.ShardIndex || ShardCount != request.ShardsInCluster)
-                    throw new NotSupportedException(
-                        $"Cluster configuration changed. This node was shard {ShardIndex} / {ShardCount} and now is {request.ShardIndex} / {request.ShardsInCluster}");
-            }
-
-            if (DataStores.ContainsKey(collectionName)) //type already registered
-            {
-                //if the type description changed reindex
-                if (!typeDescription.Equals(DataStores[collectionName].CollectionSchema))
-                {
-                    lock (DataStores)
-                    {
-                        var olDataStore = DataStores[collectionName];
-
-                        var newDataStore = DataStore.Reindex(olDataStore, typeDescription);
-
-                        DataStores[collectionName] = newDataStore;
-
-                    }
-
-                    PersistenceEngine?.UpdateSchema(GenerateSchema());
-                    
-                }
-            }
-            else // new type, store it in the type dictionary and initialize its DataStore
-            {
-                
-                var newDataStore =
-                    new DataStore(typeDescription, new NullEvictionPolicy(), _config);
-
-                Dbg.CheckThat(Profiler != null);
-
-                newDataStore.Profiler = Profiler;
-                DataStores.Add(collectionName, newDataStore);
-
-                PersistenceEngine?.UpdateSchema(GenerateSchema());
             }
         }
 
@@ -538,17 +486,14 @@ namespace Server
 
         private void ProcessDataRequest(DataRequest dataRequest, IClient client)
         {
-            DataStore dataStore;
-            lock (DataStores)
+            DataStore dataStore = DataStores.TryGetValue(dataRequest.FullTypeName);
+
+            if (dataStore == null)
             {
-                var fullTypeName = dataRequest.FullTypeName;
-
-                if (!DataStores.ContainsKey(fullTypeName))
-                    throw new NotSupportedException("Not registered type : " + fullTypeName);
-
-                dataStore = DataStores[fullTypeName];
+                throw new NotSupportedException("Not registered type : " + dataRequest.FullTypeName);
             }
 
+            
             Dbg.Trace($"begin processing {dataRequest.AccessType} request on server {ShardIndex}");
 
             if (dataRequest.AccessType == DataAccessType.Write)
@@ -741,7 +686,7 @@ namespace Server
                         // ignore (race condition between nodes)
                     }
 
-                Parallel.ForEach(DataStores, ds => ds.Value.Dump(request, ShardIndex));
+                Parallel.ForEach(DataStores.Values, ds => ds.Dump(request, ShardIndex));
 
 
                 // only the first node in the cluster should dump the schema as all shards have identical copies
@@ -781,13 +726,9 @@ namespace Server
             {
                 var response = new ServerDescriptionResponse();
 
-                IList<DataStore> stores;
+                var stores = DataStores.Values;
 
 
-                lock (DataStores)
-                {
-                    stores = new List<DataStore>(DataStores.Values);
-                }
 
                 foreach (var store in stores)
                 {
@@ -894,24 +835,23 @@ namespace Server
 
         public string GenerateSchema()
         {
-            lock (DataStores)
+            
+            var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
+
+            foreach (var store in DataStores.Values)
             {
-                var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
-
-                foreach (var store in DataStores)
-                {
-                    collectionsDescriptions.Add(store.Key, store.Value.CollectionSchema);
-                }
-
-                var schema = new Schema
-                    {ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions};
-
-                var sb = new StringBuilder();
-
-                _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
-
-                return sb.ToString();
+                collectionsDescriptions.Add(store.CollectionSchema.CollectionName, store.CollectionSchema);
             }
+
+            var schema = new Schema
+                {ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions};
+
+            var sb = new StringBuilder();
+
+            _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
+
+            return sb.ToString();
+            
         }
 
         public void LoadSchema(string path)

@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Client.Interface;
@@ -55,12 +56,36 @@ namespace Client.Core
 
         public override string ToString()
         {
-            var date = DateValue;
-            if (date.HasValue)
+            var type = (OriginalType) _data[0];
+
+            switch (type)
             {
-                return date.Value.ToString("yyyy-MM-dd H:mm:ss");
+                case OriginalType.SomeInteger:
+                    return _hashCode.ToString();
+
+                case OriginalType.SomeFloat:
+                    return NumericValue.ToString(CultureInfo.InvariantCulture);
+
+                case OriginalType.Boolean:
+                    return (_hashCode != 0).ToString();
+
+                case OriginalType.Date:
+                    if(_data.Length == 1)//no offset
+                        return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
+                    
+                    var offset = BitConverter.ToInt64(_data, 1);
+                    return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
+
+                case OriginalType.String:
+                    return StringValue;
+
+                case OriginalType.Null:
+                    return "null";
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
-            return StringValue??IntValue.ToString();
+
         }
 
         void StableHashForString(string value)
@@ -165,16 +190,7 @@ namespace Client.Core
         {
         }
 
-        public KeyValue(string value, KeyInfo info):this((object)value, info)
-        {
-
-        }
-
-        public KeyValue(long value, KeyInfo info):this((object)value, info)
-        {
-
-        }
-
+       
         public KeyValue(object value, KeyInfo info)
         {
             _data = new byte[1];
@@ -193,7 +209,7 @@ namespace Client.Core
 
             //integer types
             if (propertyType == typeof(int) || propertyType == typeof(short) || propertyType == typeof(long) ||
-                propertyType == typeof(byte) || propertyType == typeof(char) || propertyType == typeof(bool))
+                propertyType == typeof(byte) || propertyType == typeof(char) )
                 
             {
                 var longVal = Convert.ToInt64(value);

@@ -24,9 +24,7 @@ namespace Client.Queries
             Elements = new List<AtomicQuery>();
         }
 
-        /// <summary>
-        ///     The contained atomic queries should apply to different keys
-        /// </summary>
+        
         public override bool IsValid
         {
             get { return Elements.All(atomicQuery => atomicQuery.IsValid); }
@@ -59,7 +57,7 @@ namespace Client.Queries
                     sb.Append(" AND ");
             }
 
-            return sb.ToString();
+            return sb.ToString().Trim();
         }
 
 

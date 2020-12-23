@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using FakeItEasy;
+using Microsoft.VisualBasic;
 using NUnit.Framework;
 using Server;
 
@@ -88,6 +91,85 @@ namespace Tests.UnitTests
             Assert.AreEqual(3*mgr.SuccessfulWrites, _resourceB.Count);
             
             Assert.AreEqual(3*mgr.SuccessfulWrites, _resourceC.Count);
+
+            int locks = mgr.GetCurrentlyHoldLocks();
+
+            Assert.AreEqual(0, locks);
+        }
+
+        [Test]
+        public void Managing_pending_locks()
+        {
+            var log = A.Fake<IEventsLog>();
+
+
+            ILockManager lockManager = new LockManager(log);
+
+            lockManager.TryAcquireReadLock(default, 10, "x", "y", "z");
+
+            Assert.AreEqual(3, lockManager.GetCurrentlyHoldLocks());
+
+            lockManager.RemoveReadLock( "x", "y", "z");
+
+            Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
+
+            lockManager.TryAcquireReadLock(default, 10, "tahra", "tony");
+            
+            Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks());
+
+            
+            Thread.Sleep(500);
+
+            Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks(100));
+
+            var locks = lockManager.ForceRemoveAllLocks(100);
+
+            A.CallTo(() => log.LogEvent(EventType.LockRemoved, null, 0)).MustHaveHappened();
+            
+            Assert.AreEqual(2, locks);
+
+            Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
+            
+
+        }
+
+        [Test]
+        public void Consistent_read_sessions()
+        {
+            ILockManager lockManager = new LockManager(null);
+
+            var session = Guid.NewGuid();
+
+            var success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
+            Assert.IsTrue(success);
+
+            success = lockManager.CheckReadLockIsActive(session);
+            Assert.IsTrue(success);
+
+            // locking the same resources should not work
+            success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
+            Assert.IsFalse(success);
+
+            // from another thread should not work either
+            Task.Run(()=>
+            {
+                success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
+                Assert.IsFalse(success);
+            });
+
+            // try with a new session (should not work)
+            success = lockManager.CheckReadLockIsActive(Guid.NewGuid());
+            Assert.IsFalse(success);
+
+            lockManager.CloseSession(session);
+            // no more active lock
+            success = lockManager.CheckReadLockIsActive(session);
+            Assert.False(success);
+
+            // trying to close an inactive session throws an exception
+
+            Assert.Throws<NotSupportedException>(() => lockManager.CloseSession(Guid.NewGuid()));
+            
         }
     }
 }

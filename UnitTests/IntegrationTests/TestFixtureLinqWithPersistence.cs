@@ -623,6 +623,30 @@ namespace Tests.IntegrationTests
             }
         }
 
+        [Test]
+        public void Consistent_read()
+        {
+            
+                var config = new ClientConfig();
+                config.LoadFromFile("inprocess_persistent_config.xml");
+
+                using (var connector = new Connector(config))
+                {
+
+                    connector.AdminInterface().DropDatabase();
+
+                    connector.DeclareCollection<Home>("homes");
+
+
+                    connector.DoInConsistentReadOnlyContext(() =>
+                    {
+                        var all = connector.DataSource<Home>("homes").ToList();
+
+                    }, "homes");
+
+                }
+        }
+
     }
 
 

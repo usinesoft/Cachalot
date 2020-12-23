@@ -209,7 +209,7 @@ namespace Client.Interface
 
             
 
-            var sessionId = Guid.NewGuid().ToString();
+            var sessionId = Guid.NewGuid();
 
             
             // initialize one request per node
@@ -361,7 +361,7 @@ namespace Client.Interface
             return sum;
         }
 
-        public IEnumerable<RankedItem> GetMany(OrQuery query)
+        public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
         {
              var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
@@ -369,7 +369,7 @@ namespace Client.Interface
             {
                 Parallel.ForEach(CacheClients, client =>
                 {
-                    var resultsFromThisNode = client.GetMany(query);
+                    var resultsFromThisNode = client.GetMany(query, sessionId);
                     clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
                 });
             }
@@ -424,6 +424,24 @@ namespace Client.Interface
             {
                 yield return item;
             }
+        }
+
+        public void ReleaseLock(Guid sessionId)
+        {
+            
+            try
+            {
+                Parallel.ForEach(CacheClients, client =>
+                {
+                    client.ReleaseLock(sessionId);
+                    
+                });
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
+
         }
 
         public bool Ping()
@@ -866,6 +884,54 @@ namespace Client.Interface
             var node = WhichNode(newValue);
 
             CacheClients[node].UpdateIf(newValue, testAsQuery);
+        }
+
+        public Guid AcquireLock(bool writeAccess, params string[] collections)
+        {
+            Guid sessionId = Guid.NewGuid();
+
+            DataClient.SmartRetry(()=> TryAcquireLock(sessionId, writeAccess, collections));
+
+            return sessionId;
+        }
+
+        private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
+        {
+            bool[] resultByClient = new bool[CacheClients.Count];
+            try
+            {
+
+                Parallel.For(0, CacheClients.Count, i =>
+                {
+                    resultByClient[i] = CacheClients[i].TryAcquireLock(sessionId, writeAccess, collections);
+                });
+
+                // all succeeded
+                if (resultByClient.All(r => r))
+                    return true;
+
+                // otherwise release the successful locks to avoid deadlocks
+                Parallel.For(0, CacheClients.Count, i =>
+                {
+                    if(resultByClient[i])
+                        CacheClients[i].ReleaseLock(sessionId);
+                });
+
+                return false;
+
+            }
+            catch (AggregateException e)
+            {
+                Parallel.For(0, CacheClients.Count, i =>
+                {
+                    if(resultByClient[i])
+                        CacheClients[i].ReleaseLock(sessionId);
+                });
+
+                
+                throw e.InnerException ?? e;
+
+            }
         }
 
         public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)

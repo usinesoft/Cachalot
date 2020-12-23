@@ -10,6 +10,7 @@ namespace Server.Persistence
 {
     public class PersistenceEngine
     {
+        private readonly Services _serviceContainer;
         private readonly object _schemaSync = new object();
         private readonly object _sequenceSync = new object();
 
@@ -19,8 +20,10 @@ namespace Server.Persistence
         private Thread _singleConsumer;
         private ReliableStorage _storage;
 
-        public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null)
+        public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null,
+            Services serviceContainer = null)
         {
+            _serviceContainer = serviceContainer;
             Container = dataContainer;
             WorkingDirectory = workingDirectory;
 
@@ -144,27 +147,28 @@ namespace Server.Persistence
             {
                 var dataStore = Container.TryGetByName(item.CollectionName);
 
+                CachedObject result = item;
                 if (dataStore != null)
                 {
-                    
-                    if (dataStore.Lock.TryEnterReadLock(100))
+                    var lockMgr = _serviceContainer.LockManager;
+
+                    lockMgr.DoWithReadLock(() =>
                     {
-                        if (dataStore.DataByPrimaryKey.TryGetValue(item.PrimaryKey, out var result))
+                        if (dataStore.DataByPrimaryKey.TryGetValue(item.PrimaryKey, out var found))
                         {
-                            if (result.TokenizedFullText != null && result.TokenizedFullText.Count > 0
+                            if (found.TokenizedFullText != null && found.TokenizedFullText.Count > 0
                             ) // tokenized full-text available
                             {
-                                dataStore.Lock.ExitReadLock();
-                                return result;
+                               
+                                result = found;
                             }
                         }
 
-                        dataStore.Lock.ExitReadLock();
-                    }
-
-                    
-                }
+                    }, dataStore.CollectionSchema.CollectionName);
                 
+                    return result;
+                }
+
             }
             else // no full-text data
             {

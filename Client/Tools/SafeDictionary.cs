@@ -68,6 +68,22 @@ namespace Client.Tools
             }
         }
 
+        public TValue TryRemove(TKey key)
+        {
+            lock (_innerDictionary)
+            {
+                if (_innerDictionary.TryGetValue(key, out var value))
+                {
+                    _innerDictionary.Remove(key);
+                    return value;
+                }
+
+                return default;
+            }
+        }
+
+
+
         public TValue TryGetValue(TKey key)
         {
             lock (_innerDictionary)
@@ -154,6 +170,16 @@ namespace Client.Tools
             return result;
         }
 
+        public IList<KeyValuePair<TKey, TValue>> Pairs
+        {
+            get
+            {
+                lock (_innerDictionary)
+                {
+                    return new List<KeyValuePair<TKey, TValue>>(_innerDictionary);
+                }
+            }
+        }
 
     }
 }

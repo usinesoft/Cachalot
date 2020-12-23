@@ -54,8 +54,8 @@ namespace Server
         private readonly Dictionary<string, Dictionary<KeyValue, CachedObject>> _dataByUniqueKey;
 
 
-        private readonly Dictionary<string, List<CachedObject>> _feedSessions =
-            new Dictionary<string, List<CachedObject>>();
+        private readonly Dictionary<Guid, List<CachedObject>> _feedSessions =
+            new Dictionary<Guid, List<CachedObject>>();
 
         private readonly FullTextIndex _fullTextIndex;
 
@@ -122,9 +122,6 @@ namespace Server
                     LineProvider = pointer => _dataByPrimaryKey[pointer.PrimaryKey].TokenizedFullText[pointer.Line]
                 };
         }
-
-        public ReaderWriterLockSlim Lock { get; } = new ReaderWriterLockSlim();
-
 
         public ExecutionPlan LastExecutionPlan
         {
@@ -534,6 +531,7 @@ namespace Server
                 {
                     Dbg.Trace($"InternalFind with empty query: return all {query.CollectionName}");
 
+                    
                     return (query.Take > 0 ? _dataByPrimaryKey.Values.Take(query.Take) : _dataByPrimaryKey.Values)
                         .ToList();
                 }
@@ -927,7 +925,7 @@ namespace Server
                 {
                     if (dataRequest is PutRequest put)
                     {
-                        if (put.SessionId != null)
+                        if (put.SessionId != default)
                         {
                             if (!_feedSessions.TryGetValue(put.SessionId, out var alreadyReceived))
                             {

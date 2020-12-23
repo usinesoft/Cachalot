@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
-using Client.Interface;
 using ProtoBuf;
 
 namespace Client.Queries
 {
     /// <summary>
-    ///     Just an operator and one or two values. It can be solved by a single index
+    ///     Just an operator and one or two values. 
     ///     This class is immutable.
     ///     The second value is useful only for Btw (between) operator
     /// </summary>
@@ -126,17 +125,19 @@ namespace Client.Queries
             }
         }
 
+        #region persistence
+
         /// <summary>
         ///     Primary value (the one used with unary operators)
         /// </summary>
-        [field: ProtoMember(4)]
+        [field: ProtoMember(1)]
         public KeyValue Value { get; }
 
         /// <summary>
         ///     used for binary operators
         /// </summary>
-        [field: ProtoMember(5)]
-        public KeyValue Value2 { get; }
+        [field: ProtoMember(2)]
+        private KeyValue Value2 { get; }
 
         /// <summary>
         ///     The operator of the atomic query
@@ -144,12 +145,15 @@ namespace Client.Queries
         [field: ProtoMember(3)]
         public QueryOperator Operator { get; set; }
 
-        [ProtoMember(1)]
+        [ProtoMember(4)]
         public ICollection<KeyValue> InValues
         {
             get => _inValues;
             set => _inValues = new HashSet<KeyValue>(value);
         }
+
+        #endregion
+
 
         public IList<KeyValue> Values => _inValues.Count > 0
             ? _inValues.ToList()

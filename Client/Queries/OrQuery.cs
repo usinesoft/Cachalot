@@ -18,60 +18,151 @@ namespace Client.Queries
     [ProtoContract]
     public class OrQuery : Query
     {
-        [ProtoMember(1)] private readonly List<AndQuery> _elements;
-
-        
-
-        public OrQuery(string collectionName)
-        {
-            CollectionName = collectionName;
-            _elements = new List<AndQuery>();
-        }
-
-
-        public OrQuery(CollectionSchema collectionSchema)
-        {
-            CollectionName = collectionSchema.CollectionName;
-            _elements = new List<AndQuery>();
-        }
+        #region persistent properties
 
         /// <summary>
-        ///     For protobuf serialization only
+        /// An OrQuery is a list of AndQueries.If the list is empty then the query matches all the items in the collection
+        /// or it is a pure full-text query (if <see cref="FullTextSearch"/> is not empty)
         /// </summary>
-        public OrQuery()
-        {
-            _elements = new List<AndQuery>();
-        }
+        [field: ProtoMember(1)] public List<AndQuery> Elements { get; } = new List<AndQuery>();
+        
+
+        /// <summary>
+        /// Any query applies to exactly one collection
+        /// </summary>
+        [field: ProtoMember(2)] public string CollectionName { get; set; }
+
+        /// <summary>
+        /// Skip operator (ignore the first elements)
+        /// </summary>
+        [field: ProtoMember(3)]public int Skip { get; set; }
+
+        /// <summary>
+        /// Take operator (only take the first elements)
+        /// </summary>
+        [field:ProtoMember(4)] public int Take { get; set; }
+
+        /// <summary>
+        /// Full text query (optional)
+        /// </summary>
+        [field:ProtoMember(5)] public string FullTextSearch { get; set; }
+
+        /// <summary>
+        /// Distinct operator. Can be applied only with Select clause
+        /// </summary>
+        [field:ProtoMember(6)] public bool Distinct { get; set; }
+        
+        /// <summary>
+        /// Properties in the Select clause. If empty, the complete object is returned
+        /// </summary>
+        [field:ProtoMember(7)] public IList<string>  SelectedProperties{ get; } = new List<string>();
+
+        /// <summary>
+        /// Specific operator for cache-only mode; returns a result only if the query is a subset of the domain loaded into the cache
+        /// </summary>
+        [field:ProtoMember(8)] public bool OnlyIfComplete { get; set; }
+
+        /// <summary>
+        /// Optional order-by clause. Only one accepted in this version
+        /// </summary>
+        [field:ProtoMember(9)] public string OrderByProperty { get; set; }
+        
+        /// <summary>
+        /// True for descending order (only applies if <see cref="OrderByProperty"/> is present
+        /// </summary>
+        [field:ProtoMember(10)] public bool OrderByIsDescending { get; set; }
+
+
+
+        #endregion
+
+        /// <summary>
+        /// Only evaluate the query. Do not return elements
+        /// </summary>
+        public bool CountOnly { get; set; }
+
+        /// <summary>
+        /// Non persistent, used during construction
+        /// </summary>
+        public bool MultipleWhereClauses { get; set; }
+
+        #region interface implementation
 
         public override bool IsValid
         {
             get { return Elements.All(element => element.IsValid); }
         }
 
+        public override string ToString()
+        {
+            if (Elements.Count == 0)
+                return "<empty>";
+            if (Elements.Count == 1)
+            {
+                var result = Elements[0].ToString();
+                if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
+
+                if (OnlyIfComplete)
+                    result += " + Only if complete ";
+
+                return result;
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < Elements.Count; i++)
+            {
+                sb.Append(Elements[i]);
+                if (i != Elements.Count - 1)
+                    sb.Append(" OR ");
+            }
+
+            if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
+
+            if (OnlyIfComplete)
+                sb.Append(" + Only if complete ");
+
+            return sb.ToString();
+        }
+
         /// <summary>
-        ///     The elements of type <see cref="AndQuery" />
+        /// Returns true if the objects matches the query
         /// </summary>
-        public IList<AndQuery> Elements => _elements;
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public override bool Match(CachedObject item)
+        {
+            return Elements.Any(t => t.Match(item));
+        }
 
-        [field: ProtoMember(2)] public string CollectionName { get; set; }
+        #endregion
 
-        /// <summary>
-        /// Non persistent, used during construction
-        /// </summary>
-        public bool MultipleWhereClauses { get; set; }
-        [ProtoMember(3)] public int Take { get; set; }
-        public bool CountOnly { get; set; }
-        public int Skip { get; set; }
-
-        [ProtoMember(4)] public string FullTextSearch { get; set; }
-
-        [ProtoMember(5)] public bool OnlyIfComplete { get; set; }
-        
-        [ProtoMember(6)] public IList<string>  SelectedProperties{ get; set; } = new List<string>();
+        public bool IsEmpty()
+        {
+            return Elements.Count == 0;
+        }
 
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
-        [ProtoMember(7)] public bool Distinct { get; set; }
+
+        public OrQuery(string collectionName)
+        {
+            CollectionName = collectionName;
+        }
+
+
+        public OrQuery(CollectionSchema collectionSchema)
+        {
+            CollectionName = collectionSchema.CollectionName;
+            
+        }
+
+        /// <summary>
+        ///  For protobuf serialization only
+        /// </summary>
+        public OrQuery()
+        {
+            
+        }
 
         public static OrQuery Empty<T>()
         {
@@ -87,49 +178,7 @@ namespace Client.Queries
         {
             if (query.IsEmpty()) return true;
 
-            return _elements.All(q => query.Elements.Any(q.IsSubsetOf));
-        }
-
-        public override string ToString()
-        {
-            if (_elements.Count == 0)
-                return "<empty>";
-            if (_elements.Count == 1)
-            {
-                var result = _elements[0].ToString();
-                if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
-
-                if (OnlyIfComplete)
-                    result += " + Only if complete ";
-
-                return result;
-            }
-
-            var sb = new StringBuilder();
-            for (var i = 0; i < _elements.Count; i++)
-            {
-                sb.Append(_elements[i]);
-                if (i != _elements.Count - 1)
-                    sb.Append(" OR ");
-            }
-
-            if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
-
-            if (OnlyIfComplete)
-                sb.Append(" + Only if complete ");
-
-            return sb.ToString();
-        }
-
-
-        public override bool Match(CachedObject item)
-        {
-            return Elements.Any(t => t.Match(item));
-        }
-
-        public bool IsEmpty()
-        {
-            return Elements.Count == 0;
+            return Elements.All(q => query.Elements.Any(q.IsSubsetOf));
         }
     }
 }

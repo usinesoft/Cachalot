@@ -135,7 +135,7 @@ namespace Client.Interface
                 throw new ArgumentNullException(nameof(items));
 
 
-            var sessionId = Guid.NewGuid().ToString();
+            var sessionId = Guid.NewGuid();
 
 
             using var enumerator = items.GetEnumerator();
@@ -236,9 +236,9 @@ namespace Client.Interface
         }
 
 
-        public IEnumerable<RankedItem> GetMany(OrQuery query)
+        public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
         {
-            var request = new GetRequest(query);
+            var request = new GetRequest(query, sessionId);
 
             return Channel.SendStreamRequest<JObject>(request);
         }
@@ -530,6 +530,104 @@ namespace Client.Interface
             if (response is ExceptionResponse exResponse)
                 throw new CacheException("Error while writing an object to the cache", exResponse.Message,
                     exResponse.CallStack);
+        }
+
+
+        public static void SmartRetry(Func<bool> action, int maxRetry = 0)
+        {
+            int iteration = 0;
+            while (true)
+            {
+                if (action())
+                    break;
+
+                iteration++;
+
+                
+                if (maxRetry > 0 && iteration >= maxRetry)
+                    break;
+
+                // this heuristic took lots of tests to nail down; it is a compromise between 
+                // wait time for one client and average time for all clients
+                var delay = ThreadLocalRandom.Instance.Next(10 * iteration % 5);
+                
+                Thread.Sleep(delay);
+            }
+
+        }
+
+        /// <summary>
+        /// Acquire lock on a single node cluster
+        /// </summary>
+        /// <param name="writeAccess"></param>
+        /// <param name="collections"></param>
+        /// <returns></returns>
+        public Guid AcquireLock(bool writeAccess, params string[] collections)
+        {
+            if (collections.Length == 0)
+                throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
+
+            var sessionId = Guid.NewGuid();
+
+            SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
+
+            return sessionId;
+        }
+
+        internal bool TryAcquireLock(Guid sessionId,  bool writeAccess, params string[] collections)
+        {
+            if (collections.Length == 0)
+                throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
+
+
+            var request = new LockRequest
+            {
+                SessionId = sessionId,
+                WaitDelayInMilliseconds = 20,
+                WriteMode = writeAccess,
+                CollectionsToLock = new List<string>(collections)
+            };
+
+            var response = Channel.SendRequest(request);
+
+
+            if (response is LockResponse lockResponse)
+            {
+                return lockResponse.Success;
+            }
+            
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while trying to acquire lock", exResponse.Message,
+                    exResponse.CallStack);
+
+            throw new CacheException("Unexpected response type for AcquireLock");
+            
+        }
+
+        public void ReleaseLock(Guid sessionId)
+        {
+            if(sessionId == default)
+                throw new ArgumentException("Invalid sessionId");
+
+            var request = new LockRequest
+            {
+                SessionId = sessionId,
+                Unlock = true,
+                
+            };
+
+            var response = Channel.SendRequest(request);
+
+            if (response is LockResponse)
+            {
+                return;
+            }
+            
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while writing an object to the cache", exResponse.Message,
+                    exResponse.CallStack);
+
+            throw new CacheException("Unexpected response type for AcquireLock");
         }
 
         public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)

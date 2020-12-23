@@ -26,10 +26,12 @@ namespace Client.Messages
         /// </summary>
         /// <param name="accessType">read-only or read-write access</param>
         /// <param name="fullTypeName"></param>
-        protected DataRequest(DataAccessType accessType, string fullTypeName)
+        /// <param name="sessionId">optional session id</param>
+        protected DataRequest(DataAccessType accessType, string fullTypeName, Guid sessionId = default)
         {
             AccessType = accessType;
             FullTypeName = fullTypeName;
+            SessionId = sessionId;
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
@@ -45,5 +47,7 @@ namespace Client.Messages
         /// </summary>
         [field: ProtoMember(2)]
         public virtual string FullTypeName { get; }
+
+        [field: ProtoMember(3)] public Guid SessionId { get; set; }
     }
 }

@@ -29,6 +29,7 @@ namespace Server
     public class DataContainer
     {
         private readonly NodeConfig _config;
+        private readonly Services _serviceContainer;
 
 
         private readonly JsonSerializer _jsonSerializer;
@@ -42,9 +43,11 @@ namespace Server
 
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
-        public DataContainer(Profiler profiler, NodeConfig config)
+        public DataContainer(Profiler profiler, NodeConfig config, Services serviceContainer)
         {
             _config = config;
+            _serviceContainer = serviceContainer;
+
             Profiler = profiler;
 
             _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
@@ -269,79 +272,72 @@ namespace Server
         {
             var typesToPut = transactionRequest.ItemsToPut.Select(i => i.CollectionName).Distinct().ToList();
             var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
-            var types = typesToPut.Union(typesToDelete).Distinct();
+            var types = typesToPut.Union(typesToDelete).Distinct().ToArray();
 
 
-            var typeList = types.ToList();
-            try
+            var lockManager = _serviceContainer.LockManager;
+
+
+            lockManager.DoIfWriteLock(() =>
             {
-                var stores = Stores(typeList);
-                foreach (var store in stores)
-                    if (!store.Lock.TryEnterWriteLock(Constants.DelayForLock))
-                        throw new CacheException("Failed to acquire write locks for single-stage transaction",
-                            ExceptionType.FailedToAcquireLock);
-
-                Dbg.Trace($"S: fallback to single stage for transaction {transactionRequest.TransactionId}");
-
-
-                // check the conditions (in case of conditional update)
-                var index = 0;
-                foreach (var condition in transactionRequest.Conditions)
+                try
                 {
-                    if (!condition.IsEmpty())
-                    {
-                        var ds = DataStores[condition.CollectionName];
+                    Dbg.Trace($"S: fallback to single stage for transaction {transactionRequest.TransactionId}");
 
-                        ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
+
+                    // check the conditions (in case of conditional update)
+                    var index = 0;
+                    foreach (var condition in transactionRequest.Conditions)
+                    {
+                        if (!condition.IsEmpty())
+                        {
+                            var ds = DataStores[condition.CollectionName];
+
+                            ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
+                        }
+
+                        index++;
                     }
 
-                    index++;
+
+                    PersistenceEngine?.NewTransaction(new MixedTransaction
+                        {
+                            ItemsToDelete = transactionRequest.ItemsToDelete,
+                            ItemsToPut = transactionRequest.ItemsToPut
+                        }
+                    );
+
+                    // update the data in memory
+                    var dataRequests = transactionRequest.SplitByType();
+
+                    foreach (var dataRequest in dataRequests)
+                    {
+                        var ds = DataStores.TryGetValue(dataRequest.FullTypeName);
+
+
+                        if (ds == null)
+                            throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
+
+
+                        ds.ProcessRequest(dataRequest, client, null);
+                    }
+
+                    client.SendResponse(new NullResponse());
+
+                    Dbg.Trace($"S: end writing delayed transaction {transactionRequest.TransactionId}");
                 }
-
-
-                PersistenceEngine?.NewTransaction(new MixedTransaction
-                    {
-                        ItemsToDelete = transactionRequest.ItemsToDelete,
-                        ItemsToPut = transactionRequest.ItemsToPut
-                    }
-                );
-
-                // update the data in memory
-                var dataRequests = transactionRequest.SplitByType();
-
-                foreach (var dataRequest in dataRequests)
+                catch (CacheException e)
                 {
-                    var ds = DataStores.TryGetValue(dataRequest.FullTypeName);
-
-                    
-                    if (ds == null)
-                    {
-                        throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
-                    }
-                
-
-                    ds.ProcessRequest(dataRequest, client, null);
+                    client.SendResponse(new ExceptionResponse(e, e.ExceptionType));
                 }
+                catch (Exception e)
+                {
+                    Dbg.Trace($"error writing delayed transaction:{e.Message}");
+                    client.SendResponse(new ExceptionResponse(e));
+                    // failed to write a durable transaction so stop here
+                }
+            }, Constants.DelayForLock, types);
 
-                client.SendResponse(new NullResponse());
-
-                Dbg.Trace($"S: end writing delayed transaction {transactionRequest.TransactionId}");
-            }
-            catch (CacheException e)
-            {
-                client.SendResponse(new ExceptionResponse(e, e.ExceptionType));
-            }
-            catch (Exception e)
-            {
-                Dbg.Trace($"error writing delayed transaction:{e.Message}");
-                client.SendResponse(new ExceptionResponse(e));
-                // failed to write a durable transaction so stop here
-            }
-            finally
-            {
-                // release acquired locks
-                RemoveWriteLocks(typeList);
-            }
         }
 
         public DataStore TryGetByName(string name)
@@ -359,22 +355,12 @@ namespace Server
 
         private bool AcquireWriteLock(IClient client, List<string> types, string transactionId)
         {
-            var result = true;
 
-            var stores = Stores(types);
+            var lockManager = _serviceContainer.LockManager;
 
-            foreach (var store in stores)
-                if (!store.Lock.TryEnterWriteLock(Constants.DelayForLock))
-                {
-                    result = false;
-                    break;
-                }
-
-            if (result)
+            if (lockManager.TryAcquireWriteLock(Constants.DelayForLock, types.ToArray()))
             {
                 Dbg.Trace($"S: Locks acquired on server {ShardIndex}  transaction {transactionId}");
-
-                //client.SendResponse(new ReadyResponse());
 
                 var answer = client.ShouldContinue();
                 if (answer.HasValue && answer.Value)
@@ -384,21 +370,27 @@ namespace Server
 
                     return true;
                 }
+
+                Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
+
+                lockManager.RemoveWriteLock(types.ToArray());
+
+                return false;
             }
-
-            Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
-
-            // first unlock everything to avoid deadlocks
-            RemoveWriteLocks(types);
-
-            Dbg.Trace($"S: Release all locks on server {ShardIndex}  transaction {transactionId}.");
+            
+            // not all the locks have been taken if we reach this point but some may be taken
+            lockManager.RemoveWriteLock(types.ToArray());
 
             client.SendResponse(new ExceptionResponse(
                 new CacheException(
                     $"can not acquire write lock on server {ShardIndex}  for transaction {transactionId}"),
                 ExceptionType.FailedToAcquireLock));
 
+            
+
             return false;
+
+            
         }
 
         /// <summary>
@@ -459,7 +451,7 @@ namespace Server
                     PersistenceEngine?.UpdateSchema(GenerateSchema());
                 }
 
-                client.SendResponse(new NullResponse());
+                client?.SendResponse(new NullResponse());
             }
             catch (Exception e)
             {
@@ -467,14 +459,11 @@ namespace Server
             }
         }
 
-        void RemoveWriteLocks(IList<string> types)
+        void RemoveWriteLocks(IList<string> collections)
         {
-            var stores = Stores(types);
-            foreach (var store in stores)
-            {
-                if (store.Lock.IsWriteLockHeld)
-                    store.Lock.ExitWriteLock();
-            }
+            var lockManager = _serviceContainer.LockManager;
+
+            lockManager.RemoveWriteLock(collections.ToArray());
         }
 
 
@@ -496,6 +485,8 @@ namespace Server
             
             Dbg.Trace($"begin processing {dataRequest.AccessType} request on server {ShardIndex}");
 
+            var lockManager = _serviceContainer.LockManager;
+
             if (dataRequest.AccessType == DataAccessType.Write)
             {
                 if (dataRequest is DomainDeclarationRequest)
@@ -508,34 +499,20 @@ namespace Server
                         throw new NotSupportedException(
                             "Eviction can only be used in cache mode (without persistence)");
 
+                lockManager.DoWithWriteLock(() =>
+                {
+                    dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                }, dataRequest.FullTypeName);
 
-                if (dataStore.Lock.TryEnterWriteLock(-1))
-                    try
-                    {
-                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
-                    }
-                    finally
-                    {
-                        dataStore.Lock.ExitWriteLock();
-                    }
-                else
-                    Dbg.Trace(
-                        $"failed to acquire read-only lock on server {ShardIndex} for type {dataRequest.FullTypeName}");
             }
             else
             {
-                if (dataStore.Lock.TryEnterReadLock(-1))
-                    try
-                    {
-                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
-                    }
-                    finally
-                    {
-                        dataStore.Lock.ExitReadLock();
-                    }
-                else
-                    Dbg.Trace(
-                        $"failed to acquire write lock on server {ShardIndex} for type {dataRequest.FullTypeName}");
+    
+                lockManager.DoWithReadLock(() =>
+                {
+                    dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                },dataRequest.FullTypeName);
+
             }
 
             Dbg.Trace($"end processing {dataRequest.AccessType} request on server {ShardIndex}");
@@ -647,24 +624,26 @@ namespace Server
         /// <param name="client"></param>
         private void Dump(DumpRequest request, IClient client)
         {
-            lock (DataStores)
-            {
-                try
-                {
-                    foreach (var dataStore in DataStores.Values)
-                        if (!dataStore.Lock.TryEnterReadLock(Constants.DelayForLock))
-                            throw new NotSupportedException(
-                                $"Can not acquire read-only lock for type {dataStore.CollectionSchema.CollectionName} on server {ShardIndex}");
+            
+            var lockManager = _serviceContainer.LockManager;
 
-                    InternalDump(request, client);
-                }
-                finally
-                {
-                    foreach (var dataStore in DataStores.Values)
-                        if (dataStore.Lock.IsReadLockHeld)
-                            dataStore.Lock.ExitReadLock();
-                }
+            // acquire a read lock on all the data stores
+            lockManager.DoWithReadLock(() =>
+            {
+                
+            });
+
+            var success = lockManager.DoIfWriteLock(() =>
+            {
+                InternalDump(request, client);
+            }, Constants.DelayForLock, DataStores.Keys.ToArray());
+
+            if (!success)
+            {
+                throw new NotSupportedException( "Can not acquire read-only lock for dump");
             }
+                
+            
         }
 
         private void InternalDump(DumpRequest request, IClient client)

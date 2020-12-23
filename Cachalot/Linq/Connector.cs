@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Channel;
 using Client.Core;
 using Client.Interface;
+using JetBrains.Annotations;
 using Server;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -41,6 +43,50 @@ namespace Cachalot.Linq
             }
         }
 
+
+        readonly ThreadLocal<Guid> _currentSession = new ThreadLocal<Guid>();
+
+        public Guid CurrentSession => _currentSession.Value;
+
+        /// <summary>
+        /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
+        /// give a consistent result. No write operation (normal or transactional) will be executed while the context is open.
+        /// 
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="collections"></param>
+        public void DoInConsistentReadOnlyContext(Action action, [NotNull] params string[] collections)
+        {
+            if (collections == null) throw new ArgumentNullException(nameof(collections));
+            if (collections.Length == 0)
+                throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
+
+
+            // check that the collections have been declared
+            lock (_collectionSchema)
+            {
+                foreach (var collection in collections)
+                    if (!_collectionSchema.ContainsKey(collection))
+                        throw new NotSupportedException(
+                            $"Unknown collection {collection}. Use Connector.DeclareCollection");
+            }
+
+            Guid sessionId = default;
+            try
+            {
+                sessionId = Client.AcquireLock(false, collections);
+
+                _currentSession.Value = sessionId;
+
+                action();
+            }
+            finally
+            {
+                Client.ReleaseLock(sessionId);
+                _currentSession.Value = default;// close the session
+            }
+
+        }
        
 
         /// <summary>

@@ -81,7 +81,7 @@ namespace Client.Interface
 
         /// <summary>
         ///     Clears one collection and also resets the hit ratio in pure cache mode. The schema information is preserved
-        ///     It is much faster than <see cref="CacheClient.RemoveMany" /> with a query that matches all data
+        ///     It is much faster than <see cref="DataClient.RemoveMany" /> with a query that matches all data
         /// </summary>
         /// <returns></returns>
         int Truncate(string collectionName);
@@ -90,8 +90,9 @@ namespace Client.Interface
         ///     Retrieve multiple objects a json using a precompiled query.
         /// </summary>
         /// <param name="query"></param>
+        /// <param name="sessionId">optional session id for consistent reads</param>
         /// <returns></returns>
-        IEnumerable<RankedItem> GetMany(OrQuery query);
+        IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default(Guid));
 
         
         /// <summary>
@@ -179,6 +180,17 @@ namespace Client.Interface
         /// <param name="newValue"></param>
         /// <param name="testAsQuery"></param>
         void UpdateIf(CachedObject newValue, OrQuery testAsQuery);
+
+        /// <summary>
+        /// Acquire a server side lock and return a session id if successful (default(guid) otherwise). The session id can be used for multiple calls to <see cref="GetMany"/>
+        /// during a session of consistent reads
+        /// </summary>
+        /// <param name="writeAccess"></param>
+        /// <param name="collections"></param>
+        /// <returns></returns>
+        Guid AcquireLock(bool writeAccess, params string[] collections);
+
+        void ReleaseLock(Guid sessionId);
 
         #region cache only methods
 

@@ -1,3 +1,4 @@
+using System;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Queries;
@@ -8,8 +9,8 @@ namespace Client.Messages
     [ProtoContract]
     public class GetRequest : DataRequest
     {
-        public GetRequest(OrQuery query)
-            : base(DataAccessType.Read, query.CollectionName)
+        public GetRequest(OrQuery query, Guid sessionId = default)
+            : base(DataAccessType.Read, query.CollectionName, sessionId)
         {
             Query = query;
         }
@@ -25,5 +26,7 @@ namespace Client.Messages
         public override RequestClass RequestClass => RequestClass.DataAccess;
 
         [field: ProtoMember(1)] public OrQuery Query { get; }
+
+        
     }
 }

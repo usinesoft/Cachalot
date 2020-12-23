@@ -17,6 +17,7 @@ using Remotion.Linq.Parsing.Structure.NodeTypeProviders;
 
 namespace Cachalot.Linq
 {
+
     /// <summary>
     ///     All data access and update methods. Implements a powerful linq provider
     /// </summary>

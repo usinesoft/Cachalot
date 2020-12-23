@@ -239,6 +239,8 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
                 accounts.Put(new Account {Id = accountIds[1], Balance = 0});
 
+                var all = accounts.ToList();
+                Assert.AreEqual(2, all.Count);
 
                 // run in parallel a sequence of transactions and clients that check that the sum of the balances of the two accounts is 
                 // always the same (thus proving that the two accounts are updated transactionally)
@@ -255,7 +257,7 @@ namespace Tests.IntegrationTests
                             var sum = myAccounts.Sum(acc => acc.Balance);
                             Assert.AreEqual(1000, sum);
 
-                            Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
+                            //Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
                         });
                     },
                     () =>
@@ -280,6 +282,7 @@ namespace Tests.IntegrationTests
                             transaction.Put(myAccounts[1]);
                             transaction.Put(transfer);
                             transaction.Commit();
+                            //Console.WriteLine("transfer done");
                         }
                     });
             }

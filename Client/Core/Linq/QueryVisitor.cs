@@ -137,7 +137,31 @@ namespace Client.Core.Linq
 
         public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
         {
-            base.VisitOrderByClause(orderByClause, queryModel, index);
+            if(orderByClause.Orderings.Count > 1)
+                throw new NotSupportedException("Only one order by clause is supported in this version");
+
+            if (orderByClause.Orderings.Count == 1)
+            {
+                var ordering = orderByClause.Orderings[0];
+
+                if (ordering.Expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+                {
+                    if (unary.Operand is MemberExpression member)
+                    {
+                        RootExpression.OrderByProperty = member.Member.Name;
+                        RootExpression.OrderByIsDescending = ordering.OrderingDirection == OrderingDirection.Desc;
+                    }
+                }
+                else if (ordering.Expression is MemberExpression member)
+                {
+                    RootExpression.OrderByProperty = member.Member.Name;
+                    RootExpression.OrderByIsDescending = ordering.OrderingDirection == OrderingDirection.Desc;
+                }
+                else
+                {
+                    throw new NotSupportedException("Invalid order by clause");
+                }
+            }
         }
 
         public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)

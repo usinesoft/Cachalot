@@ -18,6 +18,7 @@ namespace Client.ChannelInterface
     [ProtoInclude(507, typeof(GenerateUniqueIdsResponse))]
     [ProtoInclude(508, typeof(ReadyResponse))]
     [ProtoInclude(509, typeof(PivotResponse))]
+    [ProtoInclude(510, typeof(LockResponse))]
     public abstract class Response
     {
         /// <summary>

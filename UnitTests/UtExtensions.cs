@@ -58,7 +58,7 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery OrderBy<T>(Expression<Func<T, object>> selector)
+        public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false)
         {
             
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
@@ -68,7 +68,7 @@ namespace Tests
             var queryable = new NullQueryable<T>(executor);
 
             
-            var unused = queryable.OrderBy(selector).ToList();
+            var unused = descending ? queryable.OrderByDescending(selector).ToList() : queryable.OrderBy(selector).ToList();
             
             var query = executor.Expression;
             

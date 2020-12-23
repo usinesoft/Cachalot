@@ -67,11 +67,6 @@ namespace Client.Messages
             set => _items = new List<CachedObject>(value);
         }
 
-        public string SessionId
-        {
-            get => _sessionId;
-            set => _sessionId = value;
-        }
 
         public bool EndOfSession
         {

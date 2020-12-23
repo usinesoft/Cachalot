@@ -20,6 +20,7 @@ namespace Client.ChannelInterface
     [ProtoInclude(510, typeof(DropRequest))]
     [ProtoInclude(511, typeof(TransactionRequest))]
     [ProtoInclude(512, typeof(ContinueRequest))]
+    [ProtoInclude(513, typeof(LockRequest))]
     public abstract class Request
     {
         /// <summary>

@@ -143,7 +143,7 @@ namespace Tests.UnitTests
 
 
         [Test]
-        public void Select()
+        public void Select_distinct_order_by()
         {
             var q = UtExtensions.Select<Home> (h => h.Town);
 
@@ -161,7 +161,13 @@ namespace Tests.UnitTests
 
             Assert.IsTrue(q.Distinct);
 
-            q = UtExtensions.OrderBy<Home> (h => h.PriceInEuros);
+            q = UtExtensions.OrderBy<Home,decimal> (h => h.PriceInEuros);
+            Assert.AreEqual("PriceInEuros", q.OrderByProperty);
+            Assert.IsFalse(q.OrderByIsDescending);
+
+            q = UtExtensions.OrderBy<Home,decimal> (h => h.PriceInEuros, true);
+            Assert.AreEqual("PriceInEuros", q.OrderByProperty);
+            Assert.IsTrue(q.OrderByIsDescending);
         }
 
         

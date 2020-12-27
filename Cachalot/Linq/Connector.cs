@@ -44,9 +44,9 @@ namespace Cachalot.Linq
         }
 
 
-        readonly ThreadLocal<Guid> _currentSession = new ThreadLocal<Guid>();
+        static readonly ThreadLocal<Guid> CurrentSession = new ThreadLocal<Guid>();
 
-        public Guid CurrentSession => _currentSession.Value;
+        public static Guid Session => CurrentSession.Value;
 
         /// <summary>
         /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
@@ -76,14 +76,14 @@ namespace Cachalot.Linq
             {
                 sessionId = Client.AcquireLock(false, collections);
 
-                _currentSession.Value = sessionId;
+                CurrentSession.Value = sessionId;
 
                 action();
             }
             finally
             {
                 Client.ReleaseLock(sessionId);
-                _currentSession.Value = default;// close the session
+                CurrentSession.Value = default;// close the session
             }
 
         }

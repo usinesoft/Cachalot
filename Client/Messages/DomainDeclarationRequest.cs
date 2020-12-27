@@ -27,6 +27,6 @@ namespace Client.Messages
 
         [field: ProtoMember(1)] public DomainDescription Description { get; }
 
-        public override string FullTypeName => Description.DescriptionAsQuery.CollectionName;
+        public override string CollectionName => Description.DescriptionAsQuery.CollectionName;
     }
 }

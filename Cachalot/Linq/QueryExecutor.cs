@@ -64,7 +64,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            return _client.GetMany(visitor.RootExpression).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
+            return _client.GetMany(visitor.RootExpression, Connector.Session).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
         }
 
         public static void Probe(Action<OrQuery> action)

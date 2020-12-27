@@ -98,6 +98,13 @@ namespace Server
 
             try
             {
+
+                if (clientRequest is LockRequest lockRequest)
+                {
+                    ProcessLockRequest(lockRequest, client);
+                    return;
+                }
+
                 if (clientRequest is DataRequest dataRequest)
                 {
                     ProcessDataRequest(dataRequest, client);
@@ -133,6 +140,32 @@ namespace Server
             }
         }
 
+        private void ProcessLockRequest(LockRequest lockRequest, IClient client)
+        {
+            var lockManager = _serviceContainer.LockManager;
+
+            try
+            {
+                if (lockRequest.Unlock)
+                {
+                    lockManager.CloseSession(lockRequest.SessionId);
+                    client.SendResponse(new LockResponse{Success = true});
+                }
+                else 
+                {
+                    lockManager.AcquireLock(lockRequest.SessionId, lockRequest.WriteMode,
+                        lockRequest.CollectionsToLock.ToArray());
+
+                    client.SendResponse(new LockResponse{Success = true});
+                }
+            }
+            catch (Exception e)
+            {
+                client.SendResponse(new ExceptionResponse(e));
+            }
+
+        }
+
 
         private void ProcessTransactionRequest(TransactionRequest transactionRequest, IClient client)
         {
@@ -142,11 +175,13 @@ namespace Server
             var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
             var types = typesToPut.Union(typesToDelete).Distinct().ToList();
 
+            var lockManager = _serviceContainer.LockManager;
 
             var keys = DataStores.Keys;
             
             if (types.Any(t => !keys.Contains(t))) throw new NotSupportedException("Type not registered");
-            
+
+            var transactionId = transactionRequest.TransactionId;
 
 
             // do not work too hard if it's single stage
@@ -156,9 +191,46 @@ namespace Server
                 return;
             }
 
+            bool lockAcquired = lockManager.TryAcquireWriteLock(transactionId, Constants.DelayForLock, types.ToArray());
 
-            if (!AcquireWriteLock(client, types, transactionRequest.TransactionId)) return;
+            if (lockAcquired)
+            {
+                Dbg.Trace($"S: Locks acquired on server {ShardIndex}  transaction {transactionId}");
 
+                var answer = client.ShouldContinue();
+                if (answer.HasValue && answer.Value)
+                {
+                    Dbg.Trace(
+                        $"S: all clients acquired locks. Continue on server {ShardIndex}  transaction {transactionId}");
+
+                    
+                }
+                else
+                {
+                    Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
+
+                    lockManager.CloseSession(transactionId);
+
+                    return;    
+                }
+
+                
+            }
+            else
+            {
+                lockManager.CloseSession(transactionRequest.TransactionId);
+
+                client.SendResponse(new ExceptionResponse(
+                    new CacheException(
+                        $"can not acquire write lock on server {ShardIndex}  for transaction {transactionRequest.TransactionId}"),
+                    ExceptionType.FailedToAcquireLock));
+
+                return;
+
+            }
+            
+            
+            
             Dbg.Trace($"S: lock acquired by all clients for transaction {transactionRequest.TransactionId}");
 
 
@@ -201,7 +273,8 @@ namespace Server
                 // failed to write a durable transaction so stop here
 
                 // unlock
-                RemoveWriteLocks(types);
+                lockManager.CloseSession(transactionRequest.TransactionId);
+                
                 return;
             }
             catch (Exception e)
@@ -211,7 +284,7 @@ namespace Server
                 // failed to write a durable transaction so stop here
 
                 // unlock
-                RemoveWriteLocks(types);
+                lockManager.CloseSession(transactionRequest.TransactionId);
                 
                 return;
             }
@@ -232,11 +305,11 @@ namespace Server
 
                         foreach (var dataRequest in dataRequests)
                         {
-                            if (!DataStores.Keys.Contains(dataRequest.FullTypeName))
+                            if (!DataStores.Keys.Contains(dataRequest.CollectionName))
                                     throw new NotSupportedException(
-                                        $"The type {dataRequest.FullTypeName} is not registered");
+                                        $"The type {dataRequest.CollectionName} is not registered");
                                 
-                            var store = DataStores[dataRequest.FullTypeName];
+                            var store = DataStores[dataRequest.CollectionName];
                             
                             store.ProcessRequest(dataRequest, client, null);
                         }
@@ -265,7 +338,7 @@ namespace Server
 
 
             // unlock
-            RemoveWriteLocks(types);
+            lockManager.CloseSession(transactionRequest.TransactionId);
         }
 
         private void ProcessSingleStageTransactionRequest(TransactionRequest transactionRequest, IClient client)
@@ -278,7 +351,7 @@ namespace Server
             var lockManager = _serviceContainer.LockManager;
 
 
-            lockManager.DoIfWriteLock(() =>
+            lockManager.DoWithWriteLock(() =>
             {
                 try
                 {
@@ -312,11 +385,11 @@ namespace Server
 
                     foreach (var dataRequest in dataRequests)
                     {
-                        var ds = DataStores.TryGetValue(dataRequest.FullTypeName);
+                        var ds = DataStores.TryGetValue(dataRequest.CollectionName);
 
 
                         if (ds == null)
-                            throw new NotSupportedException($"The type {dataRequest.FullTypeName} is not registered");
+                            throw new NotSupportedException($"The type {dataRequest.CollectionName} is not registered");
 
 
                         ds.ProcessRequest(dataRequest, client, null);
@@ -336,7 +409,7 @@ namespace Server
                     client.SendResponse(new ExceptionResponse(e));
                     // failed to write a durable transaction so stop here
                 }
-            }, Constants.DelayForLock, types);
+            }, types);
 
         }
 
@@ -353,46 +426,7 @@ namespace Server
             return DataStores.Values.Where(ds => types.Contains(ds.CollectionSchema.CollectionName)).ToList();
         }
 
-        private bool AcquireWriteLock(IClient client, List<string> types, string transactionId)
-        {
-
-            var lockManager = _serviceContainer.LockManager;
-
-            if (lockManager.TryAcquireWriteLock(Constants.DelayForLock, types.ToArray()))
-            {
-                Dbg.Trace($"S: Locks acquired on server {ShardIndex}  transaction {transactionId}");
-
-                var answer = client.ShouldContinue();
-                if (answer.HasValue && answer.Value)
-                {
-                    Dbg.Trace(
-                        $"S: all clients acquired locks. Continue on server {ShardIndex}  transaction {transactionId}");
-
-                    return true;
-                }
-
-                Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
-
-                lockManager.RemoveWriteLock(types.ToArray());
-
-                return false;
-            }
-            
-            // not all the locks have been taken if we reach this point but some may be taken
-            lockManager.RemoveWriteLock(types.ToArray());
-
-            client.SendResponse(new ExceptionResponse(
-                new CacheException(
-                    $"can not acquire write lock on server {ShardIndex}  for transaction {transactionId}"),
-                ExceptionType.FailedToAcquireLock));
-
-            
-
-            return false;
-
-            
-        }
-
+        
         /// <summary>
         ///     Creates the associated <see cref="DataStore" /> for new cacheable type
         /// </summary>
@@ -459,13 +493,6 @@ namespace Server
             }
         }
 
-        void RemoveWriteLocks(IList<string> collections)
-        {
-            var lockManager = _serviceContainer.LockManager;
-
-            lockManager.RemoveWriteLock(collections.ToArray());
-        }
-
 
         private void PersistTransaction(Transaction transaction)
         {
@@ -475,11 +502,11 @@ namespace Server
 
         private void ProcessDataRequest(DataRequest dataRequest, IClient client)
         {
-            DataStore dataStore = DataStores.TryGetValue(dataRequest.FullTypeName);
+            DataStore dataStore = DataStores.TryGetValue(dataRequest.CollectionName);
 
             if (dataStore == null)
             {
-                throw new NotSupportedException("Not registered type : " + dataRequest.FullTypeName);
+                throw new NotSupportedException("Not registered type : " + dataRequest.CollectionName);
             }
 
             
@@ -499,20 +526,35 @@ namespace Server
                         throw new NotSupportedException(
                             "Eviction can only be used in cache mode (without persistence)");
 
+
                 lockManager.DoWithWriteLock(() =>
                 {
                     dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
-                }, dataRequest.FullTypeName);
+                }, dataRequest.CollectionName);
 
             }
             else
             {
-    
-                lockManager.DoWithReadLock(() =>
+                if (dataRequest.SessionId != default)// request inside a consistent read context
                 {
-                    dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
-                },dataRequest.FullTypeName);
+                    if (lockManager.CheckLock(dataRequest.SessionId, false, dataRequest.CollectionName))
+                    {
+                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("Data request with session received but no session is active");
+                    }
+                }
+                else // simple request
+                {
+                    lockManager.DoWithReadLock(() =>
+                    {
+                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                    },dataRequest.CollectionName);
 
+                }
+                
             }
 
             Dbg.Trace($"end processing {dataRequest.AccessType} request on server {ShardIndex}");
@@ -630,19 +672,9 @@ namespace Server
             // acquire a read lock on all the data stores
             lockManager.DoWithReadLock(() =>
             {
-                
-            });
-
-            var success = lockManager.DoIfWriteLock(() =>
-            {
                 InternalDump(request, client);
-            }, Constants.DelayForLock, DataStores.Keys.ToArray());
+            }, DataStores.Keys.ToArray());
 
-            if (!success)
-            {
-                throw new NotSupportedException( "Can not acquire read-only lock for dump");
-            }
-                
             
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
@@ -533,29 +534,6 @@ namespace Client.Interface
         }
 
 
-        public static void SmartRetry(Func<bool> action, int maxRetry = 0)
-        {
-            int iteration = 0;
-            while (true)
-            {
-                if (action())
-                    break;
-
-                iteration++;
-
-                
-                if (maxRetry > 0 && iteration >= maxRetry)
-                    break;
-
-                // this heuristic took lots of tests to nail down; it is a compromise between 
-                // wait time for one client and average time for all clients
-                var delay = ThreadLocalRandom.Instance.Next(10 * iteration % 5);
-                
-                Thread.Sleep(delay);
-            }
-
-        }
-
         /// <summary>
         /// Acquire lock on a single node cluster
         /// </summary>
@@ -569,7 +547,7 @@ namespace Client.Interface
 
             var sessionId = Guid.NewGuid();
 
-            SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
+            LockPolicy.SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
 
             return sessionId;
         }

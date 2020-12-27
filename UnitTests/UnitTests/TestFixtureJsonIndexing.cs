@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using NUnit.Framework;
 using Tests.TestData;
 
@@ -158,6 +159,18 @@ namespace Tests.UnitTests
 
         }
 
+        [Test]
+        public void Null_and_zero_are_equals()
+        {
+            var val1 = new KeyValue(null, new KeyInfo{Name = "test"});
+            var val2 = new KeyValue(0, new KeyInfo{Name = "test"});
+
+            // for indexing only null and 0 are considered the same
+            Assert.AreEqual(val1, val2);
+            Assert.AreEqual(val1.IntValue, val2.IntValue);
+            Assert.AreEqual(val1.StringValue, val2.StringValue);
+
+        }
 
         [Test]
         public void Pack_json_with_automatic_primary_key()

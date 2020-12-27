@@ -25,12 +25,12 @@ namespace Client.Messages
         ///     Create an abstract data request (always attached to a data type and has a <see cref="DataAccessType" />)
         /// </summary>
         /// <param name="accessType">read-only or read-write access</param>
-        /// <param name="fullTypeName"></param>
+        /// <param name="collectionName"></param>
         /// <param name="sessionId">optional session id</param>
-        protected DataRequest(DataAccessType accessType, string fullTypeName, Guid sessionId = default)
+        protected DataRequest(DataAccessType accessType, string collectionName, Guid sessionId = default)
         {
             AccessType = accessType;
-            FullTypeName = fullTypeName;
+            CollectionName = collectionName;
             SessionId = sessionId;
         }
 
@@ -46,7 +46,7 @@ namespace Client.Messages
         ///     Full name as specified in the class <see cref="Type" />
         /// </summary>
         [field: ProtoMember(2)]
-        public virtual string FullTypeName { get; }
+        public virtual string CollectionName { get; }
 
         [field: ProtoMember(3)] public Guid SessionId { get; set; }
     }

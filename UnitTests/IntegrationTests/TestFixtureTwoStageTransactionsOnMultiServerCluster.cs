@@ -9,6 +9,7 @@ using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Interfaces;
 using NUnit.Framework;
 using Server;
 using Tests.TestData.MoneyTransfer;
@@ -351,8 +352,8 @@ namespace Tests.IntegrationTests
             List<Account> myAccounts;
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
@@ -362,6 +363,7 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account {Id = accountIds[1], Balance = 0});
 
                 myAccounts = accounts.ToList();
+
             }
 
             Parallel.Invoke(
@@ -370,7 +372,7 @@ namespace Tests.IntegrationTests
                     using var connector1 = new Connector(_clientConfig);
                     connector1.DeclareCollection<Account>();  
                     connector1.DeclareCollection<MoneyTransfer>();  
-                    for (var i = 0; i < 100; i++)
+                    for (var i = 0; i < 2; i++)
                     {
                         var transfer = new MoneyTransfer
                         {
@@ -395,7 +397,7 @@ namespace Tests.IntegrationTests
                     using var connector2 = new Connector(_clientConfig);
                     connector2.DeclareCollection<Account>();  
                     connector2.DeclareCollection<MoneyTransfer>();  
-                    for (var i = 0; i < 100; i++)
+                    for (var i = 0; i < 2; i++)
                     {
                         var transfer = new MoneyTransfer
                         {
@@ -417,28 +419,28 @@ namespace Tests.IntegrationTests
                 },
                 () =>
                 {
-                    using var connector3 = new Connector(_clientConfig);
-                    connector3.DeclareCollection<Account>();  
-                    connector3.DeclareCollection<MoneyTransfer>();  
-                    for (var i = 0; i < 100; i++)
-                    {
-                        var transfer = new MoneyTransfer
-                        {
-                            Amount = 10,
-                            Date = DateTime.Today,
-                            SourceAccount = myAccounts[0].Id,
-                            DestinationAccount = myAccounts[1].Id
-                        };
+                    //using var connector3 = new Connector(_clientConfig);
+                    //connector3.DeclareCollection<Account>();
+                    //connector3.DeclareCollection<MoneyTransfer>();
+                    //for (var i = 0; i < 100; i++)
+                    //{
+                    //    var transfer = new MoneyTransfer
+                    //    {
+                    //        Amount = 10,
+                    //        Date = DateTime.Today,
+                    //        SourceAccount = myAccounts[0].Id,
+                    //        DestinationAccount = myAccounts[1].Id
+                    //    };
 
-                        myAccounts[0].Balance -= 10;
-                        myAccounts[1].Balance += 10;
+                    //    myAccounts[0].Balance -= 10;
+                    //    myAccounts[1].Balance += 10;
 
-                        var transaction = connector3.BeginTransaction();
-                        transaction.Put(myAccounts[0]);
-                        transaction.Put(myAccounts[1]);
-                        transaction.Put(transfer);
-                        transaction.Commit();
-                    }
+                    //    var transaction = connector3.BeginTransaction();
+                    //    transaction.Put(myAccounts[0]);
+                    //    transaction.Put(myAccounts[1]);
+                    //    transaction.Put(transfer);
+                    //    transaction.Commit();
+                    //}
                 });
 
             TransactionStatistics.Display();
@@ -520,9 +522,8 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account {Id = accountIds[1], Balance = 0});
 
 
-                // run in parallel a sequence of transactions and clients that check that the sum of the balances of the two accounts is 
-                // always the same (thus proving that the two accounts are updated transactionally)
-
+                // run in parallel a sequence of transactions and non transactional read requests 
+                
                 try
                 {
                     Parallel.Invoke(
@@ -530,17 +531,17 @@ namespace Tests.IntegrationTests
                         {
                             Parallel.For(0, 200, i =>
                             {
-                                // check the some of two balances is always 1000
+                                // this is a non transactional request
                                 var myAccounts = accounts.ToList();
                                 Assert.AreEqual(2, myAccounts.Count);
 
-                                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
                             });
                         },
                         () =>
                         {
-                            var myAccounts = accounts.ToList();
+                            List<Account> myAccounts = accounts.ToList();
 
+                            
                             for (var i = 0; i < 200; i++)
                             {
                                 var transfer = new MoneyTransfer

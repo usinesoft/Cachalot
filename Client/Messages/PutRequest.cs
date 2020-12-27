@@ -25,11 +25,7 @@ namespace Client.Messages
 
         [ProtoMember(1)] private List<CachedObject> _items = new List<CachedObject>();
 
-        /// <summary>
-        ///     If set the put is part of feed session
-        /// </summary>
-        [ProtoMember(3)] private string _sessionId;
-
+       
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -46,9 +42,9 @@ namespace Client.Messages
             if (type == null) throw new ArgumentNullException(nameof(type));
         }
 
-        public PutRequest(string fullTypeName) : base(DataAccessType.Write, fullTypeName)
+        public PutRequest(string collectionName) : base(DataAccessType.Write, collectionName)
         {
-            if (string.IsNullOrWhiteSpace(fullTypeName)) throw new ArgumentNullException(nameof(fullTypeName));
+            if (string.IsNullOrWhiteSpace(collectionName)) throw new ArgumentNullException(nameof(collectionName));
         }
 
 
@@ -87,7 +83,7 @@ namespace Client.Messages
         {
             List<PutRequest> result = new List<PutRequest>();
 
-            var request = new PutRequest(FullTypeName)
+            var request = new PutRequest(CollectionName)
             {
                 EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
             };
@@ -100,7 +96,7 @@ namespace Client.Messages
                 size += item.ObjectData.Length;
                 if (size >= 1_000_000_000)
                 {
-                    request = new PutRequest(FullTypeName)
+                    request = new PutRequest(CollectionName)
                     {
                         EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
                     };

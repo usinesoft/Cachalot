@@ -17,8 +17,8 @@ namespace Client.Messages
         /// <summary>
         ///     Create a new request for the specified type. The domain description will be empty
         /// </summary>
-        public EvictionSetupRequest(string fullTypeName, EvictionType evictionType, int limit = 0, int itemsToEvict = 0, int timeToLiveInMilliseconds = 0)
-            : base(DataAccessType.Write, fullTypeName)
+        public EvictionSetupRequest(string collectionName, EvictionType evictionType, int limit = 0, int itemsToEvict = 0, int timeToLiveInMilliseconds = 0)
+            : base(DataAccessType.Write, collectionName)
         {
             Type = evictionType;
             Limit = limit;

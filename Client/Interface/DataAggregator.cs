@@ -606,9 +606,7 @@ namespace Client.Interface
             }
         }
 
-        private void SendRequestsAndWaitForLock<TRequest>(List<DataClient> clients,
-            ConcurrentDictionary<int, TRequest> requestByServer, ConcurrentDictionary<int, Session> sessions,
-            string transactionId, ConcurrentDictionary<int, bool> serverStatus) where TRequest : Request
+        private void SendRequestsAndWaitForLock(TransactionStatus status)
         {
             var locksOk = false;
 
@@ -617,60 +615,60 @@ namespace Client.Interface
 
             while (!locksOk)
             {
+
                 try
                 {
+
                     var delay = ThreadLocalRandom.Instance.Next(10 * iteration);
 
                     TransactionStatistics.Retries(iteration + 1);
 
-
                     Dbg.Trace(
-                        $"C: delay = {delay} for iteration {iteration} transaction {transactionId} connector {GetHashCode()}");
+                        $"C: delay = {delay} for iteration {iteration} transaction {status.TransactionId} connector {GetHashCode()}");
 
                     if (delay > 0)
                         Thread.Sleep(delay);
 
                     // send transaction requests
-                    Parallel.ForEach(clients, client =>
+                    Parallel.ForEach(status.Clients, client =>
                     {
-                        var request = requestByServer[client.ShardIndex];
-
+                        var request = status.RequestByServer[client.ShardIndex];
 
                         try
                         {
                             var session = client.Channel.BeginSession();
-                            sessions[client.ShardIndex] = session;
+                            status.SessionByServer[client.ShardIndex] = session;
 
                             Dbg.Trace(
-                                $"C: Sending transaction request to server {client.ShardIndex} transaction {transactionId} connector {GetHashCode()}");
+                                $"C: Sending transaction request to server {client.ShardIndex} transaction {status.TransactionId} connector {GetHashCode()}");
                             client.Channel.PushRequest(session, request);
                         }
                         catch (Exception e)
                         {
                             // here if communication exception
-                            serverStatus[client.ShardIndex] = false;
+                            status.StatusByServer[client.ShardIndex] = false;
 
                             Dbg.Trace($"C: Exception while sending request to server {client.ShardIndex}:{e.Message}");
                         }
                     });
 
                     // wait for servers to acquire lock
-                    Parallel.ForEach(clients, client =>
+                    Parallel.ForEach(status.Clients, client =>
                     {
                         try
                         {
-                            var session = sessions[client.ShardIndex];
+                            var session = status.SessionByServer[client.ShardIndex];
 
                             var answer = client.Channel.GetResponse(session);
                             if (answer is ReadyResponse)
-                                serverStatus[client.ShardIndex] = true;
+                                status.StatusByServer[client.ShardIndex] = true;
                             else
-                                serverStatus[client.ShardIndex] = false;
+                                status.StatusByServer[client.ShardIndex] = false;
                         }
                         catch (Exception e)
                         {
                             // here if communication exception
-                            serverStatus[client.ShardIndex] = false;
+                            status.StatusByServer[client.ShardIndex] = false;
 
                             Dbg.Trace($"C: Exception while sending request to server {client.ShardIndex}:{e.Message}");
                         }
@@ -683,25 +681,26 @@ namespace Client.Interface
                         $"Error in the first stage of a two stage transaction:{e.InnerExceptions.First()}");
                 }
 
-                locksOk = serverStatus.Values.All(s => s);
 
-                Dbg.Trace(!locksOk
-                    ? $"C: Failed to acquire lock for transaction {transactionId}. retrying "
-                    : $"C: Lock acquired for all servers: transaction {transactionId} ");
+                Dbg.Trace(!status.AllOk
+                    ? $"C: Failed to acquire lock for transaction {status.TransactionId}. retrying "
+                    : $"C: Lock acquired for all servers: transaction {status.TransactionId} ");
 
-                if (locksOk == false)
-                    Parallel.ForEach(clients, client =>
+                locksOk = status.AllOk;
+
+                if (!status.AllOk)
+                    Parallel.ForEach(status.Clients, client =>
                     {
-                        if (serverStatus[client.ShardIndex])
+                        if (status.StatusByServer[client.ShardIndex])
                         {
-                            var session = sessions[client.ShardIndex];
+                            var session = status.SessionByServer[client.ShardIndex];
                             client.Channel.PushRequest(session, new ContinueRequest {Rollback = true});
                         }
                     });
                 else
-                    Parallel.ForEach(clients, client =>
+                    Parallel.ForEach(status.Clients, client =>
                     {
-                        var session = sessions[client.ShardIndex];
+                        var session = status.SessionByServer[client.ShardIndex];
                         client.Channel.PushRequest(session, new ContinueRequest {Rollback = false});
                     });
 
@@ -711,18 +710,41 @@ namespace Client.Interface
             }
         }
 
+
+        /// <summary>
+        /// Internal transaction status
+        /// </summary>
+        class TransactionStatus
+        {
+            public TransactionStatus()
+            {
+                TransactionId = Guid.NewGuid();
+            }
+
+            public SafeDictionary<int, Session> SessionByServer { get; } = new SafeDictionary<int, Session>(null);
+
+            public SafeDictionary<int, bool> StatusByServer { get; } = new SafeDictionary<int, bool>(null);
+            
+            public SafeDictionary<int, TransactionRequest> RequestByServer { get; } = new SafeDictionary<int, TransactionRequest>(()=> new TransactionRequest());
+
+            public  List<DataClient> Clients { get; } = new List<DataClient>();
+
+            public Guid TransactionId { get; }
+
+            public bool IsSingleStage => RequestByServer.Count == 1;
+            public bool AllOk => StatusByServer.Values.All(s=>s);
+        }
+
         public void ExecuteTransaction(IList<CachedObject> itemsToPut, IList<OrQuery> conditions, IList<CachedObject> itemsToDelete = null)
         {
             if (itemsToPut.Count != conditions.Count)
                 throw new ArgumentException($"{nameof(itemsToPut)} and {nameof(conditions)} do not have the same size");
 
             // the same connector will not execute transactions in parallel
-            lock (_transactionSync)
+            lock (_transactionSync)//TODO check if really needed
             {
-                // split the global transaction between servers
-                var itemsByServer = new ConcurrentDictionary<int, TransactionRequest>();
 
-                var transactionId = TransactionRequest.GenerateId();
+                var status = new TransactionStatus();
 
 
                 var index = 0;
@@ -730,12 +752,11 @@ namespace Client.Interface
                 {
                     var serverIndex = WhichNode(item);
 
-                    if (!itemsByServer.ContainsKey(serverIndex))
-                        itemsByServer.TryAdd(serverIndex, new TransactionRequest());
-
-                    itemsByServer[serverIndex].ItemsToPut.Add(item);
-                    itemsByServer[serverIndex].Conditions.Add(conditions[index]);
-                    itemsByServer[serverIndex].TransactionId = transactionId;
+                    var request = status.RequestByServer.GetOrCreate(serverIndex);
+                    
+                    request.ItemsToPut.Add(item);
+                    request.Conditions.Add(conditions[index]);
+                    request.TransactionId = status.TransactionId;
 
 
                     index++;
@@ -746,10 +767,9 @@ namespace Client.Interface
                     {
                         var serverIndex = WhichNode(item);
 
-                        if (!itemsByServer.ContainsKey(serverIndex))
-                            itemsByServer.TryAdd(serverIndex, new TransactionRequest());
+                        var request = status.RequestByServer.GetOrCreate(serverIndex);
 
-                        itemsByServer[serverIndex].ItemsToDelete.Add(item);
+                        request.ItemsToDelete.Add(item);
 
 
                         index++;
@@ -757,9 +777,9 @@ namespace Client.Interface
 
 
                 // Fallback to single stage if only one node is concerned
-                if (itemsByServer.Count == 1)
+                if (status.IsSingleStage)
                 {
-                    var server = itemsByServer.Keys.Single();
+                    var server = status.RequestByServer.Keys.Single();
 
                     CacheClients[server].ExecuteTransaction(itemsToPut, conditions, itemsToDelete);
 
@@ -769,18 +789,15 @@ namespace Client.Interface
                 }
 
 
-                var sessions = new ConcurrentDictionary<int, Session>();
-
-                var serverStatus = new ConcurrentDictionary<int, bool>();
-
                 // select only the clients that are concerned
-                var clients = CacheClients.Where(c => itemsByServer.ContainsKey(c.ShardIndex)).ToList();
+                var clients = CacheClients.Where(c => status.RequestByServer.ContainsKey(c.ShardIndex)).ToList();
+                status.Clients.AddRange(clients);
 
-                // first stage : send the transaction request to the servers and wait for them to acquire write locks
+                // stage zero : send the transaction request to the servers and wait for them to acquire write locks
 
-                SendRequestsAndWaitForLock(clients, itemsByServer, sessions, transactionId, serverStatus);
+                SendRequestsAndWaitForLock(status);
 
-                Dbg.Trace($"C: proceeding with first stage transaction {transactionId} ");
+                Dbg.Trace($"C: proceeding with first stage transaction {status.TransactionId} ");
 
                 var exType = ExceptionType.Unknown;
 
@@ -790,17 +807,17 @@ namespace Client.Interface
                 {
                     try
                     {
-                        var session = sessions[client.ShardIndex];
+                        var session = status.SessionByServer[client.ShardIndex];
 
                         var response = client.Channel.GetResponse(session);
 
                         if (response is ReadyResponse)
                         {
-                            serverStatus[client.ShardIndex] = true;
+                            status.StatusByServer[client.ShardIndex] = true;
                         }
                         else
                         {
-                            serverStatus[client.ShardIndex] = false;
+                            status.StatusByServer[client.ShardIndex] = false;
 
                             if (response is ExceptionResponse exceptionResponse)
                                 exType = exceptionResponse.ExceptionType;
@@ -808,7 +825,7 @@ namespace Client.Interface
                     }
                     catch (Exception)
                     {
-                        serverStatus[client.ShardIndex] = false;
+                        status.StatusByServer[client.ShardIndex] = false;
                     }
                 });
 
@@ -816,16 +833,16 @@ namespace Client.Interface
                 // second stage: commit or rollback only the servers that processed successfully the first stage
                 // (if a server answered with an exception response the transaction was already rolled back on this server)
 
-                var firstStageOk = serverStatus.Values.All(s => s);
+                var firstStageOk = status.AllOk;
 
                 if (firstStageOk)
                 {
                     // commit the transaction
-                    Dbg.Trace($"C: proceeding with second stage transaction {transactionId} ");
+                    Dbg.Trace($"C: proceeding with second stage transaction {status.TransactionId} ");
 
                     Parallel.ForEach(clients, client =>
                     {
-                        var session = sessions[client.ShardIndex];
+                        var session = status.SessionByServer[client.ShardIndex];
                         client.Channel.Continue(session, true);
                     });
 
@@ -833,14 +850,14 @@ namespace Client.Interface
                 }
                 else
                 {
-                    Dbg.Trace($"C: rollback first stage transaction {transactionId} ");
+                    Dbg.Trace($"C: rollback first stage transaction {status.TransactionId} ");
 
                     Parallel.ForEach(clients, client =>
                     {
                         // need to rollback only the clients that have executed the first stage
-                        if (serverStatus[client.ShardIndex])
+                        if (status.StatusByServer[client.ShardIndex])
                         {
-                            var session = sessions[client.ShardIndex];
+                            var session = status.SessionByServer[client.ShardIndex];
                             client.Channel.Continue(session, false);
                         }
                     });
@@ -851,15 +868,11 @@ namespace Client.Interface
                 
                 
                 // close the session
-                Parallel.ForEach(CacheClients, client =>
+                Parallel.ForEach(status.Clients, client =>
                 {
-                    if (itemsByServer.ContainsKey(client.ShardIndex))
-                    {
-                        var session = sessions[client.ShardIndex];
-                        client.Channel.EndSession(session);
-                    }
+                    var session = status.SessionByServer[client.ShardIndex];
+                    client.Channel.EndSession(session);
                 });    
-                
                 
             }
         }
@@ -890,7 +903,7 @@ namespace Client.Interface
         {
             Guid sessionId = Guid.NewGuid();
 
-            DataClient.SmartRetry(()=> TryAcquireLock(sessionId, writeAccess, collections));
+            LockPolicy.SmartRetry(()=> TryAcquireLock(sessionId, writeAccess, collections));
 
             return sessionId;
         }

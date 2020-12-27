@@ -34,7 +34,7 @@ namespace Client.Messages
         [field: ProtoMember(1)] public List<CachedObject> ItemsToPut { get; } = new List<CachedObject>();
 
 
-        [field: ProtoMember(3)] public string TransactionId { get; set; }
+        [field: ProtoMember(3)] public Guid TransactionId { get; set; }
 
         [field: ProtoMember(4)] public bool IsSingleStage { get; set; }
 
@@ -42,12 +42,6 @@ namespace Client.Messages
         [field: ProtoMember(2)] public List<CachedObject> ItemsToDelete { get; } = new List<CachedObject>();
 
         [field: ProtoMember(5)] public List<OrQuery> Conditions { get; } = new List<OrQuery>();
-
-
-        public static string GenerateId()
-        {
-            return Guid.NewGuid().ToString();
-        }
 
 
         public IList<DataRequest> SplitByType()

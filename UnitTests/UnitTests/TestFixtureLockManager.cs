@@ -68,9 +68,9 @@ namespace Tests.UnitTests
             Parallel.For(0, iterations, i =>
             {
                 Parallel.Invoke(
-                    () => mgr.DoIfReadLock(ReadAbc, 10, "a", "b", "c"),
+                    () => mgr.DoWithReadLock(ReadAbc,  "a", "b", "c"),
                     () => mgr.DoWithReadLock(ReadA, "a"),
-                    () => mgr.DoIfWriteLock(WriteAbc, 10, "a", "b", "c"),
+                    () => mgr.DoWithWriteLock(WriteAbc,  "a", "b", "c"),
                     () => mgr.DoWithWriteLock(WriteA, "a")
                 );
             });
@@ -78,20 +78,161 @@ namespace Tests.UnitTests
             watch.Stop();
 
             Console.WriteLine($"{iterations} iterations took {watch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"retries = {mgr.Retries} successful reads {mgr.SuccessfulReads} successful writes {mgr.SuccessfulWrites}");
+            Console.WriteLine($"retries = {mgr.Retries}");
             Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
 
             
+            int locks = mgr.GetCurrentlyHoldLocks();
+
+            Assert.AreEqual(0, locks);
+        }
 
 
-            // each iteration add extra 3 elements to a (no failure accepted)
-            Assert.AreEqual(3*mgr.SuccessfulWrites + iterations * 3, _resourceA.Count);
+        [Test]
+        public void No_deadlock_and_no_race_condition_on_resources_using_sessions()
+        {
+            var mgr = new LockManager();
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            int iterations = 10_000;
+            Parallel.For(0, iterations, i =>
+            {
+                Parallel.Invoke(
+                    () =>
+                    {
+                        var session = Guid.NewGuid();
+                        mgr.AcquireLock(session, false, "a", "b", "c");
+                        ReadAbc();
+                        mgr.CloseSession(session);
+                    },
+                    () =>
+                    {
+                        var session = Guid.NewGuid();
+                        mgr.AcquireLock(session, false, "a");
+                        ReadA();
+                        mgr.CloseSession(session);
+                    },
+                    () =>
+                    {
+                        var session = Guid.NewGuid();
+                        mgr.AcquireLock(session, true, "a", "b", "c");
+                        WriteAbc();
+                        mgr.CloseSession(session);
+                        
+                    },
+                    () =>
+                    {
+                        var session = Guid.NewGuid();
+                        mgr.AcquireLock(session, true, "a");
+                        WriteA();
+                        mgr.CloseSession(session);
+                    });
+            });
+
+            watch.Stop();
+
+            Console.WriteLine($"{iterations} iterations took {watch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"retries = {mgr.Retries}");
+            Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
+
             
-            // each successful write adds 3 elements to a, b and c
-            Assert.AreEqual(3*mgr.SuccessfulWrites, _resourceB.Count);
-            
-            Assert.AreEqual(3*mgr.SuccessfulWrites, _resourceC.Count);
+            int locks = mgr.GetCurrentlyHoldLocks();
 
+            Assert.AreEqual(0, locks);
+        }
+
+        [Test]
+        public void Mixed_use_of_sessions_and_simple_accesses_simulating_both_transactional_and_non_transactional_clients()
+        {
+            var mgr = new LockManager();
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            int iterations = 100;
+            Parallel.For(0, iterations, i =>
+            {
+                Parallel.Invoke(
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            var session = Guid.NewGuid();
+                            mgr.AcquireLock(session, false, "a", "b", "c");
+                            ReadAbc();
+                            mgr.CloseSession(session);
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            var session = Guid.NewGuid();
+                            mgr.AcquireLock(session, false, "a");
+                            ReadA();
+                            mgr.CloseSession(session);
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            var session = Guid.NewGuid();
+                            mgr.AcquireLock(session, true, "a", "b", "c");
+                            WriteAbc();
+                            mgr.CloseSession(session);
+                        }
+                        
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            var session = Guid.NewGuid();
+                            mgr.AcquireLock(session, true, "a");
+                            WriteA();
+                            mgr.CloseSession(session);
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            mgr.DoWithReadLock(ReadAbc, "a", "b", "c");
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            mgr.DoWithReadLock(ReadA, "a");
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
+                        }
+                    },
+                    () =>
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            mgr.DoWithWriteLock(WriteA, "a");
+                        }
+                    });
+        });
+
+            watch.Stop();
+
+            Console.WriteLine($"{iterations} iterations took {watch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"retries = {mgr.Retries}");
+            Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
+
+            
             int locks = mgr.GetCurrentlyHoldLocks();
 
             Assert.AreEqual(0, locks);
@@ -105,16 +246,26 @@ namespace Tests.UnitTests
 
             ILockManager lockManager = new LockManager(log);
 
-            lockManager.TryAcquireReadLock(default, 10, "x", "y", "z");
+            var sessionId = Guid.NewGuid();
+
+            lockManager.AcquireLock(sessionId, false, "x", "y", "z");
 
             Assert.AreEqual(3, lockManager.GetCurrentlyHoldLocks());
 
-            lockManager.RemoveReadLock( "x", "y", "z");
+            Assert.IsTrue(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
+            
+            // false because it is a read-only lock
+            Assert.False(lockManager.CheckLock(sessionId, true, "x", "y", "z"));
+
+            lockManager.CloseSession( sessionId);
 
             Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
 
-            lockManager.TryAcquireReadLock(default, 10, "tahra", "tony");
+            // session no longer active
+            Assert.IsFalse(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
             
+            
+            lockManager.AcquireLock(sessionId, true, "tony", "tara");
             Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks());
 
             
@@ -140,34 +291,27 @@ namespace Tests.UnitTests
 
             var session = Guid.NewGuid();
 
-            var success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
+            lockManager.AcquireLock(session, false, "x", "y", "z");
+            
+
+            bool success = lockManager.CheckLock(session,false,  "x");
             Assert.IsTrue(success);
 
-            success = lockManager.CheckReadLockIsActive(session);
-            Assert.IsTrue(success);
-
-            // locking the same resources should not work
-            success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
-            Assert.IsFalse(success);
-
-            // from another thread should not work either
-            Task.Run(()=>
-            {
-                success = lockManager.TryAcquireReadLock(session, 10, "x", "y", "z");
-                Assert.IsFalse(success);
-            });
-
+           
             // try with a new session (should not work)
-            success = lockManager.CheckReadLockIsActive(Guid.NewGuid());
+            success = lockManager.CheckLock(Guid.NewGuid(), false, "x");
             Assert.IsFalse(success);
 
-            lockManager.CloseSession(session);
-            // no more active lock
-            success = lockManager.CheckReadLockIsActive(session);
-            Assert.False(success);
+            // read-only lock so it should not work
+            success = lockManager.CheckLock(session, true, "x");
+            Assert.IsFalse(success);
 
+            // different resource so it should not work
+            success = lockManager.CheckLock(session, true, "nope");
+            Assert.IsFalse(success);
+
+            
             // trying to close an inactive session throws an exception
-
             Assert.Throws<NotSupportedException>(() => lockManager.CloseSession(Guid.NewGuid()));
             
         }

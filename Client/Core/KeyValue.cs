@@ -266,6 +266,12 @@ namespace Client.Core
             if (_hashCode != other._hashCode)
                 return false;
 
+            if (_hashCode == 0 && other._hashCode == 0)
+            {
+                // consider zero and null the same for indexing
+                return true;
+            }
+            
             return _data.SequenceEqual(other._data);
         }
 

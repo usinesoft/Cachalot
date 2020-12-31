@@ -17,18 +17,22 @@ namespace Cachalot.Linq
 
         private readonly IDataClient _client;
         private readonly CollectionSchema _collectionSchema;
+        private readonly Guid _sessionId;
+        private readonly string _collectionName;
 
 
-        public QueryExecutor(IDataClient client, CollectionSchema collectionSchema)
+        public QueryExecutor(IDataClient client, CollectionSchema collectionSchema, Guid sessionId, string collectionName)
         {
             _client = client;
             _collectionSchema = collectionSchema;
+            _sessionId = sessionId;
+            _collectionName = collectionName;
         }
 
         // Executes a query with a scalar result, i.e. a query that ends with a result operator such as Count, Sum, or Average.
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_collectionSchema);
+            var visitor = new QueryVisitor( _collectionName, _collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -54,7 +58,7 @@ namespace Cachalot.Linq
         // Executes a query with a collection result.
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_collectionSchema);
+            var visitor = new QueryVisitor(_collectionName, _collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -64,7 +68,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            return _client.GetMany(visitor.RootExpression, Connector.Session).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
+            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
         }
 
         public static void Probe(Action<OrQuery> action)

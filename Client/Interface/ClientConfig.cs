@@ -26,9 +26,9 @@ namespace Client.Interface
         public IList<ServerConfig> Servers => _servers;
 
 
-        public int ConnectionPoolCapacity { get; private set; }
+        public int ConnectionPoolCapacity { get; set; }
 
-        public int PreloadedConnections { get; private set; }
+        public int PreloadedConnections { get; set; }
 
         public bool IsPersistent { get; set; } = true;
 

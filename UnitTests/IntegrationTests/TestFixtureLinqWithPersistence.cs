@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
@@ -623,6 +624,39 @@ namespace Tests.IntegrationTests
             }
         }
 
+
+        [Test]
+        public void Multiple_collections_for_same_type()
+        {
+            
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_persistent_config.xml");
+
+            using var connector = new Connector(config);
+                
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Home>("homes");
+            connector.DeclareCollection<Home>("homes1");
+
+
+            var homes = connector.DataSource<Home>("homes");
+            var homes1 = connector.DataSource<Home>("homes1");
+
+            homes.Put(new Home{Id = 15, CountryCode = "FR"});
+            homes1.Put(new Home{Id = 15, CountryCode = "US"});
+            homes1.Put(new Home{Id = 16, CountryCode = "US"});
+
+
+            var all = homes.ToList();
+            
+            var all1 = homes1.ToList();
+            
+            Assert.AreEqual(1, all.Count);
+            Assert.AreEqual(2, all1.Count);
+
+        }
+
         [Test]
         public void Consistent_read()
         {
@@ -630,21 +664,46 @@ namespace Tests.IntegrationTests
                 var config = new ClientConfig();
                 config.LoadFromFile("inprocess_persistent_config.xml");
 
-                using (var connector = new Connector(config))
+                using var connector = new Connector(config);
+                
+                connector.AdminInterface().DropDatabase();
+
+                connector.DeclareCollection<Home>("homes");
+                connector.DeclareCollection<Home>("homes1");
+
+
+                var homes = connector.DataSource<Home>("homes");
+                var homes1 = connector.DataSource<Home>("homes1");
+
+                homes.Put(new Home{Id = 15, CountryCode = "FR"});
+                homes1.Put(new Home{Id = 15, CountryCode = "US"});
+                homes1.Put(new Home{Id = 16, CountryCode = "US"});
+
+
+                connector.ConsistentRead(ctx =>
                 {
+                    var all = ctx.Collection<Home>("homes").ToList();
+                    Assert.AreEqual(1, all.Count);
 
-                    connector.AdminInterface().DropDatabase();
-
-                    connector.DeclareCollection<Home>("homes");
-
-
-                    connector.DoInConsistentReadOnlyContext(() =>
+                    // should throw an exception because "homes1" is not available in this context
+                    Assert.Throws<NotSupportedException>(()=>
                     {
-                        var all = connector.DataSource<Home>("homes").ToList();
+                        all = ctx.Collection<Home>("homes1").ToList();
+                    });
+                    
 
-                    }, "homes");
+                }, "homes");
 
-                }
+                connector.ConsistentRead(ctx =>
+                {
+                    var all = ctx.Collection<Home>("homes").ToList();
+                    Assert.AreEqual(1, all.Count);
+
+                    
+                    all = ctx.Collection<Home>("homes1").ToList();
+                    Assert.AreEqual(2, all.Count);
+                    
+                }, "homes", "homes1");
         }
 
     }

@@ -50,8 +50,9 @@ namespace Cachalot.Linq
         /// <param name="connector"></param>
         /// <param name="collectionName"></param>
         /// <param name="collectionSchema"></param>
-        internal DataSource([NotNull] Connector connector, [NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
-            : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema ))
+        /// <param name="sessionId"></param>
+        internal DataSource([NotNull] Connector connector, [NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema, Guid sessionId = default)
+            : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema, sessionId, collectionName ))
         {
             if (connector == null) throw new ArgumentNullException(nameof(connector));
 
@@ -61,10 +62,13 @@ namespace Cachalot.Linq
 
             _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
 
-            connector.DeclareCollection(_collectionName, _collectionSchema);
             
-            // in case a non persistent cache was rebooted
-            _client.DeclareCollection(collectionName, collectionSchema);
+            if (sessionId == default) // if in a consistent read session, it has already been done
+            {
+                // in case a non persistent cache was rebooted
+                _client.DeclareCollection(collectionName, collectionSchema);
+            }
+            
 
         }
 
@@ -239,11 +243,13 @@ namespace Cachalot.Linq
             return _client.ComputePivot(query, axis.Select(ExpressionTreeHelper.PropertyName).ToArray());
         }
 
-        public OrQuery PredicateToQuery(Expression<Func<T, bool>> where)
+        public OrQuery PredicateToQuery(Expression<Func<T, bool>> where, string collectionName = null)
         {
+
+            collectionName ??= _collectionSchema.CollectionName;
          
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(_collectionSchema);
+            var executor = new NullExecutor(_collectionSchema, collectionName);
             var queryable = new NullQueryable<T>(executor);
 
             var unused = queryable.Where(where).ToList();

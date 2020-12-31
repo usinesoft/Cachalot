@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FakeItEasy;
-using Microsoft.VisualBasic;
 using NUnit.Framework;
 using Server;
 
@@ -151,13 +150,15 @@ namespace Tests.UnitTests
             var watch = new Stopwatch();
             watch.Start();
 
+          
+
             int iterations = 100;
             Parallel.For(0, iterations, i =>
             {
                 Parallel.Invoke(
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
+                        for (int i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, false, "a", "b", "c");
@@ -167,7 +168,7 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
+                        for (int i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, false, "a");
@@ -177,7 +178,7 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
+                        for (int i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, true, "a", "b", "c");
@@ -188,7 +189,7 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
+                        for (int i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, true, "a");

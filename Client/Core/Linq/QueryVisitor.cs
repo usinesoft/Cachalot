@@ -6,6 +6,7 @@ using System.Reflection;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
+using JetBrains.Annotations;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
@@ -17,10 +18,14 @@ namespace Client.Core.Linq
     {
         private readonly CollectionSchema _collectionSchema;
 
-        public QueryVisitor(CollectionSchema collectionSchema)
+        public QueryVisitor([NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
         {
+            if (string.IsNullOrEmpty(collectionName))
+                throw new ArgumentException("Value cannot be null or empty.", nameof(collectionName));
+
             _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
-            RootExpression = new OrQuery(_collectionSchema);
+
+            RootExpression = new OrQuery(collectionName);
         }
 
         public OrQuery RootExpression { get; }

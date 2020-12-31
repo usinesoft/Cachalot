@@ -368,7 +368,7 @@ namespace AdminConsole.Commands
                         if (atoms.Count == 4)
                             result.Query = builder.GetManyWhere(atoms[3]);
                         else
-                            result.Query = new OrQuery(typeDescription);
+                            result.Query = new OrQuery(typeDescription.CollectionName);
 
                         result.Success = true;
                     }

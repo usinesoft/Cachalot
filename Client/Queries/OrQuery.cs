@@ -1,11 +1,9 @@
 #region
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Client.Core;
-using Client.Messages;
 using ProtoBuf;
 
 #endregion
@@ -72,8 +70,7 @@ namespace Client.Queries
         /// </summary>
         [field:ProtoMember(10)] public bool OrderByIsDescending { get; set; }
 
-
-
+       
         #endregion
 
         /// <summary>
@@ -149,12 +146,6 @@ namespace Client.Queries
             CollectionName = collectionName;
         }
 
-
-        public OrQuery(CollectionSchema collectionSchema)
-        {
-            CollectionName = collectionSchema.CollectionName;
-            
-        }
 
         /// <summary>
         ///  For protobuf serialization only

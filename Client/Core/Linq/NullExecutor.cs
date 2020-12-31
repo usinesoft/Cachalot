@@ -9,10 +9,12 @@ namespace Client.Core.Linq
     public class NullExecutor : IQueryExecutor
     {
         private readonly CollectionSchema _collectionSchema;
+        private readonly string _collectionName;
 
-        public NullExecutor(CollectionSchema collectionSchema)
+        public NullExecutor(CollectionSchema collectionSchema, string collectionName)
         {
             _collectionSchema = collectionSchema;
+            _collectionName = collectionName;
         }
 
         public OrQuery Expression { get; private set; }
@@ -29,7 +31,7 @@ namespace Client.Core.Linq
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor(_collectionSchema);
+            var visitor = new QueryVisitor(_collectionName, _collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 

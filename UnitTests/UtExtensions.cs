@@ -16,13 +16,15 @@ namespace Tests
     /// </summary>
     internal static class UtExtensions
     {
-        public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where)
+        public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
             
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
+            collectionName ??= schema.CollectionName;
+
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(schema);
+            var executor = new NullExecutor(schema, collectionName);
             var queryable = new NullQueryable<T>(executor);
 
             var unused = queryable.Where(where).ToList();
@@ -33,13 +35,15 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false)
+        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false,  string collectionName = null)
         {
             
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
+            
+            collectionName ??= schema.CollectionName;
 
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(schema);
+            var executor = new NullExecutor(schema, collectionName);
             var queryable = new NullQueryable<T>(executor);
 
             if (!distinct)
@@ -58,13 +62,13 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false)
+        public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false, string collectionName = null)
         {
             
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(schema);
+            var executor = new NullExecutor(schema, collectionName);
             var queryable = new NullQueryable<T>(executor);
 
             

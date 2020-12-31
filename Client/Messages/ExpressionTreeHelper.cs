@@ -103,7 +103,7 @@ namespace Client.Messages
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(schema);
+            var executor = new NullExecutor(schema, collectionName);
             var queryable = new NullQueryable<T>(executor);
 
             var unused = queryable.Where(where).ToList();

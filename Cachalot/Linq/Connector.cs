@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Channel;
 using Client.Core;
@@ -44,9 +45,8 @@ namespace Cachalot.Linq
         }
 
 
-        static readonly ThreadLocal<Guid> CurrentSession = new ThreadLocal<Guid>();
 
-        public static Guid Session => CurrentSession.Value;
+        readonly object _consistentReadSync = new object();
 
         /// <summary>
         /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
@@ -55,35 +55,41 @@ namespace Cachalot.Linq
         /// </summary>
         /// <param name="action"></param>
         /// <param name="collections"></param>
-        public void DoInConsistentReadOnlyContext(Action action, [NotNull] params string[] collections)
+        public void ConsistentRead(Action<ConsistentContext> action, [NotNull] params string[] collections)
         {
-            if (collections == null) throw new ArgumentNullException(nameof(collections));
-            if (collections.Length == 0)
-                throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
-
-
-            // check that the collections have been declared
-            lock (_collectionSchema)
+            //lock (_consistentReadSync)
             {
+
                 foreach (var collection in collections)
-                    if (!_collectionSchema.ContainsKey(collection))
-                        throw new NotSupportedException(
-                            $"Unknown collection {collection}. Use Connector.DeclareCollection");
-            }
+                {
+                    var schema = _collectionSchema[collection];
+                    Client.DeclareCollection(collection, schema);
+                }
 
-            Guid sessionId = default;
-            try
-            {
-                sessionId = Client.AcquireLock(false, collections);
+                if (collections.Length == 0)
+                    throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
 
-                CurrentSession.Value = sessionId;
 
-                action();
-            }
-            finally
-            {
-                Client.ReleaseLock(sessionId);
-                CurrentSession.Value = default;// close the session
+                // check that the collections have been declared
+                lock (_collectionSchema)
+                {
+                    foreach (var collection in collections)
+                        if (!_collectionSchema.ContainsKey(collection))
+                            throw new NotSupportedException(
+                                $"Unknown collection {collection}. Use Connector.DeclareCollection");
+                }
+
+                Guid sessionId = default;
+                try
+                {
+                    sessionId = Client.AcquireLock(false, collections);
+
+                    action(new ConsistentContext(sessionId, this, collections));
+                }
+                finally
+                {
+                    Client.ReleaseLock(sessionId);
+                }
             }
 
         }
@@ -229,6 +235,22 @@ namespace Cachalot.Linq
                 if (_collectionSchema.TryGetValue(collectionName, out var schema))
                 {
                     return new DataSource<T>(this, collectionName, schema);
+                } 
+            }
+
+            throw new CacheException($"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
+        }
+
+
+        internal IQueryable<T> ReadOnlyCollection<T>(Guid sessionId, string collectionName = null)
+        {
+            collectionName ??= typeof(T).FullName;
+
+            lock (_collectionSchema)
+            {
+                if (_collectionSchema.TryGetValue(collectionName, out var schema))
+                {
+                    return new DataSource<T>(this, collectionName, schema, sessionId);
                 } 
             }
 

@@ -153,10 +153,10 @@ namespace Server
                 }
                 else 
                 {
-                    lockManager.AcquireLock(lockRequest.SessionId, lockRequest.WriteMode,
+                    bool lockAcquired = lockManager.TryAcquireReadLock(lockRequest.SessionId, Constants.DelayForLock,
                         lockRequest.CollectionsToLock.ToArray());
 
-                    client.SendResponse(new LockResponse{Success = true});
+                    client.SendResponse(new LockResponse{Success = lockAcquired});
                 }
             }
             catch (Exception e)
@@ -218,8 +218,7 @@ namespace Server
             }
             else
             {
-                lockManager.CloseSession(transactionRequest.TransactionId);
-
+                
                 client.SendResponse(new ExceptionResponse(
                     new CacheException(
                         $"can not acquire write lock on server {ShardIndex}  for transaction {transactionRequest.TransactionId}"),
@@ -849,9 +848,9 @@ namespace Server
             
             var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
 
-            foreach (var store in DataStores.Values)
+            foreach (var store in DataStores.Pairs)
             {
-                collectionsDescriptions.Add(store.CollectionSchema.CollectionName, store.CollectionSchema);
+                collectionsDescriptions.Add(store.Key, store.Value.CollectionSchema);
             }
 
             var schema = new Schema

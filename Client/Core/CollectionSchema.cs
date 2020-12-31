@@ -32,7 +32,7 @@ namespace Client.Core
 
         
         /// <summary>
-        ///     Name of the collection (unique for a cache instance)
+        ///     Default name of the collection that uses the schema. Multiple collections can use it
         /// </summary>
         [ProtoMember(2)]
         public string CollectionName { get; set; }

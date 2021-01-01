@@ -17,14 +17,10 @@ namespace Cachalot.Linq
 
         private readonly List<OrQuery> _conditions = new List<OrQuery>();
 
-        
-
         private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
-        private readonly List<string> _collectionsForDelete = new List<string>();
 
         private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
-        private readonly List<string> _collectionsForPut = new List<string>();
-        
+
         private readonly Connector _connector;
 
 
@@ -43,8 +39,7 @@ namespace Cachalot.Linq
 
             _itemsToPut.Add(packed);
             
-            _collectionsForPut.Add(collectionName);
-
+            
             _conditions.Add(new OrQuery()); // empty condition
 
         }
@@ -65,8 +60,7 @@ namespace Cachalot.Linq
 
             _itemsToPut.Add(packed);
 
-            _collectionsForPut.Add(collectionName);
-
+            
             
             var testAsQuery = ExpressionTreeHelper.PredicateToQuery(test, collectionName);
 
@@ -84,14 +78,11 @@ namespace Cachalot.Linq
 
             _itemsToDelete.Add(packed);
 
-            _collectionsForDelete.Add(collectionName);
-          
         }
 
 
         public void Commit()
         {
-            // TODO manage collection names
             _client.ExecuteTransaction(_itemsToPut, _conditions, _itemsToDelete);
         }
 
@@ -105,7 +96,7 @@ namespace Cachalot.Linq
                 throw new CacheException($"Unknown collection {collectionName}. Use Connector.DeclareCollection");
             }
 
-            var packed = CachedObject.Pack(item, schema);
+            var packed = CachedObject.Pack(item, schema, collectionName);
 
             return packed;
         }

@@ -210,7 +210,7 @@ namespace Server.Persistence
 
                                     var itemData =
                                         SerializationHelper.ObjectToBytes(itemFromMemory, SerializationMode.ProtocolBuffers,
-                                            null);
+                                            false);
 
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
@@ -232,7 +232,7 @@ namespace Server.Persistence
 
                                     var itemData =
                                         SerializationHelper.ObjectToBytes(itemFromMemory, SerializationMode.ProtocolBuffers,
-                                            null);
+                                            false);
 
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
@@ -271,7 +271,7 @@ namespace Server.Persistence
             try
             {
                 TransactionLog.NewTransaction(
-                    SerializationHelper.ObjectToBytes(transaction, SerializationMode.ProtocolBuffers, null),
+                    SerializationHelper.ObjectToBytes(transaction, SerializationMode.ProtocolBuffers, false),
                     delayInMilliseconds);
             }
             catch (Exception e)

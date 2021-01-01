@@ -28,11 +28,19 @@ namespace Client.Core
     public class CollectionSchema : IEquatable<CollectionSchema>
     {
 
+        public CollectionSchema Clone()
+        {
+            var bytes = SerializationHelper.ObjectToBytes(this, SerializationMode.ProtocolBuffers, false);
+
+            return SerializationHelper.ObjectFromBytes<CollectionSchema>(bytes, SerializationMode.ProtocolBuffers,
+                false);
+        }
+
         [ProtoMember(1)] public List<KeyInfo> ServerSide { get; set; } = new List<KeyInfo>();
 
         
         /// <summary>
-        ///     Default name of the collection that uses the schema. Multiple collections can use it
+        ///     Default name of the collection that uses the schema. Multiple collections can use it (with different names)
         /// </summary>
         [ProtoMember(2)]
         public string CollectionName { get; set; }

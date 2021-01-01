@@ -41,7 +41,7 @@ namespace Cachalot.Linq
 
         CachedObject Pack(T item)
         {
-            return CachedObject.Pack(item, _collectionSchema);
+            return CachedObject.Pack(item, _collectionSchema, _collectionName);
         }
 
         /// <summary>

@@ -189,6 +189,8 @@ namespace Client.Interface
             
             var request = new PutRequest(collectionName) {ExcludeFromEviction = excludeFromEviction};
 
+
+            
             request.Items.Add(item);
 
 
@@ -231,7 +233,6 @@ namespace Client.Interface
                     };
 
                 var request = requests[node];
-
 
                 request.Items.Add(item);
 

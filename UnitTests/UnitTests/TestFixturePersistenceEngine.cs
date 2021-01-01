@@ -177,9 +177,9 @@ namespace Tests.UnitTests
 
             var log = new TransactionLog();
             log.NewTransaction(
-                SerializationHelper.ObjectToBytes(transaction1, SerializationMode.ProtocolBuffers, null));
+                SerializationHelper.ObjectToBytes(transaction1, SerializationMode.ProtocolBuffers, false));
             log.NewTransaction(
-                SerializationHelper.ObjectToBytes(transaction2, SerializationMode.ProtocolBuffers, null));
+                SerializationHelper.ObjectToBytes(transaction2, SerializationMode.ProtocolBuffers, false));
             var dummy = log.StartProcessing(); // call StartProcessing and close before EndProcessing
             log.Dispose();
 
@@ -225,9 +225,9 @@ namespace Tests.UnitTests
 
             var log = new TransactionLog();
             log.NewTransaction(
-                SerializationHelper.ObjectToBytes(transaction1, SerializationMode.ProtocolBuffers, null));
+                SerializationHelper.ObjectToBytes(transaction1, SerializationMode.ProtocolBuffers, false));
             log.NewTransaction(
-                SerializationHelper.ObjectToBytes(transaction2, SerializationMode.ProtocolBuffers, null));
+                SerializationHelper.ObjectToBytes(transaction2, SerializationMode.ProtocolBuffers, false));
             log.Dispose();
 
             var engine = new PersistenceEngine();

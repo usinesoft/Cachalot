@@ -68,7 +68,7 @@ namespace Tests
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
-            var executor = new NullExecutor(schema, collectionName);
+            var executor = new NullExecutor(schema, collectionName ?? schema.CollectionName);
             var queryable = new NullQueryable<T>(executor);
 
             

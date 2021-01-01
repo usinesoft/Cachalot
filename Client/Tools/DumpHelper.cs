@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 

@@ -131,12 +131,12 @@ namespace Client.Core
             }
         }
 
-        public static byte[] ObjectToBytes<TItem>(TItem obj, SerializationMode mode, CollectionSchema collectionSchema)
+        public static byte[] ObjectToBytes<TItem>(TItem obj, SerializationMode mode, bool useCompression)
         {
             using (var output = new MemoryStream())
             {
                 if (mode == SerializationMode.Json)
-                    ObjectToStream(obj, output, mode, collectionSchema.UseCompression);
+                    ObjectToStream(obj, output, mode, useCompression);
                 else
                     ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
 

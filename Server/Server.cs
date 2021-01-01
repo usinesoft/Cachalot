@@ -194,7 +194,7 @@ namespace Server
                             {
                                 var itemData =
                                     SerializationHelper.ObjectToBytes(item.Value, SerializationMode.ProtocolBuffers,
-                                        dataStore.CollectionSchema);
+                                        dataStore.CollectionSchema.UseCompression);
 
                                 storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
                             }

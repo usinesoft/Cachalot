@@ -33,7 +33,7 @@ namespace Tests.UnitTests
         public void SerializationProto()
         {
             var item1 = new ProtoData(1, "didier", "dupont");
-            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.ProtocolBuffers, null);
+            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.ProtocolBuffers, false);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<ProtoData>(b1, SerializationMode.ProtocolBuffers, false);
             Assert.IsNotNull(item1Reloaded);
@@ -54,8 +54,8 @@ namespace Tests.UnitTests
         {
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
             var desc = TypedSchemaFactory.FromType<CacheableTypeOk>();
-            desc.UseCompression = true;
-            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc);
+            
+            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, true);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, true);
             Assert.IsNotNull(item1Reloaded);
@@ -80,7 +80,7 @@ namespace Tests.UnitTests
             var desc = TypedSchemaFactory.FromType<CacheableTypeOk>();
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc);
+            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc.UseCompression);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, false);
             Assert.IsNotNull(item1Reloaded);
@@ -109,7 +109,7 @@ namespace Tests.UnitTests
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 1);
                 var packed = CachedObject.Pack(obj, schema);
 
-                var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, null);
+                var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, false);
                 var reloaded =
                     SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers, false);
 

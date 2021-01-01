@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Client.Messages;
 using ICSharpCode.SharpZipLib.GZip;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
@@ -105,17 +106,12 @@ namespace Client.Core
         }
 
 
-        public static CachedObject Pack<TObject>(TObject instance, CollectionSchema typeDescription)
+        public static CachedObject Pack<TObject>(TObject instance, [NotNull] CollectionSchema typeDescription, string collectionName = null)
         {
 
             if (instance == null) throw new ArgumentNullException(nameof(instance));
+            if (typeDescription == null) throw new ArgumentNullException(nameof(typeDescription));
 
-            var netType = instance.GetType();
-
-
-            if (typeDescription == null)
-                throw new NotSupportedException(
-                    $"Can not pack an object of type {netType} because the type was not registered");
 
             var getter = ExpressionTreeHelper.Getter<TObject>(typeDescription.PrimaryKeyField.Name);
             var value = getter(instance);
@@ -192,8 +188,8 @@ namespace Client.Core
 
 
             result.ObjectData =
-                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription);
-            result.CollectionName = typeDescription.CollectionName;
+                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.UseCompression);
+            result.CollectionName = collectionName ?? typeDescription.CollectionName;
 
             result.UseCompression = typeDescription.UseCompression;
 
@@ -276,7 +272,7 @@ namespace Client.Core
             return PackJson(jObject, collectionSchema);
         }
         
-        public static CachedObject PackJson(JObject jObject, CollectionSchema collectionSchema)
+        public static CachedObject PackJson(JObject jObject, CollectionSchema collectionSchema, string collectionName = null)
         {
             
 
@@ -385,9 +381,9 @@ namespace Client.Core
             result.FullText = lines.ToArray();
 
            
-            result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema);
+            result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema.UseCompression);
 
-            result.CollectionName = collectionSchema.CollectionName;
+            result.CollectionName = collectionName ?? collectionSchema.CollectionName;
 
             result.UseCompression = collectionSchema.UseCompression;
 

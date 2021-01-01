@@ -120,6 +120,8 @@ namespace Client.Interface
 
             var request = new PutRequest(collectionName) {ExcludeFromEviction = excludeFromEviction};
 
+            // by default this property is set to the schema name
+            
             request.Items.Add(item);
 
             var response = Channel.SendRequest(request);
@@ -173,7 +175,11 @@ namespace Client.Interface
 
                     foreach (var cachedObject in packet)
                         if (cachedObject != null)
+                        {
+                            
                             request.Items.Add(cachedObject);
+                        }
+                            
 
 
                     var split = request.SplitWithMaxSize();
@@ -260,6 +266,9 @@ namespace Client.Interface
 
         public void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1)
         {
+            // do not modify the original
+            schema = schema.Clone();
+
             schema.CollectionName = collectionName;
             schema.TypeName = collectionName;
 

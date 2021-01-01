@@ -62,7 +62,7 @@ namespace Client.Core
 
             const int itemCount = 1;
             writer.Write(itemCount);
-            var data = SerializationHelper.ObjectToBytes(item, mode, collectionSchema);
+            var data = SerializationHelper.ObjectToBytes(item, mode, useCompression);
             writer.Write(useProtocolBuffers);
             writer.Write(useCompression);
             writer.Write(0D);

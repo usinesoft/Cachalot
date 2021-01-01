@@ -13,7 +13,9 @@ using Client.Interface;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Interfaces;
 using NUnit.Framework;
 using Server;
+using Tests.TestData;
 using Tests.TestData.MoneyTransfer;
+// ReSharper disable AccessToDisposedClosure
 
 // ReSharper disable AccessToModifiedClosure
 
@@ -697,6 +699,69 @@ namespace Tests.IntegrationTests
             transaction.Commit();
 
            
+
+        }
+
+        
+
+        [Test]
+        public void Move_data_from_one_collection_to_another_with_transactions()
+        {
+            using var connector = new Connector(_clientConfig);
+            
+            connector.DeclareCollection<Order>("new_orders");  
+            connector.DeclareCollection<Order>("processed_orders");
+
+            const int count = 100; 
+
+            var all = new List<Order>();
+            for (int i = 0; i < count; i++)
+            {
+                all.Add(new Order{Id = Guid.NewGuid(), Amount = 50, Category = "geek"});
+            }
+
+            var newOrders = connector.DataSource<Order>("new_orders");
+            var processedOrders = connector.DataSource<Order>("processed_orders");
+
+            newOrders.PutMany(all);
+
+            // using transactions move orders from one collection to another
+            // and consistent read to check that at any time data is consistent
+            
+                Parallel.Invoke(() =>
+                {
+                    foreach (var order in newOrders.ToList())
+                    {
+                        var transaction = connector.BeginTransaction();
+                        order.IsDelivered = true;
+                        transaction.Put(order, "processed_orders");
+                        transaction.Delete(order, "new_orders");
+                        transaction.Commit();
+
+                        Thread.SpinWait(10000);
+                    }
+                },
+                    () =>
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            connector.ConsistentRead(ctx =>
+                            {
+                                var @new = ctx.Collection<Order>("new_orders").ToList();
+                                var processed = ctx.Collection<Order>("processed_orders").ToList();
+
+                                Assert.AreEqual(count, processed.Count + @new.Count);
+                                Assert.IsTrue(processed.All(o=>o.IsDelivered = true));
+
+                                Console.WriteLine($"{@new.Count} - {processed.Count}");
+
+                            }, "new_orders", "processed_orders");
+                        }
+                    });
+
+                
+            
+
 
         }
 

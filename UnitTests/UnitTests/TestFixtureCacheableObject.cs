@@ -100,7 +100,7 @@ namespace Tests.UnitTests
 
             var packed = CachedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
 
-            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema);
+            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.UseCompression);
 
             var reloaded = SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers, false);
 

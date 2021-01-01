@@ -168,7 +168,7 @@ namespace Client.Interface
             return ids.Take(quantity).ToArray();
         }
 
-        private int WhichNode(CachedObject obj)
+        private int WhichNode(PackedObject obj)
         {
             return WhichNode(obj.PrimaryKey);
         }
@@ -181,7 +181,7 @@ namespace Client.Interface
             return primaryKey.GetHashCode() % CacheClients.Count;
         }
 
-        public void Put(string collectionName, CachedObject item, bool excludeFromEviction = false)
+        public void Put(string collectionName, PackedObject item, bool excludeFromEviction = false)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -204,7 +204,7 @@ namespace Client.Interface
                     exResponse.CallStack);
         }
 
-        public void FeedMany(string collectionName, IEnumerable<CachedObject> items, bool excludeFromEviction, int packetSize = 50000)
+        public void FeedMany(string collectionName, IEnumerable<PackedObject> items, bool excludeFromEviction, int packetSize = 50000)
         {
             if (items == null)
                 throw new ArgumentNullException(nameof(items));
@@ -713,7 +713,7 @@ namespace Client.Interface
 
 
 
-        public void ExecuteTransaction(IList<CachedObject> itemsToPut, IList<OrQuery> conditions, IList<CachedObject> itemsToDelete = null)
+        public void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions, IList<PackedObject> itemsToDelete = null)
         {
             if (itemsToPut.Count != conditions.Count)
                 throw new ArgumentException($"{nameof(itemsToPut)} and {nameof(conditions)} do not have the same size");
@@ -785,7 +785,7 @@ namespace Client.Interface
             FeedMany(collectionName, objects, true);
         }
 
-        public bool TryAdd(string collectionName, CachedObject item)
+        public bool TryAdd(string collectionName, PackedObject item)
         {
             
             var node = WhichNode(item);
@@ -793,7 +793,7 @@ namespace Client.Interface
             return CacheClients[node].TryAdd(collectionName, item);
         }
 
-        public void UpdateIf(CachedObject newValue, OrQuery testAsQuery)
+        public void UpdateIf(PackedObject newValue, OrQuery testAsQuery)
         {
             var node = WhichNode(newValue);
 

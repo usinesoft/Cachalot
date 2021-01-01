@@ -49,7 +49,7 @@ namespace Client.Interface
         /// <param name="collectionName"></param>
         /// <param name="item"></param>
         /// <param name="excludeFromEviction">if true, the item will never be automatically evicted </param>
-        void Put(string collectionName, CachedObject item, bool excludeFromEviction = false);
+        void Put(string collectionName, PackedObject item, bool excludeFromEviction = false);
 
         /// <summary>
         ///     Add or replace a collection of objects.
@@ -61,7 +61,7 @@ namespace Client.Interface
         /// <param name="items"></param>
         /// <param name="excludeFromEviction"></param>
         /// <param name="packetSize"></param>
-        void FeedMany(string collectionName, IEnumerable<CachedObject> items, bool excludeFromEviction, int packetSize = 50000);
+        void FeedMany(string collectionName, IEnumerable<PackedObject> items, bool excludeFromEviction, int packetSize = 50000);
 
 
         /// <summary>
@@ -154,8 +154,8 @@ namespace Client.Interface
         ///     contain null values
         /// </param>
         /// <param name="itemsToDelete">items to delete inside a transaction</param>
-        void ExecuteTransaction(IList<CachedObject> itemsToPut, IList<OrQuery> conditions,
-            IList<CachedObject> itemsToDelete = null);
+        void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
+            IList<PackedObject> itemsToDelete = null);
 
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace Client.Interface
         /// <param name="collectionName"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        bool TryAdd(string collectionName, CachedObject item);
+        bool TryAdd(string collectionName, PackedObject item);
 
         /// <summary>
         /// Update an object only if the condition (applied on the previous version in the server) is satisfied
@@ -180,7 +180,7 @@ namespace Client.Interface
         /// </summary>
         /// <param name="newValue"></param>
         /// <param name="testAsQuery"></param>
-        void UpdateIf(CachedObject newValue, OrQuery testAsQuery);
+        void UpdateIf(PackedObject newValue, OrQuery testAsQuery);
 
         /// <summary>
         /// Acquire a server side lock and return a session id if successful (default(guid) otherwise). The session id can be used for multiple calls to <see cref="GetMany"/>

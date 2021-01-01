@@ -17,9 +17,9 @@ namespace Cachalot.Linq
 
         private readonly List<OrQuery> _conditions = new List<OrQuery>();
 
-        private readonly List<CachedObject> _itemsToDelete = new List<CachedObject>();
+        private readonly List<PackedObject> _itemsToDelete = new List<PackedObject>();
 
-        private readonly List<CachedObject> _itemsToPut = new List<CachedObject>();
+        private readonly List<PackedObject> _itemsToPut = new List<PackedObject>();
 
         private readonly Connector _connector;
 
@@ -87,7 +87,7 @@ namespace Cachalot.Linq
         }
 
 
-        private CachedObject Pack<T>(T item, string collectionName = null)
+        private PackedObject Pack<T>(T item, string collectionName = null)
         {
             var schema = _connector.GetCollectionSchema(collectionName);
 
@@ -96,7 +96,7 @@ namespace Cachalot.Linq
                 throw new CacheException($"Unknown collection {collectionName}. Use Connector.DeclareCollection");
             }
 
-            var packed = CachedObject.Pack(item, schema, collectionName);
+            var packed = PackedObject.Pack(item, schema, collectionName);
 
             return packed;
         }

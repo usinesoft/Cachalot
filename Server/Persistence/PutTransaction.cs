@@ -19,6 +19,6 @@ namespace Server.Persistence
         {
         }
 
-        [ProtoMember(10)] public IList<CachedObject> Items { get; set; } = new List<CachedObject>();
+        [ProtoMember(10)] public IList<PackedObject> Items { get; set; } = new List<PackedObject>();
     }
 }

@@ -112,7 +112,7 @@ namespace Tests
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             var schema = description;
 
-            @this.FeedMany(schema.CollectionName, items.Select(i=> CachedObject.Pack(i, schema)), excludeFromEviction);
+            @this.FeedMany(schema.CollectionName, items.Select(i=> PackedObject.Pack(i, schema)), excludeFromEviction);
         }
 
         public static void PutOne<T>(this IDataClient @this, T item, bool excludeFromEviction = false)
@@ -120,7 +120,7 @@ namespace Tests
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             var schema = description;
 
-            @this.Put(schema.CollectionName, CachedObject.Pack(item, schema), excludeFromEviction);
+            @this.Put(schema.CollectionName, PackedObject.Pack(item, schema), excludeFromEviction);
         }
 
         public static int RemoveMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)

@@ -39,9 +39,9 @@ namespace Cachalot.Linq
         
         private readonly string _collectionName;
 
-        CachedObject Pack(T item)
+        PackedObject Pack(T item)
         {
-            return CachedObject.Pack(item, _collectionSchema, _collectionName);
+            return PackedObject.Pack(item, _collectionSchema, _collectionName);
         }
 
         /// <summary>

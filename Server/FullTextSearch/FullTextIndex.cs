@@ -252,7 +252,7 @@ namespace Server.FullTextSearch
         /// <summary>
         ///     Index a document. A document is an ordered sequence of lines
         /// </summary>
-        public void IndexDocument([NotNull] CachedObject item)
+        public void IndexDocument([NotNull] PackedObject item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
 

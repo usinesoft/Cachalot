@@ -948,7 +948,7 @@ namespace Tests.IntegrationTests
 
             Assert.IsTrue(businesses?.Count > 0);
 
-            CachedObject.Pack(businesses[0], schema);
+            PackedObject.Pack(businesses[0], schema);
 
             var comments = businesses.SelectMany(b => b.Reviews).ToList();
 

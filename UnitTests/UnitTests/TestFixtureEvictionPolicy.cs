@@ -25,7 +25,7 @@ namespace Tests.UnitTests
             for (var i = 0; i < 100; i++)
             {
                 var item = new CacheableTypeOk(i, i + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-                var packed = CachedObject.Pack(item, schema);
+                var packed = PackedObject.Pack(item, schema);
 
                 policy.AddItem(packed);
             }
@@ -35,17 +35,17 @@ namespace Tests.UnitTests
             Assert.AreEqual(92, toRemove.Count);
 
             var item93 = new CacheableTypeOk(93, 93 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed93 = CachedObject.Pack(item93, schema);
+            var packed93 = PackedObject.Pack(item93, schema);
 
             // check that the 93rd item was not removed
             Assert.IsFalse(toRemove.Any(i=>i == packed93));
             policy.Touch(packed93);
 
             var item100 = new CacheableTypeOk(100, 100 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed100 = CachedObject.Pack(item100, schema);
+            var packed100 = PackedObject.Pack(item100, schema);
 
             var item101 = new CacheableTypeOk(101, 101 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed101 = CachedObject.Pack(item101, schema);
+            var packed101 = PackedObject.Pack(item101, schema);
 
 
             policy.AddItem(packed100);
@@ -71,7 +71,7 @@ namespace Tests.UnitTests
             for (var i = 0; i < 9; i++)
             {
                 var item = new CacheableTypeOk(i, i + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-                var packed = CachedObject.Pack(item, schema);
+                var packed = PackedObject.Pack(item, schema);
 
                 policy.AddItem(packed);
             }
@@ -81,13 +81,13 @@ namespace Tests.UnitTests
             Assert.AreEqual(0, toRemove.Count);
 
             var item1 = new CacheableTypeOk(1, 1 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed1 = CachedObject.Pack(item1, schema);
+            var packed1 = PackedObject.Pack(item1, schema);
 
             policy.TryRemove(packed1);
 
             
             var item10 = new CacheableTypeOk(10, 10 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed10 = CachedObject.Pack(item10, schema);
+            var packed10 = PackedObject.Pack(item10, schema);
 
             policy.AddItem(packed10);
 
@@ -97,7 +97,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(0, toRemove.Count);
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed11 = CachedObject.Pack(item11, schema);
+            var packed11 = PackedObject.Pack(item11, schema);
 
             policy.AddItem(packed11);
             // now the eviction should be triggered
@@ -137,7 +137,7 @@ namespace Tests.UnitTests
             for (var i = 0; i < 10; i++)
             {
                 var item = new CacheableTypeOk(i, i + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-                var packed = CachedObject.Pack(item, schema);
+                var packed = PackedObject.Pack(item, schema);
 
                 policy.AddItem(packed);
             }
@@ -150,7 +150,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(10, toRemove.Count);
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed11 = CachedObject.Pack(item11, schema);
+            var packed11 = PackedObject.Pack(item11, schema);
 
             policy.AddItem(packed11);
             toRemove = policy.DoEviction();
@@ -171,10 +171,10 @@ namespace Tests.UnitTests
             var policy = new TtlEvictionPolicy(TimeSpan.FromSeconds(1));
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed11 = CachedObject.Pack(item11, schema);
+            var packed11 = PackedObject.Pack(item11, schema);
 
             var item12 = new CacheableTypeOk(12, 12 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            var packed12 = CachedObject.Pack(item12, schema);
+            var packed12 = PackedObject.Pack(item12, schema);
 
             policy.AddItem(packed11);
             policy.AddItem(packed12);

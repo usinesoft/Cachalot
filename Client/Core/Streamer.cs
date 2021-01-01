@@ -73,7 +73,7 @@ namespace Client.Core
 
 
         /// <summary>
-        ///     Stream a collection of generic objects. Do not use for <see cref="CachedObject" />
+        ///     Stream a collection of generic objects. Do not use for <see cref="PackedObject" />
         /// </summary>
         /// <typeparam name="TItemType"></typeparam>
         /// <param name="stream"></param>
@@ -109,12 +109,12 @@ namespace Client.Core
 
 
         /// <summary>
-        ///     Special version for <see cref="CachedObject" />. As they already contain the serialized object
+        ///     Special version for <see cref="PackedObject" />. As they already contain the serialized object
         ///     no need to serialize again
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="items"></param>
-        public static void ToStreamMany(Stream stream, ICollection<CachedObject> items)
+        public static void ToStreamMany(Stream stream, ICollection<PackedObject> items)
         {
             var bufferedStream = new BufferedStream(stream);
             var writer = new BinaryWriter(bufferedStream);

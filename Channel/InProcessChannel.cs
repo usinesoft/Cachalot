@@ -57,7 +57,7 @@ namespace Channel
                 _dataReceived.Set();
             }
 
-            public void SendMany(ICollection<CachedObject> items)
+            public void SendMany(ICollection<PackedObject> items)
             {
                 Streamer.ToStreamMany(_stream, items);
                 _stream.Seek(0, SeekOrigin.Begin);

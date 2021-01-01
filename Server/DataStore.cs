@@ -46,16 +46,16 @@ namespace Server
         /// <summary>
         ///     Object by primary key
         /// </summary>
-        private readonly Dictionary<KeyValue, CachedObject> _dataByPrimaryKey;
+        private readonly Dictionary<KeyValue, PackedObject> _dataByPrimaryKey;
 
         /// <summary>
         ///     List of indexes for unique keys
         /// </summary>
-        private readonly Dictionary<string, Dictionary<KeyValue, CachedObject>> _dataByUniqueKey;
+        private readonly Dictionary<string, Dictionary<KeyValue, PackedObject>> _dataByUniqueKey;
 
 
-        private readonly Dictionary<Guid, List<CachedObject>> _feedSessions =
-            new Dictionary<Guid, List<CachedObject>>();
+        private readonly Dictionary<Guid, List<PackedObject>> _feedSessions =
+            new Dictionary<Guid, List<PackedObject>>();
 
         private readonly FullTextIndex _fullTextIndex;
 
@@ -93,14 +93,14 @@ namespace Server
             EvictionPolicy = evictionPolicy ?? throw new ArgumentNullException(nameof(evictionPolicy));
 
             //initialize the primary key dictionary
-            _dataByPrimaryKey = new Dictionary<KeyValue, CachedObject>();
+            _dataByPrimaryKey = new Dictionary<KeyValue, PackedObject>();
 
 
             //initialize the unique keys dictionaries (one by unique key) 
-            _dataByUniqueKey = new Dictionary<string, Dictionary<KeyValue, CachedObject>>();
+            _dataByUniqueKey = new Dictionary<string, Dictionary<KeyValue, PackedObject>>();
 
             foreach (var keyInfo in collectionSchema.UniqueKeyFields)
-                _dataByUniqueKey.Add(keyInfo.Name, new Dictionary<KeyValue, CachedObject>());
+                _dataByUniqueKey.Add(keyInfo.Name, new Dictionary<KeyValue, PackedObject>());
 
             //initialize the indexes (one by index key)
             _dataByIndexKey = new Dictionary<string, IndexBase>();
@@ -156,23 +156,23 @@ namespace Server
         /// <summary>
         ///     object by primary key
         /// </summary>
-        public Dictionary<KeyValue, CachedObject> DataByPrimaryKey => _dataByPrimaryKey;
+        public Dictionary<KeyValue, PackedObject> DataByPrimaryKey => _dataByPrimaryKey;
 
 
         /// <summary>
         ///     Store a new object in all the indexes
         ///     REQUIRE: an object with the same primary key is not present in the datastore
         /// </summary>
-        /// <param name="cachedObject"></param>
+        /// <param name="packedObject"></param>
         /// <param name="excludeFromEviction">if true the item will never be evicted</param>
-        internal void InternalAddNew(CachedObject cachedObject, bool excludeFromEviction)
+        internal void InternalAddNew(PackedObject packedObject, bool excludeFromEviction)
         {
-            InternalAddNew(cachedObject);
+            InternalAddNew(packedObject);
 
             Interlocked.Increment(ref _count);
 
             if (!excludeFromEviction)
-                EvictionPolicy.AddItem(cachedObject);
+                EvictionPolicy.AddItem(packedObject);
         }
 
 
@@ -181,38 +181,38 @@ namespace Server
             InternalDump(request.Path, shardIndex);
         }
 
-        private void InternalAddNew(CachedObject cachedObject)
+        private void InternalAddNew(PackedObject packedObject)
         {
-            if(cachedObject.PrimaryKey.IsNull)
+            if(packedObject.PrimaryKey.IsNull)
                 throw new NotSupportedException($"Can not insert an object with null primary key: collection {CollectionSchema.CollectionName}");
 
-            if (cachedObject.CollectionName != CollectionSchema.CollectionName)
+            if (packedObject.CollectionName != CollectionSchema.CollectionName)
                 throw new InvalidOperationException(
-                    $"An object of type {cachedObject.CollectionName} can not be stored in DataStore of type {CollectionSchema.CollectionName}");
+                    $"An object of type {packedObject.CollectionName} can not be stored in DataStore of type {CollectionSchema.CollectionName}");
 
 
-            var primaryKey = cachedObject.PrimaryKey;
+            var primaryKey = packedObject.PrimaryKey;
             if (ReferenceEquals(primaryKey, null))
                 throw new InvalidOperationException("can not store an object having a null primary key");
 
 
-            _dataByPrimaryKey.Add(primaryKey, cachedObject);
+            _dataByPrimaryKey.Add(primaryKey, packedObject);
 
 
-            if (cachedObject.UniqueKeys != null)
-                foreach (var uniqueKey in cachedObject.UniqueKeys)
+            if (packedObject.UniqueKeys != null)
+                foreach (var uniqueKey in packedObject.UniqueKeys)
                 {
                     var dictionaryToUse = _dataByUniqueKey[uniqueKey.KeyName];
-                    dictionaryToUse.Add(uniqueKey, cachedObject);
+                    dictionaryToUse.Add(uniqueKey, packedObject);
                 }
 
 
             foreach (var index in _dataByIndexKey)
-                index.Value.Put(cachedObject);
+                index.Value.Put(packedObject);
 
 
-            if (cachedObject.FullText != null && cachedObject.FullText.Length > 0)
-                _fullTextIndex.IndexDocument(cachedObject);
+            if (packedObject.FullText != null && packedObject.FullText.Length > 0)
+                _fullTextIndex.IndexDocument(packedObject);
         }
 
 
@@ -236,7 +236,7 @@ namespace Server
         ///     Remove the object from all indexes
         /// </summary>
         /// <param name="primary"></param>
-        private CachedObject InternalRemoveByPrimaryKey(KeyValue primary)
+        private PackedObject InternalRemoveByPrimaryKey(KeyValue primary)
         {
             Dbg.Trace($"remove by primary key {primary}");
 
@@ -296,7 +296,7 @@ namespace Server
         ///     The primary key must be the same, all others can change
         /// </summary>
         /// <param name="item"></param>
-        private void InternalUpdate(CachedObject item)
+        private void InternalUpdate(PackedObject item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -314,7 +314,7 @@ namespace Server
         }
 
 
-        private void InternalRemoveMany(IList<CachedObject> items)
+        private void InternalRemoveMany(IList<PackedObject> items)
         {
             Dbg.Trace($"remove many called for {items.Count} items");
 
@@ -346,9 +346,9 @@ namespace Server
         /// </summary>
         /// <param name="keyValue"></param>
         /// <returns></returns>
-        internal CachedObject InternalGetOne(KeyValue keyValue)
+        internal PackedObject InternalGetOne(KeyValue keyValue)
         {
-            CachedObject result;
+            PackedObject result;
 
             if(keyValue.KeyType != IndexType.Primary && keyValue.KeyType != IndexType.Unique) throw new NotSupportedException(
                 $"GetOne() called with the key {keyValue.KeyName} which is neither primary nor unique");
@@ -385,7 +385,7 @@ namespace Server
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        internal IList<CachedObject> InternalGetMany(KeyValue key)
+        internal IList<PackedObject> InternalGetMany(KeyValue key)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -400,7 +400,7 @@ namespace Server
         }
 
 
-        internal IList<CachedObject> InternalGetMany(KeyValue keyValue, QueryOperator op)
+        internal IList<PackedObject> InternalGetMany(KeyValue keyValue, QueryOperator op)
         {
             return InternalFind(new AtomicQuery(keyValue, op));
         }
@@ -411,7 +411,7 @@ namespace Server
         ///     Atomic queries re resolved by a single index
         /// </summary>
         /// <returns></returns>
-        private IList<CachedObject> InternalFind(AtomicQuery atomicQuery, int count = 0)
+        private IList<PackedObject> InternalFind(AtomicQuery atomicQuery, int count = 0)
         {
             if (!atomicQuery.IsValid)
                 throw new NotSupportedException("Invalid atomic query: " + atomicQuery);
@@ -424,7 +424,7 @@ namespace Server
 
             if (atomicQuery.Operator == QueryOperator.In)
             {
-                var result = new Dictionary<KeyValue, CachedObject>();
+                var result = new Dictionary<KeyValue, PackedObject>();
 
                 foreach (var value in atomicQuery.InValues)
                 {
@@ -481,7 +481,7 @@ namespace Server
         /// <param name="query"></param>
         /// <param name="onlyIfComplete"> </param>
         /// <returns></returns>
-        internal IList<CachedObject> InternalGetMany(OrQuery query, bool onlyIfComplete = false)
+        internal IList<PackedObject> InternalGetMany(OrQuery query, bool onlyIfComplete = false)
         {
             var result = InternalFind(query, onlyIfComplete);
 
@@ -493,20 +493,20 @@ namespace Server
             return result;
         }
 
-        private IList<CachedObject> FullTextSearch(string query, int maxElements)
+        private IList<PackedObject> FullTextSearch(string query, int maxElements)
         {
             var result = _fullTextIndex.SearchBestDocuments(query, maxElements);
 
             return result.Select(r =>
             {
-                // copy the score the CachedObject
+                // copy the score the PackedObject
                 var item = _dataByPrimaryKey[r.PrimaryKey];
                 item.Rank = r.Score;
                 return item;
             }).ToList();
         }
 
-        private IList<CachedObject> InternalFind(OrQuery query, bool onlyIfComplete = false)
+        private IList<PackedObject> InternalFind(OrQuery query, bool onlyIfComplete = false)
         {
             Dbg.Trace($"begin InternalFind with query {query}");
 
@@ -540,7 +540,7 @@ namespace Server
                 return FullTextSearch(query.FullTextSearch, query.Take);
             }
 
-            var structuredResult = new HashSet<CachedObject>();
+            var structuredResult = new HashSet<PackedObject>();
 
             // ignore full-text queries if no full-text index
             if (!query.IsFullTextQuery || _fullTextIndex == null)
@@ -552,13 +552,13 @@ namespace Server
 
             // mixed query: full-text + structured
             // we return the intersection of the structured search and full-text search ordered by full-text score
-            IList<CachedObject> ftResult = null;
+            IList<PackedObject> ftResult = null;
 
             Parallel.Invoke(
                 () => { InternalStructuredFind(query, structuredResult); },
                 () => { ftResult = FullTextSearch(query.FullTextSearch, query.Take); });
 
-            var result = new List<CachedObject>();
+            var result = new List<PackedObject>();
 
             foreach (var cachedObject in ftResult)
                 if (structuredResult.Contains(cachedObject))
@@ -569,7 +569,7 @@ namespace Server
             return result;
         }
 
-        private void InternalStructuredFind(OrQuery query, HashSet<CachedObject> result)
+        private void InternalStructuredFind(OrQuery query, HashSet<PackedObject> result)
         {
             var take = query.Take;
 
@@ -647,7 +647,7 @@ namespace Server
         /// <param name="query"></param>
         /// <param name="count">If > 0 return only the first count elements</param>
         /// <returns></returns>
-        private IList<CachedObject> InternalFind(AndQuery query, int count = 0)
+        private IList<PackedObject> InternalFind(AndQuery query, int count = 0)
         {
             // void queries are illegal
             if (query.Elements.Count == 0)
@@ -673,9 +673,9 @@ namespace Server
                 var item = InternalGetOne(atomicQuery.Value);
 
                 if (item != null)
-                    return new List<CachedObject> {item};
+                    return new List<PackedObject> {item};
 
-                return new List<CachedObject>();
+                return new List<PackedObject>();
             }
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -688,7 +688,7 @@ namespace Server
             IndexBase primaryIndex = null;
             AtomicQuery primaryQuery = null;
 
-            var foundWithUniqueKeys = new List<CachedObject>();
+            var foundWithUniqueKeys = new List<PackedObject>();
 
             foreach (var atomicQuery in query.Elements)
             {
@@ -706,7 +706,7 @@ namespace Server
                     }
 
                     // if the search by primary key failed no need to continue
-                    return new CachedObject[0];
+                    return new PackedObject[0];
                 }
 
                 if (atomicQuery.Value?.KeyType == IndexType.Unique)
@@ -724,7 +724,7 @@ namespace Server
                     }
 
                     // if the search by unique key failed no need to continue
-                    return new CachedObject[0];
+                    return new PackedObject[0];
                 }
 
                 if (!_dataByIndexKey.ContainsKey(atomicQuery.IndexName))
@@ -743,11 +743,11 @@ namespace Server
 
             // do not work too hard if the most specific index returned 0
             if (minimumItemsMatched == 0)
-                return new List<CachedObject>();
+                return new List<PackedObject>();
 
             // Get a primary set directly using the index
 
-            IEnumerable<CachedObject> primarySet;
+            IEnumerable<PackedObject> primarySet;
 
             // in an efficient index was identified use it, otherwise do a full scan
             if (primaryIndex != null)
@@ -787,12 +787,12 @@ namespace Server
         /// <param name="items"></param>
         /// <param name="excludeFromEviction">used only for non persistent case</param>
         /// <param name="persistTransaction">external action that is responsible to persist a durable transaction</param>
-        internal void InternalPutMany(IList<CachedObject> items, bool excludeFromEviction,
+        internal void InternalPutMany(IList<PackedObject> items, bool excludeFromEviction,
             Action<Transaction> persistTransaction)
         {
             var isBulkOperation = items.Count > Constants.BulkThreshold;
 
-            var toUpdate = new List<CachedObject>();
+            var toUpdate = new List<PackedObject>();
 
             try
             {
@@ -838,10 +838,10 @@ namespace Server
         /// Like a bulk insert on an empty datastore. Used internally to reindex data when type description changed
         /// </summary>
         /// <param name="items"></param>
-        private void InternalReindex(IEnumerable<CachedObject> items)
+        private void InternalReindex(IEnumerable<PackedObject> items)
         {
             
-            var toUpdate = new List<CachedObject>();
+            var toUpdate = new List<PackedObject>();
 
             try
             {
@@ -929,7 +929,7 @@ namespace Server
                         {
                             if (!_feedSessions.TryGetValue(put.SessionId, out var alreadyReceived))
                             {
-                                alreadyReceived = new List<CachedObject>();
+                                alreadyReceived = new List<PackedObject>();
                                 _feedSessions[put.SessionId] = alreadyReceived;
                             }
 
@@ -1136,9 +1136,9 @@ namespace Server
                                 
                             });
 
-                            //foreach (var cachedObject in filtered)
+                            //foreach (var packedObject in filtered)
                             //{
-                            //    pr.Root.AggregateOneObject(cachedObject, pivotRequest.AxisList.ToArray());
+                            //    pr.Root.AggregateOneObject(packedObject, pivotRequest.AxisList.ToArray());
                             //}
 
                             client.SendResponse(pr);
@@ -1176,13 +1176,13 @@ namespace Server
             var result = new DataStore(newDescription, old.EvictionPolicy, old._config) {Profiler = old.Profiler};
 
 
-            result.InternalReindex(old.InternalEnumerateAsJson().Select(json=> CachedObject.PackJson(json, newDescription)));
+            result.InternalReindex(old.InternalEnumerateAsJson().Select(json=> PackedObject.PackJson(json, newDescription)));
 
 
             return result;
         }
 
-        private void InternalUpdateIf(CachedObject newValue, OrQuery test, Action<Transaction> persistTransaction)
+        private void InternalUpdateIf(PackedObject newValue, OrQuery test, Action<Transaction> persistTransaction)
         {
             try
             {
@@ -1215,7 +1215,7 @@ namespace Server
             }
         }
 
-        private int InternalTryAdd(CachedObject item, Action<Transaction> persistTransaction)
+        private int InternalTryAdd(PackedObject item, Action<Transaction> persistTransaction)
         {
             try
             {

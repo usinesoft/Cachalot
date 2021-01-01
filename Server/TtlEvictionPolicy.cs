@@ -12,9 +12,9 @@ namespace Server
     public class TtlEvictionPolicy : EvictionPolicy
     {
         private readonly TimeSpan _timeToLive;
-        private readonly Queue<Tuple<DateTimeOffset, CachedObject>> _evictionQueue = new Queue<Tuple<DateTimeOffset, CachedObject>>(1000);
+        private readonly Queue<Tuple<DateTimeOffset, PackedObject>> _evictionQueue = new Queue<Tuple<DateTimeOffset, PackedObject>>(1000);
 
-        private readonly HashSet<CachedObject> _removed = new HashSet<CachedObject>();
+        private readonly HashSet<PackedObject> _removed = new HashSet<PackedObject>();
 
        
 
@@ -33,15 +33,15 @@ namespace Server
             _evictionQueue.Clear();
         }
 
-        public override void AddItem(CachedObject item)
+        public override void AddItem(PackedObject item)
         {
-            _evictionQueue.Enqueue(new Tuple<DateTimeOffset, CachedObject>(DateTimeOffset.Now, item));
+            _evictionQueue.Enqueue(new Tuple<DateTimeOffset, PackedObject>(DateTimeOffset.Now, item));
         }
 
-        public override IList<CachedObject> DoEviction()
+        public override IList<PackedObject> DoEviction()
         {
 
-            List<CachedObject> toRemove = new List<CachedObject>();
+            List<PackedObject> toRemove = new List<PackedObject>();
 
             var now = DateTimeOffset.Now;
             while (_evictionQueue.Count > 0)
@@ -66,19 +66,19 @@ namespace Server
             return toRemove;
         }
 
-        public override void Touch(CachedObject item)
+        public override void Touch(PackedObject item)
         {
             // nothing to do for this policy
         }
 
 
-        public override void TryRemove(CachedObject item)
+        public override void TryRemove(PackedObject item)
         {
             _removed.Add(item);
         }
 
 
-        public override void Touch(IList<CachedObject> items)
+        public override void Touch(IList<PackedObject> items)
         {
             // nothing to do for this policy
         }

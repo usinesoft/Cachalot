@@ -112,7 +112,7 @@ namespace Client.Interface
             return r.Ids;
         }
 
-        public void Put(string collectionName, CachedObject item, bool excludeFromEviction = false)
+        public void Put(string collectionName, PackedObject item, bool excludeFromEviction = false)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -131,7 +131,7 @@ namespace Client.Interface
                     exResponse.CallStack);
         }
 
-        public void FeedMany(string collectionName, IEnumerable<CachedObject> items, bool excludeFromEviction,
+        public void FeedMany(string collectionName, IEnumerable<PackedObject> items, bool excludeFromEviction,
             int packetSize = 50000)
         {
             if (items == null)
@@ -147,7 +147,7 @@ namespace Client.Interface
 
             while (!endLoop)
             {
-                var packet = new CachedObject[packetSize];
+                var packet = new PackedObject[packetSize];
 
 
                 for (var i = 0; i < packetSize; i++)
@@ -455,8 +455,8 @@ namespace Client.Interface
             Channel.SendRequest(request);
         }
 
-        public void ExecuteTransaction(IList<CachedObject> itemsToPut, IList<OrQuery> conditions,
-            IList<CachedObject> itemsToDelete = null)
+        public void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
+            IList<PackedObject> itemsToDelete = null)
         {
             var locksOk = false;
 
@@ -504,7 +504,7 @@ namespace Client.Interface
             FeedMany(collectionName, objects, true);
         }
 
-        public bool TryAdd(string collectionName, CachedObject item)
+        public bool TryAdd(string collectionName, PackedObject item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -525,7 +525,7 @@ namespace Client.Interface
             throw new NotSupportedException($"Unknown answer type received in TryAdd:{response.GetType()}");
         }
 
-        public void UpdateIf(CachedObject newValue, OrQuery testAsQuery)
+        public void UpdateIf(PackedObject newValue, OrQuery testAsQuery)
         {
             if (newValue == null)
                 throw new ArgumentNullException(nameof(newValue));

@@ -72,7 +72,7 @@ namespace Tests.UnitTests
                 Contacts = {"mail", "phone"}
             };
 
-            var packed = CachedObject.Pack(home, description);
+            var packed = PackedObject.Pack(home, description);
 
             Assert.AreEqual(7, packed.FullText.Length);
             Assert.IsTrue(packed.FullText.Any(t => t.Contains("chien qui fume")));
@@ -80,7 +80,7 @@ namespace Tests.UnitTests
             // now pack the same object as json
             var json = SerializationHelper.ObjectToJson(home);
 
-            var packed2 = CachedObject.PackJson(json, description);
+            var packed2 = PackedObject.PackJson(json, description);
             Assert.AreEqual(7, packed2.FullText.Length);
             Assert.IsTrue(packed2.FullText.Any(t => t.Contains("chien qui fume")));
         }
@@ -141,9 +141,9 @@ namespace Tests.UnitTests
             {
                 // warm up
 
-                var unused = CachedObject.Pack(home, desc);
+                var unused = PackedObject.Pack(home, desc);
                 var json = unused.AsJson();
-                var reloaded = CachedObject.Unpack<Home>(unused);
+                var reloaded = PackedObject.Unpack<Home>(unused);
 
 
                 var watch = new Stopwatch();
@@ -152,8 +152,8 @@ namespace Tests.UnitTests
 
                 for (var i = 0; i < objects; i++)
                 {
-                    var packed = CachedObject.Pack(home, desc);
-                    reloaded = CachedObject.Unpack<Home>(unused);
+                    var packed = PackedObject.Pack(home, desc);
+                    reloaded = PackedObject.Unpack<Home>(unused);
                 }
 
                 watch.Stop();
@@ -168,8 +168,8 @@ namespace Tests.UnitTests
 
                 desc.UseCompression = true;
 
-                var unused = CachedObject.Pack(home, desc);
-                var reloaded = CachedObject.Unpack<Home>(unused);
+                var unused = PackedObject.Pack(home, desc);
+                var reloaded = PackedObject.Unpack<Home>(unused);
 
                 var watch = new Stopwatch();
 
@@ -177,8 +177,8 @@ namespace Tests.UnitTests
 
                 for (var i = 0; i < objects; i++)
                 {
-                    var packed = CachedObject.Pack(home, desc);
-                    reloaded = CachedObject.Unpack<Home>(unused);
+                    var packed = PackedObject.Pack(home, desc);
+                    reloaded = PackedObject.Unpack<Home>(unused);
                 }
 
                 watch.Stop();
@@ -210,14 +210,14 @@ namespace Tests.UnitTests
             var desc = TypedSchemaFactory.FromType<Home>();
             
             //// warm up
-            //var unused = CachedObject.Pack(home, desc);
+            //var unused = PackedObject.Pack(home, desc);
             //var v1 = unused.ToString();
 
-            var unused = CachedObject.Pack(home, desc);
+            var unused = PackedObject.Pack(home, desc);
             var v2 = unused.ToString();
 
             var json = SerializationHelper.ObjectToJson(home);
-            unused = CachedObject.PackJson(json, desc);
+            unused = PackedObject.PackJson(json, desc);
             var v3 = unused.ToString();
 
             //Assert.AreEqual(v1, v2);

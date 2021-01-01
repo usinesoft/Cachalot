@@ -14,11 +14,11 @@ using ProtoBuf;
 namespace Client.Core
 {
     /// <summary>
-    ///     Any object is converted to this form while stored in the cache and transferred through the
-    ///     network. Only key fields are available, the rest of the object is serialized as json
+    ///     Any object is converted to this form while stored in the database and transferred through the
+    ///     network. Only server-side values are available, the rest of the object is serialized as json
     /// </summary>
     [ProtoContract]
-    public class CachedObject
+    public class PackedObject
     {
         /// <summary>
         ///     This property is not persistent. It is used when ordering items from multiple nodes
@@ -72,11 +72,11 @@ namespace Client.Core
         ///     Default constructor for serialization only
         /// </summary>
         // ReSharper disable once UnusedMember.Local
-        private CachedObject()
+        private PackedObject()
         {
         }
 
-        private CachedObject(KeyValue primaryKey)
+        private PackedObject(KeyValue primaryKey)
         {
             PrimaryKey = primaryKey;
         }
@@ -106,7 +106,7 @@ namespace Client.Core
         }
 
 
-        public static CachedObject Pack<TObject>(TObject instance, [NotNull] CollectionSchema typeDescription, string collectionName = null)
+        public static PackedObject Pack<TObject>(TObject instance, [NotNull] CollectionSchema typeDescription, string collectionName = null)
         {
 
             if (instance == null) throw new ArgumentNullException(nameof(instance));
@@ -122,7 +122,7 @@ namespace Client.Core
                 value = Guid.NewGuid();
             }
 
-            var result = new CachedObject(new KeyValue(value, typeDescription.PrimaryKeyField))
+            var result = new PackedObject(new KeyValue(value, typeDescription.PrimaryKeyField))
             {
                 UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count],
             };
@@ -256,7 +256,7 @@ namespace Client.Core
         /// <param name="propertyValues"></param>
         /// <param name="description"></param>
         /// <returns></returns>
-        public static CachedObject PackDictionary(IDictionary<string, object> propertyValues,
+        public static PackedObject PackDictionary(IDictionary<string, object> propertyValues,
             CollectionSchema description)
         {
             
@@ -266,33 +266,33 @@ namespace Client.Core
 
         }
 
-        public static CachedObject PackJson(string json, CollectionSchema collectionSchema)
+        public static PackedObject PackJson(string json, CollectionSchema collectionSchema)
         {
             var jObject = JObject.Parse(json);
             return PackJson(jObject, collectionSchema);
         }
         
-        public static CachedObject PackJson(JObject jObject, CollectionSchema collectionSchema, string collectionName = null)
+        public static PackedObject PackJson(JObject jObject, CollectionSchema collectionSchema, string collectionName = null)
         {
             
 
             if (jObject.Type == JTokenType.Array) throw new NotSupportedException("Pack called on a json array");
 
-            CachedObject result;
+            PackedObject result;
 
             var jPrimary = jObject.Property(collectionSchema.PrimaryKeyField.JsonName);
 
             if (jPrimary == null )
             {
                 // TODO specify automatic primary key
-                //result = new CachedObject(new KeyValue(Guid.NewGuid().ToString(), collectionSchema.PrimaryKeyField));
-                result = new CachedObject(new KeyValue(0, collectionSchema.PrimaryKeyField));
+                //result = new PackedObject(new KeyValue(Guid.NewGuid().ToString(), collectionSchema.PrimaryKeyField));
+                result = new PackedObject(new KeyValue(0, collectionSchema.PrimaryKeyField));
             }
             else
             {
                 var primaryKey = JTokenToKeyValue(jPrimary, collectionSchema.PrimaryKeyField);
 
-                result = new CachedObject(primaryKey);
+                result = new PackedObject(primaryKey);
             }
 
             
@@ -468,15 +468,15 @@ namespace Client.Core
         /// <summary>
         ///     Restore the original object
         /// </summary>
-        /// <param name="cachedObject"> </param>
+        /// <param name="packedObject"> </param>
         /// <returns> </returns>
-        public static T Unpack<T>(CachedObject cachedObject)
+        public static T Unpack<T>(PackedObject packedObject)
         {
-            return SerializationHelper.ObjectFromBytes<T>(cachedObject.ObjectData, SerializationMode.Json,
-                cachedObject.UseCompression);
+            return SerializationHelper.ObjectFromBytes<T>(packedObject.ObjectData, SerializationMode.Json,
+                packedObject.UseCompression);
         }
 
-        private bool Equals(CachedObject other)
+        private bool Equals(PackedObject other)
         {
             return PrimaryKey.Equals(other.PrimaryKey);
         }
@@ -489,7 +489,7 @@ namespace Client.Core
                 return true;
             if (obj.GetType() != GetType())
                 return false;
-            return Equals((CachedObject) obj);
+            return Equals((PackedObject) obj);
         }
 
         public override int GetHashCode()
@@ -497,12 +497,12 @@ namespace Client.Core
             return PrimaryKey.GetHashCode();
         }
 
-        public static bool operator ==(CachedObject left, CachedObject right)
+        public static bool operator ==(PackedObject left, PackedObject right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator !=(CachedObject left, CachedObject right)
+        public static bool operator !=(PackedObject left, PackedObject right)
         {
             return !Equals(left, right);
         }

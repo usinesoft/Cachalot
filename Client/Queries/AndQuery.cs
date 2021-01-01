@@ -61,7 +61,7 @@ namespace Client.Queries
         }
 
 
-        public override bool Match(CachedObject item)
+        public override bool Match(PackedObject item)
         {
             return Elements.All(t => t.Match(item));
         }

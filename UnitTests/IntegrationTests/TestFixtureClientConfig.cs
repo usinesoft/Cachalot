@@ -88,8 +88,8 @@
 //                var q = tradeQueryBuilder.MakeOrQuery(q12);
 
 //                Assert.IsTrue(q.IsValid);
-//                Assert.IsTrue(q.Match(CachedObject.Pack(trade1, tradeDescription)));
-//                Assert.IsTrue(q.Match(CachedObject.Pack(trade2, tradeDescription)));
+//                Assert.IsTrue(q.Match(PackedObject.Pack(trade1, tradeDescription)));
+//                Assert.IsTrue(q.Match(PackedObject.Pack(trade2, tradeDescription)));
 
 
 //                var trades = client.GetMany<Trade>(q).ToList();

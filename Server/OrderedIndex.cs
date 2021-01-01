@@ -19,8 +19,8 @@ namespace Server
     /// </summary>
     public class OrderedIndex : IndexBase
     {
-        private readonly List<CachedObject> _tempData;
-        private List<CachedObject> _data;
+        private readonly List<PackedObject> _tempData;
+        private List<PackedObject> _data;
 
         private bool _insideFeedSession;
 
@@ -31,8 +31,8 @@ namespace Server
 
         public OrderedIndex(KeyInfo keyInfo) : base(keyInfo)
         {
-            _data = new List<CachedObject>();
-            _tempData = new List<CachedObject>();
+            _data = new List<PackedObject>();
+            _tempData = new List<PackedObject>();
         }
 
         public override bool IsOrdered => true;
@@ -50,7 +50,7 @@ namespace Server
         /// <param name="right"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int Compare(CachedObject left, CachedObject right)
+        private int Compare(PackedObject left, PackedObject right)
         {
             var key1 = left.IndexKeys[_keyIndex];
             var key2 = right.IndexKeys[_keyIndex];
@@ -70,7 +70,7 @@ namespace Server
 
         #region IndexBase
 
-        public override void Put(CachedObject item)
+        public override void Put(PackedObject item)
         {
             // first time get the index of the indexation key(this value is fixed for a cacheable data type)
             if (_keyIndex == -1)
@@ -131,7 +131,7 @@ namespace Server
         }
 
 
-        public override void RemoveOne(CachedObject item)
+        public override void RemoveOne(PackedObject item)
         {
             // a feed session should not contain a primary key more than once. Can not remove inside a feed session because ordered
             // indexes are not sorted until the end of the session 
@@ -157,11 +157,11 @@ namespace Server
                     }
         }
 
-        public override void RemoveMany(IList<CachedObject> items)
+        public override void RemoveMany(IList<PackedObject> items)
         {
             var primaryKeysToRemove = new HashSet<KeyValue>(items.Select(i => i.PrimaryKey));
 
-            var newList = new List<CachedObject>(_data.Count);
+            var newList = new List<PackedObject>(_data.Count);
 
             foreach (var cachedObject in _data)
                 if (!primaryKeysToRemove.Contains(cachedObject.PrimaryKey))
@@ -220,7 +220,7 @@ namespace Server
             return result;
         }
 
-        public override ISet<CachedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
+        public override ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
         {
             if (_insideFeedSession)
                 throw new InvalidOperationException(
@@ -237,7 +237,7 @@ namespace Server
                                             op);
 
 
-            var result = new HashSet<CachedObject>();
+            var result = new HashSet<PackedObject>();
 
             switch (op)
             {
@@ -278,7 +278,7 @@ namespace Server
         /// </summary>
         /// <param name="key"></param>
         /// <param name="result"></param>
-        private void FindAllLe(KeyValue key, ICollection<CachedObject> result)
+        private void FindAllLe(KeyValue key, ICollection<PackedObject> result)
         {
             if (_data.Count == 0)
                 return;
@@ -425,7 +425,7 @@ namespace Server
         /// <param name="startIndex"></param>
         /// <param name="endIndex"></param>
         /// <returns></returns>
-        private int FindInsertAfterIndex(CachedObject value, int startIndex, int endIndex)
+        private int FindInsertAfterIndex(PackedObject value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
             var midValue = _data[mid];
@@ -460,7 +460,7 @@ namespace Server
             return FindInsertAfterIndex(value, newStart, newEnd);
         }
 
-        private void FindAllLs(KeyValue key, ICollection<CachedObject> result)
+        private void FindAllLs(KeyValue key, ICollection<PackedObject> result)
         {
             if (_data.Count == 0)
                 return;
@@ -504,7 +504,7 @@ namespace Server
 
         #region Eq (Equal)
 
-        private void FindAllEq(KeyValue key, ICollection<CachedObject> result)
+        private void FindAllEq(KeyValue key, ICollection<PackedObject> result)
         {
             if (_data.Count == 0)
                 return;
@@ -620,7 +620,7 @@ namespace Server
             return FindIndexGe(value, newStart, newEnd);
         }
 
-        private void FindAllGe(KeyValue key, ICollection<CachedObject> result)
+        private void FindAllGe(KeyValue key, ICollection<PackedObject> result)
         {
             if (_data.Count == 0)
                 return;
@@ -710,7 +710,7 @@ namespace Server
             return FindIndexGt(value, newStart, newEnd);
         }
 
-        private void FindAllGt(KeyValue key, ICollection<CachedObject> result)
+        private void FindAllGt(KeyValue key, ICollection<PackedObject> result)
         {
             if (_data.Count == 0)
                 return;
@@ -760,7 +760,7 @@ namespace Server
 
         #region Btw (Between)
 
-        private void FindAllBetween(KeyValue start, KeyValue end, ICollection<CachedObject> result)
+        private void FindAllBetween(KeyValue start, KeyValue end, ICollection<PackedObject> result)
         {
             // don't work too hard if no data available
             if (_data.Count == 0)

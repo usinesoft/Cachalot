@@ -107,11 +107,11 @@ namespace Tests.UnitTests
             for (var i = 0; i < 5000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 1);
-                var packed = CachedObject.Pack(obj, schema);
+                var packed = PackedObject.Pack(obj, schema);
 
                 var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, false);
                 var reloaded =
-                    SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers, false);
+                    SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
 
                 Assert.AreEqual(reloaded.IndexKeys[2], packed.IndexKeys[2]);
@@ -122,20 +122,20 @@ namespace Tests.UnitTests
 
             //to stream
             var stream = new MemoryStream();
-            var items = new List<CachedObject>();
+            var items = new List<PackedObject>();
             for (var i = 0; i < 1000; i++)
             {
                 var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), randGen.Next(1000));
-                var packed = CachedObject.Pack(obj, schema);
+                var packed = PackedObject.Pack(obj, schema);
                 items.Add(packed);
             }
 
-            var itemsReloaded = new List<CachedObject>();
+            var itemsReloaded = new List<PackedObject>();
             Streamer.ToStreamGeneric(stream, items);
             stream.Seek(0, SeekOrigin.Begin);
             var evt = new ManualResetEvent(false);
             Streamer.FromStream(stream,
-                delegate(CachedObject item, int i, int totalItems)
+                delegate(PackedObject item, int i, int totalItems)
                 {
                     itemsReloaded.Add(item);
                     if (i == totalItems) evt.Set();
@@ -156,16 +156,16 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
-            var items = new List<CachedObject>(3);
+            var items = new List<PackedObject>(3);
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item1, schema));
+            items.Add(PackedObject.Pack(item1, schema));
 
             var item2 = new CacheableTypeOk(2, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item2, schema));
+            items.Add(PackedObject.Pack(item2, schema));
 
             var item3 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            items.Add(CachedObject.Pack(item3, schema));
+            items.Add(PackedObject.Pack(item3, schema));
 
             using (var stream = new MemoryStream())
             {
@@ -214,8 +214,8 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
             var item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it = CachedObject.Pack(item, schema);
-            var oneItemList = new List<CachedObject> {it};
+            var it = PackedObject.Pack(item, schema);
+            var oneItemList = new List<PackedObject> {it};
 
             using (var stream = new MemoryStream())
             {
@@ -261,18 +261,18 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
-            var items = new List<CachedObject>(3);
+            var items = new List<PackedObject>(3);
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it1 = CachedObject.Pack(item1, schema);
+            var it1 = PackedObject.Pack(item1, schema);
             items.Add(it1);
 
             var item2 = new CacheableTypeOk(2, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it2 = CachedObject.Pack(item2, schema);
+            var it2 = PackedObject.Pack(item2, schema);
             items.Add(it2);
 
             var item3 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var it3 = CachedObject.Pack(item3, schema);
+            var it3 = PackedObject.Pack(item3, schema);
             items.Add(it3);
 
             using (var stream = new MemoryStream())
@@ -313,7 +313,7 @@ namespace Tests.UnitTests
 
             var typeDescription =
                 TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
-            put.Items.Add(CachedObject.Pack(item, schema));
+            put.Items.Add(PackedObject.Pack(item, schema));
 
             var remove = new RemoveRequest(typeof(CacheableTypeOk), new KeyValue(1, schema.PrimaryKeyField));
 
@@ -365,15 +365,15 @@ namespace Tests.UnitTests
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
 
-            var it1 = CachedObject.Pack(item1, schema);
+            var it1 = PackedObject.Pack(item1, schema);
 
             using var stream = new MemoryStream();
             Streamer.ToStream(stream, it1);
 
             stream.Seek(0, SeekOrigin.Begin);
 
-            var reloaded = Streamer.FromStream<CachedObject>(stream);
-            var original = CachedObject.Unpack<CacheableTypeOk>(reloaded);
+            var reloaded = Streamer.FromStream<PackedObject>(stream);
+            var original = PackedObject.Unpack<CacheableTypeOk>(reloaded);
 
 
             Assert.IsTrue(original is CacheableTypeOk);
@@ -395,14 +395,14 @@ namespace Tests.UnitTests
 
             stream.Seek(0, SeekOrigin.Begin);
             var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 0);
-            var packed = CachedObject.Pack(obj, schema);
+            var packed = PackedObject.Pack(obj, schema);
 
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             stream.Seek(0, SeekOrigin.Begin);
-            var t1 = Serializer.DeserializeWithLengthPrefix<CachedObject>(stream, PrefixStyle.Fixed32);
+            var t1 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
             Assert.AreEqual(t1.IndexKeys[2].ToString(), "0");
-            var t2 = Serializer.DeserializeWithLengthPrefix<CachedObject>(stream, PrefixStyle.Fixed32);
+            var t2 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
             Assert.AreEqual(t2.IndexKeys[2].ToString(), "0");
         }
     }

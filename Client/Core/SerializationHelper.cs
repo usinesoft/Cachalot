@@ -72,7 +72,7 @@ namespace Client.Core
         }
 
 
-        public static string AsJson(this CachedObject obj)
+        public static string AsJson(this PackedObject obj)
         {
             if (obj.UseCompression)
             {

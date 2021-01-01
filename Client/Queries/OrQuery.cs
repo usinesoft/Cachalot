@@ -126,7 +126,7 @@ namespace Client.Queries
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public override bool Match(CachedObject item)
+        public override bool Match(PackedObject item)
         {
             return Elements.Any(t => t.Match(item));
         }

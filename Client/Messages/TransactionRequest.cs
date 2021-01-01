@@ -18,20 +18,20 @@ namespace Client.Messages
         {
         }
 
-        public TransactionRequest(IList<CachedObject> itemsToPut, IList<OrQuery> conditions,
-            IList<CachedObject> itemsToDelete = null)
+        public TransactionRequest(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
+            IList<PackedObject> itemsToDelete = null)
         {
-            ItemsToPut = new List<CachedObject>(itemsToPut);
+            ItemsToPut = new List<PackedObject>(itemsToPut);
 
             Conditions = new List<OrQuery>(conditions);
 
-            if (itemsToDelete != null) ItemsToDelete = new List<CachedObject>(itemsToDelete);
+            if (itemsToDelete != null) ItemsToDelete = new List<PackedObject>(itemsToDelete);
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
         public override bool IsSimple => IsSingleStage;
 
-        [field: ProtoMember(1)] public List<CachedObject> ItemsToPut { get; } = new List<CachedObject>();
+        [field: ProtoMember(1)] public List<PackedObject> ItemsToPut { get; } = new List<PackedObject>();
 
 
         [field: ProtoMember(3)] public Guid TransactionId { get; set; }
@@ -39,7 +39,7 @@ namespace Client.Messages
         [field: ProtoMember(4)] public bool IsSingleStage { get; set; }
 
 
-        [field: ProtoMember(2)] public List<CachedObject> ItemsToDelete { get; } = new List<CachedObject>();
+        [field: ProtoMember(2)] public List<PackedObject> ItemsToDelete { get; } = new List<PackedObject>();
 
         [field: ProtoMember(5)] public List<OrQuery> Conditions { get; } = new List<OrQuery>();
 

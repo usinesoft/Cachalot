@@ -46,22 +46,22 @@ namespace Tests.UnitTests
         public void GetManyOnOrderedIndexes()
         {
             var item = new CacheableTypeOk(1, 1001, "AHA", new DateTime(2010, 10, 01), 9);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(2, 1002, "AHA", new DateTime(2010, 10, 01), 8);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(4, 1004, "BBB", new DateTime(2010, 9, 01), 5);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(5, 1005, "BBB", new DateTime(2010, 10, 01), 4);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(6, 1006, "BBA", new DateTime(2010, 10, 01), 1);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             var result =
                 _dataStore.InternalGetMany(
@@ -90,7 +90,7 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType<Order>();
             var item1 = new Order();
-            Assert.Throws<InvalidOperationException>(() => _dataStore.InternalAddNew(CachedObject.Pack(item1, schema), false));
+            Assert.Throws<InvalidOperationException>(() => _dataStore.InternalAddNew(PackedObject.Pack(item1, schema), false));
             
         }
 
@@ -98,12 +98,12 @@ namespace Tests.UnitTests
         public void PutNewGetOne()
         {
             var item1 = new CacheableTypeOk(1, 1001, "AHA", new DateTime(2010, 10, 01), 55);
-            _dataStore.InternalAddNew(CachedObject.Pack(item1, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item1, _collectionSchema), false);
 
             //get one by primary key
             var cachedItem1 = _dataStore.InternalGetOne(MakePrimaryKeyValue(1));
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(1));
-            var item1Reloaded = CachedObject.Unpack<CacheableTypeOk>(cachedItem1);
+            var item1Reloaded = PackedObject.Unpack<CacheableTypeOk>(cachedItem1);
             Assert.AreEqual(item1, item1Reloaded);
 
             //get one by unique key
@@ -113,7 +113,7 @@ namespace Tests.UnitTests
 
             Assert.IsTrue(cachedItem1.PrimaryKey.Equals(1));
             Assert.IsTrue(cachedItem1.UniqueKeys[0].Equals(1001));
-            item1Reloaded = CachedObject.Unpack<CacheableTypeOk>(cachedItem1);
+            item1Reloaded = PackedObject.Unpack<CacheableTypeOk>(cachedItem1);
             Assert.AreEqual(item1, item1Reloaded);
         }
 
@@ -121,22 +121,22 @@ namespace Tests.UnitTests
         public void Queries()
         {
             var item = new CacheableTypeOk(1, 1001, "AHA", new DateTime(2010, 10, 01), 9);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(2, 1002, "AHA", new DateTime(2010, 10, 01), 8);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(4, 1004, "BBB", new DateTime(2010, 9, 01), 5);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(5, 1005, "BBB", new DateTime(2010, 10, 01), 4);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
             item = new CacheableTypeOk(6, 1006, "BBA", new DateTime(2010, 10, 01), 1);
-            _dataStore.InternalAddNew(CachedObject.Pack(item, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item, _collectionSchema), false);
 
 
             var builder = new QueryBuilder(typeof(CacheableTypeOk));
@@ -227,10 +227,10 @@ namespace Tests.UnitTests
         {
             //add two items (2 and 3 as primary keys)
             var item1 = new CacheableTypeOk(2, 1002, "AHA", new DateTime(2010, 10, 01), 55);
-            _dataStore.InternalAddNew(CachedObject.Pack(item1, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item1, _collectionSchema), false);
 
             var item2 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 01), 55);
-            _dataStore.InternalAddNew(CachedObject.Pack(item2, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item2, _collectionSchema), false);
 
             //this get one should return the first item
             var cachedItem1 = _dataStore.InternalGetOne(MakePrimaryKeyValue(2));
@@ -259,10 +259,10 @@ namespace Tests.UnitTests
 
             //add two items (2 and 3 as primary keys)
             var item1 = new CacheableTypeOk(2, 1002, "AHA", new DateTime(2010, 10, 01), 55);
-            _dataStore.InternalAddNew(CachedObject.Pack(item1, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item1, _collectionSchema), false);
 
             var item2 = new CacheableTypeOk(3, 1003, "AHA", new DateTime(2010, 10, 01), 55);
-            _dataStore.InternalAddNew(CachedObject.Pack(item2, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item2, _collectionSchema), false);
 
             _dataStore.InternalTruncate();
             //this GetMany() should return no item cause the data was truncated
@@ -270,8 +270,8 @@ namespace Tests.UnitTests
             Assert.AreEqual(result.Count, 0);
 
             //put the items back
-            _dataStore.InternalAddNew(CachedObject.Pack(item1, _collectionSchema), false);
-            _dataStore.InternalAddNew(CachedObject.Pack(item2, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item1, _collectionSchema), false);
+            _dataStore.InternalAddNew(PackedObject.Pack(item2, _collectionSchema), false);
 
             //this get one should return the first item
             var cachedItem1 = _dataStore.InternalGetOne(MakePrimaryKeyValue(2));

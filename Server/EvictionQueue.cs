@@ -12,16 +12,16 @@ namespace Server
     /// </summary>
     public class EvictionQueue
     {
-        private readonly Dictionary<KeyValue, LinkedListNode<CachedObject>> _cachedObjectsByKey;
-        private readonly LinkedList<CachedObject> _queue;
+        private readonly Dictionary<KeyValue, LinkedListNode<PackedObject>> _cachedObjectsByKey;
+        private readonly LinkedList<PackedObject> _queue;
 
 
         private readonly object _syncRoot = new object();
 
         public EvictionQueue()
         {
-            _cachedObjectsByKey = new Dictionary<KeyValue, LinkedListNode<CachedObject>>();
-            _queue = new LinkedList<CachedObject>();
+            _cachedObjectsByKey = new Dictionary<KeyValue, LinkedListNode<PackedObject>>();
+            _queue = new LinkedList<PackedObject>();
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Server
         ///     REQUIRE: Item not already present in the queue
         /// </summary>
         /// <param name="newItem"></param>
-        public void AddNew(CachedObject newItem)
+        public void AddNew(PackedObject newItem)
         {
             if (newItem == null) throw new ArgumentNullException(nameof(newItem));
 
@@ -88,9 +88,9 @@ namespace Server
         ///     Proceed to eviction (the first <see cref="EvictionCount" /> items will be removed
         /// </summary>
         /// <returns>The items removed</returns>
-        public IList<CachedObject> Go()
+        public IList<PackedObject> Go()
         {
-            var result = new List<CachedObject>(EvictionCount);
+            var result = new List<PackedObject>(EvictionCount);
             if (!EvictionRequired)
                 return result;
 
@@ -125,7 +125,7 @@ namespace Server
         ///     Remove an item if it is present in the queue
         /// </summary>
         /// <param name="itemToRemove"></param>
-        public void TryRemove(CachedObject itemToRemove)
+        public void TryRemove(PackedObject itemToRemove)
         {
             if (itemToRemove == null) throw new ArgumentNullException(nameof(itemToRemove));
 
@@ -145,7 +145,7 @@ namespace Server
         ///     If the item is not present ignore (may be useful if certain items are excluded by the eviction policy)
         /// </summary>
         /// <param name="item"></param>
-        public void Touch(CachedObject item)
+        public void Touch(PackedObject item)
         {
             if (item == null) throw new ArgumentNullException(nameof(item));
 

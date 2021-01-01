@@ -23,7 +23,7 @@ namespace Client.Messages
         /// </summary>
         [ProtoMember(2)] private bool _excludeFromEviction;
 
-        [ProtoMember(1)] private List<CachedObject> _items = new List<CachedObject>();
+        [ProtoMember(1)] private List<PackedObject> _items = new List<PackedObject>();
 
        
         /// <summary>
@@ -57,10 +57,10 @@ namespace Client.Messages
             set => _excludeFromEviction = value;
         }
 
-        public IList<CachedObject> Items
+        public IList<PackedObject> Items
         {
             get => _items;
-            set => _items = new List<CachedObject>(value);
+            set => _items = new List<PackedObject>(value);
         }
 
 

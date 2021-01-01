@@ -38,29 +38,29 @@ namespace Server
             _evictionQueue.Clear();
         }
 
-        public override void AddItem(CachedObject item)
+        public override void AddItem(PackedObject item)
         {
             _evictionQueue.AddNew(item);
         }
 
-        public override IList<CachedObject> DoEviction()
+        public override IList<PackedObject> DoEviction()
         {
             return _evictionQueue.Go();
         }
 
-        public override void Touch(CachedObject item)
+        public override void Touch(PackedObject item)
         {
             _evictionQueue.Touch(item);
         }
 
 
-        public override void TryRemove(CachedObject item)
+        public override void TryRemove(PackedObject item)
         {
             _evictionQueue.TryRemove(item);
         }
 
 
-        public override void Touch(IList<CachedObject> items)
+        public override void Touch(IList<PackedObject> items)
         {
             foreach (var t in items)
                 _evictionQueue.Touch(t);

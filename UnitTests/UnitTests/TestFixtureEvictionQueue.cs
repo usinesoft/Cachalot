@@ -28,13 +28,13 @@ namespace Tests.UnitTests
             for (var i = 0; i < 10000; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item, schema);
+                var packedItem = PackedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
             }
 
             Assert.IsTrue(queue.EvictionRequired);
             Assert.AreEqual(queue.Count, 10000);
-            ICollection<CachedObject> evicted = queue.Go();
+            ICollection<PackedObject> evicted = queue.Go();
 
             //should have removed 100 more than ( 10000 - 1000 )
             Assert.AreEqual(queue.Count, 900);
@@ -52,7 +52,7 @@ namespace Tests.UnitTests
 
             var queue = new EvictionQueue {Capacity = 1000, EvictionCount = 100};
             var item = new TradeLike(0, 1000, "aaa", DateTime.Now, 456);
-            var packedItem = CachedObject.Pack(item, schema);
+            var packedItem = PackedObject.Pack(item, schema);
             queue.AddNew(packedItem);
 
             //this call should raise an exception
@@ -66,12 +66,12 @@ namespace Tests.UnitTests
 
             var queue = new EvictionQueue {Capacity = 9, EvictionCount = 2};
 
-            var allItems = new List<CachedObject>();
+            var allItems = new List<PackedObject>();
 
             for (var i = 0; i < 10; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item, schema);
+                var packedItem = PackedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }
@@ -111,12 +111,12 @@ namespace Tests.UnitTests
 
             var queue = new EvictionQueue {Capacity = 7, EvictionCount = 2};
 
-            var allItems = new List<CachedObject>();
+            var allItems = new List<PackedObject>();
 
             for (var i = 0; i < 10; i++)
             {
                 var item = new TradeLike(i, 1000 + i, "aaa", DateTime.Now, 456);
-                var packedItem = CachedObject.Pack(item, schema);
+                var packedItem = PackedObject.Pack(item, schema);
                 queue.AddNew(packedItem);
                 allItems.Add(packedItem);
             }

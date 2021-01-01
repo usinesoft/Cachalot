@@ -226,7 +226,7 @@ namespace Channel
             }
 
 
-            public void SendMany(ICollection<CachedObject> items)
+            public void SendMany(ICollection<PackedObject> items)
             {
                 try
                 {

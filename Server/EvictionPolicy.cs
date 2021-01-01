@@ -18,7 +18,7 @@ namespace Server
         public virtual bool IsEvictionRequired => false;
 
 
-        public virtual void AddItem(CachedObject item)
+        public virtual void AddItem(PackedObject item)
         {
             //ignore in the base class
         }
@@ -28,16 +28,16 @@ namespace Server
         ///     structures of the policy
         /// </summary>
         /// <returns></returns>
-        public virtual IList<CachedObject> DoEviction()
+        public virtual IList<PackedObject> DoEviction()
         {
-            return new List<CachedObject>();
+            return new List<PackedObject>();
         }
 
         /// <summary>
         ///     The specified item was accessed, update its priority accordingly
         /// </summary>
         /// <param name="item"></param>
-        public virtual void Touch(CachedObject item)
+        public virtual void Touch(PackedObject item)
         {
             //ignore in the base class
         }
@@ -47,13 +47,13 @@ namespace Server
         ///     its eviction priority any more
         /// </summary>
         /// <param name="item"></param>
-        public virtual void TryRemove(CachedObject item)
+        public virtual void TryRemove(PackedObject item)
         {
             //ignore in the base class
         }
 
 
-        public virtual void Touch(IList<CachedObject> items)
+        public virtual void Touch(IList<PackedObject> items)
         {
             //ignore in the base class
         }

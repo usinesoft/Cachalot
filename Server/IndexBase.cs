@@ -35,7 +35,7 @@ namespace Server
         ///     If an item
         /// </summary>
         /// <param name="item"></param>
-        public abstract void Put(CachedObject item);
+        public abstract void Put(PackedObject item);
 
         public abstract void EndFill();
 
@@ -46,7 +46,7 @@ namespace Server
         /// <param name="values"> one value for equality operator or multiple values for In operator</param>
         /// <param name="op"></param>
         /// <returns></returns>
-        public abstract ISet<CachedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
+        public abstract ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 
         /// <summary>
         ///     Count the items from the index matching the criteria
@@ -57,9 +57,9 @@ namespace Server
         public abstract int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 
 
-        public abstract void RemoveOne(CachedObject item);
+        public abstract void RemoveOne(PackedObject item);
 
         public abstract void Clear();
-        public abstract void RemoveMany(IList<CachedObject> items);
+        public abstract void RemoveMany(IList<PackedObject> items);
     }
 }

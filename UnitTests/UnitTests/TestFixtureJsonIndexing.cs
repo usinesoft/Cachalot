@@ -79,11 +79,11 @@ namespace Tests.UnitTests
             };
 
             
-            var packed1 = CachedObject.Pack(testObj, schema);
+            var packed1 = PackedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
 
-            var packed2 = CachedObject.PackJson(json, schema);
+            var packed2 = PackedObject.PackJson(json, schema);
 
             Console.WriteLine(packed1);
             Console.WriteLine(packed2);
@@ -117,11 +117,11 @@ namespace Tests.UnitTests
 
             var typeDescription = description;
 
-            var packed1 = CachedObject.Pack(testObj, schema);
+            var packed1 = PackedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
 
-            var packed2 = CachedObject.PackJson(json, typeDescription);
+            var packed2 = PackedObject.PackJson(json, typeDescription);
 
             Console.WriteLine(packed1);
             Console.WriteLine(packed2);
@@ -153,7 +153,7 @@ namespace Tests.UnitTests
 
             var description = TypedSchemaFactory.FromType<AllKindsOfProperties>();
 
-            var packed = CachedObject.PackJson(json, description);
+            var packed = PackedObject.PackJson(json, description);
 
             Assert.AreEqual(123, packed.PrimaryKey.IntValue);
 
@@ -190,14 +190,14 @@ namespace Tests.UnitTests
             //    .WithServerSideValue("age", IndexType.Dictionary)
             //    .Build();
 
-            //var packed = CachedObject.PackJson(json, description);
+            //var packed = PackedObject.PackJson(json, description);
 
             //// properties that where not found should not be indexed
             //Assert.AreEqual(2, packed.IndexKeys.Length);
 
             //json = packed.Json;
                     
-            //var repacked = CachedObject.PackJson(json, description);
+            //var repacked = PackedObject.PackJson(json, description);
 
             //// check than repacking the object gives tha same result (except for the auto generated primary key)
             //repacked.PrimaryKey = packed.PrimaryKey;

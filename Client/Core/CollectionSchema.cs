@@ -47,7 +47,7 @@ namespace Client.Core
 
 
         /// <summary>
-        ///     Short type name
+        ///     Short type name. May be the same as CollectionName. If CollectionName is a full type name with namespaces this will be the simple name
         /// </summary>
         [ProtoMember(3)]
         public string TypeName { get; set; }
@@ -60,7 +60,6 @@ namespace Client.Core
         [field: ProtoMember(5)] public ISet<string> FullText { get; } = new HashSet<string>();
 
 
-        
         /// <summary>
         ///     The unique keys
         /// </summary>

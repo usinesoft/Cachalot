@@ -86,7 +86,7 @@ namespace Tests.UnitTests
 
             //non existent value in the middle
             {
-                IList<CachedObject> result1 =
+                IList<PackedObject> result1 =
                     indexByValue.GetMany(MakeIntValue(12, keyType), QueryOperator.Lt)
                         .OrderBy(o => o.PrimaryKey)
                         .ToList();
@@ -101,7 +101,7 @@ namespace Tests.UnitTests
 
             //existent value in the middle
             {
-                IList<CachedObject> result1 =
+                IList<PackedObject> result1 =
                     indexByValue.GetMany(MakeIntValue(13, keyType), QueryOperator.Lt)
                         .OrderBy(o => o.PrimaryKey)
                         .ToList();
@@ -114,7 +114,7 @@ namespace Tests.UnitTests
 
             //value < all
             {
-                IList<CachedObject> result1 =
+                IList<PackedObject> result1 =
                     indexByValue.GetMany(MakeIntValue(0, keyType), QueryOperator.Lt).OrderBy(o => o.PrimaryKey)
                         .ToList();
                 Assert.AreEqual(result1.Count, 0);
@@ -125,7 +125,7 @@ namespace Tests.UnitTests
 
             //value > all
             {
-                IList<CachedObject> result1 =
+                IList<PackedObject> result1 =
                     indexByValue.GetMany(MakeIntValue(99, keyType), QueryOperator.Lt)
                         .OrderBy(o => o.PrimaryKey)
                         .ToList();
@@ -137,7 +137,7 @@ namespace Tests.UnitTests
 
             //first value
             {
-                IList<CachedObject> result1 =
+                IList<PackedObject> result1 =
                     indexByValue.GetMany(MakeIntValue(1, keyType), QueryOperator.Lt).OrderBy(o => o.PrimaryKey)
                         .ToList();
                 Assert.AreEqual(result1.Count, 0);
@@ -165,7 +165,7 @@ namespace Tests.UnitTests
 
             var index = new OrderedIndex(valueKey);
             for (var i = 0; i < valueKeys.Length; i++)
-                index.Put(CachedObject.Pack(new CacheableTypeOk(i, 106, "A", DateTime.Now, valueKeys[i]), schema));
+                index.Put(PackedObject.Pack(new CacheableTypeOk(i, 106, "A", DateTime.Now, valueKeys[i]), schema));
 
             return index;
         }
@@ -228,7 +228,7 @@ namespace Tests.UnitTests
             //many in the middle
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
-            IList<CachedObject> result1 =
+            IList<PackedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 3);
             Assert.AreEqual(result1[0].PrimaryKey, 2);
@@ -403,7 +403,7 @@ namespace Tests.UnitTests
             //many in the middle
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
-            IList<CachedObject> result1 =
+            IList<PackedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Ge).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 5);
             Assert.AreEqual(result1[0].PrimaryKey, 2);
@@ -484,7 +484,7 @@ namespace Tests.UnitTests
             //many in the middle
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
-            IList<CachedObject> result1 =
+            IList<PackedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 2);
             Assert.AreEqual(result1[0].PrimaryKey, 5);
@@ -568,12 +568,12 @@ namespace Tests.UnitTests
             {
                 var indexByValue = new OrderedIndex(valueKey);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
 
                 CheckLe(indexByValue);
                 CheckLs(indexByValue);
@@ -583,12 +583,12 @@ namespace Tests.UnitTests
             {
                 var indexByValue = new OrderedIndex(valueKey);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
 
 
                 CheckLe(indexByValue);
@@ -601,12 +601,12 @@ namespace Tests.UnitTests
 
                 indexByValue.BeginFill();
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 80), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 1), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 13), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 4), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 14), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 6), schema));
                 indexByValue.EndFill();
 
                 CheckLe(indexByValue);
@@ -620,12 +620,12 @@ namespace Tests.UnitTests
 
                 var keyType = new KeyInfo("test", 0, IndexType.Ordered);
 
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 45), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 45), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 45), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 45), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 45), schema));
-                indexByValue.Put(CachedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(6, 106, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(1, 101, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(4, 104, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(2, 102, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(5, 105, "A", DateTime.Now, 45), schema));
+                indexByValue.Put(PackedObject.Pack(new CacheableTypeOk(3, 103, "A", DateTime.Now, 45), schema));
 
                 //value not fount (too small)
                 var result1 = indexByValue.GetMany(MakeIntValue(12, keyType), QueryOperator.Le);
@@ -659,7 +659,7 @@ namespace Tests.UnitTests
 
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
-            IList<CachedObject> result1 =
+            IList<PackedObject> result1 =
                 idx1.GetMany(MakeIntValue(3, keyType), QueryOperator.Gt).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 2);
             Assert.AreEqual(result1[0].PrimaryKey, 5);

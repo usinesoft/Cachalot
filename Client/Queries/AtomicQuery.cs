@@ -389,7 +389,7 @@ namespace Client.Queries
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public override bool Match(CachedObject item)
+        public override bool Match(PackedObject item)
         {
             switch (Operator)
             {
@@ -413,32 +413,32 @@ namespace Client.Queries
             throw new NotSupportedException("unknown operator");
         }
 
-        private bool MatchLs(CachedObject item, KeyValue value)
+        private bool MatchLs(PackedObject item, KeyValue value)
         {
             return GetKeyOfObject(item, value) < value;
         }
 
-        private bool MatchGt(CachedObject item, KeyValue value)
+        private bool MatchGt(PackedObject item, KeyValue value)
         {
             return GetKeyOfObject(item, value) > value;
         }
 
-        private bool MatchLe(CachedObject item, KeyValue value)
+        private bool MatchLe(PackedObject item, KeyValue value)
         {
             return GetKeyOfObject(item, value) <= value;
         }
 
-        private bool MatchGe(CachedObject item, KeyValue value)
+        private bool MatchGe(PackedObject item, KeyValue value)
         {
             return GetKeyOfObject(item, value) >= value;
         }
 
-        private bool MatchIn(CachedObject item)
+        private bool MatchIn(PackedObject item)
         {
             return item.MatchOneOf(_inValues);
         }
 
-        private bool MatchEq(CachedObject item, KeyValue value)
+        private bool MatchEq(PackedObject item, KeyValue value)
         {
             return Value == GetKeyOfObject(item, value);
         }
@@ -450,7 +450,7 @@ namespace Client.Queries
         /// <param name="item"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        private KeyValue GetKeyOfObject(CachedObject item, KeyValue value)
+        private KeyValue GetKeyOfObject(PackedObject item, KeyValue value)
         {
             if (value.KeyType == IndexType.Primary)
                 return item.PrimaryKey;

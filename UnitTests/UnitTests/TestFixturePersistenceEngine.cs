@@ -27,11 +27,11 @@ namespace Tests.UnitTests
 
         private class TestProcessor : IPersistentObjectProcessor
         {
-            public IList<CachedObject> LoadedObjects { get; } = new List<CachedObject>();
+            public IList<PackedObject> LoadedObjects { get; } = new List<PackedObject>();
 
             public void Process(byte[] data)
             {
-                var obj = SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers,
+                var obj = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers,
                     false);
 
                 LoadedObjects.Add(obj);
@@ -64,7 +64,7 @@ namespace Tests.UnitTests
 
             foreach (var item in items)
             {
-                var packed = CachedObject.Pack(item, _schema);
+                var packed = PackedObject.Pack(item, _schema);
                 transaction.Items.Add(packed);
             }
 
@@ -77,7 +77,7 @@ namespace Tests.UnitTests
 
             foreach (var item in items)
             {
-                var packed = CachedObject.Pack(item, _schema);
+                var packed = PackedObject.Pack(item, _schema);
                 transaction.ItemsToDelete.Add(packed);
             }
 
@@ -123,7 +123,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(1, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(CachedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -158,7 +158,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(1, processor.LoadedObjects.Count);
 
-            var reloaded = CachedObject.Unpack<Trade>(processor.LoadedObjects[0]);
+            var reloaded = PackedObject.Unpack<Trade>(processor.LoadedObjects[0]);
 
             Assert.AreEqual("TATA", reloaded.Folder);
         }
@@ -200,7 +200,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(CachedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -247,7 +247,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(CachedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 

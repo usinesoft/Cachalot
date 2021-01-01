@@ -19,7 +19,7 @@ namespace Client.ChannelInterface
         ///     Send a collection of cached object. No serialization is required on the server side
         /// </summary>
         /// <param name="items"></param>
-        void SendMany(ICollection<CachedObject> items);
+        void SendMany(ICollection<PackedObject> items);
 
         
         /// <summary>

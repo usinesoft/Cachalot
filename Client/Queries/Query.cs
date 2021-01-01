@@ -22,7 +22,7 @@ namespace Client.Queries
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public abstract bool Match(CachedObject item);
+        public abstract bool Match(PackedObject item);
     }
 
     

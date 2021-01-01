@@ -13,7 +13,7 @@ namespace Client.Tools
     public static class DumpHelper
     {
         
-        internal static IEnumerable<CachedObject> LoadObjects(IDataClient @this, string jsonPath, [NotNull] string collectionName)
+        internal static IEnumerable<PackedObject> LoadObjects(IDataClient @this, string jsonPath, [NotNull] string collectionName)
         {
             if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));
 
@@ -32,7 +32,7 @@ namespace Client.Tools
 
             foreach (var item in array.Children<JObject>())
             {
-                var cachedObject = CachedObject.PackJson(item.ToString(), collectionSchema);
+                var cachedObject = PackedObject.PackJson(item.ToString(), collectionSchema);
                 yield return cachedObject;
             }
         }
@@ -45,7 +45,7 @@ namespace Client.Tools
         /// <param name="collectionSchema"></param>
         /// <param name="shardIndex"></param>
         /// <returns></returns>
-        public static IEnumerable<CachedObject> ObjectsInDump(string path, CollectionSchema collectionSchema,
+        public static IEnumerable<PackedObject> ObjectsInDump(string path, CollectionSchema collectionSchema,
             int shardIndex = -1)
         {
             var fileMask = shardIndex != -1
@@ -63,14 +63,14 @@ namespace Client.Tools
 
                 foreach (var part in parts)
                 {
-                    var cachedObject = CachedObject.PackJson(part, collectionSchema);
+                    var cachedObject = PackedObject.PackJson(part, collectionSchema);
                     yield return cachedObject;
                 }
             }
         }
 
         public static void DumpObjects(string path, CollectionSchema collectionSchema, int shardIndex,
-            IEnumerable<CachedObject> objects)
+            IEnumerable<PackedObject> objects)
         {
             if (!Directory.Exists(path)) throw new NotSupportedException("Dump path not found:" + path);
 

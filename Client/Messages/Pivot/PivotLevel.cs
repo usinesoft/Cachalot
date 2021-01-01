@@ -27,7 +27,7 @@ namespace Client.Messages.Pivot
         /// </summary>
         [field: ProtoMember(3)] public List<AggregatedValue> AggregatedValues { get; } = new List<AggregatedValue>();
 
-        public void AggregateOneObject(CachedObject @object, params string[] axis)
+        public void AggregateOneObject(PackedObject @object, params string[] axis)
         {
             if(@object.Values.Length == 0)
                 throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");

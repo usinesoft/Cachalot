@@ -10,8 +10,8 @@ namespace Server.Persistence
     {
         private readonly DataContainer _dataContainer;
 
-        private readonly Dictionary<string, List<CachedObject>> _temporaryStorage =
-            new Dictionary<string, List<CachedObject>>();
+        private readonly Dictionary<string, List<PackedObject>> _temporaryStorage =
+            new Dictionary<string, List<PackedObject>>();
 
         public ObjectProcessor(DataContainer dataContainer)
         {
@@ -20,14 +20,14 @@ namespace Server.Persistence
 
         public void Process(byte[] data)
         {
-            var item = SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers,
+            var item = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers,
                 false); // the json itself may be compressed, but the persisted object is never compressed
 
             Dbg.Trace($"processing persistent object {data.Length} bytes {item}");
 
             if (!_temporaryStorage.TryGetValue(item.CollectionName, out var list))
             {
-                list = new List<CachedObject>();
+                list = new List<PackedObject>();
                 _temporaryStorage[item.CollectionName] = list;
             }
 

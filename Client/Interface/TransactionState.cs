@@ -40,7 +40,7 @@ namespace Client.Interface
                 TransactionId = Guid.NewGuid();
             }
 
-            private int WhichNode(CachedObject item)
+            private int WhichNode(PackedObject item)
             {
                 return item.PrimaryKey.GetHashCode() % Shards;
             }
@@ -53,8 +53,8 @@ namespace Client.Interface
                 }
             }
 
-            public void Initialize(IList<CachedObject> itemsToPut, IList<OrQuery> conditions,
-                IList<CachedObject> itemsToDelete, IList<DataClient> clients)
+            public void Initialize(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
+                IList<PackedObject> itemsToDelete, IList<DataClient> clients)
             {
                 CheckStatus(Status.None);
 

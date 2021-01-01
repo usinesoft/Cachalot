@@ -54,7 +54,7 @@ namespace Tests.UnitTests
             var object1 = GetObject1();
             var description = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
-            var cached = CachedObject.Pack(object1, description);
+            var cached = PackedObject.Pack(object1, description);
 
             Assert.IsNotNull(cached);
             Assert.IsNotNull(cached.PrimaryKey);
@@ -88,7 +88,7 @@ namespace Tests.UnitTests
                 }
             }
 
-            var fromCache = CachedObject.Unpack<CacheableTypeOk>(cached);
+            var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached);
             Assert.AreEqual(object1, fromCache);
         }
 
@@ -98,11 +98,11 @@ namespace Tests.UnitTests
             
             var schema = TypedSchemaFactory.FromType(typeof(Person));
 
-            var packed = CachedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
+            var packed = PackedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
 
             var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.UseCompression);
 
-            var reloaded = SerializationHelper.ObjectFromBytes<CachedObject>(data, SerializationMode.ProtocolBuffers, false);
+            var reloaded = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
            
             Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
@@ -140,7 +140,7 @@ namespace Tests.UnitTests
             //    Quantity = 2
             //};
 
-            //var packed = CachedObject.Pack(order, description);
+            //var packed = PackedObject.Pack(order, description);
             //Assert.AreEqual(2, packed.Values.Length);
             //Assert.AreEqual("Amount", packed.Values[0].KeyName);
             //Assert.AreEqual(order.Amount, packed.Values[0].NumericValue);
@@ -149,7 +149,7 @@ namespace Tests.UnitTests
 
             // TODO review after refactoring
 
-            //var packed1 = CachedObject.Pack(order, desc);
+            //var packed1 = PackedObject.Pack(order, desc);
             //Assert.AreEqual(2, packed1.Values.Length);
             //Assert.AreEqual("Amount", packed1.Values[0].Name);
             //Assert.AreEqual(order.Amount, packed1.Values[0].Value);
@@ -157,12 +157,12 @@ namespace Tests.UnitTests
             //Assert.AreEqual(order.Quantity, packed1.Values[1].Value);
 
             //var json = JsonConvert.SerializeObject(order);
-            //var packed2 = CachedObject.PackJson(json, desc);
+            //var packed2 = PackedObject.PackJson(json, desc);
             //Assert.AreEqual(2, packed2.Values.Length);
             //Assert.AreEqual("Amount", packed1.Values[0].Name);
             //Assert.AreEqual(order.Amount, packed2.Values[0].Value);
 
-            //var packed3 = CachedObject.Pack(order);
+            //var packed3 = PackedObject.Pack(order);
             //Assert.AreEqual(2, packed3.Values.Length);
             //Assert.AreEqual("Amount", packed3.Values[0].Name);
             //Assert.AreEqual(order.Amount, packed3.Values[0].Value);
@@ -212,8 +212,8 @@ namespace Tests.UnitTests
                 Quantity = 2
             };
 
-            var packed1 = CachedObject.Pack(order1, description);
-            var packed2 = CachedObject.Pack(order2, description);
+            var packed1 = PackedObject.Pack(order1, description);
+            var packed2 = PackedObject.Pack(order2, description);
 
             var pivot = new PivotLevel();
 
@@ -259,9 +259,9 @@ namespace Tests.UnitTests
                 Quantity = 2
             };
 
-            var packed1 = CachedObject.Pack(order1, schema);
-            var packed2 = CachedObject.Pack(order2, schema);
-            var packed3 = CachedObject.Pack(order3, schema);
+            var packed1 = PackedObject.Pack(order1, schema);
+            var packed2 = PackedObject.Pack(order2, schema);
+            var packed3 = PackedObject.Pack(order3, schema);
 
 
             // first test with one single axis
@@ -313,7 +313,7 @@ namespace Tests.UnitTests
                 Quantity = 1
             };
 
-            var packed4 = CachedObject.Pack(order4, schema);
+            var packed4 = PackedObject.Pack(order4, schema);
 
             var pivot1 = new PivotLevel();
 
@@ -345,7 +345,7 @@ namespace Tests.UnitTests
             var description = TypedSchemaFactory.FromType(typeof(TestData));
 
             var obj = new TestData {Name = "toto"};
-            var packed = CachedObject.Pack(obj, description);
+            var packed = PackedObject.Pack(obj, description);
 
             var pk = Guid.Parse(packed.PrimaryKey.ToString());
 

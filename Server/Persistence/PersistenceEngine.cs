@@ -140,14 +140,14 @@ namespace Server.Persistence
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        CachedObject GetItemWithTokenizedFullText(CachedObject item)
+        PackedObject GetItemWithTokenizedFullText(PackedObject item)
         {
             
             if (item.FullText != null && item.FullText.Length > 0)
             {
                 var dataStore = Container.TryGetByName(item.CollectionName);
 
-                CachedObject result = item;
+                PackedObject result = item;
                 if (dataStore != null)
                 {
                     var lockMgr = _serviceContainer.LockManager;

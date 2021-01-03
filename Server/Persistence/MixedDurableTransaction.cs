@@ -5,20 +5,23 @@ using ProtoBuf;
 namespace Server.Persistence
 {
     /// <summary>
-    ///     Transaction containing multiple items to update or insert
+    ///     A transaction containing both Put and delete requests
     /// </summary>
     [ProtoContract]
-    public class PutTransaction : Transaction
+    public class MixedDurableTransaction : DurableTransaction
     {
         /// <summary>
         ///     Used by protobuf serialization
         /// </summary>
         // ReSharper disable once EmptyConstructor
         // ReSharper disable once PublicConstructorInAbstractClass
-        public PutTransaction()
+        public MixedDurableTransaction()
         {
         }
 
-        [ProtoMember(10)] public IList<PackedObject> Items { get; set; } = new List<PackedObject>();
+        [ProtoMember(10)] public IList<PackedObject> ItemsToPut { get; set; } = new List<PackedObject>();
+
+
+        [ProtoMember(20)] public IList<PackedObject> ItemsToDelete { get; set; } = new List<PackedObject>();
     }
 }

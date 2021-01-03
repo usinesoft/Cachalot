@@ -8,7 +8,7 @@ using Server.FullTextSearch;
 
 namespace Server.Persistence
 {
-    public class PersistenceEngine
+    public class PersistenceEngine : ITransactionLog
     {
         private readonly Services _serviceContainer;
         private readonly object _schemaSync = new object();
@@ -176,7 +176,7 @@ namespace Server.Persistence
             }
 
 
-            // It may reach this point when commiting to persistent storage pending transactions from the transaction log
+            // It may reach this point when commiting to persistent storage a pending transactions from the transaction log
             // This happens in the early stages of the startup before loading items into memory
             item.TokenizedFullText = Tokenizer.Tokenize(item.FullText);
             return item;
@@ -198,11 +198,11 @@ namespace Server.Persistence
                         {
                             var data = persistentTransaction.Data;
                             var transaction =
-                                SerializationHelper.ObjectFromBytes<Transaction>(data,
+                                SerializationHelper.ObjectFromBytes<DurableTransaction>(data,
                                     SerializationMode.ProtocolBuffers,
                                     false);
 
-                            if (transaction is MixedTransaction mixedTransaction)
+                            if (transaction is MixedDurableTransaction mixedTransaction)
                             {
                                 foreach (var item in mixedTransaction.ItemsToPut)
                                 {
@@ -225,7 +225,7 @@ namespace Server.Persistence
                                 }
                             }
 
-                            if (transaction is PutTransaction putTransaction)
+                            if (transaction is PutDurableTransaction putTransaction)
                                 foreach (var item in putTransaction.Items)
                                 {
                                     var itemFromMemory = GetItemWithTokenizedFullText(item);
@@ -240,7 +240,7 @@ namespace Server.Persistence
                                         unchecked((int) persistentTransaction.Id));
                                 }
 
-                            if (transaction is DeleteTransaction deleteTransaction)
+                            if (transaction is DeleteDurableTransaction deleteTransaction)
                                 foreach (var item in deleteTransaction.ItemsToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
@@ -264,14 +264,14 @@ namespace Server.Persistence
             _singleConsumer.Start();
         }
 
-        public void NewTransaction(Transaction transaction, bool isDelayed = false)
+        public void NewTransaction(DurableTransaction durableTransaction, bool isDelayed = false)
         {
             var delayInMilliseconds = isDelayed ? Constants.DelayForTwoStageTransactionsInMilliseconds : 0;
 
             try
             {
                 TransactionLog.NewTransaction(
-                    SerializationHelper.ObjectToBytes(transaction, SerializationMode.ProtocolBuffers, false),
+                    SerializationHelper.ObjectToBytes(durableTransaction, SerializationMode.ProtocolBuffers, false),
                     delayInMilliseconds);
             }
             catch (Exception e)

@@ -10,7 +10,6 @@ using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Interfaces;
 using NUnit.Framework;
 using Server;
 using Tests.TestData;

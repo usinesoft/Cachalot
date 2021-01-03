@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using Client.Core;
+using Client.Core.Linq;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
@@ -15,13 +17,10 @@ namespace Cachalot.Linq
     {
         private readonly IDataClient _client;
 
-        private readonly List<OrQuery> _conditions = new List<OrQuery>();
-
-        private readonly List<PackedObject> _itemsToDelete = new List<PackedObject>();
-
-        private readonly List<PackedObject> _itemsToPut = new List<PackedObject>();
-
+        
         private readonly Connector _connector;
+
+        readonly List<DataRequest> _childRequests = new List<DataRequest>();
 
 
         internal Transaction(Connector connector)
@@ -37,10 +36,17 @@ namespace Cachalot.Linq
 
             var packed = Pack(item, collectionName);
 
-            _itemsToPut.Add(packed);
-            
-            
-            _conditions.Add(new OrQuery()); // empty condition
+            // add to an existing put non conditional request (for the same collection) or create a new one
+            var request = _childRequests.Where(r => r.CollectionName == collectionName && r is PutRequest putRequest && !putRequest.HasCondition).Cast<PutRequest>().FirstOrDefault();
+
+            if (request == null)
+            {
+                request = new PutRequest(collectionName);
+
+                _childRequests.Add(request);
+            }
+
+            request.Items.Add(packed);
 
         }
 
@@ -55,16 +61,47 @@ namespace Cachalot.Linq
         {
             collectionName ??= typeof(T).FullName;
 
-            
             var packed = Pack(newValue, collectionName);
 
-            _itemsToPut.Add(packed);
+            // put requests with condition can contain only one item
+            
+            var request = new PutRequest(collectionName);
+
+            request.Items.Add(packed);
+
+            _childRequests.Add(request);
 
             
+            var query = PredicateToQuery(test, collectionName);
             
-            var testAsQuery = ExpressionTreeHelper.PredicateToQuery(test, collectionName);
+            request.Predicate = query;
 
-            _conditions.Add(testAsQuery);
+        }
+
+        private OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> predicate, string collectionName)
+        {
+            // convert the predicate to a serializable query
+            // create a fake queryable to force query parsing and capture resolution
+
+            var schema = _connector.GetCollectionSchema(collectionName);
+            var executor = new NullExecutor(schema, collectionName);
+            var queryable = new NullQueryable<T>(executor);
+
+            var unused = queryable.Where(predicate).ToList();
+
+            var query = executor.Expression;
+            return query;
+        }
+
+        public void DeleteMany<T>(Expression<Func<T, bool>> where, string collectionName = null)
+        {
+            collectionName ??= typeof(T).FullName;
+
+            var query = PredicateToQuery(where, collectionName);
+
+            var request = new RemoveManyRequest(query);
+            
+            _childRequests.Add(request);
 
         }
 
@@ -76,14 +113,16 @@ namespace Cachalot.Linq
 
             var packed = Pack(item, collectionName);
 
-            _itemsToDelete.Add(packed);
+            var request = new RemoveRequest(packed.CollectionName, packed.PrimaryKey);
+
+            _childRequests.Add(request);
 
         }
 
 
         public void Commit()
         {
-            _client.ExecuteTransaction(_itemsToPut, _conditions, _itemsToDelete);
+            _client.ExecuteTransaction(_childRequests);
         }
 
 

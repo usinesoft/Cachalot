@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
-using Client.Queries;
 using Client.Tools;
 
 namespace Client.Interface
@@ -16,18 +15,15 @@ namespace Client.Interface
     /// </summary>
     public partial class DataAggregator
     {
-        private partial class TransactionState
+        private class TransactionState
         {
             public enum Status
             {
                 None,
                 Initialized,
-                RunningAsSingleStage,
                 AcquiringLocks,
                 LocksAcquired,
-                RunningFirstStage,
                 FirstStageCompleted,
-                RunningSecondStage,
                 SecondStageCompleted,
                 Completed,
                 Failed
@@ -40,9 +36,9 @@ namespace Client.Interface
                 TransactionId = Guid.NewGuid();
             }
 
-            private int WhichNode(PackedObject item)
+            private int WhichNode(KeyValue primaryKey)
             {
-                return item.PrimaryKey.GetHashCode() % Shards;
+                return primaryKey.GetHashCode() % Shards;
             }
 
             public void CheckStatus(Status requiredStatus)
@@ -53,44 +49,19 @@ namespace Client.Interface
                 }
             }
 
-            public void Initialize(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
-                IList<PackedObject> itemsToDelete, IList<DataClient> clients)
+            public void Initialize(IList<DataRequest> requests, IList<DataClient> clients)
             {
                 CheckStatus(Status.None);
 
                 Shards = clients.Count;
 
-                var index = 0;
-                foreach (var item in itemsToPut)
-                {
-                    var serverIndex = WhichNode(item);
+                var transactionRequest = new TransactionRequest(requests){TransactionId = Guid.NewGuid()};
 
-                    var request = RequestByServer.GetOrCreate(serverIndex);
-
-                    request.ItemsToPut.Add(item);
-                    request.Conditions.Add(conditions[index]);
-                    request.TransactionId = TransactionId;
-
-
-                    index++;
-                }
-
-                if (itemsToDelete != null)
-                    foreach (var item in itemsToDelete)
-                    {
-                        var serverIndex = WhichNode(item);
-
-                        var request = RequestByServer.GetOrCreate(serverIndex);
-
-                        request.ItemsToDelete.Add(item);
-
-
-                        index++;
-                    }
+                RequestByServer = transactionRequest.SplitByServer(WhichNode, Shards);
 
                 var usedClients = clients.Where(c => RequestByServer.ContainsKey(c.ShardIndex)).ToList();
 
-                Clients.AddRange(usedClients);
+                Clients = usedClients;
 
                 CurrentStatus = Status.Initialized;
             }
@@ -102,7 +73,7 @@ namespace Client.Interface
                 if (IsSingleStage)
                 {
                     var request = RequestByServer.Values.Single();
-                    Clients.Single().ExecuteTransaction(request.ItemsToPut, request.Conditions, request.ItemsToDelete);
+                    Clients.Single().ExecuteTransaction(request.ChildRequests);
 
                     CurrentStatus = Status.Completed;
                 }
@@ -189,7 +160,7 @@ namespace Client.Interface
             {
                 CheckStatus(Status.SecondStageCompleted);
 
-                // close the session. This will release the locks on the server
+                // close the session. The locks on the server have already been released
                 Parallel.ForEach(Clients, client =>
                 {
                     var session = SessionByServer[client.ShardIndex];
@@ -281,10 +252,10 @@ namespace Client.Interface
             public SafeDictionary<int, Session> SessionByServer { get; } = new SafeDictionary<int, Session>(null);
             public SafeDictionary<int, bool> StatusByServer { get; } = new SafeDictionary<int, bool>(null);
 
-            public SafeDictionary<int, TransactionRequest> RequestByServer { get; } =
+            public SafeDictionary<int, TransactionRequest> RequestByServer { get; set; } =
                 new SafeDictionary<int, TransactionRequest>(() => new TransactionRequest());
 
-            public List<DataClient> Clients { get; } = new List<DataClient>();
+            public List<DataClient> Clients { get; set; } = new List<DataClient>();
             public Guid TransactionId { get; }
             public bool IsSingleStage => Clients.Count == 1;
             public bool AllOk => StatusByServer.Values.All(s => s);

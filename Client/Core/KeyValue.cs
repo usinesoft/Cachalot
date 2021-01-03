@@ -162,7 +162,7 @@ namespace Client.Core
         public bool IsNull => _data[0] == (int) OriginalType.Null;
 
         /// <summary>
-        /// Thi kind of date needs to be serialized to two longs to be reconstructed identically
+        /// This kind of date needs to be serialized to two longs to be reconstructed identically
         /// </summary>
         /// <param name="value"></param>
         private void FromDateTimeWithTimeZone(DateTimeOffset value)

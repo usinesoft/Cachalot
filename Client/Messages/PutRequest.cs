@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Client.Core;
 using Client.Queries;
+using JetBrains.Annotations;
 using ProtoBuf;
 
 namespace Client.Messages
@@ -74,6 +75,8 @@ namespace Client.Messages
 
         [ProtoMember(6)] public OrQuery Predicate { get; set; }
 
+        public bool HasCondition => Predicate != null && !Predicate.IsEmpty();
+
 
         /// <summary>
         /// Split the request in order to limit data that is sent at once to a stream
@@ -104,6 +107,30 @@ namespace Client.Messages
                     result.Add(request);
                     size = 0;
                 }
+            }
+
+
+            return result;
+        }
+
+        public IDictionary<int, PutRequest> SplitByServer([NotNull] Func<KeyValue, int> serverSelector )
+        {
+            if (serverSelector == null) throw new ArgumentNullException(nameof(serverSelector));
+            
+            var result = new Dictionary<int, PutRequest>();
+
+            
+            foreach (var item in Items)
+            {
+                int serverIndex = serverSelector(item.PrimaryKey);
+
+                if (!result.TryGetValue(serverIndex, out var putRequest))
+                {
+                    putRequest = new PutRequest(CollectionName);
+                    result.Add(serverIndex, putRequest);
+                }
+
+                putRequest.Items.Add(item);
             }
 
 

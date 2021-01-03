@@ -18,6 +18,7 @@ using Client.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Server.Persistence;
+using Server.Transactions;
 
 #endregion
 
@@ -127,7 +128,13 @@ namespace Server
 
                 if (clientRequest is TransactionRequest transactionRequest)
                 {
-                    ProcessTransactionRequest(transactionRequest, client);
+                    //TODO temporary: move to service container
+
+                    var transactionManager = new TransactionManager(_serviceContainer.LockManager, PersistenceEngine);
+
+                    transactionManager.ProcessTransactionRequest(transactionRequest, client, DataStores);
+
+                    //ProcessTransactionRequest(transactionRequest, client);
                     return;
                 }
 
@@ -166,251 +173,7 @@ namespace Server
 
         }
 
-
-        private void ProcessTransactionRequest(TransactionRequest transactionRequest, IClient client)
-        {
-            // First try to acquire a write lock on all concerned data stores
-
-            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.CollectionName).Distinct().ToList();
-            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
-            var types = typesToPut.Union(typesToDelete).Distinct().ToList();
-
-            var lockManager = _serviceContainer.LockManager;
-
-            var keys = DataStores.Keys;
-            
-            if (types.Any(t => !keys.Contains(t))) throw new NotSupportedException("Type not registered");
-
-            var transactionId = transactionRequest.TransactionId;
-
-
-            // do not work too hard if it's single stage
-            if (transactionRequest.IsSingleStage)
-            {
-                ProcessSingleStageTransactionRequest(transactionRequest, client);
-                return;
-            }
-
-            bool lockAcquired = lockManager.TryAcquireWriteLock(transactionId, Constants.DelayForLock, types.ToArray());
-
-            if (lockAcquired)
-            {
-                Dbg.Trace($"S: Locks acquired on server {ShardIndex}  transaction {transactionId}");
-
-                var answer = client.ShouldContinue();
-                if (answer.HasValue && answer.Value)
-                {
-                    Dbg.Trace(
-                        $"S: all clients acquired locks. Continue on server {ShardIndex}  transaction {transactionId}");
-
-                    
-                }
-                else
-                {
-                    Dbg.Trace($"S: Not all clients acquired locks on server {ShardIndex}  transaction {transactionId}.");
-
-                    lockManager.CloseSession(transactionId);
-
-                    return;    
-                }
-
-                
-            }
-            else
-            {
-                
-                client.SendResponse(new ExceptionResponse(
-                    new CacheException(
-                        $"can not acquire write lock on server {ShardIndex}  for transaction {transactionRequest.TransactionId}"),
-                    ExceptionType.FailedToAcquireLock));
-
-                return;
-
-            }
-            
-            
-            
-            Dbg.Trace($"S: lock acquired by all clients for transaction {transactionRequest.TransactionId}");
-
-
-            // Second register a durable delayed transaction. It can be cancelled later
-
-            try
-            {
-                // check the conditions (in case of conditional update)
-                var index = 0;
-                foreach (var condition in transactionRequest.Conditions)
-                {
-                    if (!condition.IsEmpty())
-                    {
-                        var ds = DataStores[condition.CollectionName];
-
-                        ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
-                    }
-
-                    index++;
-                }
-
-                Dbg.Trace($"S: begin writing delayed transaction {transactionRequest.TransactionId}");
-                PersistenceEngine?.NewTransaction(new MixedTransaction
-                    {
-                        ItemsToDelete = transactionRequest.ItemsToDelete,
-                        ItemsToPut = transactionRequest.ItemsToPut
-                    },
-                    true
-                );
-
-                client.SendResponse(new ReadyResponse());
-
-
-                Dbg.Trace($"S: end writing delayed transaction {transactionRequest.TransactionId}");
-            }
-            catch (CacheException e)
-            {
-                Dbg.Trace($"error in first stage:{e.Message} server {ShardIndex}");
-                client.SendResponse(new ExceptionResponse(e, e.ExceptionType));
-                // failed to write a durable transaction so stop here
-
-                // unlock
-                lockManager.CloseSession(transactionRequest.TransactionId);
-                
-                return;
-            }
-            catch (Exception e)
-            {
-                Dbg.Trace($"error in first stage:{e.Message} server {ShardIndex}");
-                client.SendResponse(new ExceptionResponse(e));
-                // failed to write a durable transaction so stop here
-
-                // unlock
-                lockManager.CloseSession(transactionRequest.TransactionId);
-                
-                return;
-            }
-
-
-            try
-            {
-                Dbg.Trace($"S: begin waiting for client go {transactionRequest.TransactionId}");
-                var answer = client.ShouldContinue();
-                Dbg.Trace($"S: end waiting for client go answer = {answer}");
-
-                if (answer.HasValue) // the client has answered
-                {
-                    if (answer.Value)
-                    {
-                        // update the data in memory
-                        var dataRequests = transactionRequest.SplitByType();
-
-                        foreach (var dataRequest in dataRequests)
-                        {
-                            if (!DataStores.Keys.Contains(dataRequest.CollectionName))
-                                    throw new NotSupportedException(
-                                        $"The type {dataRequest.CollectionName} is not registered");
-                                
-                            var store = DataStores[dataRequest.CollectionName];
-                            
-                            store.ProcessRequest(dataRequest, client, null);
-                        }
-
-                        ServerLog.LogInfo(
-                            $"S: two stage transaction committed successfully on server {ShardIndex} {transactionRequest.TransactionId}");
-                    }
-                    else
-                    {
-                        ServerLog.LogWarning(
-                            $"S: two stage transaction cancelled by client on server {ShardIndex} {transactionRequest.TransactionId}");
-
-                        // cancel the delayed transaction
-                        PersistenceEngine?.CancelDelayedTransaction();
-                    }
-                }
-                else // the client failed to answer in a reasonable delay (which is less than the delay to commit a delayed transaction )
-                {
-                    PersistenceEngine?.CancelDelayedTransaction();
-                }
-            }
-            catch (Exception e)
-            {
-                ServerLog.LogInfo($"error in the second stage of a transaction:{e.Message}");
-            }
-
-
-            // unlock
-            lockManager.CloseSession(transactionRequest.TransactionId);
-        }
-
-        private void ProcessSingleStageTransactionRequest(TransactionRequest transactionRequest, IClient client)
-        {
-            var typesToPut = transactionRequest.ItemsToPut.Select(i => i.CollectionName).Distinct().ToList();
-            var typesToDelete = transactionRequest.ItemsToDelete.Select(i => i.CollectionName).Distinct().ToList();
-            var types = typesToPut.Union(typesToDelete).Distinct().ToArray();
-
-
-            var lockManager = _serviceContainer.LockManager;
-
-
-            lockManager.DoWithWriteLock(() =>
-            {
-                try
-                {
-                    Dbg.Trace($"S: fallback to single stage for transaction {transactionRequest.TransactionId}");
-
-
-                    // check the conditions (in case of conditional update)
-                    var index = 0;
-                    foreach (var condition in transactionRequest.Conditions)
-                    {
-                        if (!condition.IsEmpty())
-                        {
-                            var ds = DataStores[condition.CollectionName];
-
-                            ds.CheckCondition(transactionRequest.ItemsToPut[index].PrimaryKey, condition);
-                        }
-
-                        index++;
-                    }
-
-
-                    PersistenceEngine?.NewTransaction(new MixedTransaction
-                        {
-                            ItemsToDelete = transactionRequest.ItemsToDelete,
-                            ItemsToPut = transactionRequest.ItemsToPut
-                        }
-                    );
-
-                    // update the data in memory
-                    var dataRequests = transactionRequest.SplitByType();
-
-                    foreach (var dataRequest in dataRequests)
-                    {
-                        var ds = DataStores.TryGetValue(dataRequest.CollectionName);
-
-
-                        if (ds == null)
-                            throw new NotSupportedException($"The type {dataRequest.CollectionName} is not registered");
-
-
-                        ds.ProcessRequest(dataRequest, client, null);
-                    }
-
-                    client.SendResponse(new NullResponse());
-
-                    Dbg.Trace($"S: end writing delayed transaction {transactionRequest.TransactionId}");
-                }
-                catch (CacheException e)
-                {
-                    client.SendResponse(new ExceptionResponse(e, e.ExceptionType));
-                }
-                catch (Exception e)
-                {
-                    Dbg.Trace($"error writing delayed transaction:{e.Message}");
-                    client.SendResponse(new ExceptionResponse(e));
-                    // failed to write a durable transaction so stop here
-                }
-            }, types);
-
-        }
+         
 
         public DataStore TryGetByName(string name)
         {
@@ -438,8 +201,7 @@ namespace Server
             {
                 var typeDescription = request.CollectionSchema;
 
-                // TODO temporary fallback
-                var collectionName = request.CollectionName ?? typeDescription.CollectionName;
+                var collectionName = typeDescription.CollectionName;
 
                 var dataStore = DataStores.TryGetValue(collectionName);
 
@@ -493,9 +255,9 @@ namespace Server
         }
 
 
-        private void PersistTransaction(Transaction transaction)
+        private void PersistTransaction(DurableTransaction durableTransaction)
         {
-            PersistenceEngine?.NewTransaction(transaction);
+            PersistenceEngine?.NewTransaction(durableTransaction);
         }
 
 
@@ -878,7 +640,7 @@ namespace Server
                 foreach (var description in schema.CollectionsDescriptions)
                 {
                     ServerLog.LogInfo($"declaring collection {description.Key}");
-                    RegisterType(new RegisterTypeRequest(description.Value, schema.ShardIndex, schema.ShardCount, description.Key), null);
+                    RegisterType(new RegisterTypeRequest(description.Value, schema.ShardIndex, schema.ShardCount), null);
                 }
 
                 ShardIndex = schema.ShardIndex;

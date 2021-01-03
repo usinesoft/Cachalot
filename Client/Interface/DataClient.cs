@@ -455,32 +455,11 @@ namespace Client.Interface
             Channel.SendRequest(request);
         }
 
-        public void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
-            IList<PackedObject> itemsToDelete = null)
+        public void ExecuteTransaction(IList<DataRequest> requests)
         {
-            var locksOk = false;
-
-            var iteration = 0;
-
-
-            while (!locksOk)
-            {
-                var delay = ThreadLocalRandom.Instance.Next(10 * iteration);
-
-                TransactionStatistics.Retries(iteration + 1);
-
-
-                Dbg.Trace(
-                    $"C: delay = {delay} for iteration {iteration} single stage transaction connector {GetHashCode()}");
-
-                if (delay > 0)
-                    Thread.Sleep(delay);
-
-
-                if (itemsToPut == null) throw new ArgumentNullException(nameof(itemsToPut));
-
-                var request = new TransactionRequest(itemsToPut, conditions, itemsToDelete)
-                    {IsSingleStage = true};
+            
+                var request = new TransactionRequest(requests)
+                    {IsSingleStage = true, TransactionId = Guid.NewGuid()};
 
                 TransactionStatistics.ExecutedAsSingleStage();
 
@@ -488,13 +467,14 @@ namespace Client.Interface
                 var response = Channel.SendRequest(request);
 
                 if (response is NullResponse)
-                    locksOk = true;
-                else if (response is ExceptionResponse exResponse)
+                    return;
+
+                if (response is ExceptionResponse exResponse)
                     if (exResponse.ExceptionType != ExceptionType.FailedToAcquireLock)
                         throw new CacheException(exResponse.Message, exResponse.ExceptionType);
-            }
 
-            TransactionStatistics.NewTransactionCompleted();
+
+                TransactionStatistics.NewTransactionCompleted();
         }
 
         public void Import(string collectionName, string jsonFile)

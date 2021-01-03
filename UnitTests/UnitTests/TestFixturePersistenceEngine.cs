@@ -58,9 +58,9 @@ namespace Tests.UnitTests
         }
 
 
-        private Transaction MakeTransaction<T>(params T[] items)
+        private DurableTransaction MakeTransaction<T>(params T[] items)
         {
-            var transaction = new PutTransaction();
+            var transaction = new PutDurableTransaction();
 
             foreach (var item in items)
             {
@@ -71,9 +71,9 @@ namespace Tests.UnitTests
             return transaction;
         }
 
-        private Transaction MakeDeleteTransaction<T>(params T[] items)
+        private DurableTransaction MakeDeleteTransaction<T>(params T[] items)
         {
-            var transaction = new DeleteTransaction();
+            var transaction = new DeleteDurableTransaction();
 
             foreach (var item in items)
             {

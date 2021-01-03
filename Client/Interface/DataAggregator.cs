@@ -713,18 +713,16 @@ namespace Client.Interface
 
 
 
-        public void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions, IList<PackedObject> itemsToDelete = null)
+        public void ExecuteTransaction(IList<DataRequest> requests)
         {
-            if (itemsToPut.Count != conditions.Count)
-                throw new ArgumentException($"{nameof(itemsToPut)} and {nameof(conditions)} do not have the same size");
-
+            
             // the same connector will not execute transactions in parallel
             lock (_transactionSync)
             {
 
                 var status = new TransactionState();
 
-                status.Initialize(itemsToPut, conditions, itemsToDelete, CacheClients);
+                status.Initialize(requests, CacheClients);
 
                 status.CheckStatus(TransactionState.Status.Initialized);
                 

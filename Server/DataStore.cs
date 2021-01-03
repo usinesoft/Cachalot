@@ -788,7 +788,7 @@ namespace Server
         /// <param name="excludeFromEviction">used only for non persistent case</param>
         /// <param name="persistTransaction">external action that is responsible to persist a durable transaction</param>
         internal void InternalPutMany(IList<PackedObject> items, bool excludeFromEviction,
-            Action<Transaction> persistTransaction)
+            Action<DurableTransaction> persistTransaction)
         {
             var isBulkOperation = items.Count > Constants.BulkThreshold;
 
@@ -798,7 +798,7 @@ namespace Server
             {
                 Dbg.Trace($"begin InternalPutMany with {items.Count} object");
 
-                persistTransaction?.Invoke(new PutTransaction {Items = items});
+                persistTransaction?.Invoke(new PutDurableTransaction {Items = items});
 
 
                 InternalBeginBulkInsert(isBulkOperation);
@@ -905,7 +905,7 @@ namespace Server
         }
 
 
-        internal void ProcessRequest(DataRequest dataRequest, IClient client, Action<Transaction> persistTransaction)
+        internal void ProcessRequest(DataRequest dataRequest, IClient client, Action<DurableTransaction> persistTransaction)
         {
             var requestDescription = "";
             var processedItems = 0;
@@ -980,7 +980,7 @@ namespace Server
 
                         var item = _dataByPrimaryKey[primaryKeyToRemove];
 
-                        persistTransaction?.Invoke(new DeleteTransaction {ItemsToDelete = {item}});
+                        persistTransaction?.Invoke(new DeleteDurableTransaction {ItemsToDelete = {item}});
 
                         RemoveByPrimaryKey(primaryKeyToRemove);
 
@@ -996,7 +996,7 @@ namespace Server
 
                         if (removeRequest.Query.Elements == null || removeRequest.Query.Elements.Count == 0)
                         {
-                            persistTransaction?.Invoke(new DeleteTransaction
+                            persistTransaction?.Invoke(new DeleteDurableTransaction
                             {
                                 ItemsToDelete = _dataByPrimaryKey.Values.ToList()
                             });
@@ -1014,7 +1014,7 @@ namespace Server
                         else
                         {
                             var items = InternalFind(removeRequest.Query);
-                            persistTransaction?.Invoke(new DeleteTransaction
+                            persistTransaction?.Invoke(new DeleteDurableTransaction
                             {
                                 ItemsToDelete = items
                             });
@@ -1182,7 +1182,7 @@ namespace Server
             return result;
         }
 
-        private void InternalUpdateIf(PackedObject newValue, OrQuery test, Action<Transaction> persistTransaction)
+        private void InternalUpdateIf(PackedObject newValue, OrQuery test, Action<DurableTransaction> persistTransaction)
         {
             try
             {
@@ -1200,7 +1200,7 @@ namespace Server
 
                 if (test.Match(prevValue))
                 {
-                    persistTransaction?.Invoke(new PutTransaction {Items = {newValue}});
+                    persistTransaction?.Invoke(new PutDurableTransaction {Items = {newValue}});
 
                     InternalUpdate(newValue);
                 }
@@ -1215,7 +1215,7 @@ namespace Server
             }
         }
 
-        private int InternalTryAdd(PackedObject item, Action<Transaction> persistTransaction)
+        private int InternalTryAdd(PackedObject item, Action<DurableTransaction> persistTransaction)
         {
             try
             {
@@ -1227,7 +1227,7 @@ namespace Server
                     return 0;
                 }
 
-                persistTransaction?.Invoke(new PutTransaction {Items = {item}});
+                persistTransaction?.Invoke(new PutDurableTransaction {Items = {item}});
 
                 InternalAddNew(item, true);
             }

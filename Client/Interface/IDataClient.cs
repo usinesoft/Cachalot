@@ -148,14 +148,8 @@ namespace Client.Interface
         /// <summary>
         ///     Put and delete items in an ACID transaction
         /// </summary>
-        /// <param name="itemsToPut">objects to insert or update in the transaction</param>
-        /// <param name="conditions">
-        ///     A list of conditions for conditional update. Needs to have the same size as itemsToPut. May
-        ///     contain null values
-        /// </param>
-        /// <param name="itemsToDelete">items to delete inside a transaction</param>
-        void ExecuteTransaction(IList<PackedObject> itemsToPut, IList<OrQuery> conditions,
-            IList<PackedObject> itemsToDelete = null);
+        /// <param name="requests">List of data requests (write-only) to be executed into a transaction</param>
+        void ExecuteTransaction(IList<DataRequest> requests);
 
 
         /// <summary>

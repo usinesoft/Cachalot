@@ -21,9 +21,14 @@ namespace Client.Core
     public class PackedObject
     {
         /// <summary>
-        ///     This property is not persistent. It is used when ordering items from multiple nodes
+        ///     This property is not persistent. It is used when ordering items from multiple nodes.
         /// </summary>
         public double Rank { get; set; }
+
+        /// <summary>
+        ///     The one and only primary key 
+        /// </summary>
+        public KeyValue PrimaryKey  => Values[0];
 
 
         /// <summary>
@@ -34,39 +39,28 @@ namespace Client.Core
 
 
         /// <summary>
-        ///     The one and only primary key
-        /// </summary>
-        [field: ProtoMember(2)]
-        public KeyValue PrimaryKey { get; }
-
-        [field: ProtoMember(3)] public KeyValue[] UniqueKeys { get; private set; }
-
-        [field: ProtoMember(4)] public KeyValue[] IndexKeys { get; private set; }
-
-
-        /// <summary>
         ///     The original object serialized to byte[]
         /// </summary>
-        [field: ProtoMember(5)]
+        [field: ProtoMember(2)]
         public byte[] ObjectData { get; private set; }
 
-        [field: ProtoMember(7)] public bool UseCompression { get; private set; }
+        [field: ProtoMember(3)] public bool UseCompression { get; private set; }
 
         /// <summary>
         ///     Keys that can be used for "Contains" queries
         /// </summary>
-        [field: ProtoMember(8)]
-        public KeyValue[] ListIndexKeys { get; private set; }
+        [field: ProtoMember(4)]
+        public KeyValues[] CollectionValues { get; private set; }
 
-        [field: ProtoMember(9)] public string[] FullText { get; private set; }
+        [field: ProtoMember(5)] public string[] FullText { get; private set; }
 
         /// <summary>
         ///     Store tokenized full text to avoid tokenization time while loading database from storage
         /// </summary>
-        [field: ProtoMember(10)]
+        [field: ProtoMember(6)]
         public IList<TokenizedLine> TokenizedFullText { get; set; }
 
-        [field: ProtoMember(11)] public KeyValue[] Values { get; private set; }
+        [field: ProtoMember(7)] public KeyValue[] Values { get; private set; }
 
         /// <summary>
         ///     Default constructor for serialization only
@@ -76,35 +70,11 @@ namespace Client.Core
         {
         }
 
-        private PackedObject(KeyValue primaryKey)
-        {
-            PrimaryKey = primaryKey;
-        }
-
+        
 
         public string GlobalKey => CollectionName + PrimaryKey;
 
-        
-        public bool MatchOneOf(ISet<KeyValue> values)
-        {
-            var indexType = values.First().KeyType;
-            var indexName = values.First().KeyName;
-
-            if (indexType == IndexType.Primary)
-                return values.Contains(PrimaryKey);
-
-
-            if (indexType == IndexType.Unique && UniqueKeys != null)
-                return UniqueKeys.Where(i => i.KeyName == indexName).Any(values.Contains);
-
-            if ((indexType == IndexType.Dictionary || indexType == IndexType.Ordered) && IndexKeys != null)
-                return IndexKeys.Where(i => i.KeyName == indexName).Any(values.Contains);
-
-            // TODO manage non indexed server values
-
-            return false;
-        }
-
+       
 
         public static PackedObject Pack<TObject>(TObject instance, [NotNull] CollectionSchema typeDescription, string collectionName = null)
         {
@@ -113,68 +83,58 @@ namespace Client.Core
             if (typeDescription == null) throw new ArgumentNullException(nameof(typeDescription));
 
 
-            var getter = ExpressionTreeHelper.Getter<TObject>(typeDescription.PrimaryKeyField.Name);
-            var value = getter(instance);
-
-            // auto generate an empty guid primary key
-            if (Guid.Empty.Equals(value))
+            var result = new PackedObject
             {
-                value = Guid.NewGuid();
-            }
-
-            var result = new PackedObject(new KeyValue(value, typeDescription.PrimaryKeyField))
-            {
-                UniqueKeys = new KeyValue[typeDescription.UniqueKeyFields.Count],
+                // scalar values that are visible server-side
+                Values = new KeyValue[typeDescription.ServerSide.Count(k=>!k.IsCollection)],
+                // vector values that are visible server-side
+                CollectionValues = new KeyValues[typeDescription.ServerSide.Count(k=>k.IsCollection)]
             };
 
-
-            // process unique keys
+            
+            // process server-side values
             var pos = 0;
-            foreach (var uniqueField in typeDescription.UniqueKeyFields)
+            var collectionPos = 0;
+            foreach (var metadata in typeDescription.ServerSide)
             {
-                getter = ExpressionTreeHelper.Getter<TObject>(uniqueField.Name);
-                result.UniqueKeys[pos++] = new KeyValue(getter(instance), uniqueField);
-            }
+                var getter = ExpressionTreeHelper.Getter<TObject>(metadata.Name);
+                var value = getter(instance);
 
-            
-            // process index keys
-            var listKeys = new List<KeyValue>();
-            var indexKeys = new List<KeyValue>();
-            foreach (var indexField in typeDescription.IndexFields)
-            {
-                getter = ExpressionTreeHelper.Getter<TObject>(indexField.Name);
-                value = getter(instance);
-
-                // check if the value is a collection. Strings are IEnumerable but they mut not be treated as collections
-                if(value is IEnumerable values && !(value is string))
+                if (!metadata.IsCollection)
                 {
-                    if (indexField.IndexType == IndexType.Ordered)
+                    
+                    // if the primary key is an empty Guid generate a value
+                    if (metadata.IndexType == IndexType.Primary)
                     {
-                        throw new NotSupportedException($"The property {indexField.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
+                        if (Guid.Empty.Equals(value))
+                        {
+                            value = Guid.NewGuid();
+                        }
                     }
-                    var keyValues = values.Cast<object>().Select(v => new KeyValue(v, indexField));
-                    listKeys.AddRange(keyValues);
+
+                    result.Values[pos++] = new KeyValue(value, metadata);
                 }
-                else
+                else 
                 {
-                    indexKeys.Add(new KeyValue(value, indexField));
+                    if (value is IEnumerable values && !(value is string))
+                    {
+                        if (metadata.IndexType == IndexType.Ordered)
+                        {
+                            throw new NotSupportedException($"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
+                        }
+
+                        var keyValues = values.Cast<object>().Select(v => new KeyValue(v, metadata));
+                        result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {value.GetType().FullName}");
+                    }
                 }
+                
             }
-            result.ListIndexKeys = listKeys.ToArray();
-            result.IndexKeys = indexKeys.ToArray();
 
             
-            // process non indexed server-side values
-            var serverValues = new List<KeyValue>();
-            foreach (var serverValue in typeDescription.ServerSideValues)
-            {
-                getter = ExpressionTreeHelper.Getter<TObject>(serverValue.Name);
-                serverValues.Add(new KeyValue(getter(instance), serverValue));
-            }
-
-            result.Values = serverValues.ToArray();    
-
-
             // process full text
             var lines = new List<string>();
 
@@ -189,19 +149,24 @@ namespace Client.Core
 
             result.ObjectData =
                 SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.UseCompression);
+
             result.CollectionName = collectionName ?? typeDescription.CollectionName;
 
             result.UseCompression = typeDescription.UseCompression;
 
-            
+
             return result;
         }
 
 
+        
 
         static KeyValue JTokenToKeyValue(JToken jToken, KeyInfo info)
         {
-            if(jToken == null) return new KeyValue(null, info);
+            // as we ignore default values on json serialization 
+            // the value can be absent because it is an int value 0
+             
+            if(jToken == null) return info.IndexType == IndexType.Primary?  new KeyValue(0, info): new KeyValue(null, info);
 
             var valueToken = jToken.HasValues ? jToken.First : jToken;
 
@@ -247,7 +212,109 @@ namespace Client.Core
                 return new StreamReader(stream).ReadToEnd();
             }
         }
-       
+
+        /// <summary>
+        /// Transform selected properties to a JObject. Alias names cam be specified
+        /// </summary>
+        /// <param name="valuesOrder"></param>
+        /// <param name="valueNames">names in the returned json</param>
+        /// <returns></returns>
+        private JObject ToJObject(int[] valuesOrder, [CanBeNull] string[] valueNames)
+        {
+            
+            // if only one value is specified, serialize it as primitive type
+            //if (valuesOrder.Length == 1)
+            //{
+            //    var kv = Values[0];
+            //    var jp = kv.ToJson();
+
+            //    return jp.Value;
+            //}
+            
+            
+            var result = new JObject();
+
+            int index = 0;
+            foreach (var i in valuesOrder)
+            {
+                if (i < Values.Length) // scalar value
+                {
+                    var kv = Values[i];
+                    var jp = kv.ToJson();
+
+                    if (valueNames != null)
+                    {
+                        jp = new JProperty(valueNames[index], jp.Value);
+                    }
+                    
+
+                    result.Add(jp);
+                }
+                else // collections
+                {
+                    var collectionIndex = i - Values.Length;
+
+                    var collection = CollectionValues[collectionIndex];
+
+                    var array = new JArray();
+                    foreach (var keyValue in collection.Values)
+                    {
+                        array.Add(keyValue.ToJson().Value);
+                    }
+
+                    result.Add(collection.Name, array);
+                }
+
+                index++;
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Return object data. It may be complete data or a projection if <see cref="valuesOrder"/> contains any element
+        /// </summary>
+        /// <param name="valuesOrder">indexes of values to be serialized</param>
+        /// <param name="valueNames">optional names to replace the original property name</param>
+        /// <returns></returns>
+        public byte[] GetData(int[] valuesOrder, string[] valueNames = null)
+        {
+            if (valuesOrder.Length > 0)
+            {
+                return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json, UseCompression);
+            }
+
+            return ObjectData;
+        }
+
+
+        public byte[] GetServerSideData()
+        {
+            var result = new JObject();
+
+
+            foreach (var v in Values)
+            {
+                var jp = v.ToJson();
+                result.Add(jp);
+            }
+
+            foreach (var collection in CollectionValues)
+            {
+                var array = new JArray();
+                foreach (var keyValue in collection.Values)
+                {
+                    array.Add(keyValue.ToJson().Value);
+                }
+
+                result.Add(collection.Name, array);
+            }
+
+
+            return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, UseCompression);
+
+        }
 
 
         /// <summary>
@@ -275,76 +342,53 @@ namespace Client.Core
         public static PackedObject PackJson(JObject jObject, CollectionSchema collectionSchema, string collectionName = null)
         {
             
-
             if (jObject.Type == JTokenType.Array) throw new NotSupportedException("Pack called on a json array");
 
-            PackedObject result;
-
-            var jPrimary = jObject.Property(collectionSchema.PrimaryKeyField.JsonName);
-
-            if (jPrimary == null )
+            var result = new PackedObject
             {
-                // TODO specify automatic primary key
-                //result = new PackedObject(new KeyValue(Guid.NewGuid().ToString(), collectionSchema.PrimaryKeyField));
-                result = new PackedObject(new KeyValue(0, collectionSchema.PrimaryKeyField));
-            }
-            else
+                // scalar values that are visible server-side
+                Values = new KeyValue[collectionSchema.ServerSide.Count(k=>!k.IsCollection)],
+                // vector values that are visible server-side
+                CollectionValues = new KeyValues[collectionSchema.ServerSide.Count(k=>k.IsCollection)]
+            };
+
+            // process server-side values
+            var pos = 0;
+            var collectionPos = 0;
+            foreach (var metadata in collectionSchema.ServerSide)
             {
-                var primaryKey = JTokenToKeyValue(jPrimary, collectionSchema.PrimaryKeyField);
+                var jKey = jObject.Property(metadata.JsonName);
 
-                result = new PackedObject(primaryKey);
-            }
-
-            
-
-            var uniqueKeys = new List<KeyValue>(collectionSchema.UniqueKeyFields.Count);
-            
-            foreach (var uniqueField in collectionSchema.UniqueKeyFields)
-            {
-                var jKey = jObject.Property(uniqueField.JsonName);
-
-                uniqueKeys.Add(JTokenToKeyValue(jKey, uniqueField));
-            }
-
-            result.UniqueKeys = uniqueKeys.ToArray();
-
-
-            var listValues = new List<KeyValue>();
-            var indexKeys = new List<KeyValue>(collectionSchema.IndexFields.Count);
-
-            foreach (var indexField in collectionSchema.IndexFields)
-            {
-                var jKey = jObject.Property(indexField.JsonName);
-
-                if (jKey?.Value.Type == JTokenType.Array)
+                
+                if (!metadata.IsCollection)
                 {
-                    foreach (var jValue in jKey.Value.Children())
+                    result.Values[pos++] = JTokenToKeyValue(jKey, metadata);
+                }
+                else 
+                {
+                    if (jKey?.Value.Type == JTokenType.Array)
                     {
-                        listValues.Add(JTokenToKeyValue(jValue, indexField));
+                        if (metadata.IndexType == IndexType.Ordered)
+                        {
+                            throw new NotSupportedException($"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
+                        }
+
+                        var keyValues = jKey.Value.Children().Select(j => JTokenToKeyValue(j, metadata));
+
+                        result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
+                    }
+                    else if(jKey?.Value == null) // create an empty collection if no data
+                    {
+                        result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, Enumerable.Empty<KeyValue>());
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {jKey?.Name} ");
                     }
                 }
-                else
-                {
-                    indexKeys.Add(JTokenToKeyValue(jKey, indexField));
-                }
-               
                 
             }
-
-            result.IndexKeys = indexKeys.ToArray();
-            result.ListIndexKeys = listValues.ToArray();
-
-
-            // process server side values
-
-            var serverValues = new List<KeyValue>();
-            foreach (var value in collectionSchema.ServerSideValues)
-            {
-                var jKey = jObject.Property(value.JsonName);
-                serverValues.Add( JTokenToKeyValue(jKey, value));
-            }
-
-            result.Values = serverValues.ToArray();
+            
 
 
             // process full text
@@ -387,6 +431,7 @@ namespace Client.Core
 
             result.UseCompression = collectionSchema.UseCompression;
 
+            
             return result;
         }
 
@@ -398,42 +443,7 @@ namespace Client.Core
             sb.Append(PrimaryKey);
             sb.AppendLine(" {");
 
-            if (UniqueKeys != null && UniqueKeys.Length > 0)
-            {
-                sb.Append("  unique:");
-                foreach (var key in UniqueKeys)
-                {
-                    sb.Append(key);
-                    sb.Append(" ");
-                }
-                sb.AppendLine();
-            }
-                
-
-            if (IndexKeys != null && IndexKeys.Length > 0)
-            {
-                sb.Append("  scalar:");
-                foreach (var key in IndexKeys)
-                {
-                    sb.Append(key);
-                    sb.Append(" ");
-                }
-                sb.AppendLine();
-            }
-                
-
-            if (ListIndexKeys != null && ListIndexKeys.Length > 0)
-            {
-
-                sb.Append("  collections:");
-                foreach (var key in ListIndexKeys)
-                {
-                    sb.Append(key);
-                    sb.Append(" ");
-                }
-                sb.AppendLine();
-            }
-
+          
             if (Values != null && Values.Length > 0)
             {
                 sb.Append("  values:");
@@ -507,21 +517,14 @@ namespace Client.Core
             return !Equals(left, right);
         }
 
-        public KeyValue this[string name]
+        public KeyValue this[int order] => Values[order];
+
+        public KeyValues Collection(int order)
         {
-            get
-            {
+            // in a collection schema the vector values are positioned after scalar values
+            var pos = order - Values.Length;
 
-                if (PrimaryKey.KeyName == name)
-                {
-                    return PrimaryKey;
-                }
-
-                return IndexKeys.FirstOrDefault(k => k.KeyName == name) ??
-                       Values.FirstOrDefault(k => k.KeyName == name) ??
-                       UniqueKeys.FirstOrDefault(k => k.KeyName == name) ?? 
-                       throw new KeyNotFoundException($"Can not find the property {name}");
-            }
+            return CollectionValues[pos];
         }
     }
 }

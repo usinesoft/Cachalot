@@ -66,7 +66,7 @@ namespace Cachalot.Linq
             if (sessionId == default) // if in a consistent read session, it has already been done
             {
                 // in case a non persistent cache was rebooted
-                _client.DeclareCollection(collectionName, collectionSchema);
+                _client.DeclareCollection(collectionName, collectionSchema); 
             }
             
 
@@ -230,19 +230,15 @@ namespace Cachalot.Linq
         }
 
 
-        /// <summary>
-        /// Compute a pivot table for a subset of the data. At leas one property mast be server-side visible
-        /// </summary>
-        /// <param name="filter">subset of data to compute the pivot for; if null all data is taken into account</param>
-        /// <param name="axis">optional list of axis; if none is specified the global sum and count is computed for each server-side property</param>
-        /// <returns></returns>
-        public PivotLevel ComputePivot(Expression<Func<T, bool>> filter = null, params Expression<Func<T, object>>[] axis)
+        public PivotDefinition<T> PreparePivotRequest(Expression<Func<T, bool>> filter = null)
         {
             var query = filter != null ? PredicateToQuery(filter) : new OrQuery(_collectionName);
 
-            return _client.ComputePivot(query, axis.Select(ExpressionTreeHelper.PropertyName).ToArray());
+            return new PivotDefinition<T>(query, _client, _collectionSchema);
         }
 
+
+        
         public OrQuery PredicateToQuery(Expression<Func<T, bool>> where, string collectionName = null)
         {
 
@@ -297,7 +293,7 @@ namespace Cachalot.Linq
             var kv = new KeyValue(oldTimestamp,
                 new KeyInfo( "Timestamp", 0, IndexType.Dictionary));
 
-            var q = new AtomicQuery(kv);
+            var q = new AtomicQuery(_collectionSchema.KeyByName(kv.KeyName), kv);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(q);
             var orq = new OrQuery(_collectionName);

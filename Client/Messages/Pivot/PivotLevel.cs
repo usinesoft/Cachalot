@@ -27,14 +27,22 @@ namespace Client.Messages.Pivot
         /// </summary>
         [field: ProtoMember(3)] public List<AggregatedValue> AggregatedValues { get; } = new List<AggregatedValue>();
 
-        public void AggregateOneObject(PackedObject @object, params string[] axis)
+        
+        public void AggregateOneObject(PackedObject @object, List<int> axisIndex, List<int> valuesIndex)
         {
             if(@object.Values.Length == 0)
                 throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");
 
-            //TODO explicitly specify the valuesto be aggregated
-            var valuesForPivot = @object.Values
-                .Union(@object.IndexKeys.Where(k => k.Type == KeyValue.OriginalType.SomeFloat));
+
+            var valuesForPivot = new List<KeyValue>();
+            foreach (var i in valuesIndex)
+            {
+                var val = @object.Values[i];
+                if(double.IsNaN(val.NumericValue))
+                    throw new NotSupportedException("Only numeric values can be used for pivot calculations");
+
+                valuesForPivot.Add(val);
+            }
 
             foreach (var value in valuesForPivot)
             {
@@ -51,10 +59,10 @@ namespace Client.Messages.Pivot
 
             }
 
-            if (axis.Length > 0)
+            if (axisIndex.Count > 0)
             {
-                var name = axis[0];
-                var kv = @object[name];
+                
+                var kv = @object[axisIndex[0]];
 
                 if (!Children.TryGetValue(kv, out var child))
                 {
@@ -62,7 +70,7 @@ namespace Client.Messages.Pivot
                     Children.Add(kv, child);
                 }
 
-                child.AggregateOneObject(@object, axis.Skip(1).ToArray());
+                child.AggregateOneObject(@object, axisIndex.Skip(1).ToList(), valuesIndex);
             }
             
         }

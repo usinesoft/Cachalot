@@ -216,7 +216,7 @@ namespace Client.Interface
             return countResponse.ItemsCount;
         }
 
-        public PivotLevel ComputePivot(OrQuery filter, params string[] axis)
+        public PivotLevel ComputePivot(OrQuery filter, IEnumerable<int> axis, IEnumerable<int> values)
         {
             if (filter == null)
                 throw new ArgumentNullException(nameof(filter));
@@ -224,11 +224,12 @@ namespace Client.Interface
             var request = new PivotRequest(filter);
 
             request.AxisList.AddRange(axis);
+            request.ValuesList.AddRange(values);
 
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error in RemoveMany", exResponse.Message, exResponse.CallStack);
+                throw new CacheException("Error in ComputePivot", exResponse.Message, exResponse.CallStack);
 
             if (!(response is PivotResponse pivotResponse))
                 throw new CacheException("Invalid type of response received in ComputePivot()");
@@ -247,7 +248,7 @@ namespace Client.Interface
         {
             var request = new GetRequest(query, sessionId);
 
-            return Channel.SendStreamRequest<JObject>(request);
+            return Channel.SendStreamRequest(request);
         }
 
 

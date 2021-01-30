@@ -148,7 +148,7 @@ namespace Tests.IntegrationTests
 
 
                 // generate unique ids after dump and check that they are higher than the one generated before dump
-                // meanig the unique id generators (sequences)  have been restored
+                // meaning the unique id generators (sequences)  have been restored
                 var minId1 = connector.GenerateUniqueIds("blahblah", 20).Max();
                 var minId2 = connector.GenerateUniqueIds("foobar", 20).Max();
 
@@ -191,7 +191,7 @@ namespace Tests.IntegrationTests
                 Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json") && !f.Contains("sequence")).ToList();
-                Assert.AreEqual(1, dataFiles.Count);
+                Assert.AreEqual(2, dataFiles.Count);
             }
 
             // reload and check your data is still there
@@ -228,6 +228,9 @@ namespace Tests.IntegrationTests
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
                 Assert.IsTrue(list.Count > 0, "list.Count > 0");
+
+                var list1 = dataSource.Where(t => t.Folder == "TATA").ToList();
+
                 Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
 

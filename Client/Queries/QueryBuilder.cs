@@ -63,7 +63,7 @@ namespace Client.Queries
             var keyValue = MakeKeyValue(propertyName, value);
             var keyValue2 = MakeKeyValue(propertyName, value2);
 
-            return new AtomicQuery(keyValue, keyValue2);
+            return new AtomicQuery(_collectionSchema.KeyByName(propertyName), keyValue, keyValue2);
         }
 
         
@@ -79,7 +79,7 @@ namespace Client.Queries
             var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
             query.Elements.Add(andQuery);
-            andQuery.Elements.Add(new AtomicQuery(keyValue));
+            andQuery.Elements.Add(new AtomicQuery(_collectionSchema.PrimaryKeyField, keyValue));
 
             return query;
         }
@@ -106,7 +106,7 @@ namespace Client.Queries
                     {
                         Elements =
                         {
-                            new AtomicQuery(keyValues)
+                            new AtomicQuery(_collectionSchema.KeyByName(keyName), keyValues)
                         }
                     }
                 }
@@ -132,7 +132,7 @@ namespace Client.Queries
                     {
                         Elements =
                         {
-                            new AtomicQuery(keyValues)
+                            new AtomicQuery(primary, keyValues)
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace Client.Queries
                     throw new ArgumentException("unknown operator: ", oper);
             }
 
-            var result = new AtomicQuery(keyValue, op);
+            var result = new AtomicQuery(keyInfo, keyValue, op);
 
             return result;
         }

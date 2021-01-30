@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
+using Client.Messages;
+using JetBrains.Annotations;
 using ProtoBuf;
 
 namespace Client.Queries
@@ -9,61 +11,101 @@ namespace Client.Queries
     /// <summary>
     ///     Just an operator and one or two values. 
     ///     This class is immutable.
-    ///     The second value is useful only for Btw (between) operator
+    ///     The second value is useful only for GeLe (between) operator
     /// </summary>
     [ProtoContract]
     public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
     {
-        private HashSet<KeyValue> _inValues = new HashSet<KeyValue>();
-
-
+        
         /// <summary>
         ///     Parameter-less constructor used for serialization
         /// </summary>
-        public AtomicQuery()
+        [UsedImplicitly]
+        private AtomicQuery()
         {
+
         }
 
 
         /// <summary>
         ///     Build a simple atomic query (one value and unary operator)
         /// </summary>
+        /// <param name="metadata">The metadata of the value</param>
         /// <param name="value"></param>
         /// <param name="oper"></param>
-        public AtomicQuery(KeyValue value, QueryOperator oper = QueryOperator.Eq)
+        public AtomicQuery([NotNull] KeyInfo metadata, [NotNull] KeyValue value, QueryOperator oper = QueryOperator.Eq)
         {
+            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
+            
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            // only scalar operators can be used here
+            if(oper == QueryOperator.In || oper == QueryOperator.NotIn || oper.IsRangeOperator())
+                throw new ArgumentException("invalid operator");
+
+            if(value.KeyName != metadata.Name)
+                throw new ArgumentException("Mismatch between value and metadata");
+
+            Metadata = metadata;
             Value = value;
             Operator = oper;
         }
 
 
         /// <summary>
-        ///     Build an IN query
+        ///     Build an IN or NOT IN query
         /// </summary>
+        /// <param name="metadata"></param>
         /// <param name="values"></param>
-        public AtomicQuery(IEnumerable<KeyValue> values)
+        /// <param name="oper">may be <see cref="QueryOperator.In"/> or <see cref="QueryOperator.NotIn"/></param>
+        public AtomicQuery([NotNull] KeyInfo metadata, [NotNull] ICollection<KeyValue> values, QueryOperator oper = QueryOperator.In)
         {
+            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
+            if (values == null) throw new ArgumentNullException(nameof(values));
+
+            if (metadata.IsCollection)
+                throw new ArgumentException("An IN (or NOT IN) query applies to a scalar value");
+
+            if(oper != QueryOperator.In && oper != QueryOperator.NotIn)
+                throw new ArgumentException("invalid operator");
+
+            if(values.Any(v=>v.KeyName != metadata.Name))
+                throw new ArgumentException("Mismatch between value and metadata");
+
+            Metadata = metadata;
             _inValues = new HashSet<KeyValue>(values);
-            Operator = QueryOperator.In;
+            Operator = oper;
         }
 
         /// <summary>
         ///     Build a query of the type BETWEEN value value2
         /// </summary>
+        /// <param name="metadata"></param>
         /// <param name="value"></param>
         /// <param name="value2"></param>
-        public AtomicQuery(KeyValue value, KeyValue value2)
+        /// <param name="oper">A range operator like <see cref="QueryOperator.GeLe"/></param>
+        public AtomicQuery([NotNull] KeyInfo metadata, [NotNull] KeyValue value, [NotNull] KeyValue value2, QueryOperator oper = QueryOperator.GeLe)
         {
-            Value = value;
-            Value2 = value2;
 
-            Operator = QueryOperator.Btw; //the one and only binary operator
+            Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
+            Value = value ?? throw new ArgumentNullException(nameof(value));
+            Value2 = value2 ?? throw new ArgumentNullException(nameof(value2));
+
+            if(!oper.IsRangeOperator())
+                throw new ArgumentException("Only range operators can be used with two values");
+
+            if(value.KeyName != metadata.Name)
+                throw new ArgumentException("Mismatch between value and metadata");
+
+            if(value2.KeyName != metadata.Name)
+                throw new ArgumentException("Mismatch between value and metadata");
+
+            Operator = oper; //the one and only binary operator
         }
 
-        public IndexType
-            IndexType => Values.First().KeyType;
+        public IndexType IndexType => Metadata.IndexType;
 
-        public string IndexName => !ReferenceEquals(Value, null) ? Value.KeyName : InValues.First().KeyName;
+        public string PropertyName => Metadata.Name;
 
 
         /// <summary>
@@ -74,7 +116,7 @@ namespace Client.Queries
             get
             {
                 // BETWEEN requires two values
-                if (Operator == QueryOperator.Btw)
+                if (Operator.IsRangeOperator())
                 {
                     if (ReferenceEquals(Value, null))
                         return false;
@@ -85,37 +127,37 @@ namespace Client.Queries
                     if (Value2 < Value)
                         return false;
 
-                    // the two values must belong to the same index
+                    // the two values must belong to the same collection
                     if (Value.KeyName != Value2.KeyName)
                         return false;
                 }
 
 
-                // two values are valid only for BETWEEN operator
+                // two values are valid only for range operators
                 if (!ReferenceEquals(Value2, null))
-                    if (Operator != QueryOperator.Btw)
+                    if (!Operator.IsRangeOperator())
                         return false;
 
                 // IN requires a list of values
                 if (Operator == QueryOperator.In && InValues.Count == 0)
                     return false;
 
-                // IN requires a list of values
-                if (Operator == QueryOperator.Nin && InValues.Count == 0)
+                // NOT IN requires a list of values
+                if (Operator == QueryOperator.NotIn && InValues.Count == 0)
                     return false;
 
-                // only IN accepts a list of values
-                if (Operator != QueryOperator.In && Operator != QueryOperator.Nin && InValues.Count > 0)
+                // only IN and NOT IN accept a list of values
+                if (Operator != QueryOperator.In && Operator != QueryOperator.NotIn && InValues.Count > 0)
                     return false;
 
-                // any operator except IN requires at least a value
-                if (Operator != QueryOperator.In && Operator != QueryOperator.Nin && ReferenceEquals(Value, null))
+                // any operator except IN and NOT IN requires Value to be filled
+                if (Operator != QueryOperator.In && Operator != QueryOperator.NotIn && ReferenceEquals(Value, null))
                     return false;
 
-                // all values should belong to the same index key
-                if (Operator == QueryOperator.In ||Operator == QueryOperator.Nin)
+                // all values should belong to the same collection
+                if (Operator == QueryOperator.In ||Operator == QueryOperator.NotIn)
                 {
-                    var name = IndexName;
+                    var name = PropertyName;
                     if (InValues.Any(v => v.KeyName != name))
                         return false;
                 }
@@ -143,17 +185,15 @@ namespace Client.Queries
         ///     The operator of the atomic query
         /// </summary>
         [field: ProtoMember(3)]
-        public QueryOperator Operator { get; set; }
+        public QueryOperator Operator { get;}
 
-        [ProtoMember(4)]
-        public ICollection<KeyValue> InValues
-        {
-            get => _inValues;
-            set => _inValues = new HashSet<KeyValue>(value);
-        }
+        [ProtoMember(4)] private readonly HashSet<KeyValue> _inValues = new HashSet<KeyValue>();
 
+        [field: ProtoMember(5)] public KeyInfo Metadata { get; }
+        
         #endregion
 
+        public ICollection<KeyValue> InValues => _inValues;
 
         public IList<KeyValue> Values => _inValues.Count > 0
             ? _inValues.ToList()
@@ -161,46 +201,37 @@ namespace Client.Queries
                 ? new List<KeyValue> {Value, Value2}
                 : new List<KeyValue> {Value};
 
-        public bool Equals(AtomicQuery atomicQuery)
+        public bool Equals(AtomicQuery right)
         {
-            if (atomicQuery == null) return false;
 
-            if (!Equals(Operator, atomicQuery.Operator)) return false;
+            if (right == null) return false;
 
+            if (!Equals(Operator, right.Operator)) return false;
 
-            if (InValues.Count != atomicQuery.InValues.Count) return false;
+            if (Metadata.Name != right.Metadata.Name) return false;
 
-            if (Operator == QueryOperator.In)
+            if (Operator.IsRangeOperator())
+                return Value == right.Value && Value2 == right.Value2;
+
+            if (Operator == QueryOperator.In || Operator == QueryOperator.NotIn)
             {
+                if (InValues.Count != right.InValues.Count) return false;
+
                 var myValues = _inValues.ToList();
-                var rightValues = atomicQuery._inValues.ToList();
+                
+                var rightValues = right._inValues.ToList();
 
                 for (var i = 0; i < myValues.Count; i++)
                     if (myValues[i] != rightValues[i])
                         return false;
+
+                return true;
             }
 
-
-            if (ReferenceEquals(Value, null) && !ReferenceEquals(atomicQuery.Value, null))
+            if (Value != right.Value)
                 return false;
 
-            if (!ReferenceEquals(Value, null) && ReferenceEquals(atomicQuery.Value, null))
-                return false;
-
-            if (ReferenceEquals(Value2, null) && !ReferenceEquals(atomicQuery.Value2, null))
-                return false;
-            if (!ReferenceEquals(Value2, null) && ReferenceEquals(atomicQuery.Value2, null))
-                return false;
-
-            if (Value != atomicQuery.Value)
-                return false;
-
-            if (Value2 != atomicQuery.Value2)
-                return false;
-
-            if (IndexName != atomicQuery.IndexName)
-                return false;
-
+            
             return true;
         }
 
@@ -214,15 +245,18 @@ namespace Client.Queries
         {
             unchecked
             {
-                if (!ReferenceEquals(Value, null) && !ReferenceEquals(Value2, null))
-                    return Value.GetHashCode() + Value2.GetHashCode();
+                if (Operator.IsRangeOperator())
+                    return Value.GetHashCode() + Value2.GetHashCode() + Operator.GetHashCode();
 
-                if (!ReferenceEquals(Value2, null))
-                    return Value2.GetHashCode();
+                if (Operator != QueryOperator.In && Operator != QueryOperator.NotIn)
+                {
+                    return Value.GetHashCode() + Operator.GetHashCode();
+                }
 
                 var sum = 0;
                 foreach (var value in InValues)
                     sum += value.GetHashCode();
+
                 return Operator.GetHashCode() + sum;
             }
         }
@@ -237,10 +271,23 @@ namespace Client.Queries
         /// <param name="left"></param>
         /// <param name="right"></param>
         /// <returns></returns>
-        private static bool AreOperatorsCompatible(QueryOperator left, QueryOperator right)
+        private static bool AreOperatorsCompatibleWithSubset(QueryOperator left, QueryOperator right)
         {
             if (left == right)
                 return true;
+
+            if (left.IsRangeOperator() && right.IsRangeOperator())
+                return true;
+
+            if (left == QueryOperator.NotContains || left == QueryOperator.NotEq || left == QueryOperator.StrContains ||
+                left == QueryOperator.StrEndsWith || left == QueryOperator.StrStartsWith)
+                return false;
+
+            if (right == QueryOperator.NotContains || right == QueryOperator.NotEq || right == QueryOperator.StrContains ||
+                right == QueryOperator.StrEndsWith || right == QueryOperator.StrStartsWith)
+                return false;
+
+            
 
             if (right == QueryOperator.Eq)
                 return false;
@@ -267,12 +314,12 @@ namespace Client.Queries
         {
             var rightOperator = query.Operator;
 
-            if (Value.KeyName != query.Value.KeyName)
+            if (PropertyName != query.PropertyName)
                 return false;
 
             Dbg.CheckThat(Value.Type == query.Value.Type);
 
-            if (!AreOperatorsCompatible(Operator, rightOperator))
+            if (!AreOperatorsCompatibleWithSubset(Operator, rightOperator))
                 return false;
 
 
@@ -298,7 +345,18 @@ namespace Client.Queries
                 case QueryOperator.Ge:
                     return Value >= query.Value;
 
-                default: //TODO check if In subdomains need to be implemented
+                case QueryOperator.GeLe:
+                case QueryOperator.GeLt:
+                case QueryOperator.GtLe:
+                case QueryOperator.GtLt:
+                    return Value >= query.Value && Value2 <= query.Value2;
+
+                
+
+                case QueryOperator.In:
+                    return _inValues.IsSubsetOf(query._inValues);
+
+                default: 
                     return false;
             }
         }
@@ -306,7 +364,7 @@ namespace Client.Queries
 
         public override string ToString()
         {
-            var result = IndexName;
+            var result = PropertyName;
             switch (Operator)
             {
                 case QueryOperator.Eq:
@@ -327,14 +385,19 @@ namespace Client.Queries
                 case QueryOperator.In:
                     result += " In ";
                     break;
-                case QueryOperator.Nin:
+                case QueryOperator.NotIn:
                     result += " NOT In ";
                     break;
-                case QueryOperator.Btw:
-                    result += " Btw ";
+                case QueryOperator.Contains:
+                    result += " Contains ";
                     break;
+
+                case QueryOperator.NotContains:
+                    result += " NOT Contains ";
+                    break;
+
                 
-                case QueryOperator.Neq:
+                case QueryOperator.NotEq:
                     result += " != ";
                     break;
 
@@ -352,7 +415,29 @@ namespace Client.Queries
             }
 
 
-            if (Operator == QueryOperator.In ||Operator == QueryOperator.Nin )
+            if (Operator.IsRangeOperator())
+            {
+                result += " in range ";
+
+                if (Operator == QueryOperator.GeLe)
+                {
+                    result += $"[{Value}, {Value2}]";
+                }
+                else if (Operator == QueryOperator.GeLt)
+                {
+                    result += $"[{Value}, {Value2})";
+                }
+                else if (Operator == QueryOperator.GtLt)
+                {
+                    result += $"({Value}, {Value2})";
+                }
+                else if (Operator == QueryOperator.GtLe)
+                {
+                    result += $"({Value}, {Value2}]";
+                }
+
+            }
+            else if (Operator == QueryOperator.In ||Operator == QueryOperator.NotIn )
             {
                 if (InValues.Count >= 4)
                 {
@@ -382,7 +467,7 @@ namespace Client.Queries
 
         public bool IsComparison =>
             Operator == QueryOperator.Eq || Operator == QueryOperator.Le || Operator == QueryOperator.Lt || Operator == QueryOperator.Ge ||
-            Operator == QueryOperator.Gt;
+            Operator == QueryOperator.Gt || Operator.IsRangeOperator();
 
         /// <summary>
         ///     Check if an object matches the query
@@ -393,99 +478,138 @@ namespace Client.Queries
         {
             switch (Operator)
             {
+
                 case QueryOperator.Eq:
                     return MatchEq(item, Value);
+                
                 case QueryOperator.Ge:
                     return MatchGe(item, Value);
+                
                 case QueryOperator.Gt:
                     return MatchGt(item, Value);
+                
                 case QueryOperator.Le:
                     return MatchLe(item, Value);
+                
                 case QueryOperator.Lt:
-                    return MatchLs(item, Value);
-                case QueryOperator.Btw:
+                    return MatchLt(item, Value);
+                
+                case QueryOperator.GeLe:
                     return MatchGe(item, Value) && MatchLe(item, Value2);
+
+                case QueryOperator.GeLt:
+                    return MatchGe(item, Value) && MatchLt(item, Value2);
+
+                case QueryOperator.GtLt:
+                    return MatchGt(item, Value) && MatchLt(item, Value2);
+
+                case QueryOperator.GtLe:
+                    return MatchGt(item, Value) && MatchLe(item, Value2);
 
                 case QueryOperator.In:
                     return MatchIn(item);
-            }
 
-            throw new NotSupportedException("unknown operator");
+                case QueryOperator.Contains:
+                    return MatchContains(item);
+
+                case QueryOperator.NotContains:
+                    return !MatchContains(item);
+
+                case QueryOperator.NotIn:
+                    return !MatchIn(item);
+                
+                case QueryOperator.NotEq:
+                    return !MatchEq(item, Value);
+                    
+                case QueryOperator.StrStartsWith:
+                    return MatchStartsWith(item, Value);
+
+                case QueryOperator.StrEndsWith:
+                    return MatchEndsWith(item, Value);
+
+                case QueryOperator.StrContains:
+                    return MatchContains(item, Value);
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
-        private bool MatchLs(PackedObject item, KeyValue value)
+        private bool MatchLt(PackedObject item, KeyValue value)
         {
-            return GetKeyOfObject(item, value) < value;
+            return item[Metadata.Order] < value;
         }
 
         private bool MatchGt(PackedObject item, KeyValue value)
         {
-            return GetKeyOfObject(item, value) > value;
+            return item[Metadata.Order] > value;
         }
 
         private bool MatchLe(PackedObject item, KeyValue value)
         {
-            return GetKeyOfObject(item, value) <= value;
+            return item[Metadata.Order] <= value;
         }
 
         private bool MatchGe(PackedObject item, KeyValue value)
         {
-            return GetKeyOfObject(item, value) >= value;
+            return item[Metadata.Order] >= value;
         }
 
         private bool MatchIn(PackedObject item)
         {
-            return item.MatchOneOf(_inValues);
+            return Values.Contains(item[Metadata.Order]);
         }
 
+        private bool MatchContains(PackedObject item)
+        {
+            var collection = item.Collection(Metadata.Order);
+
+            return collection.Values.Any(v=>Value == v);
+        }
+
+        
         private bool MatchEq(PackedObject item, KeyValue value)
         {
-            return Value == GetKeyOfObject(item, value);
+            return value == item[Metadata.Order];
         }
 
-        /// <summary>
-        ///     Find the key of a cacheable object having the same Name, DataType and KeyType
-        ///     as the specified <see cref="KeyValue" />
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private KeyValue GetKeyOfObject(PackedObject item, KeyValue value)
+        private bool MatchStartsWith(PackedObject item, KeyValue value)
         {
-            if (value.KeyType == IndexType.Primary)
-                return item.PrimaryKey;
+            var v1 = item[Metadata.Order].StringValue;
+            var v2 = value.StringValue;
 
-            if (value.KeyType == IndexType.Unique)
-            {
-                foreach (var k in item.UniqueKeys)
-                    if (k.KeyName == Value.KeyName)
-                        return k;
+            return v1 != null && v2 != null && v1.StartsWith(v2);
 
-                throw new NotSupportedException($"Can not match this item {item} with key {Value}");
-            }
-
-            if (value.KeyType == IndexType.Ordered || value.KeyType == IndexType.Dictionary)
-            {
-                foreach (var k in item.IndexKeys)
-                    if (k.KeyName == Value.KeyName)
-                        return k;
-
-                throw new NotSupportedException($"Can not match this item {item} with key {Value}");
-            }
-
-            throw new NotSupportedException($"Can not match this item {item} with key {Value}");
         }
 
+        private bool MatchEndsWith(PackedObject item, KeyValue value)
+        {
+            var v1 = item[Metadata.Order].StringValue;
+            var v2 = value.StringValue;
 
+            return v1 != null && v2 != null && v1.EndsWith(v2);
+
+        }
+
+        private bool MatchContains(PackedObject item, KeyValue value)
+        {
+            var v1 = item[Metadata.Order].StringValue;
+            var v2 = value.StringValue;
+
+            return v1 != null && v2 != null && v1.Contains(v2);
+
+        }
+
+        
         public AtomicQuery Clone()
         {
             if (InValues.Count > 0)
-                return new AtomicQuery(InValues);
+                return new AtomicQuery(Metadata, InValues, Operator);
 
             if (!ReferenceEquals(Value2, null))
-                return new AtomicQuery(Value, Value2);
+                return new AtomicQuery(Metadata, Value, Value2);
 
-            return new AtomicQuery(Value, Operator);
+            return new AtomicQuery(Metadata, Value, Operator);
         }
     }
 }

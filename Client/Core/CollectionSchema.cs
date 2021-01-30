@@ -28,6 +28,11 @@ namespace Client.Core
     public class CollectionSchema : IEquatable<CollectionSchema>
     {
 
+        internal CollectionSchema()
+        {
+
+        }
+
         public CollectionSchema Clone()
         {
             var bytes = SerializationHelper.ObjectToBytes(this, SerializationMode.ProtocolBuffers, false);
@@ -71,11 +76,24 @@ namespace Client.Core
         [JsonIgnore] public IList<KeyInfo> IndexFields => ServerSide.Where(v=>v.IndexType ==  IndexType.Dictionary || v.IndexType == IndexType.Ordered).ToList();
 
         
-        [JsonIgnore] public IList<KeyInfo> ServerSideValues => ServerSide.Where(v=>v.IndexType ==  IndexType.None).ToList();
-
         [JsonIgnore] public KeyInfo PrimaryKeyField => ServerSide.Count > 0? ServerSide[0]:null;
-       
 
+
+        public int OrderOf(string name)
+        {
+            var property = ServerSide.FirstOrDefault(k => k.Name == name);
+            if (property != null)
+                return property.Order;
+
+            return -1;
+        }
+
+        public int[] IndexesOfNames(params string[] names)
+        {
+            var byName = ServerSide.ToDictionary(v => v.Name, v => v.Order);
+
+            return names.Select(n=>byName[n]).ToArray();
+        }
         /// <summary>
         /// </summary>
         /// <param name="collectionSchema"> </param>

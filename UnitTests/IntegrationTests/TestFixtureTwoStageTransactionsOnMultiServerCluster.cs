@@ -623,7 +623,7 @@ namespace Tests.IntegrationTests
             {
 
                 // ReSharper disable once AccessToDisposedClosure
-                connector.ConsistentRead(ctx =>
+                connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
                 {
                                     
                     var myAccounts = ctx.Collection<Account>().ToList();
@@ -637,7 +637,7 @@ namespace Tests.IntegrationTests
                                     
                     var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
-                }, typeof(MoneyTransfer).FullName, typeof(Account).FullName);
+                });
 
 
             });
@@ -661,7 +661,7 @@ namespace Tests.IntegrationTests
 
            
             // ReSharper disable once AccessToDisposedClosure
-            connector.ConsistentRead(ctx =>
+            connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
             {
                                 
                 var myAccounts = ctx.Collection<Account>().ToList();
@@ -675,7 +675,7 @@ namespace Tests.IntegrationTests
                                 
                 var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
-            }, typeof(MoneyTransfer).FullName, typeof(Account).FullName);
+            });
 
 
             var all = accounts.ToList();

@@ -111,12 +111,11 @@ namespace Client.Core
             {
                 if (compress)
                 {
-                    using (var outZStream = new GZipOutputStream(stream) {IsStreamOwner = false})
-                    {
-                        var writer = new JsonTextWriter(new StreamWriter(outZStream));
-                        Serializer.Serialize(writer, obj);
-                        writer.Flush();
-                    }
+                    using var outZStream = new GZipOutputStream(stream) {IsStreamOwner = false};
+
+                    var writer = new JsonTextWriter(new StreamWriter(outZStream));
+                    Serializer.Serialize(writer, obj);
+                    writer.Flush();
                 }
                 else
                 {

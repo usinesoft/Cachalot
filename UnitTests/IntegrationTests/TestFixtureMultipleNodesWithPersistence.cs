@@ -567,7 +567,7 @@ namespace Tests.IntegrationTests
 
                 dataSource.PutMany(orders);
 
-                var pivot = dataSource.ComputePivot(null, o => o.ClientId);
+                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o=>o.Amount, o=>o.Quantity).Execute();
 
                 sum1 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
@@ -605,7 +605,7 @@ namespace Tests.IntegrationTests
                 Assert.AreEqual(100, after);
 
                 // the pivot should be identical 
-                var pivot = dataSource.ComputePivot(null, o => o.ClientId);
+                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o=>o.Amount, o=>o.Quantity).Execute();
                 var sum2 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
                 Assert.AreEqual(sum1, sum2);
@@ -1276,6 +1276,113 @@ namespace Tests.IntegrationTests
                 var list = dataSource.Where(e => e.EventType == "FIXING").Take(10).ToList();
                 Assert.AreEqual(10, list.Count);
             }
+        }
+
+        [Test]
+        public void Select_only_some_properties()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+
+
+            // select more than one property with aliases (like select Category Cat, ClientId from ...)
+            var result1 = dataSource.Select(o => new {Cat = o.Category, o.ClientId}).ToList();
+
+            Assert.AreEqual(1, result1.Count);
+            Assert.AreEqual("geek", result1[0].Cat);
+            Assert.AreEqual(101, result1[0].ClientId);
+
+            // select primitive types
+            var result2 = dataSource.Select(o => o.Category).ToList();
+            Assert.AreEqual(1, result2.Count);
+            Assert.AreEqual("geek", result2[0]);
+
+            var result3 = dataSource.Select(o => o.ClientId).ToList();
+            Assert.AreEqual(1, result3.Count);
+            Assert.AreEqual(101, result3[0]);
+        }
+
+        [Test]
+        public void Select_with_distinct_clause()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+            dataSource.Put(new Order{Category = "geek", ClientId = 102});
+
+
+            // select more than one property with aliases (like select Category Cat, ClientId from ...)
+            var result1 = dataSource.Select(o => new {Cat = o.Category, o.ClientId}).Distinct().ToList();
+
+            Assert.AreEqual(2, result1.Count);
+            Assert.AreEqual("geek", result1[0].Cat);
+            Assert.AreEqual(1, result1.Count(r=>r.ClientId == 102));
+            Assert.AreEqual(1, result1.Count(r=>r.ClientId == 101));
+            
+
+            // select primitive types
+            var result2 = dataSource.Select(o => o.Category).Distinct().ToList();
+            Assert.AreEqual(1, result2.Count);
+            Assert.AreEqual("geek", result2[0]);
+
+            var result3 = dataSource.Select(o => o.ClientId).Distinct().ToList();
+            Assert.AreEqual(2, result3.Count);
+            
+        }
+
+
+        [Test]
+        public void More_select_and_distinct()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            dataSource.Put(new Order{Category = "geek", ClientId = 101, IsDelivered = true});
+            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+            dataSource.Put(new Order{Category = "geek", ClientId = 102, IsDelivered = true});
+            dataSource.Put(new Order{Category = "sf", ClientId = 102});
+
+
+            var result1 = dataSource.Where(o=> !o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+            Assert.AreEqual(2, result1.Count);
+            
+            var result2 = dataSource.Where(o=> o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
+            Assert.AreEqual(2, result2.Count);
+
+
+            var result3 = dataSource.Where(o=> o.IsDelivered).Select(o => o.Category).Distinct().ToList();
+            Assert.AreEqual(1, result3.Count);
+
+            var result4 = dataSource.Where(o=> o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
+            Assert.AreEqual(2, result4.Count);
+            
+
+            dataSource.Put(new Order{Category = "sf", ClientId = 103});
+            dataSource.Put(new Order{Category = "sf", ClientId = 104});
+            dataSource.Put(new Order{Category = "travel", ClientId = 105});
+
+            var cats = new [] { "sf", "travel"};
+            var result5 = dataSource.Where(o=> cats.Contains( o.Category)).Select(o => o.ClientId).Distinct().ToList();
+            Assert.AreEqual(4, result5.Count);
+
+            var result6 = dataSource.Where(o=> o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            CollectionAssert.AreEqual(result5, result6);
+
+
+            
         }
     }
 }

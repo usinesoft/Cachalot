@@ -57,9 +57,9 @@ namespace Channel
                 _dataReceived.Set();
             }
 
-            public void SendMany(ICollection<PackedObject> items)
+            public void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases)
             {
-                Streamer.ToStreamMany(_stream, items);
+                Streamer.ToStreamMany(_stream, items, selectedIndexes, aliases);
                 _stream.Seek(0, SeekOrigin.Begin);
                 _dataReceived.Set();
             }
@@ -109,14 +109,14 @@ namespace Channel
         }
 
 
-        public IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request)
+        public IEnumerable<RankedItem> SendStreamRequest(Request request)
         {
             if (RequestReceived != null)
             {
                 var client = new ClientData();
                 RequestReceived(this, new RequestEventArgs(request, client));
                 var stream = client.WaitForData();
-                return Streamer.EnumerableFromStream<TItemType>(stream);
+                return Streamer.EnumerableFromStream(stream);
             }
 
             // otherwise return empty collection

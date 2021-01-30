@@ -19,7 +19,9 @@ namespace Client.ChannelInterface
         ///     Send a collection of cached object. No serialization is required on the server side
         /// </summary>
         /// <param name="items"></param>
-        void SendMany(ICollection<PackedObject> items);
+        /// <param name="selectedIndexes">if indexes ara specified only the corresponding values are sent, not the whole object</param>
+        /// <param name="aliases">names of the properties sent to the client</param>
+        void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases);
 
         
         /// <summary>

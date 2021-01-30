@@ -1,6 +1,7 @@
 #region
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -29,8 +30,17 @@ namespace Client.Core
             return FromType(typeof(T));
         }
 
+        /// <summary>
+        /// internally used to move the collection properties at the end of the schema
+        /// </summary>
+        private const int CollectionOrderOffset = 100_000;
 
-        public static KeyInfo Build(PropertyInfo propertyInfo)
+        /// <summary>
+        /// Convert <see cref="PropertyInfo"/> to a serializable and language neutral format
+        /// </summary>
+        /// <param name="propertyInfo"></param>
+        /// <returns></returns>
+        private static KeyInfo BuildPropertyMetadata(PropertyInfo propertyInfo)
         {
             
             var name = propertyInfo.Name;
@@ -55,7 +65,14 @@ namespace Client.Core
                 // force order of the primary key to 0
                 var order = attribute.IndexType == IndexType.Primary ? 0 : attribute.LineNumber;
 
-                return new KeyInfo(name, order , attribute.IndexType, jsonName);
+                // string implements IEnumerable but it is not a collection
+                bool isCollection = typeof(IEnumerable).IsAssignableFrom(propertyInfo.PropertyType) &&
+                                    propertyInfo.PropertyType != typeof(string);
+
+                if (isCollection)
+                    order += CollectionOrderOffset;
+
+                return new KeyInfo(name, order , attribute.IndexType, jsonName, isCollection);
             }
 
 
@@ -98,7 +115,7 @@ namespace Client.Core
 
             foreach (var info in props)
             {
-                var key = Build(info);
+                var key = BuildPropertyMetadata(info);
                 if (key != null)
                 {
                     result.ServerSide.Add(key);
@@ -115,7 +132,7 @@ namespace Client.Core
             }
 
 
-            // adjust order (line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0)
+            // Adjust order. Line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0 and the collections at the end
             var lineNumbers = new HashSet<int>();
             foreach (var keyInfo in result.ServerSide)
             {
@@ -123,7 +140,6 @@ namespace Client.Core
             }
 
             
-
             var lineNumberByPosition = lineNumbers.OrderBy(x => x).ToList();
 
             foreach (var keyInfo in result.ServerSide)
@@ -132,7 +148,10 @@ namespace Client.Core
                 keyInfo.Order = adjustedOrder;
             }
 
+
             result.ServerSide = result.ServerSide.OrderBy(k => k.Order).ToList();
+
+            
 
             //check if the newly registered type is valid
             if (result.PrimaryKeyField == null)

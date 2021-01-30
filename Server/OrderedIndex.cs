@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Client.Core;
@@ -14,7 +13,7 @@ using Client.Queries;
 namespace Server
 {
     /// <summary>
-    ///     An index that supports comparison operators
+    ///     An index that supports comparison operators and sorting
     ///     On the other hand it only supports scalar keys (list keys are ignored)
     /// </summary>
     public class OrderedIndex : IndexBase
@@ -25,12 +24,15 @@ namespace Server
         private bool _insideFeedSession;
 
         /// <summary>
-        ///     index of the key associated to this index inside the collection of index keys (from CacheableTypeDescription)
+        ///     Index of the key associated to this index inside the <see cref="PackedObject.Values" />
         /// </summary>
-        private int _keyIndex = -1;
+        private int _keyIndex = -1; // not initialized
 
         public OrderedIndex(KeyInfo keyInfo) : base(keyInfo)
         {
+            if (keyInfo.IsCollection)
+                throw new ArgumentException("An ordered index can not index collection properties");
+
             _data = new List<PackedObject>();
             _tempData = new List<PackedObject>();
         }
@@ -52,8 +54,8 @@ namespace Server
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int Compare(PackedObject left, PackedObject right)
         {
-            var key1 = left.IndexKeys[_keyIndex];
-            var key2 = right.IndexKeys[_keyIndex];
+            var key1 = left.Values[_keyIndex];
+            var key2 = right.Values[_keyIndex];
 
 
             var result = key1.CompareTo(key2);
@@ -73,15 +75,8 @@ namespace Server
         public override void Put(PackedObject item)
         {
             // first time get the index of the indexation key(this value is fixed for a cacheable data type)
-            if (_keyIndex == -1)
-                for (var i = 0; i < item.IndexKeys.Length; i++)
-                    if (item.IndexKeys[i].KeyName == KeyInfo.Name)
-                    {
-                        _keyIndex = i;
-                        break;
-                    }
+            if (_keyIndex == -1) _keyIndex = KeyInfo.Order;
 
-            Debug.Assert(_keyIndex != -1);
 
             if (!_insideFeedSession)
             {
@@ -123,8 +118,6 @@ namespace Server
             _data.AddRange(_tempData);
             _data.Sort(Compare);
 
-
-            //_data.InterpolateLists(_tempData, Compare);
             _tempData.Clear();
 
             _insideFeedSession = false;
@@ -139,13 +132,13 @@ namespace Server
                 throw new InvalidOperationException(
                     "Illegal operation during a feed session (RemoveOne was called). Probably due duplicate primary key ");
 
-            var index = FindIndexEq(item.IndexKeys[_keyIndex], 0, _data.Count);
+            var index = FindIndexEq(item.Values[_keyIndex], 0, _data.Count);
 
             if (index == -1)
                 throw new InvalidOperationException(
                     $"Can not find item {item} in the index for the Key {KeyInfo.Name}");
 
-            while (index > 0 && _data[index - 1].IndexKeys[_keyIndex].CompareTo(item.IndexKeys[_keyIndex]) == 0
+            while (index > 0 && _data[index - 1].Values[_keyIndex].CompareTo(item.Values[_keyIndex]) == 0
             ) index--;
 
             if (index != -1)
@@ -180,7 +173,7 @@ namespace Server
             if (values.Count > 2)
                 throw new ArgumentException("More than two keys passed to GetCount on ordered index  " + Name);
 
-            if (values.Count == 2 && op != QueryOperator.Btw)
+            if (values.Count == 2 && !op.IsRangeOperator())
                 throw new ArgumentException("Two keys passed to GetCount on ordered index " + Name + " for operator " +
                                             op);
 
@@ -212,8 +205,20 @@ namespace Server
                     result = CountAllGt(values[0]);
                     break;
 
-                case QueryOperator.Btw:
-                    result = CountAllBetween(values[0], values[1]);
+                case QueryOperator.GeLe:
+                    result = CountAllGeLe(values[0], values[1]);
+                    break;
+
+                case QueryOperator.GeLt:
+                    result = CountAllGeLt(values[0], values[1]);
+                    break;
+
+                case QueryOperator.GtLe:
+                    result = CountAllGtLe(values[0], values[1]);
+                    break;
+
+                case QueryOperator.GtLt:
+                    result = CountAllGtLt(values[0], values[1]);
                     break;
             }
 
@@ -229,15 +234,25 @@ namespace Server
             if (values.Count == 0)
                 throw new ArgumentException("Empty list of keys passed to GetMany on index " + Name);
 
-            if (values.Count > 2)
+            if (values.Count > 2 && op != QueryOperator.In)
                 throw new ArgumentException("More than two keys passed to GetMany on ordered index  " + Name);
 
-            if (values.Count == 2 && op != QueryOperator.Btw)
+            if (values.Count == 2 && !op.IsRangeOperator())
                 throw new ArgumentException("Two keys passed to GetMany on ordered index " + Name + " for operator " +
                                             op);
 
 
             var result = new HashSet<PackedObject>();
+
+            if (op == QueryOperator.In)
+            {
+                foreach (var value in values)
+                {
+                    FindAllEq(value, result);
+                }
+
+                return result;
+            }
 
             switch (op)
             {
@@ -261,8 +276,21 @@ namespace Server
                     FindAllGt(values[0], result);
                     break;
 
-                case QueryOperator.Btw:
-                    FindAllBetween(values[0], values[1], result);
+                //range operators
+                case QueryOperator.GeLe:
+                    FindAllGeLe(values[0], values[1], result);
+                    break;
+
+                case QueryOperator.GeLt:
+                    FindAllGeLt(values[0], values[1], result);
+                    break;
+
+                case QueryOperator.GtLt:
+                    FindAllGtLt(values[0], values[1], result);
+                    break;
+
+                case QueryOperator.GtLe:
+                    FindAllGtLe(values[0], values[1], result);
                     break;
             }
 
@@ -287,7 +315,7 @@ namespace Server
             var index = FindIndexLe(key, 0, _data.Count - 1);
 
             if (index != -1 && index < _data.Count - 1)
-                while (_data[index].IndexKeys[_keyIndex].CompareTo(_data[index + 1].IndexKeys[_keyIndex]) == 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index + 1].Values[_keyIndex]) == 0)
                 {
                     index++;
 
@@ -314,7 +342,7 @@ namespace Server
             var index = FindIndexLe(key, 0, _data.Count - 1);
 
             if (index != -1 && index < _data.Count - 1)
-                while (_data[index].IndexKeys[_keyIndex].CompareTo(_data[index + 1].IndexKeys[_keyIndex]) == 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index + 1].Values[_keyIndex]) == 0)
                 {
                     index++;
 
@@ -338,7 +366,7 @@ namespace Server
         private int FindIndexLe(KeyValue value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
-            var midValue = _data[mid].IndexKeys[_keyIndex];
+            var midValue = _data[mid].Values[_keyIndex];
             if (midValue == value)
                 return mid;
 
@@ -359,9 +387,9 @@ namespace Server
 
             if (newStart == newEnd - 1)
             {
-                if (_data[newEnd].IndexKeys[_keyIndex].CompareTo(value) <= 0)
+                if (_data[newEnd].Values[_keyIndex].CompareTo(value) <= 0)
                     return newEnd;
-                if (_data[newStart].IndexKeys[_keyIndex].CompareTo(value) <= 0)
+                if (_data[newStart].Values[_keyIndex].CompareTo(value) <= 0)
                     return newStart;
                 return -1;
             }
@@ -380,10 +408,10 @@ namespace Server
         /// <param name="startIndex"></param>
         /// <param name="endIndex"></param>
         /// <returns></returns>
-        private int FindIndexLs(KeyValue value, int startIndex, int endIndex)
+        private int FindIndexLt(KeyValue value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
-            var midValue = _data[mid].IndexKeys[_keyIndex];
+            var midValue = _data[mid].Values[_keyIndex];
 
             var newStart = startIndex;
             var newEnd = endIndex;
@@ -406,15 +434,15 @@ namespace Server
 
             if (newStart == newEnd - 1)
             {
-                if (_data[newEnd].IndexKeys[_keyIndex].CompareTo(value) < 0)
+                if (_data[newEnd].Values[_keyIndex].CompareTo(value) < 0)
                     return newEnd;
-                if (_data[newStart].IndexKeys[_keyIndex].CompareTo(value) < 0)
+                if (_data[newStart].Values[_keyIndex].CompareTo(value) < 0)
                     return newStart;
 
                 return -1;
             }
 
-            return FindIndexLs(value, newStart, newEnd);
+            return FindIndexLt(value, newStart, newEnd);
         }
 
         /// <summary>
@@ -465,13 +493,13 @@ namespace Server
             if (_data.Count == 0)
                 return;
 
-            var index = FindIndexLs(key, 0, _data.Count - 1);
+            var index = FindIndexLt(key, 0, _data.Count - 1);
 
             if (index != -1)
             {
-                while (index > 0 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0) index--;
+                while (index > 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index--;
 
-                if (index == 0 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0)
+                if (index == 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
                     return;
 
 
@@ -484,13 +512,13 @@ namespace Server
             if (_data.Count == 0)
                 return 0;
 
-            var index = FindIndexLs(key, 0, _data.Count - 1);
+            var index = FindIndexLt(key, 0, _data.Count - 1);
 
             if (index != -1)
             {
-                while (index > 0 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0) index--;
+                while (index > 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index--;
 
-                if (index == 0 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0)
+                if (index == 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
                     return 0;
 
 
@@ -511,13 +539,13 @@ namespace Server
 
             var index = FindIndexEq(key, 0, _data.Count - 1);
 
-            while (index > 0 && _data[index - 1].IndexKeys[_keyIndex].CompareTo(key) == 0) index--;
+            while (index > 0 && _data[index - 1].Values[_keyIndex].CompareTo(key) == 0) index--;
 
 
             if (index != -1)
                 for (var i = index; i < _data.Count; i++)
                 {
-                    if (_data[i].IndexKeys[_keyIndex].CompareTo(key) != 0)
+                    if (_data[i].Values[_keyIndex].CompareTo(key) != 0)
                         break;
                     result.Add(_data[i]);
                 }
@@ -530,14 +558,14 @@ namespace Server
 
             var index = FindIndexEq(key, 0, _data.Count - 1);
 
-            while (index > 0 && _data[index - 1].IndexKeys[_keyIndex].CompareTo(key) == 0) index--;
+            while (index > 0 && _data[index - 1].Values[_keyIndex].CompareTo(key) == 0) index--;
 
 
             var items = 0;
             if (index != -1)
                 for (var i = index; i < _data.Count; i++)
                 {
-                    if (_data[i].IndexKeys[_keyIndex].CompareTo(key) != 0)
+                    if (_data[i].Values[_keyIndex].CompareTo(key) != 0)
                         break;
                     items++;
                 }
@@ -549,7 +577,7 @@ namespace Server
         private int FindIndexEq(KeyValue value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
-            var midValue = _data[mid].IndexKeys[_keyIndex];
+            var midValue = _data[mid].Values[_keyIndex];
 
             var newStart = startIndex;
             var newEnd = endIndex;
@@ -571,9 +599,9 @@ namespace Server
 
             if (newStart == newEnd - 1)
             {
-                if (_data[newEnd].IndexKeys[_keyIndex].CompareTo(value) == 0)
+                if (_data[newEnd].Values[_keyIndex].CompareTo(value) == 0)
                     return newEnd;
-                if (_data[newStart].IndexKeys[_keyIndex].CompareTo(value) == 0)
+                if (_data[newStart].Values[_keyIndex].CompareTo(value) == 0)
                     return newStart;
                 return -1;
             }
@@ -588,7 +616,7 @@ namespace Server
         private int FindIndexGe(KeyValue value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
-            var midValue = _data[mid].IndexKeys[_keyIndex];
+            var midValue = _data[mid].Values[_keyIndex];
             if (midValue == value)
                 return mid;
 
@@ -609,9 +637,9 @@ namespace Server
 
             if (newStart == newEnd - 1)
             {
-                if (_data[newStart].IndexKeys[_keyIndex].CompareTo(value) >= 0)
+                if (_data[newStart].Values[_keyIndex].CompareTo(value) >= 0)
                     return newStart;
-                if (_data[newEnd].IndexKeys[_keyIndex].CompareTo(value) >= 0)
+                if (_data[newEnd].Values[_keyIndex].CompareTo(value) >= 0)
                     return newEnd;
 
                 return -1;
@@ -628,7 +656,7 @@ namespace Server
             var index = FindIndexGe(key, 0, _data.Count - 1);
 
             if (index > 0)
-                while (_data[index].IndexKeys[_keyIndex].CompareTo(_data[index - 1].IndexKeys[_keyIndex]) == 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index - 1].Values[_keyIndex]) == 0)
                 {
                     index--;
 
@@ -649,7 +677,7 @@ namespace Server
             var index = FindIndexGe(key, 0, _data.Count - 1);
 
             if (index > 0)
-                while (_data[index].IndexKeys[_keyIndex].CompareTo(_data[index - 1].IndexKeys[_keyIndex]) == 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index - 1].Values[_keyIndex]) == 0)
                 {
                     index--;
 
@@ -676,7 +704,7 @@ namespace Server
         private int FindIndexGt(KeyValue value, int startIndex, int endIndex)
         {
             var mid = startIndex + (endIndex - startIndex) / 2;
-            var midValue = _data[mid].IndexKeys[_keyIndex];
+            var midValue = _data[mid].Values[_keyIndex];
 
             var newStart = startIndex;
             var newEnd = endIndex;
@@ -698,10 +726,10 @@ namespace Server
 
             if (newStart == newEnd - 1)
             {
-                if (_data[newStart].IndexKeys[_keyIndex].CompareTo(value) > 0)
+                if (_data[newStart].Values[_keyIndex].CompareTo(value) > 0)
                     return newStart;
 
-                if (_data[newEnd].IndexKeys[_keyIndex].CompareTo(value) > 0)
+                if (_data[newEnd].Values[_keyIndex].CompareTo(value) > 0)
                     return newEnd;
 
                 return -1;
@@ -721,10 +749,10 @@ namespace Server
             if (index != -1)
             {
                 // this is useful if the found index is the index of the exact value
-                while (index < _data.Count - 1 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0) index++;
+                while (index < _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index++;
 
                 // manage the case of the exact value being present but no bigger one
-                if (index == _data.Count - 1 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0)
+                if (index == _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
                     return;
 
 
@@ -745,10 +773,10 @@ namespace Server
                 return 0;
 
             //this is useful if the found index is the index of the exact value
-            while (index < _data.Count - 1 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0) index++;
+            while (index < _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index++;
 
             // manage the case of the exact value being present but no bigger one
-            if (index == _data.Count - 1 && _data[index].IndexKeys[_keyIndex].CompareTo(key) == 0)
+            if (index == _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
                 return 0;
 
             if (index != -1) return _data.Count - index;
@@ -758,9 +786,9 @@ namespace Server
 
         #endregion
 
-        #region Btw (Between)
+        #region GeLe (Between)
 
-        private void FindAllBetween(KeyValue start, KeyValue end, ICollection<PackedObject> result)
+        private void FindAllGeLe(KeyValue start, KeyValue end, ICollection<PackedObject> result)
         {
             // don't work too hard if no data available
             if (_data.Count == 0)
@@ -771,7 +799,7 @@ namespace Server
 
             // move to the left if the index is at the end of a region of equal values
             if (index > 0)
-                while (_data[index].IndexKeys[_keyIndex].CompareTo(_data[index - 1].IndexKeys[_keyIndex]) == 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index - 1].Values[_keyIndex]) == 0)
                 {
                     index--;
 
@@ -782,13 +810,77 @@ namespace Server
 
             if (index != -1)
                 for (var i = index; i <= _data.Count - 1; i++)
-                    if (_data[i].IndexKeys[_keyIndex] <= end)
+                    if (_data[i].Values[_keyIndex] <= end)
                         result.Add(_data[i]);
                     else
                         break;
         }
 
-        private int CountAllBetween(KeyValue start, KeyValue end)
+        private void FindAllGeLt(KeyValue start, KeyValue end, ICollection<PackedObject> result)
+        {
+            // don't work too hard if no data available
+            if (_data.Count == 0)
+                return;
+
+            // binary search for a suitable index
+            var index = FindIndexGe(start, 0, _data.Count - 1);
+
+            // move to the left if the index is at the end of a region of equal values
+            if (index > 0)
+                while (_data[index].Values[_keyIndex].CompareTo(_data[index - 1].Values[_keyIndex]) == 0)
+                {
+                    index--;
+
+                    if (index == 0)
+                        break;
+                }
+
+
+            if (index != -1)
+                for (var i = index; i <= _data.Count - 1; i++)
+                    if (_data[i].Values[_keyIndex] < end)
+                        result.Add(_data[i]);
+                    else
+                        break;
+        }
+
+        private void FindAllGtLe(KeyValue start, KeyValue end, ICollection<PackedObject> result)
+        {
+            // don't work too hard if no data available
+            if (_data.Count == 0)
+                return;
+
+            // binary search for a suitable index
+            var index = FindIndexGt(start, 0, _data.Count - 1);
+
+
+            if (index != -1)
+                for (var i = index; i <= _data.Count - 1; i++)
+                    if (_data[i].Values[_keyIndex] <= end)
+                        result.Add(_data[i]);
+                    else
+                        break;
+        }
+
+        private void FindAllGtLt(KeyValue start, KeyValue end, ICollection<PackedObject> result)
+        {
+            // don't work too hard if no data available
+            if (_data.Count == 0)
+                return;
+
+            // binary search for a suitable index
+            var index = FindIndexGt(start, 0, _data.Count - 1);
+
+
+            if (index != -1)
+                for (var i = index; i <= _data.Count - 1; i++)
+                    if (_data[i].Values[_keyIndex] < end)
+                        result.Add(_data[i]);
+                    else
+                        break;
+        }
+
+        private int CountAllGeLe(KeyValue start, KeyValue end)
         {
             if (_data.Count == 0)
                 return 0;
@@ -799,7 +891,7 @@ namespace Server
             if (indexStart == -1) return 0;
 
             if (indexStart > 0)
-                while (_data[indexStart].IndexKeys[_keyIndex].CompareTo(_data[indexStart - 1].IndexKeys[_keyIndex]) ==
+                while (_data[indexStart].Values[_keyIndex].CompareTo(_data[indexStart - 1].Values[_keyIndex]) ==
                        0)
                 {
                     indexStart--;
@@ -813,14 +905,92 @@ namespace Server
 
             if (indexEnd == -1) return 0;
 
-            if (indexEnd != -1 && indexEnd < _data.Count - 1)
-                while (_data[indexEnd].IndexKeys[_keyIndex].CompareTo(_data[indexEnd + 1].IndexKeys[_keyIndex]) == 0)
+            if (indexEnd < _data.Count - 1)
+                while (_data[indexEnd].Values[_keyIndex].CompareTo(_data[indexEnd + 1].Values[_keyIndex]) == 0)
                 {
                     indexEnd++;
 
                     if (indexEnd == _data.Count - 1)
                         break;
                 }
+
+            return indexEnd - indexStart + 1;
+        }
+
+        private int CountAllGtLe(KeyValue start, KeyValue end)
+        {
+            if (_data.Count == 0)
+                return 0;
+
+            // find the first index greater than start
+            var indexStart = FindIndexGt(start, 0, _data.Count - 1);
+
+            if (indexStart == -1) return 0;
+
+
+            // find the last index lesser than or equal to end
+            var indexEnd = FindIndexLe(end, 0, _data.Count - 1);
+
+            if (indexEnd == -1) return 0;
+
+            if (indexEnd < _data.Count - 1)
+                while (_data[indexEnd].Values[_keyIndex].CompareTo(_data[indexEnd + 1].Values[_keyIndex]) == 0)
+                {
+                    indexEnd++;
+
+                    if (indexEnd == _data.Count - 1)
+                        break;
+                }
+
+            return indexEnd - indexStart + 1;
+        }
+
+        private int CountAllGeLt(KeyValue start, KeyValue end)
+        {
+            if (_data.Count == 0)
+                return 0;
+
+            // find the first index greater than or equal to start
+            var indexStart = FindIndexGe(start, 0, _data.Count - 1);
+
+            if (indexStart == -1) return 0;
+
+            if (indexStart > 0)
+                while (_data[indexStart].Values[_keyIndex].CompareTo(_data[indexStart - 1].Values[_keyIndex]) ==
+                       0)
+                {
+                    indexStart--;
+
+                    if (indexStart == 0)
+                        break;
+                }
+
+
+            // find the last index lesser than or equal to end
+            var indexEnd = FindIndexLt(end, 0, _data.Count - 1);
+
+            if (indexEnd == -1) return 0;
+
+
+            return indexEnd - indexStart + 1;
+        }
+
+        private int CountAllGtLt(KeyValue start, KeyValue end)
+        {
+            if (_data.Count == 0)
+                return 0;
+
+            // find the first index greater than start
+            var indexStart = FindIndexGt(start, 0, _data.Count - 1);
+
+            if (indexStart == -1) return 0;
+
+
+            // find the last index lesser than or equal to end
+            var indexEnd = FindIndexLt(end, 0, _data.Count - 1);
+
+            if (indexEnd == -1) return 0;
+
 
             return indexEnd - indexStart + 1;
         }

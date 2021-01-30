@@ -125,7 +125,7 @@ namespace Tests.IntegrationTests
 
                 // this one thrown an exception as the query is not a subset of the domain
                 Assert.Throws<CacheException>(() =>
-                    result = Enumerable.ToList(homes.Where(h => h.CountryCode == "FR" && h.Rooms == 2).OnlyIfComplete())
+                    result = homes.Where(h => h.CountryCode == "FR" && h.Rooms == 2).OnlyIfComplete().ToList()
                 );
 
 
@@ -387,7 +387,9 @@ namespace Tests.IntegrationTests
 
                 var watch = new Stopwatch();
                 watch.Start();
-                var pivot = dataSource.ComputePivot(null, o => o.Category, o => o.ProductId);
+                
+                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.Category, o => o.ProductId).AggregateValues(o=>o.Amount, o=>o.Quantity).Execute();
+
                 watch.Stop();
 
                 Console.WriteLine(

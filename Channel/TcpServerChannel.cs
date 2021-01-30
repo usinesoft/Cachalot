@@ -148,10 +148,6 @@ namespace Channel
             }
         }
 
-        public void Join()
-        {
-            _acceptThread.Join();
-        }
 
         /// <summary>
         ///     Client as seen from the server
@@ -226,16 +222,17 @@ namespace Channel
             }
 
 
-            public void SendMany(ICollection<PackedObject> items)
+            public void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases)
             {
                 try
                 {
                     Stream stream = _tcpClient.GetStream();
 
+                    // if less items than a threshold serialize into a buffer so the read-lock can be released immediately
                     if (items.Count < Consts.StreamingThreshold)
                     {
                         var memStream = new MemoryStream();
-                        Streamer.ToStreamMany(memStream, items);
+                        Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);
                         ThreadPool.QueueUserWorkItem(delegate(object state)
                         {
                             var networkStream = (Stream) state;
@@ -246,7 +243,7 @@ namespace Channel
                     }
                     else
                     {
-                        Streamer.ToStreamMany(stream, items);
+                        Streamer.ToStreamMany(stream, items, selectedIndexes, aliases);
                     }
                 }
 // ReSharper disable EmptyGeneralCatchClause

@@ -1,19 +1,19 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using Client.Queries;
 using JetBrains.Annotations;
 using ProtoBuf;
 
-namespace Client.Messages.Pivot
+namespace Cachalot.Linq
 {
     [ProtoContract]
     public class PivotRequest : DataRequest
     {
+        private readonly IDataClient _client;
+
         /// <summary>
         /// Mostly for serialization
         /// </summary>
@@ -22,10 +22,10 @@ namespace Client.Messages.Pivot
         {
         }
 
-        internal  PivotRequest(OrQuery query)
+        internal  PivotRequest(OrQuery query, IDataClient client)
             : base(DataAccessType.Read, query.CollectionName)
         {
-            
+            _client = client;
             Query = query;
         }
 
@@ -41,7 +41,6 @@ namespace Client.Messages.Pivot
         [field: ProtoMember(3)] public  List<int> ValuesList { get; }= new List<int>();
 
 
-        
         
     }
 }

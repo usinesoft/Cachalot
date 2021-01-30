@@ -181,13 +181,13 @@ namespace Tests.UnitTests
 
             {
                 var count = idx1.GetCount(new List<KeyValue> {new KeyValue(3, keyType), new KeyValue(3, keyType)},
-                    QueryOperator.Btw);
+                    QueryOperator.GeLe);
 
                 Assert.AreEqual(3, count);
 
                 var items =
                     idx1.GetMany(new List<KeyValue> {new KeyValue(3, keyType), new KeyValue(3, keyType)},
-                        QueryOperator.Btw);
+                        QueryOperator.GeLe);
 
                 Assert.AreEqual(3, items.Count);
             }
@@ -195,26 +195,26 @@ namespace Tests.UnitTests
 
             {
                 var count = idx1.GetCount(new List<KeyValue> {new KeyValue(8, keyType), new KeyValue(9, keyType)},
-                    QueryOperator.Btw);
+                    QueryOperator.GeLe);
 
                 Assert.AreEqual(0, count);
 
                 var items =
                     idx1.GetMany(new List<KeyValue> {new KeyValue(8, keyType), new KeyValue(9, keyType)},
-                        QueryOperator.Btw);
+                        QueryOperator.GeLe);
 
                 Assert.AreEqual(0, items.Count);
             }
 
             {
                 var count = idx1.GetCount(new List<KeyValue> {new KeyValue(1, keyType), new KeyValue(3, keyType)},
-                    QueryOperator.Btw);
+                    QueryOperator.GeLe);
 
                 Assert.AreEqual(5, count);
 
                 var items =
                     idx1.GetMany(new List<KeyValue> {new KeyValue(1, keyType), new KeyValue(3, keyType)},
-                        QueryOperator.Btw);
+                        QueryOperator.GeLe);
 
                 Assert.AreEqual(5, items.Count);
             }

@@ -114,7 +114,7 @@ namespace Tests.UnitTests
                     SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
 
-                Assert.AreEqual(reloaded.IndexKeys[2], packed.IndexKeys[2]);
+                Assert.AreEqual(reloaded.Values[2], packed.Values[2]);
 
                 Console.WriteLine(reloaded);
             }
@@ -148,7 +148,7 @@ namespace Tests.UnitTests
             evt.WaitOne();
 
 
-            for (var i = 0; i < 1000; i++) Assert.AreEqual(itemsReloaded[i].IndexKeys[2], items[i].IndexKeys[2]);
+            for (var i = 0; i < 1000; i++) Assert.AreEqual(itemsReloaded[i].Values[2], items[i].Values[2]);
         }
 
         [Test]
@@ -169,7 +169,7 @@ namespace Tests.UnitTests
 
             using (var stream = new MemoryStream())
             {
-                Streamer.ToStreamMany(stream, items);
+                Streamer.ToStreamMany(stream, items, new int[0], null);
 
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -219,7 +219,7 @@ namespace Tests.UnitTests
 
             using (var stream = new MemoryStream())
             {
-                Streamer.ToStreamMany(stream, oneItemList);
+                Streamer.ToStreamMany(stream, oneItemList, new int[0], null);
                 stream.Seek(0, SeekOrigin.Begin);
 
                 var itemReloaded = Streamer.FromStream<CacheableTypeOk>(stream);
@@ -277,7 +277,7 @@ namespace Tests.UnitTests
 
             using (var stream = new MemoryStream())
             {
-                Streamer.ToStreamMany(stream, items);
+                Streamer.ToStreamMany(stream, items, new int[0], null);
 
                 stream.Seek(0, SeekOrigin.Begin);
 
@@ -401,9 +401,9 @@ namespace Tests.UnitTests
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             stream.Seek(0, SeekOrigin.Begin);
             var t1 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t1.IndexKeys[2].ToString(), "0");
+            Assert.AreEqual(t1.Values[4].ToString(), "0");
             var t2 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t2.IndexKeys[2].ToString(), "0");
+            Assert.AreEqual(t2.Values[4].ToString(), "0");
         }
     }
 }

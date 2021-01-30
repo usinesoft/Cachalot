@@ -39,7 +39,7 @@ namespace Tests.UnitTests
             query = UtExtensions.PredicateToQuery<Home>(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
             Assert.AreEqual(2, query.Elements.Count);
 
-            Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
+            Assert.AreEqual(QueryOperator.Contains,  query.Elements.First().Elements.Single().Operator);
 
             // check boolean members without operator
             query = UtExtensions.PredicateToQuery<Order>(o => o.IsDelivered);
@@ -77,40 +77,40 @@ namespace Tests.UnitTests
             query = UtExtensions.PredicateToQuery<Order>(o =>  o.ClientId != 15 );
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
-            Assert.AreEqual(QueryOperator.Neq, query.Elements[0].Elements[0].Operator);
+            Assert.AreEqual(QueryOperator.NotEq, query.Elements[0].Elements[0].Operator);
 
             // check not contains
             query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today));
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
-            Assert.AreEqual(QueryOperator.Nin, query.Elements[0].Elements[0].Operator);
+            Assert.AreEqual(QueryOperator.NotContains, query.Elements[0].Elements[0].Operator);
 
             query = UtExtensions.PredicateToQuery<Home>(h =>! towns.Contains(h.Town));
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
-            Assert.AreEqual(QueryOperator.Nin, query.Elements[0].Elements[0].Operator);
+            Assert.AreEqual(QueryOperator.NotIn, query.Elements[0].Elements[0].Operator);
 
             query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today) && h.Town == "Paris");
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
-            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.Nin));
+            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" && !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
-            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.Nin));
+            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today) || h.Town == "Paris");
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
-            Assert.IsTrue(query.Elements.Any(q=>q.Elements[0].Operator == QueryOperator.Nin));
+            Assert.IsTrue(query.Elements.Any(q=>q.Elements[0].Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" || !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
-            Assert.IsTrue(query.Elements.Any(q=>q.Elements.Any(e=>e.Operator == QueryOperator.Nin)));
+            Assert.IsTrue(query.Elements.Any(q=>q.Elements.Any(e=>e.Operator == QueryOperator.NotContains)));
             Console.WriteLine(query);
 
             // string operators
@@ -147,12 +147,13 @@ namespace Tests.UnitTests
         {
             var q = UtExtensions.Select<Home> (h => h.Town);
 
-            Assert.AreEqual(1, q.SelectedProperties.Count);
-            Assert.AreEqual("Town", q.SelectedProperties[0]);
+            Assert.AreEqual(1, q.SelectClause.Count);
+            Assert.AreEqual("Town", q.SelectClause[0].Name);
+            Assert.AreEqual("Town", q.SelectClause[0].Alias);
 
             q = UtExtensions.Select<Home> (h => new {Town = h.Town, Adress = h.Address});
-            Assert.AreEqual(2, q.SelectedProperties.Count);
-            Assert.AreEqual("Town", q.SelectedProperties[0]);
+            Assert.AreEqual(2, q.SelectClause.Count);
+            Assert.AreEqual("Town", q.SelectClause[0].Name);
 
             Assert.IsFalse(q.Distinct);
 
@@ -194,7 +195,7 @@ namespace Tests.UnitTests
                 var q = trades.PredicateToQuery(t =>
                     t.ValueDate >= today && t.ValueDate <= tomorrow);
 
-                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.Btw,
+                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.GeLe,
                     "BETWEEN optimization not working");
 
                 Console.WriteLine(q.ToString());
@@ -218,8 +219,8 @@ namespace Tests.UnitTests
                     t.Accounts.Contains(111));
 
 
-                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.In,
-                    "IN optimization not working");
+                Assert.IsTrue(q.Elements.Single().Elements.Single().Operator == QueryOperator.Contains,
+                    "CONTAINS optimization not working");
 
                 Console.WriteLine(q.ToString());
 

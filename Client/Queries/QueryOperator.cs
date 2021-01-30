@@ -32,23 +32,48 @@ namespace Client.Queries
         Le,
 
         /// <summary>
-        ///     Between
+        ///     [Value, Value2]
         /// </summary>
-        Btw,
+        GeLe,
 
         /// <summary>
-        ///     Applies to list keys
+        ///     (Value, Value2]
+        /// </summary>
+        GtLe,
+
+        /// <summary>
+        ///     (Value, Value2)
+        /// </summary>
+        GtLt,
+        /// <summary>
+        ///     [Value, Value2)
+        /// </summary>
+        GeLt,
+
+        /// <summary>
+        ///     Value in list of values (the query has one value, it applies to a list of values)
         /// </summary>
         In,
 
         /// <summary>
+        ///  Values contain value (the query has a list of values, it applies to a scalar value)
+        /// </summary>
+        Contains,
+
+        /// <summary>
         /// Not equal
         /// </summary>
-        Neq,
+        NotEq,
+
         /// <summary>
-        /// Not in
+        /// Value not in list of values (the query has one value, it applies to a list of values)
         /// </summary>
-        Nin,
+        NotIn,
+
+        /// <summary>
+        /// Values do not contain value (the query has a list of values, it applies to a scalar value)
+        /// </summary>
+        NotContains,
 
         /// <summary>
         /// StartsWith string method
@@ -65,4 +90,18 @@ namespace Client.Queries
         /// </summary>
         StrContains, 
     }
+
+    public static class OperatorExtensions
+    {
+        public static bool IsRangeOperator(this QueryOperator @this)
+        {
+            if (@this == QueryOperator.GeLe || @this == QueryOperator.GeLt || @this == QueryOperator.GtLt ||
+                @this == QueryOperator.GtLe)
+                return true;
+
+
+            return false;
+        }
+    }
+    
 }

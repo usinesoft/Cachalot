@@ -55,7 +55,7 @@ namespace Channel
 
         #region IClientChannel Members
 
-        public IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request)
+        public IEnumerable<RankedItem> SendStreamRequest(Request request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
@@ -72,7 +72,7 @@ namespace Channel
                 Streamer.ToStream(stream, request);
 
 
-                var enumerable = Streamer.EnumerableFromStream<TItemType>(stream);
+                var enumerable = Streamer.EnumerableFromStream(stream);
                 foreach (var item in enumerable)
                     yield return item;
             }

@@ -68,7 +68,20 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
+            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri=>FromJObject<T>(ri.Item));
+        }
+
+        T FromJObject<T>(JObject jObject)
+        {
+            var t = typeof(T);
+            bool isPrimitiveType = t.IsPrimitive || t.IsValueType || (t == typeof(string)||t == typeof(DateTime))||t == typeof(DateTimeOffset)||t == typeof(decimal);
+
+            if (jObject.Count == 1)
+            {
+                return jObject.Properties().First().Value.ToObject<T>();
+            }
+
+            return jObject.ToObject<T>(SerializationHelper.Serializer);
         }
 
         public static void Probe(Action<OrQuery> action)

@@ -11,12 +11,12 @@ namespace Client.Queries
 
             foreach (var andQuery in rootExpression.Elements)
             {
-                var multipleTests = andQuery.Elements.Where(q=>q.IsComparison).GroupBy(q => q.IndexName).Where(g => g.Count() > 1).ToList();
+                var multipleTests = andQuery.Elements.Where(q=>q.IsComparison).GroupBy(q => q.PropertyName).Where(g => g.Count() > 1).ToList();
 
                 if (multipleTests.Count > 0)
                 {
                     // these ones will not be changed
-                    var atomicQueries = andQuery.Elements.Where(q => multipleTests.All(mt => mt.Key != q.IndexName))
+                    var atomicQueries = andQuery.Elements.Where(q => multipleTests.All(mt => mt.Key != q.PropertyName))
                         .ToList();
 
                     foreach (var multipleTest in multipleTests)
@@ -43,23 +43,64 @@ namespace Client.Queries
                             {
                                 if (q1.Value < q2.Value)
                                 {
+                                    QueryOperator oper = QueryOperator.Eq;
                                     if (q1.Operator == QueryOperator.Ge)
                                         if (q2.Operator == QueryOperator.Le)
                                         {
-                                            var between = new AtomicQuery(q1.Value, q2.Value);
-                                            atomicQueries.Add(between);
-                                            optimized = true;
+                                            oper = QueryOperator.GeLe;
                                         }
+                                    if (q1.Operator == QueryOperator.Gt)
+                                        if (q2.Operator == QueryOperator.Le)
+                                        {
+                                            oper = QueryOperator.GtLe;
+                                        }
+                                    if (q1.Operator == QueryOperator.Gt)
+                                        if (q2.Operator == QueryOperator.Lt)
+                                        {
+                                            oper = QueryOperator.GtLt;
+                                        }
+                                    if (q1.Operator == QueryOperator.Ge)
+                                        if (q2.Operator == QueryOperator.Lt)
+                                        {
+                                            oper = QueryOperator.GeLt;
+                                        }
+
+                                    if (oper.IsRangeOperator())
+                                    {
+                                        var between = new AtomicQuery(q1.Metadata,  q1.Value, q2.Value, oper);
+                                        atomicQueries.Add(between);
+                                        optimized = true;
+                                    }
+                                    
                                 }
                                 else if (q1.Value > q2.Value)
                                 {
+                                    QueryOperator oper = QueryOperator.Eq;
+
                                     if (q1.Operator == QueryOperator.Le)
                                         if (q2.Operator == QueryOperator.Ge)
                                         {
-                                            var between = new AtomicQuery(q2.Value, q1.Value);
-                                            atomicQueries.Add(between);
-                                            optimized = true;
+                                            oper = QueryOperator.GeLe;
                                         }
+                                    if (q1.Operator == QueryOperator.Lt)
+                                        if (q2.Operator == QueryOperator.Ge)
+                                        {
+                                            oper = QueryOperator.GeLt;
+                                        }
+                                    if (q1.Operator == QueryOperator.Le)
+                                        if (q2.Operator == QueryOperator.Gt)
+                                        {
+                                            oper = QueryOperator.GtLe;
+                                        }
+                                    if (q1.Operator == QueryOperator.Lt)
+                                        if (q2.Operator == QueryOperator.Gt)
+                                        {
+                                            oper = QueryOperator.GtLt;
+                                        }
+
+                                    var between = new AtomicQuery(q1.Metadata, q2.Value, q1.Value, oper);
+                                    atomicQueries.Add(between);
+                                    optimized = true;
                                 }
                             }
 

@@ -77,8 +77,9 @@ namespace Client.Interface
         /// </summary>
         /// <param name="filter">the items for which the pivot is computed</param>
         /// <param name="axis">ordered axis list for pivot calculation</param>
+        /// <param name="values">list of values to aggregate</param>
         /// <returns></returns>
-        PivotLevel ComputePivot(OrQuery filter, params string[] axis);
+        PivotLevel ComputePivot(OrQuery filter, IEnumerable<int> axis, IEnumerable<int> values);
 
         /// <summary>
         ///     Clears one collection and also resets the hit ratio in pure cache mode. The schema information is preserved

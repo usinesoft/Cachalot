@@ -13,13 +13,11 @@ using ProtoBuf;
 namespace Client.Messages
 {
     /// <summary>
-    ///     Metadata of an property as seen server-side
+    ///     Metadata of an property which is server-side visible
     /// </summary>
     [ProtoContract]
     public class KeyInfo : IEquatable<KeyInfo>
     {
-        public const string DefaultNameForPrimaryKey = "id";
-
         [UsedImplicitly]
         public KeyInfo()
         {
@@ -33,15 +31,16 @@ namespace Client.Messages
         /// <param name="order">unique for a schema (primary key always 0)</param>
         /// <param name="indexType">type of index <see cref="IndexType" /></param>
         /// <param name="jsonName">not null only if json name is different from property name</param>
-        
-        public KeyInfo(string name, int order, IndexType indexType = IndexType.None, string jsonName = null)
+        /// <param name="isCollection">true if the property is a collection</param>
+        public KeyInfo(string name, int order, IndexType indexType = IndexType.None, string jsonName = null, bool isCollection = false)
         {
             Name = name;
             Order = order;
 
             IndexType = indexType;
+            IsCollection = isCollection;
 
-            
+
             JsonName = jsonName ?? name;
         }
 
@@ -59,6 +58,8 @@ namespace Client.Messages
         [field: ProtoMember(3)] public string JsonName { get; set; }
 
         [field: ProtoMember(4)] public int Order { get;  set; }
+
+        [field: ProtoMember(5)] public bool IsCollection { get;  set; }
 
         public bool Equals(KeyInfo keyInfo)
         {

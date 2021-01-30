@@ -1,9 +1,10 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 using Client.Core;
-using Client.Interface;
 using Client.Messages;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Tests.TestData;
 
@@ -14,47 +15,7 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureJsonIndexing
     {
-        private enum Fuzzy
-        {
-            Yes,
-            No,
-            Maybe
-        }
-
-        private class AllKindsOfProperties
-        {
-            [ServerSideValue(IndexType.Primary)] public int Id { get; set; }
-
-
-            [ServerSideValue(IndexType.Dictionary)]public DateTime ValueDate { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public DateTimeOffset AnotherDate { get; set; }
-
-
-            [ServerSideValue(IndexType.Dictionary)] public DateTime LastUpdate { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public double Nominal { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public int Quantity { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public string InstrumentName { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public Fuzzy AreYouSure { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public bool IsDeleted { get; set; }
-
-            [ServerSideValue(IndexType.Dictionary)] public IList<string> Tags { get; } = new List<string>();
-
-            [ServerSideValue(IndexType.Dictionary)] public IList<string> Languages { get; } = new List<string>();
-
-            /// <summary>
-            ///     Read only property that is indexed. It shoul de serialized to json
-            /// </summary>
-            [ServerSideValue(IndexType.Dictionary)]
-            public Fuzzy Again => Fuzzy.Maybe;
-        }
-
-
+       
         [Test]
         public void Packing_a_binary_object_and_its_json_should_give_identical_results()
         {
@@ -72,7 +33,7 @@ namespace Tests.UnitTests
                 Quantity = 35,
                 InstrumentName = "IRS",
                 AnotherDate = now,
-                AreYouSure = Fuzzy.Maybe,
+                AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
                 Tags = {"news", "science", "space", "διξ"},
                 Languages = {"en", "de", "fr"}
@@ -92,12 +53,117 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(packed1.CollectionName, packed2.CollectionName);
 
-            CollectionAssert.AreEqual(packed1.UniqueKeys, packed2.UniqueKeys);
-            CollectionAssert.AreEqual(packed1.IndexKeys, packed2.IndexKeys);
-            CollectionAssert.AreEqual(packed1.ListIndexKeys, packed2.ListIndexKeys);
+            CollectionAssert.AreEqual(packed1.Values, packed2.Values);
+            Assert.AreEqual(packed1.CollectionValues.Length, packed2.CollectionValues.Length);
 
+            for (int i = 0; i < packed2.CollectionValues.Length; i++)
+            {
+                CollectionAssert.AreEqual(packed1.CollectionValues[i].Values, packed2.CollectionValues[i].Values);    
+            }
+            
+            
             
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
+        }
+
+
+        /// <summary>
+        /// Compare json: all the properties must be identical even if in different order. Ignore te special $type property
+        /// </summary>
+        /// <param name="json1"></param>
+        /// <param name="json2"></param>
+        /// <returns></returns>
+        public static bool CompareJson(string json1, string json2)
+        {
+            JObject j1 = JObject.Parse(json1);
+            JObject j2 = JObject.Parse(json2);
+
+            var properties1 = j1.Properties().Where(p => p.Name != "$type").OrderBy(p => p.Name).ToList();
+            var properties2 = j2.Properties().Where(p => p.Name != "$type").OrderBy(p => p.Name).ToList();
+
+            if (properties2.Count != properties1.Count)
+                return false;
+
+            for (int i = 0; i < properties1.Count; i++)
+            {
+                var p1 = properties1[i];
+                var p2 = properties2[i];
+
+                if (p1.Name != p2.Name)
+                    return false;
+
+                if (p1.Value.ToString() != p2.Value.ToString())
+                    return false;
+            }
+
+
+            return true;
+        }
+
+        [Test]
+        public void Serialize_a_subset_of_properties_as_json()
+        {
+            var testObj = new Order
+            {
+                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Id = Guid.NewGuid(),
+                Quantity = 1,
+                IsDelivered = true
+            };
+
+
+            var schema = TypedSchemaFactory.FromType<Order>();
+
+            var packed = PackedObject.Pack(testObj, schema);
+
+            var jsonFull = packed.Json;
+
+            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"));
+
+            var json1 = new StreamReader(new MemoryStream(data1)).ReadToEnd();
+
+            var partial1 = SerializationHelper.ObjectFromBytes<Order>(data1, SerializationMode.Json, schema.UseCompression);
+
+            Assert.AreEqual(testObj.Amount, partial1.Amount);
+            Assert.AreEqual(testObj.Category, partial1.Category);
+
+            var data2 = packed.GetServerSideData();
+            var json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
+
+            // they are equal except for the $type property which is present only in the full json
+            Assert.IsTrue(CompareJson(json, jsonFull));
+
+            schema = TypedSchemaFactory.FromType(typeof(AllKindsOfProperties));
+
+            var today = DateTime.Today;
+            var now = DateTime.Now;
+
+            var testObj1 = new AllKindsOfProperties
+            {
+                Id = 15,
+                ValueDate = today,
+                LastUpdate = now,
+                Nominal = 156.32,
+                Quantity = 35,
+                InstrumentName = "IRS",
+                AnotherDate = now,
+                AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
+                IsDeleted = true,
+                Tags = {"news", "science", "space", "διξ"},
+                Languages = {"en", "de", "fr"}
+            };
+
+            packed = PackedObject.Pack(testObj1, schema);
+
+            jsonFull = packed.Json;
+
+            data2 = packed.GetServerSideData();
+            json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
+
+            // they are equal except for the $type property which is present only in the full json
+            Assert.IsTrue(CompareJson(json, jsonFull));
+
+
         }
 
         [Test]
@@ -130,9 +196,9 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(packed1.CollectionName, packed2.CollectionName);
 
-            CollectionAssert.AreEqual(packed1.UniqueKeys, packed2.UniqueKeys);
-            CollectionAssert.AreEqual(packed1.IndexKeys, packed2.IndexKeys);
-            CollectionAssert.AreEqual(packed1.ListIndexKeys, packed2.ListIndexKeys);
+            CollectionAssert.AreEqual(packed1.Values, packed2.Values);
+            CollectionAssert.AreEqual(packed1.CollectionValues, packed2.CollectionValues);
+            
 
             var json1 = Encoding.UTF8.GetString(packed1.ObjectData);
             var json2 = Encoding.UTF8.GetString(packed2.ObjectData);
@@ -203,7 +269,5 @@ namespace Tests.UnitTests
             //repacked.PrimaryKey = packed.PrimaryKey;
             //Assert.AreEqual(packed.ToString(), repacked.ToString());
         }
-
-
     }
 }

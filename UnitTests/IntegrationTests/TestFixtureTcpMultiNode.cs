@@ -94,12 +94,6 @@ namespace Tests.IntegrationTests
             
             Assert.AreEqual(113, itemsReloaded.Count);
 
-            Assert.Throws<CacheException>(() =>
-            {
-                int removed = _aggregator.RemoveMany<CacheableTypeOk>(i => i.UniqueKey >= 1000 && i.UniqueKey < 1010);
-
-            }, "can not apply comparison operator on unique keys");
-            
             
         }
 

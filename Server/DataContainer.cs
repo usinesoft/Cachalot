@@ -13,11 +13,13 @@ using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using Client.Messages.Pivot;
 using Client.Profiling;
 using Client.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Server.Persistence;
+using Server.Queries;
 using Server.Transactions;
 
 #endregion
@@ -134,7 +136,6 @@ namespace Server
 
                     transactionManager.ProcessTransactionRequest(transactionRequest, client, DataStores);
 
-                    //ProcessTransactionRequest(transactionRequest, client);
                     return;
                 }
 
@@ -236,7 +237,7 @@ namespace Server
                 {
             
                     var newDataStore =
-                        new DataStore(typeDescription, new NullEvictionPolicy(), _config);
+                        new DataStore(typeDescription, new NullEvictionPolicy(), _config.FullTextConfig);
 
                     Dbg.CheckThat(Profiler != null);
 
@@ -252,12 +253,6 @@ namespace Server
             {
                 client?.SendResponse(new ExceptionResponse(e));
             }
-        }
-
-
-        private void PersistTransaction(DurableTransaction durableTransaction)
-        {
-            PersistenceEngine?.NewTransaction(durableTransaction);
         }
 
 
@@ -290,7 +285,34 @@ namespace Server
 
                 lockManager.DoWithWriteLock(() =>
                 {
-                    dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                    if (dataRequest is RemoveManyRequest removeManyRequest)
+                    {
+                        var mgr = new DeleteManager(dataStore, PersistenceEngine);
+
+                        mgr.ProcessRequest(removeManyRequest, client);
+                    }
+                    else if (dataRequest is PutRequest putRequest)
+                    {
+                        var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore);
+                        
+                        mgr.ProcessRequest(putRequest, client);
+                    }
+                    else if (dataRequest is DomainDeclarationRequest domainDeclarationRequest)
+                    {
+                        var mgr = new CacheOnlyManager(dataStore);
+
+                        mgr.ProcessRequest(domainDeclarationRequest, client);
+                        
+                    }
+
+                    else if (dataRequest is EvictionSetupRequest evictionSetupRequest)
+                    {
+                        var mgr = new CacheOnlyManager(dataStore);
+
+                        mgr.ProcessRequest(evictionSetupRequest, client);
+                        
+                    }
+                    
                 }, dataRequest.CollectionName);
 
             }
@@ -300,7 +322,19 @@ namespace Server
                 {
                     if (lockManager.CheckLock(dataRequest.SessionId, false, dataRequest.CollectionName))
                     {
-                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                        if (dataRequest is GetRequest getRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(getRequest, client);
+                        }
+                        else if (dataRequest is EvalRequest evalRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(evalRequest, client);
+                        }
+                        else if (dataRequest is PivotRequest pivotRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(pivotRequest, client);
+                        }
+
                     }
                     else
                     {
@@ -311,7 +345,20 @@ namespace Server
                 {
                     lockManager.DoWithReadLock(() =>
                     {
-                        dataStore.ProcessRequest(dataRequest, client, PersistTransaction);
+                        
+                        if (dataRequest is GetRequest getRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(getRequest, client);
+                        }
+                        else if (dataRequest is EvalRequest evalRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(evalRequest, client);
+                        }
+                        else if (dataRequest is PivotRequest pivotRequest)
+                        {
+                            new QueryManager(dataStore).ProcessRequest(pivotRequest, client);
+                        }
+
                     },dataRequest.CollectionName);
 
                 }
@@ -421,7 +468,7 @@ namespace Server
 
 
         /// <summary>
-        ///     Scheduled as read-only task
+        ///     Backup all data stores, schema and unique value generators to a directory
         /// </summary>
         /// <param name="request"></param>
         /// <param name="client"></param>
@@ -458,7 +505,7 @@ namespace Server
                         // ignore (race condition between nodes)
                     }
 
-                Parallel.ForEach(DataStores.Values, ds => ds.Dump(request, ShardIndex));
+                Parallel.ForEach(DataStores.Values, ds => ds.Dump(request.Path, ShardIndex));
 
 
                 // only the first node in the cluster should dump the schema as all shards have identical copies
@@ -509,7 +556,7 @@ namespace Server
                     
                     var info = new DataStoreInfo
                     {
-                        Count = store.Count,
+                        Count = store.DataByPrimaryKey.Count,
                         EvictionPolicy = store.EvictionType,
                         EvictionPolicyDescription =
                             store.EvictionPolicy.ToString(),

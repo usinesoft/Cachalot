@@ -93,7 +93,27 @@ namespace Cachalot.Linq
             }
 
         }
+
+        public void ConsistentRead<T1>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).FullName);
+        }
        
+        public void ConsistentRead<T1, T2>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName);
+        }
+
+        public void ConsistentRead<T1, T2, T3>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName, typeof(T3).FullName);
+        }
+
+        public void ConsistentRead<T1, T2, T3, T4>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName, typeof(T3).FullName, typeof(T4).FullName);
+        }
+
 
         /// <summary>
         /// Declare collection with implicit schema (inferred from the type)

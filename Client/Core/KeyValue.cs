@@ -9,6 +9,7 @@ using Client.Messages;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
+using Remotion.Linq.Clauses.ResultOperators;
 
 #endregion
 
@@ -81,6 +82,41 @@ namespace Client.Core
 
                 case OriginalType.Null:
                     return "null";
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+        }
+
+        public  JProperty ToJson()
+        {
+            var type = (OriginalType) _data[0];
+
+            switch (type)
+            {
+                case OriginalType.SomeInteger:
+                    return new JProperty(KeyName, _hashCode);
+
+                case OriginalType.SomeFloat:
+                    return new JProperty(KeyName, NumericValue);
+                    
+                case OriginalType.Boolean:
+                    return new JProperty(KeyName, _hashCode != 0);
+                    
+                case OriginalType.Date:
+                    if(_data.Length == 1)//no offset
+                        return new JProperty(KeyName, new DateTime(_hashCode));
+                    
+                    var offset = BitConverter.ToInt64(_data, 1);
+                    
+                    return new JProperty(KeyName, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
+
+                case OriginalType.String:
+                    return new JProperty(KeyName, StringValue);
+
+                case OriginalType.Null:
+                    return null;
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -169,18 +205,25 @@ namespace Client.Core
         {
             _hashCode = value.Ticks;
 
-            _data[0] = (byte) OriginalType.Date;
-
+            
             var offset = value.Offset.Ticks;
+
+            if (offset == 0)
+            {
+                _data[0] = (byte) OriginalType.Date;
+                return;
+            }
 
             var offsetBytes = BitConverter.GetBytes(offset);
 
-            var data = new byte[1 + offsetBytes.Length];
-            data[0] = _data[0];
+            _data = new byte[1 + offsetBytes.Length];
+            _data[0] = (byte) OriginalType.Date;
 
-            Buffer.BlockCopy(offsetBytes, 0, data, 1, offsetBytes.Length);
+            Buffer.BlockCopy(offsetBytes, 0, _data, 1, offsetBytes.Length);
 
         }
+
+        
 
         /// <summary>
         /// For serialization only
@@ -240,7 +283,17 @@ namespace Client.Core
 
             if (propertyType == typeof(DateTime))
             {
-                FromLong(((DateTime) value).Ticks, OriginalType.Date);
+                // the default DateTime can not be directly converted to DateTimeOffset
+                var date = (DateTime) value;
+                if (date == default)
+                {
+                    FromDateTimeWithTimeZone(default);
+                    return;
+                }
+                    
+
+                FromDateTimeWithTimeZone(new DateTimeOffset(date));
+
                 return;
             }
 

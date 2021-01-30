@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
 using Client.Interface;
@@ -41,7 +42,6 @@ namespace Tests.UnitTests
 
 
 
-
         [Test]
         public void TestPackedObjectIsSerializable()
         {
@@ -60,14 +60,9 @@ namespace Tests.UnitTests
             Assert.IsNotNull(cached.PrimaryKey);
             Assert.AreEqual(cached.PrimaryKey, 11);
 
-            Assert.IsNotNull(cached.UniqueKeys);
-            Assert.AreEqual(cached.UniqueKeys.Length, 1);
-            Assert.AreEqual(cached.UniqueKeys[0], 1);
-
-            Assert.IsNotNull(cached.IndexKeys);
-            Assert.AreEqual(cached.IndexKeys.Length, 4);
-
-            foreach (var key in cached.IndexKeys)
+            
+            
+            foreach (var key in cached.Values)
             {
                 if (key.KeyName == "IndexKeyDate")
                 {
@@ -106,7 +101,7 @@ namespace Tests.UnitTests
 
            
             Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
-            Assert.AreEqual("Dan", reloaded.IndexKeys.First(k=>k.KeyName == "First").StringValue);
+            Assert.AreEqual("Dan", reloaded.Values.First(k=>k.KeyName == "First").StringValue);
 
 
         }
@@ -217,8 +212,9 @@ namespace Tests.UnitTests
 
             var pivot = new PivotLevel();
 
-            pivot.AggregateOneObject(packed1);
-            pivot.AggregateOneObject(packed2);
+            // Amount and Quantity to be aggregated (index 1 and 2) in the schema
+            pivot.AggregateOneObject(packed1, new List<int>(), new List<int>{1,2} );
+            pivot.AggregateOneObject(packed2, new List<int>(), new List<int>{1,2} );
 
 
             // Amount and Quantity should be aggregated
@@ -264,12 +260,12 @@ namespace Tests.UnitTests
             var packed3 = PackedObject.Pack(order3, schema);
 
 
-            // first test with one single axis
+            // first test with one single axis (Category index = 3)
             var pivot = new PivotLevel();
 
-            pivot.AggregateOneObject(packed1, "Category");
-            pivot.AggregateOneObject(packed2, "Category");
-            pivot.AggregateOneObject(packed3, "Category");
+            pivot.AggregateOneObject(packed1, new List<int>{3},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed2, new List<int>{3},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed3, new List<int>{3},new List<int>{1,2} );
 
 
             // Amount and Quantity should be aggregated
@@ -291,9 +287,9 @@ namespace Tests.UnitTests
 
             pivot = new PivotLevel();
 
-            pivot.AggregateOneObject(packed1, "Category", "ProductId");
-            pivot.AggregateOneObject(packed2, "Category", "ProductId");
-            pivot.AggregateOneObject(packed3, "Category", "ProductId");
+            pivot.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
             
             Console.WriteLine(pivot.ToString());
 
@@ -317,15 +313,15 @@ namespace Tests.UnitTests
 
             var pivot1 = new PivotLevel();
 
-            pivot1.AggregateOneObject(packed1, "Category", "ProductId");
-            pivot1.AggregateOneObject(packed2, "Category", "ProductId");
-            pivot1.AggregateOneObject(packed3, "Category", "ProductId");
+            pivot1.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
+            pivot1.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
+            pivot1.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
 
             var pivot2 = new PivotLevel();
 
-            pivot2.AggregateOneObject(packed1, "Category", "ProductId");
-            pivot2.AggregateOneObject(packed3, "Category", "ProductId");
-            pivot2.AggregateOneObject(packed4, "Category", "ProductId");
+            pivot2.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
+            pivot2.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
+            pivot2.AggregateOneObject(packed4, new List<int>{3, 4},new List<int>{1,2} );
 
             pivot1.MergeWith(pivot2);
 

@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
+using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -114,7 +115,9 @@ namespace Client.Core
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="items"></param>
-        public static void ToStreamMany(Stream stream, ICollection<PackedObject> items)
+        /// <param name="selectedIndexes">if at least one is specified do not send the whole object but only the specified values</param>
+        /// <param name="aliases"></param>
+        public static void ToStreamMany(Stream stream, ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases)
         {
             var bufferedStream = new BufferedStream(stream);
             var writer = new BinaryWriter(bufferedStream);
@@ -125,7 +128,8 @@ namespace Client.Core
 
             foreach (var item in items)
             {
-                var data = item.ObjectData;
+                var data = selectedIndexes.Length > 0? item.GetData(selectedIndexes,aliases) :item.ObjectData;
+
                 writer.Write(false);
                 writer.Write(item.UseCompression);
                 writer.Write(item.Rank);
@@ -137,7 +141,7 @@ namespace Client.Core
         }
 
 
-        public static IEnumerable<RankedItem> EnumerableFromStream<TItemType>(Stream stream)
+        public static IEnumerable<RankedItem> EnumerableFromStream(Stream stream)
         {
             var reader = new BinaryReader(stream);
 
@@ -150,43 +154,41 @@ namespace Client.Core
                 var dataSize = reader.ReadInt32();
                 var data = reader.ReadBytes(dataSize);
 
-                using (var memStream = new MemoryStream(data))
+                using var memStream = new MemoryStream(data);
+
+                var mode = SerializationMode.Json;
+                if (useProtocolBuffers)
+                    mode = SerializationMode.ProtocolBuffers;
+
+                var deserializationFailure = false;
+                JObject result = null;
+                try
                 {
-                    var mode = SerializationMode.Json;
-                    if (useProtocolBuffers)
-                        mode = SerializationMode.ProtocolBuffers;
+                    result = SerializationHelper.ObjectFromStream<JObject>(memStream, mode, useCompression);
+                }
+                catch (Exception)
+                {
+                    deserializationFailure = true;
+                }
 
-                    var deserializationFailure = false;
-                    object result = null;
-                    try
+                if (deserializationFailure)
+                {
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    var exception  = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
+                        useCompression);
+
+                    if (exception != null)
                     {
-                        result = SerializationHelper.ObjectFromStream<TItemType>(memStream, mode, useCompression);
-                    }
-                    catch (Exception)
-                    {
-                        deserializationFailure = true;
+                        throw new CacheException("Exception from server:" + exception.Message);
                     }
 
-                    if (deserializationFailure)
-                    {
-                        memStream.Seek(0, SeekOrigin.Begin);
-                        result = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
-                            useCompression);
-
-                        if (result != null)
-                        {
-                            var exc = (ExceptionResponse) result;
-                            throw new CacheException("Exception from server:" + exc.Message);
-                        }
-
-                        var message = $"Received an unknown item type while expecting {typeof(TItemType)}";
-                        throw new StreamingException(message);
-                    }
+                    var message = "Received an unknown item type while expecting JObject";
+                    throw new StreamingException(message);
+                }
 
                     
 
-                    yield return new RankedItem{Item = result, Rank = rank};
-                }
+                yield return new RankedItem( rank, result);
             }
         }
 

@@ -320,7 +320,7 @@ namespace Client.Interface
             return sum;
         }
 
-        public PivotLevel ComputePivot(OrQuery filter, params string[] axis)
+        public PivotLevel ComputePivot(OrQuery filter, IEnumerable<int> axis, IEnumerable<int> values)
         {
             var result = new PivotLevel();
 
@@ -328,7 +328,7 @@ namespace Client.Interface
             {
                 Parallel.ForEach(CacheClients, client =>
                 {
-                    var pivot = client.ComputePivot(filter, axis);
+                    var pivot = client.ComputePivot(filter, axis, values);
                     lock (result)
                     {
                         result.MergeWith(pivot);
@@ -380,6 +380,8 @@ namespace Client.Interface
             }
 
 
+            HashSet<RankedItem> distinctSet = new HashSet<RankedItem>();
+
             if (!query.IsFullTextQuery)
             {
                 var count = 0;
@@ -394,7 +396,20 @@ namespace Client.Interface
                         if (clientResult.MoveNext())
                         {
                             allFinished = false;
-                            yield return clientResult.Current;
+
+                            var current = clientResult.Current; 
+                            if (query.Distinct)
+                            {
+                                if (distinctSet.Add(clientResult.Current))
+                                {
+                                    yield return current;
+                                }
+                            }
+                            else
+                            {
+                                yield return current;    
+                            }
+                            
                             count++;
                         }
                     }
@@ -607,110 +622,7 @@ namespace Client.Interface
             }
         }
 
-        private void SendRequestsAndWaitForLock(TransactionState state)
-        {
-            var locksOk = false;
-
-            var iteration = 0;
-
-
-            while (!locksOk)
-            {
-
-                try
-                {
-
-                    var delay = ThreadLocalRandom.Instance.Next(10 * iteration);
-
-                    TransactionStatistics.Retries(iteration + 1);
-
-                    Dbg.Trace(
-                        $"C: delay = {delay} for iteration {iteration} transaction {state.TransactionId} connector {GetHashCode()}");
-
-                    if (delay > 0)
-                        Thread.Sleep(delay);
-
-                    // send transaction requests
-                    Parallel.ForEach(state.Clients, client =>
-                    {
-                        var request = state.RequestByServer[client.ShardIndex];
-
-                        try
-                        {
-                            var session = client.Channel.BeginSession();
-                            state.SessionByServer[client.ShardIndex] = session;
-
-                            Dbg.Trace(
-                                $"C: Sending transaction request to server {client.ShardIndex} transaction {state.TransactionId} connector {GetHashCode()}");
-                            client.Channel.PushRequest(session, request);
-                        }
-                        catch (Exception e)
-                        {
-                            // here if communication exception
-                            state.StatusByServer[client.ShardIndex] = false;
-
-                            Dbg.Trace($"C: Exception while sending request to server {client.ShardIndex}:{e.Message}");
-                        }
-                    });
-
-                    // wait for servers to acquire lock
-                    Parallel.ForEach(state.Clients, client =>
-                    {
-                        try
-                        {
-                            var session = state.SessionByServer[client.ShardIndex];
-
-                            var answer = client.Channel.GetResponse(session);
-                            if (answer is ReadyResponse)
-                                state.StatusByServer[client.ShardIndex] = true;
-                            else
-                                state.StatusByServer[client.ShardIndex] = false;
-                        }
-                        catch (Exception e)
-                        {
-                            // here if communication exception
-                            state.StatusByServer[client.ShardIndex] = false;
-
-                            Dbg.Trace($"C: Exception while sending request to server {client.ShardIndex}:{e.Message}");
-                        }
-                    });
-                }
-                catch (AggregateException e)
-                {
-                    // this code should never be reached
-                    throw new CacheException(
-                        $"Error in the first stage of a two stage transaction:{e.InnerExceptions.First()}");
-                }
-
-
-                Dbg.Trace(!state.AllOk
-                    ? $"C: Failed to acquire lock for transaction {state.TransactionId}. retrying "
-                    : $"C: Lock acquired for all servers: transaction {state.TransactionId} ");
-
-                locksOk = state.AllOk;
-
-                if (!state.AllOk)
-                    Parallel.ForEach(state.Clients, client =>
-                    {
-                        if (state.StatusByServer[client.ShardIndex])
-                        {
-                            var session = state.SessionByServer[client.ShardIndex];
-                            client.Channel.PushRequest(session, new ContinueRequest {Rollback = true});
-                        }
-                    });
-                else
-                    Parallel.ForEach(state.Clients, client =>
-                    {
-                        var session = state.SessionByServer[client.ShardIndex];
-                        client.Channel.PushRequest(session, new ContinueRequest {Rollback = false});
-                    });
-
-                iteration++;
-
-                TransactionStatistics.NewAttemptToLock();
-            }
-        }
-
+       
 
 
         public void ExecuteTransaction(IList<DataRequest> requests)

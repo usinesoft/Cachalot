@@ -8,6 +8,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Tools;
 using Server.Persistence;
+using Server.Queries;
 
 namespace Server.Transactions
 {
@@ -23,7 +24,7 @@ namespace Server.Transactions
             _transactionLog = transactionLog;
         }
 
-        private void ExecuteInMemory(TransactionRequest transactionRequest, IClient client,
+        private void ExecuteInMemory(TransactionRequest transactionRequest,
             SafeDictionary<string, DataStore> dataStores)
         {
             foreach (var dataRequest in transactionRequest.ChildRequests)
@@ -34,7 +35,22 @@ namespace Server.Transactions
 
                 var store = dataStores[dataRequest.CollectionName];
 
-                store.ProcessRequest(dataRequest, client, null);
+                switch (dataRequest)
+                {
+                    case PutRequest putRequest:
+                        new PutManager(null, null, store).ProcessRequest(putRequest, null);
+                        break;
+                    case RemoveRequest  removeRequest:
+                        new DeleteManager(store, null).ProcessRequest(removeRequest, null);
+                        break;
+                    case RemoveManyRequest removeManyRequest:
+                        new DeleteManager(store, null).ProcessRequest(removeManyRequest, null);
+                        break;
+                    default:
+                        throw new NotSupportedException($"Invalid request type in transaction: {dataRequest.GetType().Name}");
+                }
+
+                //store.ProcessRequest(dataRequest, client, null);
             }
         }
 
@@ -50,7 +66,8 @@ namespace Server.Transactions
             foreach (var deleteManyRequest in deleteManyRequests)
             {
                 var ds = dataStores[deleteManyRequest.CollectionName];
-                var items = ds.InternalGetMany(deleteManyRequest.Query);
+                var items = new QueryManager(ds).ProcessQuery(deleteManyRequest.Query);
+                
                 foreach (var item in items) itemsToDelete.Add(item);
             }
 
@@ -59,8 +76,12 @@ namespace Server.Transactions
                 .Cast<RemoveRequest>())
             {
                 var collectionName = remove.CollectionName;
-                var item = dataStores[collectionName].InternalGetOne(remove.PrimaryKey);
-                itemsToDelete.Add(item);
+
+                if (dataStores[collectionName].DataByPrimaryKey.TryGetValue(remove.PrimaryKey, out var item))
+                {
+                    itemsToDelete.Add(item);
+                }
+                
             }
 
             // get items to put (conditions have already been checked)
@@ -85,7 +106,19 @@ namespace Server.Transactions
             {
                 var ds = dataStores[conditionalRequest.CollectionName];
 
-                ds.CheckCondition(conditionalRequest.Items.Single().PrimaryKey, conditionalRequest.Predicate);
+                var primaryKey = conditionalRequest.Items.Single().PrimaryKey;
+                if (ds.DataByPrimaryKey.TryGetValue(primaryKey, out var item))
+                {
+                    if (!conditionalRequest.Predicate.Match(item))
+                        throw new CacheException(
+                            $"Condition not satisfied for item {primaryKey} of type {ds.CollectionSchema.CollectionName}",
+                            ExceptionType.ConditionNotSatisfied);
+                }
+                else
+                {
+                    throw new CacheException($"Item {primaryKey} of type {ds.CollectionSchema.CollectionName} not found");
+                }
+
             }
         }
 
@@ -108,7 +141,7 @@ namespace Server.Transactions
                     SaveDurableTransaction(transactionRequest, dataStores);
 
                     // update the data in memory
-                    ExecuteInMemory(transactionRequest, client, dataStores);
+                    ExecuteInMemory(transactionRequest, dataStores);
 
                     client.SendResponse(new NullResponse());
 
@@ -239,7 +272,7 @@ namespace Server.Transactions
                     {
                         // update the data in memory
 
-                        ExecuteInMemory(transactionRequest, client, dataStores);
+                        ExecuteInMemory(transactionRequest, dataStores);
 
                         ServerLog.LogInfo(
                             $"S: two stage transaction committed successfully  {transactionRequest.TransactionId}");

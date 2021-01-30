@@ -359,7 +359,12 @@ namespace Tests.IntegrationTests
 
                 var watch = new Stopwatch();
                 watch.Start();
-                var pivot = dataSource.ComputePivot(null, o => o.Category, o => o.ProductId);
+                
+                var pivot = dataSource.PreparePivotRequest(null)
+                    .OnAxis(o => o.Category, o => o.ProductId)
+                    .AggregateValues(o=>o.Amount, o=>o.Quantity)
+                    .Execute();
+
                 watch.Stop();
 
                 Console.WriteLine($"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");

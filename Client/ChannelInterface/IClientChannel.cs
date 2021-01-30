@@ -17,7 +17,7 @@ namespace Client.ChannelInterface
         Response SendRequest(Request request);
 
        
-        IEnumerable<RankedItem> SendStreamRequest<TItemType>(Request request);
+        IEnumerable<RankedItem> SendStreamRequest(Request request);
 
         //Start a complex communication session
         Session BeginSession();

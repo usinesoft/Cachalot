@@ -16,18 +16,18 @@ namespace Server
         /// <summary>
         ///     Double indexation: first by key value then by primary key
         /// </summary>
-        private readonly Dictionary<KeyValue, Dictionary<KeyValue, PackedObject>> _data;
+        private readonly Dictionary<KeyValue, HashSet<PackedObject>> _data;
 
         /// <summary>
         ///     -1      non initialized
-        ///     -2      list index
-        ///     >= 0    the index of the property
+        ///     >= 0    the index of the property (index in <see cref="PackedObject.Values" /> if scalar property or in
+        ///     <see cref="PackedObject.CollectionValues" />  if collection
         /// </summary>
         private int _keyIndex = -1;
 
         public DictionaryIndex(KeyInfo keyInfo) : base(keyInfo)
         {
-            _data = new Dictionary<KeyValue, Dictionary<KeyValue, PackedObject>>();
+            _data = new Dictionary<KeyValue, HashSet<PackedObject>>();
         }
 
         public override bool IsOrdered => false;
@@ -44,45 +44,35 @@ namespace Server
         /// <param name="item"> </param>
         public override void Put(PackedObject item)
         {
-            // first time get the index of the indexation key(this value is fixed for a cacheable data type)            
-            if (_keyIndex == -1) // non initialized 
-                for (var i = 0; i < item.IndexKeys.Length; i++)
-                    if (item.IndexKeys[i].KeyName == KeyInfo.Name)
-                    {
-                        _keyIndex = i;
-                        break;
-                    }
-
-
-            if (_keyIndex >= 0)
+            if (_keyIndex == -1) // not initialized
             {
-                var keyValue = item.IndexKeys[_keyIndex];
+                _keyIndex = KeyInfo.Order;
+
+                if (KeyInfo.IsCollection) _keyIndex -= item.Values.Length;
+            }
+
+
+            if (!KeyInfo.IsCollection)
+            {
+                var keyValue = item.Values[_keyIndex];
                 AddKeyValue(item, keyValue);
                 return;
             }
 
-
-            if (item.ListIndexKeys != null)
-                foreach (var keyValue in item.ListIndexKeys.Where(t => t.KeyName == KeyInfo.Name))
-                {
-                    AddKeyValue(item, keyValue);
-                    _keyIndex = -2; // list index so no need to lookup in normal indexes
-                }
+            // at this point the indexed property is a collection
+            foreach (var collectionValue in item.CollectionValues[_keyIndex].Values) AddKeyValue(item, collectionValue);
         }
 
         private void AddKeyValue(PackedObject item, KeyValue key)
         {
             if (!_data.TryGetValue(key, out var byPrimaryKey))
             {
-                byPrimaryKey = new Dictionary<KeyValue, PackedObject>();
+                byPrimaryKey = new HashSet<PackedObject>();
                 _data[key] = byPrimaryKey;
             }
 
-            if (!byPrimaryKey.ContainsKey(item.PrimaryKey))
-            {
-                byPrimaryKey.Add(item.PrimaryKey, item);
-            }
-            
+
+            byPrimaryKey.Add(item);
         }
 
 
@@ -92,22 +82,31 @@ namespace Server
 
         public override ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
         {
-            if (op != QueryOperator.Eq && op != QueryOperator.In)
-                throw new NotSupportedException("Applying comparison operator on non ordered index:" + Name);
+            if (op != QueryOperator.Eq && op != QueryOperator.In && op != QueryOperator.Contains)
+                throw new NotSupportedException($"operator {op} not valid on the non ordered index {Name}");
+
+
+            if (values.Count == 1)
+            {
+                if (_data.TryGetValue(values[0], out var valuesByPrimaryKey))
+                    return new HashSet<PackedObject>(valuesByPrimaryKey);
+                
+                return new HashSet<PackedObject>();
+            }
 
             var result = new HashSet<PackedObject>();
 
             foreach (var keyValue in values)
                 if (_data.TryGetValue(keyValue, out var valuesByPrimaryKey))
-                    result.UnionWith(valuesByPrimaryKey.Values);
+                    result.UnionWith(valuesByPrimaryKey);
 
             return result;
         }
 
         public override int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
         {
-            if (op != QueryOperator.Eq && op != QueryOperator.In)
-                return int.MaxValue;
+            if (op != QueryOperator.Eq && op != QueryOperator.In && op != QueryOperator.Contains)
+                return int.MaxValue;// to avoid this index being used for optimization
 
             return values.Where(keyValue => _data.ContainsKey(keyValue)).Sum(keyValue => _data[keyValue].Count);
         }
@@ -117,23 +116,17 @@ namespace Server
             if (_data.Count == 0)
                 return;
 
-
-            if (_keyIndex >= 0)
+            if (!KeyInfo.IsCollection)
             {
-                var keyValue = item.IndexKeys[_keyIndex];
-                if (_data.ContainsKey(keyValue))
-                {
-                    _data[keyValue].Remove(item.PrimaryKey);
-                    return; //if it is a scalar index key it is unique (its name identifies the index)
-                }
+                var keyValue = item.Values[_keyIndex];
+                if (_data.ContainsKey(keyValue)) _data[keyValue].Remove(item);
             }
-
-            // if list values are present then the same object may be present multiple times in the same index
-            if (item.ListIndexKeys != null)
-                foreach (var listValue in item.ListIndexKeys)
-                    if (listValue.KeyName == KeyInfo.Name)
-                        if (_data.ContainsKey(listValue))
-                            _data[listValue].Remove(item.PrimaryKey);
+            else
+            {
+                foreach (var listValue in item.CollectionValues[_keyIndex].Values)
+                    if (_data.ContainsKey(listValue))
+                        _data[listValue].Remove(item);
+            }
         }
 
         public override void Clear()

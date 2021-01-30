@@ -53,7 +53,7 @@ namespace Client.Queries
         /// <summary>
         /// Properties in the Select clause. If empty, the complete object is returned
         /// </summary>
-        [field:ProtoMember(7)] public IList<string>  SelectedProperties{ get; } = new List<string>();
+        [field:ProtoMember(7)] public IList<SelectItem>  SelectClause{ get; } = new List<SelectItem>();
 
         /// <summary>
         /// Specific operator for cache-only mode; returns a result only if the query is a subset of the domain loaded into the cache
@@ -171,5 +171,17 @@ namespace Client.Queries
 
             return Elements.All(q => query.Elements.Any(q.IsSubsetOf));
         }
+    }
+
+
+    /// <summary>
+    /// One column (property) from a select clause
+    /// </summary>
+    [ProtoContract]
+    public class SelectItem
+    {
+        [ProtoMember(1)] public string Name { get; set; }
+        [ProtoMember(2)] public string Alias { get; set; }
+
     }
 }

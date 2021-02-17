@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Client.Interface;
-using Client.Profiling;
 using Client.Queries;
 
 namespace AdminConsole.Commands
@@ -10,13 +9,13 @@ namespace AdminConsole.Commands
     /// </summary>
     public class CommandBase
     {
+        protected ConsoleProfiler Profiler { get; } = new ConsoleProfiler();
+
         private readonly List<string> _params;
 
         internal CommandBase()
         {
             _params = new List<string>();
-            if (Profiler == null)
-                Profiler = new Profiler();
         }
 
         /// <summary>
@@ -50,7 +49,7 @@ namespace AdminConsole.Commands
         /// </summary>
         public bool CanExecute => CmdType != CommandType.Unknown && Success;
 
-        protected static Profiler Profiler { get; set; }
+        
 
         /// <summary>
         ///     To be overridden in the derived classes

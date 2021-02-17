@@ -14,7 +14,6 @@ using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
-using Client.Profiling;
 using Client.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -31,12 +30,10 @@ namespace Server
     /// </summary>
     public class DataContainer
     {
-        private readonly NodeConfig _config;
+        
         private readonly Services _serviceContainer;
 
-
         private readonly JsonSerializer _jsonSerializer;
-
 
         private readonly JsonSerializerSettings _schemaSerializerSettings = new JsonSerializerSettings
         {
@@ -46,15 +43,16 @@ namespace Server
 
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
-        public DataContainer(Profiler profiler, NodeConfig config, Services serviceContainer)
+        public DataContainer(Services serviceContainer)
         {
-            _config = config;
+            
             _serviceContainer = serviceContainer;
 
-            Profiler = profiler;
-
+            
             _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
             _jsonSerializer.Converters.Add(new StringEnumConverter());
+
+
         }
 
         /// <summary>
@@ -67,8 +65,6 @@ namespace Server
 
         public DateTime StartTime { private get; set; }
 
-
-        private Profiler Profiler { get; }
 
         public PersistenceEngine PersistenceEngine { private get; set; }
 
@@ -229,7 +225,7 @@ namespace Server
 
                         DataStores[collectionName] = newDataStore;
 
-                        PersistenceEngine?.UpdateSchema(GenerateSchema());
+                        _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
                 
                     }
                 }
@@ -237,14 +233,12 @@ namespace Server
                 {
             
                     var newDataStore =
-                        new DataStore(typeDescription, new NullEvictionPolicy(), _config.FullTextConfig);
+                        new DataStore(typeDescription, new NullEvictionPolicy(), _serviceContainer.NodeConfig.FullTextConfig);
 
-                    Dbg.CheckThat(Profiler != null);
-
-                    newDataStore.Profiler = Profiler;
+                    
                     DataStores.Add(collectionName, newDataStore);
 
-                    PersistenceEngine?.UpdateSchema(GenerateSchema());
+                    _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
                 }
 
                 client?.SendResponse(new NullResponse());
@@ -258,7 +252,9 @@ namespace Server
 
         private void ProcessDataRequest(DataRequest dataRequest, IClient client)
         {
-            DataStore dataStore = DataStores.TryGetValue(dataRequest.CollectionName);
+
+            // for now there is one special table containing the activity log. It is always non persistent and it has an LRU eviction policy
+            DataStore dataStore = dataRequest.CollectionName == "@ACTIVITY" ? _serviceContainer.Log.ActivityTable : DataStores.TryGetValue(dataRequest.CollectionName);
 
             if (dataStore == null)
             {
@@ -293,7 +289,7 @@ namespace Server
                     }
                     else if (dataRequest is PutRequest putRequest)
                     {
-                        var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore);
+                        var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore, _serviceContainer.Log);
                         
                         mgr.ProcessRequest(putRequest, client);
                     }
@@ -324,7 +320,7 @@ namespace Server
                     {
                         if (dataRequest is GetRequest getRequest)
                         {
-                            new QueryManager(dataStore).ProcessRequest(getRequest, client);
+                            new QueryManager(dataStore, _serviceContainer.Log).ProcessRequest(getRequest, client);
                         }
                         else if (dataRequest is EvalRequest evalRequest)
                         {
@@ -348,7 +344,7 @@ namespace Server
                         
                         if (dataRequest is GetRequest getRequest)
                         {
-                            new QueryManager(dataStore).ProcessRequest(getRequest, client);
+                            new QueryManager(dataStore, _serviceContainer.Log).ProcessRequest(getRequest, client);
                         }
                         else if (dataRequest is EvalRequest evalRequest)
                         {
@@ -511,9 +507,10 @@ namespace Server
                 // only the first node in the cluster should dump the schema as all shards have identical copies
                 if (request.ShardIndex == 0)
                 {
-                    var schemaJson = GenerateSchema();
+                    var schema = GenerateSchema();
 
-                    File.WriteAllText(Path.Combine(fullPath, Constants.SchemaFileName), schemaJson);
+                    _serviceContainer.SchemaPersistence.SaveSchema(schema, fullPath);
+
                 }
 
                 // save the sequences. Each shard has different values
@@ -652,7 +649,7 @@ namespace Server
             throw new NotSupportedException("Unknown request type: " + clientRequest.GetType());
         }
 
-        public string GenerateSchema()
+        public Schema GenerateSchema()
         {
             
             var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
@@ -662,25 +659,15 @@ namespace Server
                 collectionsDescriptions.Add(store.Key, store.Value.CollectionSchema);
             }
 
-            var schema = new Schema
+            return new Schema
                 {ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions};
 
-            var sb = new StringBuilder();
-
-            _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
-
-            return sb.ToString();
             
         }
 
         public void LoadSchema(string path)
         {
-            if (!File.Exists(path)) return;
-
-            var json = File.ReadAllText(path);
-
-            var schema = _jsonSerializer.Deserialize<Schema>(
-                new JsonTextReader(new StringReader(json)));
+            var schema = _serviceContainer.SchemaPersistence.LoadSchema(path);
 
             if (schema != null)
             {

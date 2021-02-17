@@ -66,14 +66,14 @@ namespace AdminConsole.Commands
             }
             finally
             {
-                var profilerResult = Profiler.End();
+                Profiler.End();
 
                 var count = 0;
                 if (listResult != null)
                     count = listResult.Count;
 
                 Logger.Write("Found {0} items. The call took {1} milliseconds", count,
-                    profilerResult.TotalTimeMiliseconds);
+                    Profiler.TotalTimeMilliseconds);
             }
 
 

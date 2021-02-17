@@ -28,7 +28,7 @@ namespace AdminConsole.Commands
 
                 var response = client.GetLog(lines);
 
-                var profilerResult = Profiler.End();
+                Profiler.End();
 
                 if (response.Entries.Count > 0)
                 {
@@ -39,7 +39,7 @@ namespace AdminConsole.Commands
                     Logger.Write("Maximum access time was:");
                 }
 
-                Logger.Write("The call took {0} milliseconds", profilerResult.TotalTimeMiliseconds);
+                Logger.Write("The call took {0} milliseconds", Profiler.TotalTimeMilliseconds);
             }
             catch (Exception ex)
             {

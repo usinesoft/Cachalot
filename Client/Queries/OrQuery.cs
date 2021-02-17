@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Client.Core;
+using JetBrains.Annotations;
 using ProtoBuf;
 
 #endregion
@@ -90,6 +91,12 @@ namespace Client.Queries
             get { return Elements.All(element => element.IsValid); }
         }
 
+
+        /// <summary>
+        /// Like <see cref="ToString"/> but without the parameter values
+        /// To be used for administrative tasks. Mie detecting the most time-consuming type of query
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             if (Elements.Count == 0)
@@ -109,6 +116,37 @@ namespace Client.Queries
             for (var i = 0; i < Elements.Count; i++)
             {
                 sb.Append(Elements[i]);
+                if (i != Elements.Count - 1)
+                    sb.Append(" OR ");
+            }
+
+            if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
+
+            if (OnlyIfComplete)
+                sb.Append(" + Only if complete ");
+
+            return sb.ToString();
+        }
+
+        public string Description()
+        {
+            if (Elements.Count == 0)
+                return "<empty>";
+            if (Elements.Count == 1)
+            {
+                var result = Elements[0].Description();
+                if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
+
+                if (OnlyIfComplete)
+                    result += " + Only if complete ";
+
+                return result;
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < Elements.Count; i++)
+            {
+                sb.Append(Elements[i].Description());
                 if (i != Elements.Count - 1)
                     sb.Append(" OR ");
             }
@@ -150,6 +188,7 @@ namespace Client.Queries
         /// <summary>
         ///  For protobuf serialization only
         /// </summary>
+        [UsedImplicitly]
         public OrQuery()
         {
             

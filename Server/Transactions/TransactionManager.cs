@@ -38,7 +38,7 @@ namespace Server.Transactions
                 switch (dataRequest)
                 {
                     case PutRequest putRequest:
-                        new PutManager(null, null, store).ProcessRequest(putRequest, null);
+                        new PutManager(null, null, store, null).ProcessRequest(putRequest, null);
                         break;
                     case RemoveRequest  removeRequest:
                         new DeleteManager(store, null).ProcessRequest(removeRequest, null);

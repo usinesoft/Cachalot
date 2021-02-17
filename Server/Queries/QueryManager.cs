@@ -24,6 +24,8 @@ namespace Server.Queries
 
         private readonly DataStore _dataStore;
 
+        private readonly ILog _log;
+
         /// <summary>
         /// Internally used to select the most efficient indexes for a query
         /// </summary>
@@ -48,9 +50,10 @@ namespace Server.Queries
         }
 
         
-        public QueryManager(DataStore dataStore)
+        public QueryManager(DataStore dataStore, ILog log = null)
         {
             _dataStore = dataStore;
+            _log = log;
         }
 
 
@@ -109,7 +112,7 @@ namespace Server.Queries
             return result;
         }
 
-        IList<PackedObject> ProcessAndQuery(AndQuery query, ExecutionPlan executionPlan)
+        IList<PackedObject> ProcessAndQuery(AndQuery query, Client.Core.ExecutionPlan executionPlan)
         {
 
             if (query.Elements.Count == 1)
@@ -230,7 +233,7 @@ namespace Server.Queries
 
         public IList<PackedObject> ProcessQuery(OrQuery query, params int[] indexes)
         {
-            var executionPlan = new ExecutionPlan();
+            var executionPlan = new Client.Core.ExecutionPlan();
 
             try
             {
@@ -318,10 +321,12 @@ namespace Server.Queries
                 executionPlan.End();
                 ExecutionPlan = executionPlan;
 
+                _log?.LogActivity("QUERY", executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
+
             }
         }
 
-        IList<PackedObject> Distinct(IEnumerable<PackedObject> input, ExecutionPlan executionPlan, params int[] indexes)
+        IList<PackedObject> Distinct(IEnumerable<PackedObject> input, Client.Core.ExecutionPlan executionPlan, params int[] indexes)
         {
             executionPlan.BeginDistinct();
 
@@ -348,7 +353,7 @@ namespace Server.Queries
         /// <param name="atomicQuery"></param>
         /// <param name="executionPlan">the global execution plan</param>
         /// <returns></returns>
-        private IList<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, ExecutionPlan executionPlan)
+        private IList<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, Client.Core.ExecutionPlan executionPlan)
         {
             var queryExecutionPlan = new QueryExecutionPlan(atomicQuery.ToString());
             executionPlan.QueryPlans.Add(queryExecutionPlan);
@@ -441,7 +446,7 @@ namespace Server.Queries
         }
 
 
-        public ExecutionPlan ExecutionPlan { get; private set; }
+        public Client.Core.ExecutionPlan ExecutionPlan { get; private set; }
 
         private void ProcessGetRequest(GetRequest request, IClient client)
         {

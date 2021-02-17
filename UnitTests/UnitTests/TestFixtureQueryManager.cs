@@ -133,7 +133,7 @@ namespace Tests.UnitTests
 
 
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
-            ds.InternalPutMany(packed, true, null);
+            ds.InternalPutMany(packed, true);
 
             for (var i = 0; i < count; i++)
             {
@@ -174,7 +174,7 @@ namespace Tests.UnitTests
 
 
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
-            ds.InternalPutMany(packed, true, null);
+            ds.InternalPutMany(packed, true);
 
             for (var i = 0; i < count; i++)
             {
@@ -206,7 +206,7 @@ namespace Tests.UnitTests
 
 
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
-            ds.InternalPutMany(packed, true, null);
+            ds.InternalPutMany(packed, true);
 
 
             var qm = new QueryManager(ds);
@@ -282,15 +282,13 @@ namespace Tests.UnitTests
 
             var count = queries.Count;
 
-
             var objects = GenerateOrders(100_000);
-
 
             var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
 
 
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
-            ds.InternalPutMany(packed, true, null);
+            ds.InternalPutMany(packed, true);
 
 
             var watch = new Stopwatch();

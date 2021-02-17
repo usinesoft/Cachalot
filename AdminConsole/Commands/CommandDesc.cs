@@ -28,7 +28,7 @@ namespace AdminConsole.Commands
                 var serverInfo = client.GetClusterInformation();
 
 
-                var profilerResult = Profiler.End();
+                Profiler.End();
 
 
                 if (Params.Count == 1)
@@ -84,7 +84,7 @@ namespace AdminConsole.Commands
                 }
 
 
-                Logger.Write("The call took {0} milliseconds", profilerResult.TotalTimeMiliseconds);
+                Logger.Write("The call took {0} milliseconds", Profiler.TotalTimeMilliseconds);
             }
             catch (Exception ex)
             {

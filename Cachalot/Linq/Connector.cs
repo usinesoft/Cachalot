@@ -7,6 +7,7 @@ using Client.Core;
 using Client.Interface;
 using JetBrains.Annotations;
 using Server;
+using Server.Persistence;
 
 // ReSharper disable AssignNullToNotNullAttribute
 
@@ -59,13 +60,6 @@ namespace Cachalot.Linq
         {
             //lock (_consistentReadSync)
             {
-
-                foreach (var collection in collections)
-                {
-                    var schema = _collectionSchema[collection];
-                    Client.DeclareCollection(collection, schema);
-                }
-
                 if (collections.Length == 0)
                     throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
 
@@ -164,7 +158,11 @@ namespace Cachalot.Linq
                     var channel = new InProcessChannel();
                     Client = new DataClient{Channel = channel};
 
-                    _server = new Server.Server(new NodeConfig {IsPersistent = config.IsPersistent})
+                    _server = new Server.Server(new NodeConfig
+                        {
+                            IsPersistent = config.IsPersistent,
+                            DataPath = "."
+                        })
                         {Channel = channel};
 
                     _server.Start();
@@ -244,6 +242,17 @@ namespace Cachalot.Linq
         public ClusterInformation GetClusterDescription()
         {
             return Client.GetClusterInformation();
+        }
+
+
+        public IQueryable<LogEntry> ActivityLog
+        {
+            get
+            {
+                var schema = TypeDescriptionsCache.GetDescription(typeof(LogEntry));
+
+                return new DataSource<LogEntry>(this, "@ACTIVITY", schema);
+            }
         }
 
         public DataSource<T> DataSource<T>(string collectionName = null)

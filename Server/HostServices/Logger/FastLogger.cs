@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Client.Core;
 
 namespace Server.HostServices.Logger
 {
@@ -19,7 +20,7 @@ namespace Server.HostServices.Logger
 
         private static readonly int MaxFilesToKeep = 2;
 
-        private static string _logDirectory = "logs";
+        private string _logDirectory = "logs";
 
         private readonly Queue<string> _logCache = new Queue<string>(MaxMessagesInCache);
 
@@ -30,6 +31,23 @@ namespace Server.HostServices.Logger
         private volatile bool _shouldStop;
         private Thread _worker;
         private StreamWriter _writer;
+
+
+        public DataStore ActivityTable { get; set; } 
+
+        public void LogActivity(string type, int executionTimeInMicroseconds, string detail, string query = null, ExecutionPlan plan = null)
+        {
+            // log in the file
+            Log(LogLevel.Info, $"{detail} took {executionTimeInMicroseconds} μs");
+
+            // log in the special @ACTIVITY table
+
+            lock (_messageQueue)
+            {
+                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(type, executionTimeInMicroseconds, detail, query, plan));
+            }
+
+        }
 
         public void LogDebug(string message)
         {
@@ -88,6 +106,13 @@ namespace Server.HostServices.Logger
             if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
 
 
+            // initialize the @ACTIVITY table
+            var schema = TypedSchemaFactory.FromType<LogEntry>();
+            schema.CollectionName = "@ACTIVITY";
+
+            ActivityTable = new DataStore(schema, new LruEvictionPolicy(20_000, 1000), new FullTextConfig() );
+
+
             _worker = new Thread(() =>
             {
                 while (!_shouldStop)
@@ -113,7 +138,7 @@ namespace Server.HostServices.Logger
                         }
                     }
 
-                    foreach (var item in newItems)
+                    foreach (var item in newItems.Where(i=>i.Entry == null))
                     {
                         _writer.WriteLine(item);
 
@@ -123,6 +148,14 @@ namespace Server.HostServices.Logger
                     }
 
                     _writer.Dispose();
+
+                    List<PackedObject> entries = new List<PackedObject>();
+                    foreach (var item in newItems.Where(i=>i.Entry != null))
+                    {
+                        entries.Add(PackedObject.Pack(item.Entry, schema, "@ACTIVITY"));
+                    }
+
+                    ActivityTable.InternalPutMany(entries, false);
                 }
             });
 
@@ -137,11 +170,15 @@ namespace Server.HostServices.Logger
             _wakeConsumerEvent.Set();
 
             _worker.Join(1000);
+
         }
 
         public IList<string> GetCachedLog()
         {
-            return new List<string>(_logCache);
+            lock (_logCache)
+            {
+                return new List<string>(_logCache);
+            }
         }
 
         private enum LogLevel
@@ -154,12 +191,41 @@ namespace Server.HostServices.Logger
 
         private class Item
         {
+            /// <summary>
+            /// free format log item
+            /// </summary>
+            /// <param name="logLevel"></param>
+            /// <param name="message"></param>
             public Item(LogLevel logLevel, string message)
             {
                 LogLevel = logLevel;
                 Message = message;
 
                 TimeStamp = DateTime.Now;
+            }
+
+            public LogEntry Entry { get; }
+
+            /// <summary>
+            /// Server activity log entry
+            /// </summary>
+            /// <param name="type"></param>
+            /// <param name="executionTimeInMicroseconds"></param>
+            /// <param name="detail">sql-like description</param>
+            /// <param name="query">query without parameters value</param>
+            /// <param name="plan"></param>
+            public Item(string type, int executionTimeInMicroseconds, string detail, string query,  ExecutionPlan plan = null)
+            {
+                Entry = new LogEntry
+                {
+                    Id = Guid.NewGuid(), 
+                    ExecutionPlan = plan, 
+                    Type = type, 
+                    Detail = detail, 
+                    ExecutionTimeInMicroseconds = executionTimeInMicroseconds, 
+                    Query = query,
+                    TimeStamp = DateTimeOffset.Now
+                };
             }
 
             private DateTime TimeStamp { get; }

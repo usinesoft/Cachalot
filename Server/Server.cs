@@ -5,7 +5,6 @@ using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
-using Client.Profiling;
 using Client.Tools;
 using Server.Persistence;
 
@@ -15,8 +14,7 @@ namespace Server
     {
         private readonly NodeConfig _config;
 
-        private readonly Profiler _serverProfiler = new Profiler();
-
+        
         private IServerChannel _channel;
 
         private DataContainer _dataContainer;
@@ -25,12 +23,12 @@ namespace Server
 
         private DateTime _startTime;
 
-        private Services _serviceContainer;
+        private readonly Services _serviceContainer;
 
-        public Server(NodeConfig config)
+        public Server(NodeConfig config, ILog log = null)
         {
-            _serviceContainer = new Services();
-            _dataContainer = new DataContainer(_serverProfiler, config, _serviceContainer);
+            _serviceContainer = new Services(log, config);
+            _dataContainer = new DataContainer(_serviceContainer);
 
             _config = config;
         }
@@ -125,14 +123,14 @@ namespace Server
             _persistenceEngine?.StoreDataForRollback();
 
             // delete data from memory
-            _dataContainer = new DataContainer(_serverProfiler, _config, new Services());
+            _dataContainer = new DataContainer(_serviceContainer);
 
             if (_persistenceEngine != null) _persistenceEngine.Container = _dataContainer;
 
 
             _dataContainer.PersistenceEngine = _persistenceEngine;
 
-            _persistenceEngine?.LightStart();
+            _persistenceEngine?.LightStart(true);
 
             _dataContainer.StartProcessingClientRequests();
 
@@ -170,7 +168,7 @@ namespace Server
                             File.Copy(Path.Combine(path, Constants.SchemaFileName),
                                 Path.Combine(dataPath, Constants.SchemaFileName));
 
-                            _dataContainer = new DataContainer(_serverProfiler, _config, new Services());
+                            _dataContainer = new DataContainer(_serviceContainer);
                             _persistenceEngine.Container = _dataContainer;
                             _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -182,7 +180,7 @@ namespace Server
                             // ShardIndex may be incorrect
                             _dataContainer.ShardIndex = importRequest.ShardIndex;
                             var schema = _dataContainer.GenerateSchema();
-                            _persistenceEngine?.UpdateSchema(schema);
+                            _serviceContainer.SchemaPersistence.SaveSchema(schema);
 
                             // fill the in-memory data stores
                             Parallel.ForEach(_dataContainer.Stores(),
@@ -221,7 +219,7 @@ namespace Server
                     case 3: // something bad happened. Rollback
                         _persistenceEngine.RollbackData();
 
-                        _dataContainer = new DataContainer(_serverProfiler, _config, new Services());
+                        _dataContainer = new DataContainer(_serviceContainer);
                         _persistenceEngine.Container = _dataContainer;
                         _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -262,13 +260,13 @@ namespace Server
         {
             Dbg.Trace("starting server");
 
-            _serverProfiler.IsActive = true;
             _startTime = DateTime.Now;
 
 
             if (_config.IsPersistent)
             {
                 Dbg.Trace("starting persistence engine");
+                
                 _persistenceEngine = new PersistenceEngine(_dataContainer, _config.DataPath, _serviceContainer);
                 _dataContainer.PersistenceEngine = _persistenceEngine;
 

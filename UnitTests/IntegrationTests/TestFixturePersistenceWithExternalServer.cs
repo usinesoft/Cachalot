@@ -108,10 +108,12 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_config))
             {
+                
+                connector.AdminInterface().DropDatabase();
+
                 connector.DeclareCollection<ProductEvent>();
                 connector.DeclareCollection<Trade>();
 
-                connector.AdminInterface().DropDatabase();
 
                 var events = connector.DataSource<ProductEvent>();
                 var trades = connector.DataSource<Trade>();

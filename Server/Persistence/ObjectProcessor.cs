@@ -46,7 +46,9 @@ namespace Server.Persistence
             foreach (var pair in _temporaryStorage)
             {
                 var store = _dataContainer. TryGetByName(pair.Key);
-                store.InternalPutMany(pair.Value, true, null);
+                
+                store.InternalPutMany(pair.Value, true);
+
                 frequentTokens.UnionWith(store.GetMostFrequentTokens(100));
                 
             }

@@ -34,6 +34,14 @@ namespace Server.Persistence
             StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
         }
 
+        public void LightRestart()
+        {
+            
+            var fullPath = Path.Combine(DataPath, StorageFileName);
+
+            StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+        }
+
 
         protected string DataPath { get; }
 

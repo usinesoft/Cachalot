@@ -124,9 +124,19 @@ namespace Server.Persistence
         /// <summary>
         ///     Restart after some administrative tasks that do not need data to be loaded from persistent storage
         /// </summary>
-        public void LightStart()
+        public void LightStart(bool resetStorage = false)
         {
-            _storage = new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
+            
+            if (resetStorage)
+            {
+                _storage = new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
+            }
+            else
+            {
+                _storage.LightRestart();
+            }
+            
+            
             TransactionLog = new TransactionLog(WorkingDirectory);
 
             StartProcessingTransactions();
@@ -313,14 +323,7 @@ namespace Server.Persistence
         }
 
 
-        public void UpdateSchema(string schemaJson)
-        {
-            lock (_schemaSync)
-            {
-                File.WriteAllText(SchemaFilePath, schemaJson);
-            }
-        }
-
+       
 
         public void UpdateSequences(string json)
         {

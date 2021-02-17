@@ -364,6 +364,12 @@ namespace Client.Queries
 
         public override string ToString()
         {
+            var result = InternalToString();
+            return result;
+        }
+
+        private string InternalToString(bool withParamValues = true)
+        {
             var result = PropertyName;
             switch (Operator)
             {
@@ -396,7 +402,7 @@ namespace Client.Queries
                     result += " NOT Contains ";
                     break;
 
-                
+
                 case QueryOperator.NotEq:
                     result += " != ";
                     break;
@@ -417,49 +423,70 @@ namespace Client.Queries
 
             if (Operator.IsRangeOperator())
             {
+                var v1 = withParamValues ? Value.ToString() : "?";
+                var v2 = withParamValues ? Value2.ToString() : "?";
+
                 result += " in range ";
 
                 if (Operator == QueryOperator.GeLe)
                 {
-                    result += $"[{Value}, {Value2}]";
+                    result += $"[{v1}, {v2}]";
                 }
                 else if (Operator == QueryOperator.GeLt)
                 {
-                    result += $"[{Value}, {Value2})";
+                    result += $"[{v1}, {v2})";
                 }
                 else if (Operator == QueryOperator.GtLt)
                 {
-                    result += $"({Value}, {Value2})";
+                    result += $"({v1}, {v2})";
                 }
                 else if (Operator == QueryOperator.GtLe)
                 {
-                    result += $"({Value}, {Value2}]";
+                    result += $"({v1}, {v2}]";
                 }
-
             }
-            else if (Operator == QueryOperator.In ||Operator == QueryOperator.NotIn )
+            else if (Operator == QueryOperator.In || Operator == QueryOperator.NotIn)
             {
                 if (InValues.Count >= 4)
                 {
-                    result += "(" + InValues.Count + " values)";
+                    var values = withParamValues ? InValues.Count.ToString() : "?";
+                    result += "(" + values + " values)";
                 }
                 else
                 {
-                    result += "(";
-                    foreach (var keyValue in InValues)
+                    if (withParamValues)
                     {
-                        result += keyValue;
-                        result += " ";
-                    }
+                        result += "(";
+                        foreach (var keyValue in InValues)
+                        {
+                            result += keyValue;
+                            result += " ";
+                        }
 
-                    result += ")";
+                        result += ")";
+                    }
+                    else
+                    {
+                        result += "(?)";
+                    }
                 }
+                    
             }
             else
             {
-                result += Value.ToString();
-                if (!ReferenceEquals(Value2, null))
-                    result += ", " + Value2;
+                if (withParamValues)
+                {
+                    result += Value.ToString();
+                    if (!ReferenceEquals(Value2, null))
+                        result += ", " + Value2;
+                }
+                else
+                {
+                    result += "?";
+                    if (!ReferenceEquals(Value2, null))
+                        result += ", ?";
+                }
+                
             }
 
             return result;
@@ -610,6 +637,17 @@ namespace Client.Queries
                 return new AtomicQuery(Metadata, Value, Value2);
 
             return new AtomicQuery(Metadata, Value, Operator);
+        }
+
+
+        /// <summary>
+        /// Like <see cref="ToString"/> but without the parameter values
+        /// Describes a query category not a query instance
+        /// </summary>
+        /// <returns></returns>
+        public string Description()
+        {
+            return InternalToString(false);
         }
     }
 }

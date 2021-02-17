@@ -191,7 +191,7 @@ namespace Tests.IntegrationTests
                 Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json") && !f.Contains("sequence")).ToList();
-                Assert.AreEqual(2, dataFiles.Count);
+                Assert.AreEqual(1, dataFiles.Count, "A single file should be generated in the dump (less than 1000 items)");
             }
 
             // reload and check your data is still there
@@ -218,10 +218,13 @@ namespace Tests.IntegrationTests
 
                 var admin = connector.AdminInterface();
 
+                var dataSource = connector.DataSource<Trade>();
+                var list0 = dataSource.Where(t => t.Folder == "TATA").ToList();
+
                 admin.ImportDump(dumpPath);
 
 
-                var dataSource = connector.DataSource<Trade>();
+                
 
                 var folders = new[] {"TATA", "TOTO"};
 
@@ -231,7 +234,7 @@ namespace Tests.IntegrationTests
 
                 var list1 = dataSource.Where(t => t.Folder == "TATA").ToList();
 
-                Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
+                 Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
 
             // reinitialize from dump

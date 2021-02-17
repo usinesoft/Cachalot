@@ -40,10 +40,10 @@ namespace AdminConsole.Commands
             }
             finally
             {
-                var profilerResult = Profiler.End();
+                Profiler.End();
 
                 Logger.Write("Deleted {0} items. The call took {1} miliseconds", deletedItems,
-                    profilerResult.TotalTimeMiliseconds);
+                    Profiler.TotalTimeMilliseconds);
             }
 
 

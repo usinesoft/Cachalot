@@ -12,7 +12,7 @@ namespace Server
     public class HostedService
     {
         private readonly ManualResetEvent _stopEvent;
-        private global::Server.Server _cacheServer;
+        private Server _cacheServer;
         private TcpServerChannel _listener;
 
         public HostedService(ILog log, ManualResetEvent stopEvent)
@@ -67,7 +67,7 @@ namespace Server
                 }
 
 
-                _cacheServer = new global::Server.Server(nodeConfig);
+                _cacheServer = new Server(nodeConfig, HostServices.HostServices.Log);
 
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;

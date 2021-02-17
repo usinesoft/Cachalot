@@ -39,11 +39,10 @@ namespace AdminConsole.Commands
             }
             finally
             {
-                var profilerResult = Profiler.End();
-
+                Profiler.End();
 
                 Logger.Write("Found {0} items. The call took {1:F4} miliseconds", result.Item2,
-                    profilerResult.TotalTimeMiliseconds);
+                    Profiler.TotalTimeMilliseconds);
             }
 
 

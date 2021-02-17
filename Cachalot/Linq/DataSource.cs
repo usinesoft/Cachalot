@@ -62,14 +62,6 @@ namespace Cachalot.Linq
 
             _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
 
-            
-            if (sessionId == default) // if in a consistent read session, it has already been done
-            {
-                // in case a non persistent cache was rebooted
-                _client.DeclareCollection(collectionName, collectionSchema); 
-            }
-            
-
         }
 
 

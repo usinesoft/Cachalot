@@ -4,12 +4,10 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Client.Interface;
 using Client.Messages;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
-using Remotion.Linq.Clauses.ResultOperators;
 
 #endregion
 
@@ -47,12 +45,7 @@ namespace Client.Core
         [field: ProtoMember(3)]
         public string KeyName { get; }
 
-        /// <summary>
-        ///     uniqueness of the key (primary, unique, index)
-        /// </summary>
-        [field: ProtoMember(4)]
-        public IndexType KeyType { get; }
-
+        
         public OriginalType Type => (OriginalType) _data[0];
 
         public override string ToString()
@@ -239,8 +232,7 @@ namespace Client.Core
             _data = new byte[1];
 
             KeyName = info.Name;
-            KeyType = info.IndexType;
-
+            
             if (value == null)
             {
                 FromNull();

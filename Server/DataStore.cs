@@ -9,7 +9,6 @@ using Client;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
-using Client.Profiling;
 using Client.Tools;
 using Server.FullTextSearch;
 using Server.Persistence;
@@ -132,7 +131,6 @@ namespace Server
 
         public EvictionPolicy EvictionPolicy { get; set; }
 
-        public Profiler Profiler { private get; set; }
 
         /// <summary>
         ///     Description of data preloaded into the datastore
@@ -313,9 +311,15 @@ namespace Server
                 EvictionPolicy.TryRemove(item);
             }
 
-
             foreach (var index in _dataByIndexKey)
                 index.Value.RemoveMany(items);
+
+
+            foreach (var o in items)
+            {
+                DataByPrimaryKey.Remove(o.PrimaryKey);
+            }
+
         }
 
 
@@ -342,9 +346,7 @@ namespace Server
         /// </summary>
         /// <param name="items"></param>
         /// <param name="excludeFromEviction">used only for non persistent case</param>
-        /// <param name="persistTransaction">external action that is responsible to persist a durable transaction</param>
-        internal void InternalPutMany(IList<PackedObject> items, bool excludeFromEviction,
-            Action<DurableTransaction> persistTransaction)
+        internal void InternalPutMany(IList<PackedObject> items, bool excludeFromEviction)
         {
             var isBulkOperation = items.Count > Constants.BulkThreshold;
 
@@ -354,9 +356,7 @@ namespace Server
             {
                 Dbg.Trace($"begin InternalPutMany with {items.Count} object");
 
-                persistTransaction?.Invoke(new PutDurableTransaction {Items = items});
-
-
+                
                 InternalBeginBulkInsert(isBulkOperation);
 
                 foreach (var item in items)
@@ -375,7 +375,7 @@ namespace Server
                 {
                     RemoveMany(toUpdate);
 
-                    InternalPutMany(toUpdate, true, null); // the transaction is already persisted
+                    InternalPutMany(toUpdate, true); 
                 }
                 else
                 {
@@ -415,7 +415,7 @@ namespace Server
                 {
                     RemoveMany(toUpdate);
 
-                    InternalPutMany(toUpdate, true, null); // the transaction is already persisted
+                    InternalPutMany(toUpdate, true); 
                 }
                 else
                 {
@@ -454,9 +454,8 @@ namespace Server
 
         public static DataStore Reindex(DataStore old, CollectionSchema newDescription)
         {
-            var result = new DataStore(newDescription, old.EvictionPolicy, old._fullTextConfig)
-                {Profiler = old.Profiler};
-
+            var result = new DataStore(newDescription, old.EvictionPolicy, old._fullTextConfig);
+                
 
             result.InternalReindex(old.InternalEnumerateAsJson()
                 .Select(json => PackedObject.PackJson(json, newDescription)));

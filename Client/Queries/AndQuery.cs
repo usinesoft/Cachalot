@@ -70,5 +70,23 @@ namespace Client.Queries
         {
             return query.Elements.All(e => Elements.Any(q => q.IsSubsetOf(e)));
         }
+
+        public string Description()
+        {
+            if (Elements.Count == 0)
+                return "<empty>";
+            if (Elements.Count == 1)
+                return Elements[0].Description();
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < Elements.Count; i++)
+            {
+                sb.Append(Elements[i].Description());
+                if (i != Elements.Count - 1)
+                    sb.Append(" AND ");
+            }
+
+            return sb.ToString().Trim();
+        }
     }
 }

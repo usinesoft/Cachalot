@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using Client.ChannelInterface;
 using Client.Interface;
@@ -14,13 +15,15 @@ namespace Server.Queries
     {
         
         private readonly DataStore _dataStore;
+        private readonly ILog _log;
         private readonly ITransactionLog _transactionLog;
 
-        public PutManager(ITransactionLog transactionLog, IFeedSessionManager sessionManager,  DataStore dataStore)
+        public PutManager(ITransactionLog transactionLog, IFeedSessionManager sessionManager,  DataStore dataStore, ILog log)
         {
             _transactionLog = transactionLog;
             SessionManager = sessionManager;
             _dataStore = dataStore;
+            _log = log;
         }
 
         public IFeedSessionManager SessionManager { get; }
@@ -31,7 +34,14 @@ namespace Server.Queries
             {
                 try
                 {
+                    var watch = new Stopwatch();
+
+
+                    watch.Start();
                     int count = ProcessPutRequest(putRequest);
+                    watch.Stop();
+
+                    _log?.LogActivity("PUT", (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
 
                     client?.SendResponse(new ItemsCountResponse {ItemsCount = count});
                 }
@@ -70,7 +80,7 @@ namespace Server.Queries
 
                     _transactionLog?.NewTransaction(new PutDurableTransaction {Items = all});
 
-                    _dataStore.InternalPutMany(all, putRequest.ExcludeFromEviction, null);
+                    _dataStore.InternalPutMany(all, putRequest.ExcludeFromEviction);
 
                     return all.Count;
 
@@ -125,7 +135,7 @@ namespace Server.Queries
 
             _transactionLog?.NewTransaction(new PutDurableTransaction {Items = putRequest.Items});
             
-            _dataStore.InternalPutMany(putRequest.Items, putRequest.ExcludeFromEviction, null);
+            _dataStore.InternalPutMany(putRequest.Items, putRequest.ExcludeFromEviction);
 
             return putRequest.Items.Count;
         }

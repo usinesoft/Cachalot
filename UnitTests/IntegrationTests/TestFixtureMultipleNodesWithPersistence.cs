@@ -13,6 +13,7 @@ using Client.Interface;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server;
+using Server.HostServices.Logger;
 using Tests.TestData;
 using Tests.TestData.Events;
 
@@ -50,6 +51,8 @@ namespace Tests.IntegrationTests
 
         private List<ServerInfo> _servers = new List<ServerInfo>();
 
+        private List<FastLogger> _loggers = new List<FastLogger>();
+
         private const int ServerCount = 10;
 
         [OneTimeSetUp]
@@ -65,6 +68,11 @@ namespace Tests.IntegrationTests
             {
                 serverInfo.Channel.Stop();
                 serverInfo.Server.Stop();
+            }
+
+            foreach (var logger in _loggers)
+            {
+                logger.Stop();
             }
         }
 
@@ -91,15 +99,25 @@ namespace Tests.IntegrationTests
         {
             _clientConfig = new ClientConfig();
             _servers = new List<ServerInfo>();
+            _loggers = new List<FastLogger>();
 
             serverCount = serverCount == 0 ? ServerCount : serverCount;
 
             for (var i = 0; i < serverCount; i++)
             {
+                var path = $"server{i:D2}";
                 var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = $"server{i:D2}"};
-                serverInfo.Server =
-                    new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
+                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = path};
+
+                var logger = new FastLogger();
+                logger.Start(path);
+                _loggers.Add(logger);
+
+                serverInfo.Server = new Server.Server(nodeConfig, logger)
+                {
+                    Channel = serverInfo.Channel
+                };
+
                 serverInfo.Port = serverInfo.Channel.Init();
                 serverInfo.Channel.Start();
                 serverInfo.Server.Start();
@@ -1358,6 +1376,60 @@ namespace Tests.IntegrationTests
 
             var result1 = dataSource.Where(o=> !o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
             Assert.AreEqual(2, result1.Count);
+            
+            var result2 = dataSource.Where(o=> o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
+            Assert.AreEqual(2, result2.Count);
+
+
+            var result3 = dataSource.Where(o=> o.IsDelivered).Select(o => o.Category).Distinct().ToList();
+            Assert.AreEqual(1, result3.Count);
+
+            var result4 = dataSource.Where(o=> o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
+            Assert.AreEqual(2, result4.Count);
+            
+
+            dataSource.Put(new Order{Category = "sf", ClientId = 103});
+            dataSource.Put(new Order{Category = "sf", ClientId = 104});
+            dataSource.Put(new Order{Category = "travel", ClientId = 105});
+
+            var cats = new [] { "sf", "travel"};
+            var result5 = dataSource.Where(o=> cats.Contains( o.Category)).Select(o => o.ClientId).Distinct().ToList();
+            Assert.AreEqual(4, result5.Count);
+
+            var result6 = dataSource.Where(o=> o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            CollectionAssert.AreEqual(result5, result6);
+
+
+            
+        }
+
+        [Test]
+        public void Query_the_activity_table()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+
+            var activity = connector.ActivityLog;
+
+            var dataSource = connector.DataSource<Order>();
+
+            dataSource.Put(new Order{Category = "geek", ClientId = 101, IsDelivered = true});
+            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+            dataSource.Put(new Order{Category = "geek", ClientId = 102, IsDelivered = true});
+            dataSource.Put(new Order{Category = "sf", ClientId = 102});
+
+
+            var result1 = dataSource.Where(o=> !o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+            Assert.AreEqual(2, result1.Count);
+
+            //The activity table is filled asynchronously so we need to wait
+
+            Thread.Sleep(2000);
+            var logEntries = activity.Where(l=>l.Type =="QUERY").ToList();
+            Assert.IsTrue(logEntries.All(e => e.ExecutionTimeInMicroseconds == e.ExecutionPlan.TotalTimeInMicroseconds));
+
             
             var result2 = dataSource.Where(o=> o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
             Assert.AreEqual(2, result2.Count);

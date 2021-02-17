@@ -75,7 +75,7 @@ namespace Tests.IntegrationTests
             for (var i = 0; i < serverCount; i++)
             {
                 var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                serverInfo.Server = new Server.Server(new NodeConfig())
+                serverInfo.Server = new Server.Server(new NodeConfig{DataPath = $"server{i:D2}"})
                     {Channel = serverInfo.Channel}; // start non-persistent server
                 serverInfo.Port = serverInfo.Channel.Init(); // get the dynamically allocated ports
                 serverInfo.Channel.Start();

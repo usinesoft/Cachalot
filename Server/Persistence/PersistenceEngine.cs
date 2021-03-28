@@ -12,7 +12,6 @@ namespace Server.Persistence
     {
         private readonly Services _serviceContainer;
         private readonly object _schemaSync = new object();
-        private readonly object _sequenceSync = new object();
 
 
         private volatile bool _shouldContinue = true;
@@ -46,7 +45,7 @@ namespace Server.Persistence
         private string SequenceFilePath { get; }
 
         public DataContainer Container { get; set; }
-        public string WorkingDirectory { get; }
+        private string WorkingDirectory { get; }
 
 
         public void WaitForPendingTransactions()
@@ -323,15 +322,6 @@ namespace Server.Persistence
         }
 
 
-       
-
-        public void UpdateSequences(string json)
-        {
-            lock (_sequenceSync)
-            {
-                File.WriteAllText(SequenceFilePath, json);
-            }
-        }
 
         public void CancelDelayedTransaction()
         {

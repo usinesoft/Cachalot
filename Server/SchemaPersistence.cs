@@ -26,10 +26,10 @@ namespace Server
             _jsonSerializer.Converters.Add(new StringEnumConverter());
         }
 
-        public Schema LoadSchema(string schemaDirectory = null)
+        public Schema LoadSchema(string fullPath = null)
         {
-            string path = schemaDirectory;
-            if (schemaDirectory == null)
+            string path = fullPath;
+            if (fullPath == null)
             {
                 path = Path.Combine(_config.DataPath, Constants.DataPath);
             }

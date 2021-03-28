@@ -12,7 +12,10 @@ namespace Server
         {
             Log = log;
             NodeConfig = nodeConfig;
+
             SchemaPersistence = new SchemaPersistence(NodeConfig);
+
+            SequencePersistence = new SequencePersistence(NodeConfig);
         }
 
         /// <summary>
@@ -28,6 +31,7 @@ namespace Server
         public PersistenceEngine PersistenceEngine { get; } = new PersistenceEngine();
 
         public ISchemaPersistence SchemaPersistence { get; } 
+        public ISequencePersistence SequencePersistence { get; } 
 
     }
 }

@@ -33,25 +33,12 @@ namespace Server
         
         private readonly Services _serviceContainer;
 
-        private readonly JsonSerializer _jsonSerializer;
-
-        private readonly JsonSerializerSettings _schemaSerializerSettings = new JsonSerializerSettings
-        {
-            Formatting = Formatting.Indented
-        };
-
-
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
         public DataContainer(Services serviceContainer)
         {
             
             _serviceContainer = serviceContainer;
-
-            
-            _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
-            _jsonSerializer.Converters.Add(new StringEnumConverter());
-
 
         }
 
@@ -411,12 +398,8 @@ namespace Server
 
                         try
                         {
-                            var sb = new StringBuilder();
-
-                            _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), _lastIdByGeneratorName);
-
-                            PersistenceEngine.UpdateSequences(sb.ToString());
-
+                            _serviceContainer.SequencePersistence.SaveValues(_lastIdByGeneratorName);
+                            
                             // return a response only if persisted successfully
                             client.SendResponse(new GenerateUniqueIdsResponse(ids.ToArray()));
                         }
@@ -439,11 +422,8 @@ namespace Server
 
                     try
                     {
-                        var sb = new StringBuilder();
-
-                        _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), _lastIdByGeneratorName);
-
-                        PersistenceEngine.UpdateSequences(sb.ToString());
+                        
+                        _serviceContainer.SequencePersistence.SaveValues(_lastIdByGeneratorName);
 
                         // return a response only if persisted successfully
                         client.SendResponse(new NullResponse());
@@ -514,13 +494,11 @@ namespace Server
                 }
 
                 // save the sequences. Each shard has different values
-                var sb = new StringBuilder();
-
-                _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), _lastIdByGeneratorName);
-
+                
                 var dumpSequenceFileName = $"sequence_{ShardIndex:D3}.json";
-                File.WriteAllText(Path.Combine(fullPath, dumpSequenceFileName), sb.ToString());
+                var sequencePath = Path.Combine(fullPath, dumpSequenceFileName);
 
+                _serviceContainer.SequencePersistence.SaveValues(_lastIdByGeneratorName, sequencePath);
 
                 client.SendResponse(new NullResponse());
             }
@@ -673,7 +651,7 @@ namespace Server
             {
                 foreach (var description in schema.CollectionsDescriptions)
                 {
-                    ServerLog.LogInfo($"declaring collection {description.Key}");
+                     ServerLog.LogInfo($"declaring collection {description.Key}");
                     RegisterType(new RegisterTypeRequest(description.Value, schema.ShardIndex, schema.ShardCount), null);
                 }
 
@@ -684,12 +662,8 @@ namespace Server
 
         public void LoadSequence(string path)
         {
-            if (!File.Exists(path)) return;
 
-            var json = File.ReadAllText(path);
-
-            _lastIdByGeneratorName = _jsonSerializer.Deserialize<Dictionary<string, int>>(
-                                         new JsonTextReader(new StringReader(json))) ?? new Dictionary<string, int>();
+            _lastIdByGeneratorName = _serviceContainer.SequencePersistence.LoadValues(path) ?? new Dictionary<string, int>();
         }
     }
 }

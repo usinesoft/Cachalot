@@ -103,9 +103,16 @@ namespace Tests.UnitTests
         [Test]
         public void Serialize_a_subset_of_properties_as_json()
         {
+
+            var date = DateTimeOffset.Now;
+            if (date.DayOfWeek == default) // avoid default values that are ignored in the full json
+            {
+                date = date.AddDays(1);
+            }
+
             var testObj = new Order
             {
-                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5, Date = date, Category = "student", ClientId = 101, ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1,
                 IsDelivered = true

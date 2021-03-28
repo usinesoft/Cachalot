@@ -7,9 +7,9 @@ namespace Server
         /// <summary>
         /// Load schema for all collection
         /// </summary>
-        /// <param name="schemaDirectory">directory, if null use the one from <see cref="INodeConfig"/></param>
+        /// <param name="fullPath">directory, if null use the one from <see cref="INodeConfig"/></param>
         /// <returns></returns>
-        Schema LoadSchema(string schemaDirectory = null);
+        Schema LoadSchema(string fullPath = null);
 
         /// <summary>
         /// Save global schema (for all collections)

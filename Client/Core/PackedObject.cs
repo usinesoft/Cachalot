@@ -159,42 +159,6 @@ namespace Client.Core
         }
 
 
-        
-
-        static KeyValue JTokenToKeyValue(JToken jToken, KeyInfo info)
-        {
-            // as we ignore default values on json serialization 
-            // the value can be absent because it is an int value 0
-             
-            if(jToken == null) return info.IndexType == IndexType.Primary?  new KeyValue(0, info): new KeyValue(null, info);
-
-            var valueToken = jToken.HasValues ? jToken.First : jToken;
-
-            if (valueToken?.Type == JTokenType.Integer)
-            {
-                return new KeyValue((long)valueToken, info);
-            }
-
-            if (valueToken?.Type == JTokenType.Float)
-            {
-                return new KeyValue((double)valueToken, info);
-            }
-
-
-            if (valueToken?.Type == JTokenType.Boolean)
-            {
-                return new KeyValue((bool)valueToken, info);
-            }
-
-            if (valueToken?.Type == JTokenType.Date)
-            {
-                return new KeyValue((DateTime)valueToken, info);
-            }
-
-            return new KeyValue((string)valueToken, info);
-
-        }
-
         public string Json
         {
             get
@@ -362,7 +326,7 @@ namespace Client.Core
                 
                 if (!metadata.IsCollection)
                 {
-                    result.Values[pos++] = JTokenToKeyValue(jKey, metadata);
+                    result.Values[pos++] = JExtensions.JTokenToKeyValue(jKey, metadata);
                 }
                 else 
                 {
@@ -373,7 +337,7 @@ namespace Client.Core
                             throw new NotSupportedException($"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
                         }
 
-                        var keyValues = jKey.Value.Children().Select(j => JTokenToKeyValue(j, metadata));
+                        var keyValues = jKey.Value.Children().Select(j => JExtensions.JTokenToKeyValue(j, metadata));
 
                         result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
                     }

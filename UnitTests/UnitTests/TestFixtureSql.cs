@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using Client.Core;
+using Client.Queries;
 using NUnit.Framework;
 using Server.Parsing;
 
@@ -18,23 +20,12 @@ namespace Tests.UnitTests
             Assert.IsNull(result.ErrorMessage);
 
             Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(1, result.Children.Count);
-            Assert.AreEqual("thetable", result.Children[0].Token);
+            Assert.AreEqual(2, result.Children.Count);
+            Assert.AreEqual("thetable", result.Children[1].Children[0].Token);
 
             Console.WriteLine(result);
 
-            // "*" and "from" are optional
-            result = new Parser().ParseSql("select theTable");
-
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(1, result.Children.Count);
-            Assert.AreEqual("thetable", result.Children[0].Token);
             
-            Console.WriteLine(result);
-            
-            // should not work for now
-            result = new Parser().ParseSql("select a, b from theTable");
-            Assert.IsNotNull(result.ErrorMessage);
 
             
         }
@@ -46,9 +37,10 @@ namespace Tests.UnitTests
             Assert.IsNull(result.ErrorMessage);
 
             Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(2, result.Children.Count);
-            Assert.AreEqual("persons", result.Children[0].Token);
-            Assert.AreEqual("where", result.Children[1].Token);
+            Assert.AreEqual(3, result.Children.Count);
+            Assert.AreEqual("projection", result.Children[0].Token);
+            Assert.AreEqual("from", result.Children[1].Token);
+            Assert.AreEqual("where", result.Children[2].Token);
 
             Assert.IsNull(result.ErrorMessage);
 
@@ -63,7 +55,7 @@ namespace Tests.UnitTests
             Assert.IsNull(result.ErrorMessage);
 
             Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(3, result.Children.Count);
+            Assert.AreEqual(4, result.Children.Count);
            
 
             Console.WriteLine(result);
@@ -72,9 +64,10 @@ namespace Tests.UnitTests
 
          
             Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(3, result.Children.Count);
+            Assert.AreEqual(4, result.Children.Count);
             
-            Assert.IsTrue(result.Children.Any(c=>c.Token == "collection"));
+            Assert.IsTrue(result.Children.Any(c=>c.Token == "from"));
+            Assert.IsTrue(result.Children.Any(c=>c.Token == "projection"));
             Assert.IsTrue(result.Children.Any(c=>c.Token == "take"));
             Assert.IsTrue(result.Children.Any(c=>c.Token == "where"));
             
@@ -116,14 +109,14 @@ namespace Tests.UnitTests
         public void Parsing_performance_test()
         {
             // warm up
-            var result = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
-            result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
+            var _ = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
+            _ = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
 
             var watch = new Stopwatch();
             watch.Start();
             for (int i = 0; i < 1000; i++)
             {
-                result = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
+                _ = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
             }
 
             watch.Stop();
@@ -133,12 +126,257 @@ namespace Tests.UnitTests
             watch.Restart();
             for (int i = 0; i < 1000; i++)
             {
-                result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
+                _ = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
             }
 
             watch.Stop();
 
             Console.WriteLine($"1000 call to parse took {watch.ElapsedMilliseconds} ms");
+
+        }
+
+        [Test]
+        public void Smart_parse_values()
+        {
+            object vi = JExtensions.SmartParse("123");
+
+            Assert.IsTrue(vi is int);
+
+            object vf = JExtensions.SmartParse("123,1");
+
+            Assert.IsTrue(vf is double);
+
+            vf = JExtensions.SmartParse("123.1");
+
+            Assert.IsTrue(vf is double);
+
+            var vd = JExtensions.SmartParse("2012-05-01");
+
+            Assert.IsTrue(vd is DateTimeOffset);
+
+            vd = JExtensions.SmartParse("01/05/2012");
+
+            Assert.IsTrue(vd is DateTimeOffset);
+
+            // looks like a data but it is not correct so it will be parsed like a string
+            vd = JExtensions.SmartParse("45/15/2012");
+
+            Assert.IsTrue(vd is string);
+
+            var vb = JExtensions.SmartParse("true");
+            Assert.IsTrue(vb is bool);
+
+            vb = JExtensions.SmartParse("false");
+            Assert.IsTrue(vb is bool);
+
+            Assert.IsNull(JExtensions.SmartParse("null"));
+
+        }
+
+        static AtomicQuery FindAtomicQuery(OrQuery query, string property)
+        {
+            return query.Elements.SelectMany(e => e.Elements).FirstOrDefault(e => e.PropertyName == property);
+        }
+
+        [Test]
+        public void Select_to_query()
+        {
+
+            var schema = SchemaFactory.New("collection").PrimaryKey("id")
+                .WithServerSideValue("a")
+                .WithServerSideValue("x", IndexType.Ordered)
+                .WithServerSideValue("age",IndexType.Ordered)
+                .WithServerSideValue("date",IndexType.Ordered)
+                .Build();
+
+            var result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
+
+            var query = result.ToQuery(schema);
+
+            Assert.AreEqual("collection", query.CollectionName);
+
+            Assert.IsTrue(query.IsValid);
+
+            var result1 = new Parser().ParseSql("select * from collection where a != 'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
+
+            var query1 = result1.ToQuery(schema);
+
+            // the two queries must be identical
+            Assert.AreEqual(query.ToString(), query1.ToString());
+
+            // check if the atomic queries have been correctly generated
+            var q1 = FindAtomicQuery(query, "a");
+            Assert.NotNull(q1);
+            Assert.AreEqual(KeyValue.OriginalType.String, q1.Value.Type);
+            Assert.AreEqual(QueryOperator.NotEq, q1.Operator);
+
+            var q2 = FindAtomicQuery(query, "x");
+            Assert.NotNull(q2);
+            Assert.AreEqual(KeyValue.OriginalType.SomeFloat, q2.Value.Type);
+            Assert.AreEqual(QueryOperator.GeLt, q2.Operator, "query should be optimized as range operator");
+
+            var q3 = FindAtomicQuery(query, "age");
+            Assert.NotNull(q3);
+            Assert.AreEqual(KeyValue.OriginalType.SomeInteger, q3.Value.Type);
+            Assert.AreEqual(QueryOperator.Gt, q3.Operator);
+
+            var query2 = new Parser().ParseSql("select * from collection where date = 2012-01-31 ").ToQuery(schema);
+            var q4 = FindAtomicQuery(query2, "date");
+            Assert.NotNull(q4);
+            Assert.AreEqual(KeyValue.OriginalType.Date, q4.Value.Type);
+            Assert.AreEqual(QueryOperator.Eq, q4.Operator);
+
+
+        }
+
+        [Test]
+        public void Query_with_in_operator()
+        {
+            var schema = SchemaFactory.New("collection").PrimaryKey("id")
+                .WithServerSideValue("a")
+                .WithServerSideValue("x", IndexType.Ordered)
+                .WithServerSideValue("age",IndexType.Ordered)
+                .WithServerSideValue("date",IndexType.Ordered)
+                .Build();
+
+            {
+                var query = new Parser().ParseSql("select from collection where a in (1, 2, 3)").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "a");
+
+                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(QueryOperator.In, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.SomeInteger));
+            }
+
+            {
+                var query = new Parser().ParseSql("select from collection where a not  in (1, 2, 3)").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "a");
+
+                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(QueryOperator.NotIn, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.SomeInteger));
+            }
+
+
+        }
+
+        [Test]
+        public void Query_with_contains_operator()
+        {
+            var schema = SchemaFactory.New("items").PrimaryKey("id")
+                .WithServerSideValue("tags")
+                .Build();
+
+            {
+                var query = new Parser().ParseSql("select from items where tags contains 'geek' or tags contains electronics").ToQuery(schema);
+            
+                Assert.AreEqual("items", query.CollectionName);
+
+                var q = FindAtomicQuery(query, "tags");
+
+                Assert.AreEqual(QueryOperator.Contains, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.String));
+            }
+
+            {
+                var query = new Parser().ParseSql("select * from items where tags not contains 'geek'").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "tags");
+
+                Assert.AreEqual(QueryOperator.NotContains, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.String));
+            }
+
+            
+        }
+
+        [Test]
+        public void Query_with_string_operators()
+        {
+            var schema = SchemaFactory.New("items").PrimaryKey("id")
+                .WithServerSideValue("name")
+                .Build();
+
+            {
+                var query = new Parser().ParseSql("select from items where name like john% ").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "name");
+
+                Assert.AreEqual(QueryOperator.StrStartsWith, q.Operator);
+                Assert.AreEqual("john", q.Value.StringValue);
+                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+
+                
+            }
+
+            {
+                var query = new Parser().ParseSql("select from items where name like %john ").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "name");
+
+                Assert.AreEqual(QueryOperator.StrEndsWith, q.Operator);
+                Assert.AreEqual("john", q.Value.StringValue);
+                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+
+                
+            }
+
+            {
+                var query = new Parser().ParseSql("select * from items where name like '%john%' ").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "name");
+
+                Assert.AreEqual(QueryOperator.StrContains, q.Operator);
+                Assert.AreEqual("john", q.Value.StringValue);
+                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+
+                
+            }
+
+        }
+
+        [Test]
+        public void Projection_query()
+        {
+            var schema = SchemaFactory.New("collection").PrimaryKey("id")
+                .WithServerSideValue("a")
+                .WithServerSideValue("x", IndexType.Ordered)
+                .WithServerSideValue("age",IndexType.Ordered)
+                .WithServerSideValue("date",IndexType.Ordered)
+                .Build();
+
+            {
+                var query = new Parser().ParseSql("select fx, age from collection where a in (1, 2, 3)").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "a");
+
+                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(QueryOperator.In, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.SomeInteger));
+
+                Assert.AreEqual(2, query.SelectClause.Count);
+                Assert.AreEqual("fx", query.SelectClause[0].Name);
+                Assert.AreEqual("fx", query.SelectClause[0].Alias);
+
+            }
+
+            {
+                // same with alias
+                var query = new Parser().ParseSql("select fx forex, age from collection where a in (1, 2, 3)").ToQuery(schema);
+            
+                var q = FindAtomicQuery(query, "a");
+
+                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(QueryOperator.In, q.Operator);
+                Assert.IsTrue(q.Values.All(v=>v.Type == KeyValue.OriginalType.SomeInteger));
+
+                Assert.AreEqual(2, query.SelectClause.Count);
+                Assert.AreEqual("fx", query.SelectClause[0].Name);
+                Assert.AreEqual("forex", query.SelectClause[0].Alias);
+
+            }
 
         }
     }

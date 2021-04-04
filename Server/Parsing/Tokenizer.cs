@@ -10,7 +10,7 @@ namespace Server.Parsing
         {
             if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
 
-            if ("<>:=,()".Contains(ch))
+            if ("<>:=,()!".Contains(ch))
                 return CharClass.Symbol;
 
             return CharClass.LetterOrDigit;

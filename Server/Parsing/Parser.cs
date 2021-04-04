@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace Server.Parsing
 {
@@ -19,25 +16,87 @@ namespace Server.Parsing
 
         private Node ParseSelect(IList<Token> tokens)
         {
+            // a complete result will have the following children in this order: distinct, projection, table, where, order, take, skip
             var result = new Node {Token = "select"};
 
-            // ignore "*" and "from" if present
-            tokens = tokens.TrimLeft("*", "from");
+            var partsBySeparator = tokens.Split("from", "where", "take", "order");
 
 
-            var parts = tokens.Split("where");
+            // parse the projection (can be nothing or * (the same result), ~ = all the server-side values, or an explicit list of properties with optional aliases
+            
+            var projectionNode = new Node{Token = "projection"};
+            result.Children.Add(projectionNode);
 
-            var take = tokens.Split("take");
-
-            bool hasTakeCause = false;
-
-            if (take.Count == 2) // a take close is present
+            if (partsBySeparator.TryGetValue("", out var beforeFrom))
             {
-                hasTakeCause = true;
-                if (take[1].Count > 0)
+                // * is optional
+                if (beforeFrom.Count == 0)
+                {
+                    projectionNode.Children.Add(new Node{Token = "*"});
+                }
+                else if (beforeFrom.Count == 1) // can be *, ~ or property name
+                {
+                    var value = beforeFrom[0];
+                    projectionNode.Children.Add(new Node{Token = value.NormalizedText});
+
+                }
+                else // multiple elements like property1 alias1, property2 alias 2
+                {
+                    var parts = beforeFrom.Split(",");
+
+                    foreach (var part in parts)
+                    {
+                        var name = part[0];
+
+                        var node = new Node {Token = name.NormalizedText};
+
+                        if (part.Count == 2)
+                        {
+                            var alias = part[1].NormalizedText;
+                            node.Children.Add(new Node{Token = alias});
+                        }
+
+                        
+                        projectionNode.Children.Add(node);
+                    }
+                }
+            }
+
+            // the collection name
+            if (partsBySeparator.TryGetValue("from", out var afterFrom))
+            {
+                if (afterFrom.Count != 1)
+                {
+                    result.ErrorMessage = "A single collection(table) name must be specified";
+                }
+                else
+                {
+                    result.Children.Add(new Node{Token = "from", Children = { new Node{Token = afterFrom[0].NormalizedText}}});
+                }
+            }
+
+            // the where clause
+            if (partsBySeparator.TryGetValue("where", out var afterWhere))
+            {
+                if (afterWhere.Count == 0)
+                {
+                    result.ErrorMessage = "Invalid where clause";
+                }
+                else
+                {
+                    result.Children.Add(ParseWhere(afterWhere));
+                }
+                
+            }
+
+            // parse the "take" clause
+            if (partsBySeparator.TryGetValue("take", out var afterTake)) // a take clause is present
+            {
+                
+                if (afterTake.Count == 1) // oly one number can be preset after tha take clause
                 {
                     
-                    var takeCount = take[1][0].NormalizedText;
+                    var takeCount = afterTake[0].NormalizedText;
                     if (int.TryParse(takeCount, out var _))
                     {
                         var takeNode = new Node{Token = "take"};
@@ -50,37 +109,11 @@ namespace Server.Parsing
                         return result;
                     }
                 }
-
                 else
                 {
                     result.ErrorMessage = "error in take clause";
                     return result;
                 }
-            }
-
-
-            // no where clause
-            if (parts.Count == 1 && parts[0].Count == 1)
-            {
-                result.Children.Add(new Node {Token = parts[0][0].NormalizedText});
-                return result;
-            }
-
-            if (parts.Count != 2 || parts[0].Count != 1)
-            {
-                result.ErrorMessage = "invalid syntax: should be select table where condition";
-            }
-            else
-            {
-                result.Children.Add(new Node {Token = parts[0][0].NormalizedText});
-
-                var afterWhere = parts[1];
-                if (hasTakeCause)
-                {
-                    afterWhere = parts[1].Split("take")[0];
-                }
-
-                result.Children.Add(ParseWhere(afterWhere));
             }
 
 
@@ -225,6 +258,27 @@ namespace Server.Parsing
                 if (tokens[1].Is("contains"))
                 {
                     var result = new Node {Token = "contains"};
+                    // column name
+                    result.Children.Add(new Node {Token = column});
+
+                    var value = tokens.Skip(2).Join();
+
+                    var normalized = TryNormalizeValue(value);
+
+                    if (normalized != null)
+                    {
+                        result.Children.Add(new Node {Token = normalized});
+                    }
+
+                    else result.ErrorMessage = $"can not parse value {value} in CONTAINS clause";
+
+                    return result;
+                }
+
+                // name like 'john%'
+                if (tokens[1].Is("like"))
+                {
+                    var result = new Node {Token = "like"};
                     // column name
                     result.Children.Add(new Node {Token = column});
 

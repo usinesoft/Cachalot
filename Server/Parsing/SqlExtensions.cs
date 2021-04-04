@@ -1,0 +1,270 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using Client.Core;
+using Client.Queries;
+
+namespace Server.Parsing
+{
+    public static class SqlExtensions
+    {
+        public static OrQuery ToQuery(this Node node, CollectionSchema schema)
+        {
+
+            OrQuery result = null;
+
+            if (node.Token == "select")
+            {
+                result = SelectToQuery(node, schema);
+            }
+
+            QueryHelper.OptimizeQuery(result);
+
+            return result;
+        }
+
+        private static OrQuery SelectToQuery(this Node node, CollectionSchema schema)
+        {
+
+            var tableNode = node.Children.FirstOrDefault(n => n.Token == "from");
+            if (tableNode == null)
+            {
+                throw new NotSupportedException("Collection name not specified");
+            }
+
+
+
+            var query = new OrQuery(tableNode.Children.First().Token); // the one qnd only child of the "from" node is the table name
+
+            var projection = node.Children.FirstOrDefault(n => n.Token == "projection");
+
+            if (projection != null)
+                foreach (var column in projection.Children)
+                {
+                    var name = column.Token;
+                    var alias = column.Children.FirstOrDefault()?.Token ?? name;
+                    query.SelectClause.Add(new SelectItem{Name = name, Alias = alias});
+                }
+
+            var where = node.Children.FirstOrDefault(c=>c.Token== "where");
+
+            if (where != null)
+            {
+                ParseWhere(where, query, schema);
+            }
+            
+
+            return query;
+        }
+
+        private static void ParseWhere(Node @where, OrQuery query, CollectionSchema schema)
+        {
+            var orNodes = where.Children.Where(c => c.Token == "or").ToList();
+
+            if (orNodes.Count != 1)
+            {
+                throw new NotSupportedException("Query too complex");
+            }
+
+            var orNode = orNodes.Single();
+
+            var andNodes = orNode.Children.Where(c => c.Token == "and").ToList();
+
+            foreach (var andNode in andNodes)
+            {
+                var andQuery = new  AndQuery();
+
+                foreach (var node in andNode.Children)
+                {
+                    var operands = node.Children.Select(c => c.Token).ToList();
+
+
+                    var op = ParseOperator(node.Token, operands.LastOrDefault());
+
+                    
+                    if (op == QueryOperator.In || op == QueryOperator.NotIn)
+                    {
+                        var metadata = schema.KeyByName(operands[0]);
+                        if (metadata != null)
+                        {
+                            List<KeyValue> values = new List<KeyValue>();
+
+                            foreach (var val in operands.Skip(1))
+                            {
+                                object value = JExtensions.SmartParse(val) ;
+                                values.Add(new KeyValue(value, metadata));
+                            }
+                            
+
+                            andQuery.Elements.Add(new AtomicQuery(metadata, values, op));
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"Can not parse query after IN operator. {operands[0]} is a server-side value");
+
+                        }
+                    }
+
+                    else if (op == QueryOperator.Contains || op == QueryOperator.NotContains) // for contains operator the collection property should be at the left side
+                    {
+                        var metadata = schema.KeyByName(operands[0]);
+
+                        object value = JExtensions.SmartParse(operands[1]) ;
+
+                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+
+                    }
+                    else if (op == QueryOperator.StrStartsWith || op == QueryOperator.StrEndsWith || op == QueryOperator.StrContains) // for string operators the property should be at the left side
+                    {
+                        var metadata = schema.KeyByName(operands[0]);
+
+                        object value = operands[1].Trim('%');
+
+                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+
+                    }
+                    else if (operands.Count == 2)// binary operators
+                    {
+                        
+                        var metadata = schema.KeyByName(operands[0]);
+                        // by default property name first
+                        if (metadata != null)
+                        {
+                            object value = JExtensions.SmartParse(operands[1]) ;
+
+                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+                        }
+                        else // try value first
+                        {
+                            metadata = schema.KeyByName(operands[1]);
+
+                            if (metadata == null)
+                            {
+                                throw new NotSupportedException($"Can not parse query. Neither {operands[0]} nor {operands[1]} is a server-side value");
+                            }
+
+
+                            object value = JExtensions.SmartParse(operands[0]) ;;
+                            
+                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), Reverse(op)));
+
+                        }
+
+                    }
+                }
+
+
+                query.Elements.Add(andQuery);
+            }
+
+
+
+        }
+
+        private static QueryOperator ParseOperator(string op, string valueAfter = null)
+        {
+            switch (op)
+            {
+                case "=":
+                    return QueryOperator.Eq;
+                case "!=":
+                    return QueryOperator.NotEq;
+                case "<=":
+                    return QueryOperator.Le;
+                case "<":
+                    return QueryOperator.Lt;
+                case ">=":
+                    return QueryOperator.Ge;
+                case ">":
+                    return QueryOperator.Gt;
+                case "in":
+                    return QueryOperator.In;
+                case "not in":
+                    return QueryOperator.NotIn;
+                case "contains":
+                    return QueryOperator.Contains;
+                case "not contains":
+                    return QueryOperator.NotContains;
+                case "like":
+                    if (valueAfter != null)
+                    {
+                        if (valueAfter.StartsWith("%") && valueAfter.EndsWith("%"))
+                        {
+                            return QueryOperator.StrContains;
+                        }
+
+                        if (valueAfter.StartsWith("%"))
+                        {
+                            return QueryOperator.StrEndsWith;
+                        }
+
+                        if (valueAfter.EndsWith("%"))
+                        {
+                            return QueryOperator.StrStartsWith;
+                        }
+                    }
+
+                    break;
+
+
+            }
+
+            throw new NotSupportedException($"Unknown operator:{op}");
+        }
+
+        private static QueryOperator Reverse(QueryOperator op)
+        {
+            var result = op;
+
+            switch (op)
+            {
+                case QueryOperator.Eq:
+                    break;
+                case QueryOperator.Gt:
+                    result = QueryOperator.Lt;
+                    break;
+                case QueryOperator.Ge:
+                    result = QueryOperator.Le;
+                    break;
+                case QueryOperator.Lt:
+                    result = QueryOperator.Gt;
+                    break;
+                case QueryOperator.Le:
+                    result = QueryOperator.Ge;
+                    break;
+                case QueryOperator.GeLe:
+                    break;
+                case QueryOperator.GtLe:
+                    break;
+                case QueryOperator.GtLt:
+                    break;
+                case QueryOperator.GeLt:
+                    break;
+                case QueryOperator.In:
+                    break;
+                case QueryOperator.Contains:
+                    break;
+                case QueryOperator.NotEq:
+                    break;
+                case QueryOperator.NotIn:
+                    break;
+                case QueryOperator.NotContains:
+                    break;
+                case QueryOperator.StrStartsWith:
+                    break;
+                case QueryOperator.StrEndsWith:
+                    break;
+                case QueryOperator.StrContains:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
+            }
+
+            return result;
+        }
+
+        
+
+    }
+}

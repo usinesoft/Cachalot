@@ -72,6 +72,39 @@ namespace Server.Parsing
             return result;
         }
 
+        public static IDictionary<string, IList<Token>> Split(this IList<Token> original, params string[] separator)
+        {
+            var result = new Dictionary<string, IList<Token>>();
+
+            var one = new List<Token>();
+
+            var lastSeparator = "";
+
+            foreach (var token in original)
+            {
+                var sep = separator.FirstOrDefault(s => token.NormalizedText == s);
+
+                if (sep != null)
+                {
+                    
+                    result.Add(lastSeparator, one);
+                    one = new List<Token>();
+                
+                    lastSeparator = sep;
+                }
+                else
+                {
+                    one.Add(token);
+                }
+            }
+
+            
+            result.Add(lastSeparator, one);
+            
+
+            return result;
+        }
+
         public static string Join(this IList<Token> original, int startingAt = 0)
         {
             var result = new StringBuilder();

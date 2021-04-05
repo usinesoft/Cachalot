@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
+using Client.Tools;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using ProtoBuf;
 using Tests.TestData;
@@ -254,7 +257,7 @@ namespace Tests.UnitTests
         }
 
         /// <summary>
-        ///     Test the special vershion for CacheableObject which are already serialized
+        ///     Test the special version for CacheableObject which are already serialized
         /// </summary>
         [Test]
         public void StreamUnstreamManyCacheable()
@@ -404,6 +407,59 @@ namespace Tests.UnitTests
             Assert.AreEqual(t1.Values[4].ToString(), "0");
             var t2 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
             Assert.AreEqual(t2.Values[4].ToString(), "0");
+        }
+
+
+        private static IEnumerable<RankedItem> MakeEnumerable(params int[] values)
+        {
+            return values.Select(v =>
+            {
+                var jobj = new JObject();
+                jobj.Add("value", new JValue(v));
+
+                return new RankedItem(0, jobj);
+
+            });
+        }
+
+         [Test]
+        public void TestMergingSortedEnumerable()
+        {
+            {
+                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(1, 2, 4), MakeEnumerable(1, 3, 5),
+                    MakeEnumerable(1, 5, 6, 18)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
+
+            {
+                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
+                    MakeEnumerable(2, 2, 2, 2)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
+
+            {
+                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(10, 11, 12), MakeEnumerable(1, 2, 3),
+                    MakeEnumerable(21, 22, 23, 24)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
         }
     }
 }

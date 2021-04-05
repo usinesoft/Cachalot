@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Server.Parsing
@@ -23,7 +24,6 @@ namespace Server.Parsing
 
 
             // parse the projection (can be nothing or * (the same result), ~ = all the server-side values, or an explicit list of properties with optional aliases
-            
             var projectionNode = new Node{Token = "projection"};
             result.Children.Add(projectionNode);
 
@@ -42,6 +42,12 @@ namespace Server.Parsing
                 }
                 else // multiple elements like property1 alias1, property2 alias 2
                 {
+                    if (beforeFrom.First().NormalizedText == "distinct")
+                    {
+                        projectionNode.Children.Add(new Node{Token = "distinct"});
+                        beforeFrom = beforeFrom.Skip(1);
+                    }
+
                     var parts = beforeFrom.Split(",");
 
                     foreach (var part in parts)
@@ -116,6 +122,51 @@ namespace Server.Parsing
                 }
             }
 
+            // parse the order clause
+            if (partsBySeparator.TryGetValue("order", out var afterOrder)) // a take clause is present
+            {
+                
+                if (afterOrder.Count >=2 && afterOrder.Count <= 3 ) // after order, "by" and property name are mandatory; "descending" is optional in the last position
+                {
+                    
+                    var by = afterOrder[0].NormalizedText;
+                    if (by != "by")
+                    {
+                        result.ErrorMessage = "error in order clause";
+                    }
+                    else
+                    {
+                        var propertyName = afterOrder[1].NormalizedText;
+
+                        var orderNode = new Node{Token = "order"};
+                        orderNode.Children.Add(new Node{Token = propertyName });
+
+
+                        if (afterOrder.Count > 2)
+                        {
+                            var descending = afterOrder[2].NormalizedText;
+                            if (descending != "descending")
+                            {
+                                result.ErrorMessage = "error in order clause";
+                            }
+                            else
+                            {
+                                orderNode.Children.Add(new Node{Token = "descending" });
+                            }
+
+                        }
+                        
+
+                        result.Children.Add(orderNode);
+                    }
+   
+                }
+                else
+                {
+                    result.ErrorMessage = "error in order clause";
+                    return result;
+                }
+            }
 
             return result;
         }

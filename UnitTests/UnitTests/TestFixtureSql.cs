@@ -342,7 +342,7 @@ namespace Tests.UnitTests
         {
             var schema = SchemaFactory.New("collection").PrimaryKey("id")
                 .WithServerSideValue("a")
-                .WithServerSideValue("x", IndexType.Ordered)
+                .WithServerSideValue("fx", IndexType.Ordered)
                 .WithServerSideValue("age",IndexType.Ordered)
                 .WithServerSideValue("date",IndexType.Ordered)
                 .Build();
@@ -378,6 +378,57 @@ namespace Tests.UnitTests
 
             }
 
+        }
+
+
+        [Test]
+        public void Other_query_operators()
+        {
+            var schema = SchemaFactory.New("collection").PrimaryKey("id")
+                .WithServerSideValue("a")
+                .WithServerSideValue("x", IndexType.Ordered)
+                .WithServerSideValue("age",IndexType.Ordered)
+                .WithServerSideValue("date",IndexType.Ordered)
+                .Build();
+
+            {
+                var query = new Parser().ParseSql("select * from collection order by age take 10").ToQuery(schema);
+            
+                // no where clause
+                Assert.AreEqual(0, query.Elements.Count);
+
+                Assert.AreEqual(10, query.Take);
+                Assert.AreEqual("age", query.OrderByProperty);
+                Assert.IsFalse(query.OrderByIsDescending);
+
+            }
+
+            {
+                var query = new Parser().ParseSql("select * from collection order by age descending").ToQuery(schema);
+            
+                // no where clause
+                Assert.AreEqual(0, query.Elements.Count);
+
+                Assert.AreEqual(0, query.Take); // no take clause
+                Assert.AreEqual("age", query.OrderByProperty);
+                Assert.IsTrue(query.OrderByIsDescending);
+
+            }
+
+            {
+                var query = new Parser().ParseSql("select distinct a, x from collection").ToQuery(schema);
+            
+                // no where clause
+                Assert.AreEqual(0, query.Elements.Count);
+
+                Assert.AreEqual(0, query.Take); // no take clause
+                
+                Assert.AreEqual(2, query.SelectClause.Count);
+                Assert.AreEqual("a", query.SelectClause[0].Name);
+                Assert.AreEqual("x", query.SelectClause[1].Name);
+                Assert.IsTrue(query.Distinct);
+
+            }
         }
     }
 }

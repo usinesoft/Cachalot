@@ -37,23 +37,69 @@ namespace Server.Parsing
 
             var query = new OrQuery(tableNode.Children.First().Token); // the one qnd only child of the "from" node is the table name
 
+            // projection
             var projection = node.Children.FirstOrDefault(n => n.Token == "projection");
 
             if (projection != null)
                 foreach (var column in projection.Children)
                 {
                     var name = column.Token;
-                    var alias = column.Children.FirstOrDefault()?.Token ?? name;
-                    query.SelectClause.Add(new SelectItem{Name = name, Alias = alias});
+
+                    if (name != "*")
+                    {
+                        if (name == "distinct")
+                        {
+                            query.Distinct = true;
+                        }
+                        else
+                        {
+                            if (schema.KeyByName(name) == null)
+                            {
+                                throw new NotSupportedException($"{name} is not a server-side value");
+                            }
+
+                            var alias = column.Children.FirstOrDefault()?.Token ?? name;
+                            query.SelectClause.Add(new SelectItem{Name = name, Alias = alias});    
+                        }
+                        
+                    }
+                    
                 }
 
+
+            // where
             var where = node.Children.FirstOrDefault(c=>c.Token== "where");
 
             if (where != null)
             {
                 ParseWhere(where, query, schema);
             }
-            
+
+
+            // order by
+            var order = node.Children.FirstOrDefault(c=>c.Token== "order");
+
+            if (order != null)
+            {
+                if(order.ErrorMessage != null)
+                    throw new NotSupportedException(order.ErrorMessage);
+
+                query.OrderByProperty = order.Children.FirstOrDefault()?.Token;
+                if (order.Children.Count == 2)
+                {
+                    query.OrderByIsDescending = true;
+                }
+            }
+
+            // take
+            var take = node.Children.FirstOrDefault(c=>c.Token== "take");
+
+            if (take != null)
+            {
+                int count = int.Parse(take.Children.FirstOrDefault()?.Token ?? string.Empty);
+
+                query.Take = count;
+            }
 
             return query;
         }

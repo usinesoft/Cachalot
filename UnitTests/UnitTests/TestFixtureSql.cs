@@ -2,9 +2,11 @@
 using System.Diagnostics;
 using System.Linq;
 using Client.Core;
+using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
 using Server.Parsing;
+using Tests.TestData;
 
 namespace Tests.UnitTests
 {
@@ -430,5 +432,64 @@ namespace Tests.UnitTests
 
             }
         }
+
+
+        [Test]
+        public void Speed_test_sql_vs_linq()
+        {
+            var schema = TypedSchemaFactory.FromType<Order>();
+
+            // warm-up 
+            var categories = new string[] { "geek", "games"};
+
+            var query1 = ExpressionTreeHelper.PredicateToQuery<Order>(
+                o => o.IsDelivered && categories.Contains(o.Category) || o.Amount > 100 && o.Amount < 200,
+                schema.CollectionName);
+
+            var query2 = new Parser().ParseSql($"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200").ToQuery(schema);
+
+            Assert.AreEqual(query1.ToString(), query2.ToString());
+
+            
+
+            const int iterations = 1000;
+
+            {
+                var clock = new Stopwatch();
+                clock.Start();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    query1 = ExpressionTreeHelper.PredicateToQuery<Order>(
+                        o => o.IsDelivered && categories.Contains(o.Category) || o.Amount > 100 && o.Amount < 200,
+                        schema.CollectionName);
+                }
+
+                clock.Stop();
+
+                Console.WriteLine($"{iterations} iterations with linq took {clock.ElapsedMilliseconds} ms");
+            }
+
+            {
+                var clock = new Stopwatch();
+                clock.Start();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    query2 = new Parser().ParseSql($"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200").ToQuery(schema);
+                }
+
+                clock.Stop();
+
+                Console.WriteLine($"{iterations} iterations with sql took {clock.ElapsedMilliseconds} ms");
+            }
+
+
+
+        }
+
     }
+
+
+   
 }

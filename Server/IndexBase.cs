@@ -51,7 +51,7 @@ namespace Server
         /// <returns></returns>
         public abstract ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 
-        public IEnumerable<PackedObject> GetAll()
+        public virtual IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
         {
             throw new NotImplementedException();
         }
@@ -83,7 +83,7 @@ namespace Server
         /// Used only in full scan mode
         /// </summary>
         /// <returns></returns>
-        IEnumerable<PackedObject> GetAll();
+        IEnumerable<PackedObject> GetAll(bool descendingOrder = false);
 
         int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
     }
@@ -127,8 +127,12 @@ namespace Server
             return result;
         }
 
-        public IEnumerable<PackedObject> GetAll()
+        public IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
         {
+            if (descendingOrder)
+            {
+                throw new NotSupportedException("Descending order can be used only on ordered indexes");
+            }
             return _dictionary.Values;
         }
 

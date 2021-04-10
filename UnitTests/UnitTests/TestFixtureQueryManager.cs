@@ -317,5 +317,267 @@ namespace Tests.UnitTests
                 Console.WriteLine();
             }
         }
+
+        [Test]
+        public void Order_by()
+        {
+            var objects = GenerateOrders(100_000);
+
+            var schema = TypedSchemaFactory.FromType<Order>();
+
+            var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+
+
+            var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+            ds.InternalPutMany(packed, true);
+
+           
+            // empty query
+            {
+                var q = new OrQuery(schema.CollectionName) {OrderByProperty = "Amount"};
+
+                var qm = new QueryManager(ds);
+
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(objects.Count, result.Count);
+
+                // check sorted ascending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+
+
+                q.OrderByIsDescending = true;
+
+                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+                Assert.AreEqual(objects.Count, result.Count);
+
+                // check sorted descending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+            }
+
+            // atomic query
+            {
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered == false);
+
+                // result from linq2object to be compared with ordered query
+                var raw = objects.Where(o => o.IsDelivered == false).ToList();
+
+                q.OrderByProperty = "Amount";
+
+                var qm = new QueryManager(ds);
+
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                // check sorted ascending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+
+
+                q.OrderByIsDescending = true;
+
+                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+                Assert.AreEqual(raw.Count, result.Count);
+
+                // check sorted descending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+            }
+
+            // simple AND query
+            {
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered == false && o.Category == "geek");
+
+                var raw = objects.Where(o => o.IsDelivered == false && o.Category == "geek").ToList();
+
+                q.OrderByProperty = "Amount";
+
+                var qm = new QueryManager(ds);
+
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+
+
+                q.OrderByIsDescending = true;
+
+                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+            }
+
+            // complex OR query
+            {
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered == false && o.Category == "geek" || o.Category == "sf");
+
+                var raw = objects.Where(o => o.IsDelivered == false && o.Category == "geek" || o.Category == "sf").ToList();
+
+                q.OrderByProperty = "Amount";
+
+                var qm = new QueryManager(ds);
+
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+
+
+                q.OrderByIsDescending = true;
+
+                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                }
+
+                // check that TAKE operator is applied after ORDER BY
+                q.Take = 1;
+                var max = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).Single();
+
+                Assert.AreEqual(max.Amount, result[0].Amount);
+            }
+
+
+        }
+
+        [Test]
+        public void Distinct_operator()
+        {
+
+            var objects = GenerateOrders(100_000);
+
+            var schema = TypedSchemaFactory.FromType<Order>();
+
+            var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+
+
+            var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+            ds.InternalPutMany(packed, true);
+
+            // empty query
+            {
+                
+                // result from linq2object to be compared with query
+                var raw = objects.Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+
+                var q = new OrQuery(schema.CollectionName) {Distinct = true};
+                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
+                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+
+                var qm = new QueryManager(ds);
+
+               
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+            }
+
+            // atomic query
+            {
+                
+                // result from linq2object to be compared with query
+                var raw = objects.Where(o=>o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered);
+                q.Distinct = true;
+                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
+                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+
+                var qm = new QueryManager(ds);
+
+                
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+            }
+
+            // simple and query
+            {
+                
+                // result from linq2object to be compared with query
+                var raw = objects.Where(o=>o.IsDelivered && o.Amount < 100).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 100);
+                q.Distinct = true;
+                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
+                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+
+                var qm = new QueryManager(ds);
+
+                
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+            }
+
+            // complex or query
+            {
+                
+                // result from linq2object to be compared with query
+                var raw = objects.Where(o=>o.IsDelivered && o.Amount < 100 || o.Category =="sf" && o.Quantity >1).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o=> o.IsDelivered && o.Amount < 100 || o.Category =="sf" && o.Quantity >1);
+                q.Distinct = true;
+                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
+                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+
+                var qm = new QueryManager(ds);
+
+                
+                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+
+
+                Assert.AreEqual(raw.Count, result.Count);
+
+                q.Take = 3;
+                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                Assert.AreEqual(3, result.Count);
+
+            }
+        }
     }
 }

@@ -44,10 +44,11 @@ namespace Client.Core
         /// </summary>
         public int MergeTimeInMicroseconds { get; set; }
         
+        
         /// <summary>
-        /// Time to process a full-text query
+        /// Order time in microseconds
         /// </summary>
-        public int FulltextSearchTimeInMicroseconds { get; set; }
+        public int OrderTimeInMicroseconds { get; set; }
 
         public override string ToString()
         {
@@ -55,20 +56,22 @@ namespace Client.Core
 
             result.AppendLine($"Total execution time : {TotalTimeInMicroseconds} μs");
 
-            if (MergeTimeInMicroseconds != 0)
+            if (OrderTimeInMicroseconds != 0)
             {
-                result.AppendLine($"Merge time : {MergeTimeInMicroseconds} μs");
-            }
-
-            if (FulltextSearchTimeInMicroseconds != 0)
-            {
-                result.AppendLine($"Full-text search time : {FulltextSearchTimeInMicroseconds} μs");
+                result.AppendLine($"Order-by time : {OrderTimeInMicroseconds} μs");
             }
 
             if (DistinctTimeInMicroseconds != 0)
             {
                 result.AppendLine($"Distinct time : {DistinctTimeInMicroseconds} μs");
             }
+
+            if (MergeTimeInMicroseconds != 0)
+            {
+                result.AppendLine($"Merge time : {MergeTimeInMicroseconds} μs");
+            }
+
+            result.AppendLine();
 
             foreach (var queryPlan in QueryPlans)
             {
@@ -106,18 +109,18 @@ namespace Client.Core
 
         }
 
-        private TimeSpan _startFullText;
-        public void BeginFullText()
+
+        private TimeSpan _startOrderBy;
+        public void BeginOrderBy()
         {
-            _startFullText = _watch.Elapsed;
+            _startOrderBy = _watch.Elapsed;
         }
 
-        public void EndFullText()
+        public void EndOrderBy()
         {
             var elapsed = _watch.Elapsed;
 
-            FulltextSearchTimeInMicroseconds = (int) ((elapsed.TotalMilliseconds - _startFullText.TotalMilliseconds) * 1000);
-
+            OrderTimeInMicroseconds = (int) ((elapsed.TotalMilliseconds - _startOrderBy.TotalMilliseconds) * 1000);
         }
     }
 }

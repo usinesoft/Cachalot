@@ -45,6 +45,26 @@ namespace Server
             _data.Clear();
         }
 
+
+        public override IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
+        {
+            if (!descendingOrder)
+            {
+                foreach (var packedObject in _data)
+                {
+                    yield return packedObject;
+                }
+            }
+            else
+            {
+                for (int i = _data.Count-1; i >= 0; i--)
+                {
+                    yield return _data[i];
+                }
+            }
+            
+        }
+
         /// <summary>
         ///     Sort by specific key then by primary key
         /// </summary>

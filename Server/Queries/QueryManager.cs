@@ -25,7 +25,8 @@ namespace Server.Queries
         private readonly DataStore _dataStore;
 
         private readonly ILog _log;
-
+        
+        
         /// <summary>
         /// Internally used to select the most efficient indexes for a query
         /// </summary>
@@ -54,6 +55,8 @@ namespace Server.Queries
         {
             _dataStore = dataStore;
             _log = log;
+
+            
         }
 
 
@@ -112,7 +115,7 @@ namespace Server.Queries
             return result;
         }
 
-        IList<PackedObject> ProcessAndQuery(AndQuery query, Client.Core.ExecutionPlan executionPlan)
+        IList<PackedObject> ProcessAndQuery(AndQuery query, ExecutionPlan executionPlan)
         {
 
             if (query.Elements.Count == 1)
@@ -231,9 +234,10 @@ namespace Server.Queries
 
         }
 
-        public IList<PackedObject> ProcessQuery(OrQuery query, params int[] indexes)
+
+        private IList<PackedObject> InternalProcessQuery(OrQuery query)
         {
-            var executionPlan = new Client.Core.ExecutionPlan();
+            var executionPlan = new ExecutionPlan();
 
             try
             {
@@ -245,10 +249,12 @@ namespace Server.Queries
                 {
                     var all =  _dataStore.PrimaryIndex.GetAll().ToList();
 
-                    if (query.Distinct)
+                    
+                    if (query.OrderByProperty != null)
                     {
-                        return Distinct(all, executionPlan, indexes);
+                        return OrderBy(all.ToHashSet(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
                     }
+                
 
                     return all;
                 } 
@@ -258,7 +264,20 @@ namespace Server.Queries
 
                 if (atomicQuery != null)
                 {
-                    return ProcessSimpleQuery(atomicQuery, executionPlan);
+                    
+                    var res = ProcessSimpleQuery(atomicQuery, executionPlan);
+
+                   
+                    if (query.OrderByProperty != null)
+                    {
+                        return OrderBy(res.ToHashSet(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
+                    }
+                    else
+                    {
+                        return res;
+                    }
+                    
+                    
                 }
 
 
@@ -269,15 +288,13 @@ namespace Server.Queries
 
                     var set = ProcessAndQuery(andQuery, executionPlan);
 
-                    if (!query.Distinct)
+                    if (query.OrderByProperty != null)
                     {
-                        return set.ToList();
+                        return OrderBy(set.ToHashSet(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
                     }
-                    else
-                    {
-                        
-                        return Distinct(set, executionPlan, indexes);
-                    }
+
+                    return set.ToList();
+                    
                 }
 
                 // if multiple AndQueries run in parallel
@@ -304,17 +321,14 @@ namespace Server.Queries
 
                 executionPlan.EndMerge();
 
-                if (query.Distinct)
+                if (query.OrderByProperty != null)
                 {
-                   
-                    return Distinct(orResult, executionPlan, indexes);
-                }
-                else
-                {
-                    return orResult!.ToList();
+                    return OrderBy(orResult, query.OrderByProperty, query.OrderByIsDescending, executionPlan);
                 }
 
-
+               
+                return orResult!.ToList();
+                
             }
             finally
             {
@@ -326,7 +340,35 @@ namespace Server.Queries
             }
         }
 
-        IList<PackedObject> Distinct(IEnumerable<PackedObject> input, Client.Core.ExecutionPlan executionPlan, params int[] indexes)
+        private IList<PackedObject> OrderBy(HashSet<PackedObject> selectedItems, string orderByProperty,
+            in bool orderByIsDescending, ExecutionPlan executionPlan)
+        {
+
+            List<PackedObject> result = new List<PackedObject>(selectedItems.Count);
+            if (_dataStore.CollectionSchema.IndexFields.Any(f => f.Name == orderByProperty && f.IndexType == IndexType.Ordered))
+            {
+                executionPlan.BeginOrderBy();
+
+                var index = _dataStore.Index(orderByProperty);
+                foreach (var o in index.GetAll(orderByIsDescending))
+                {
+                    if (selectedItems.Contains(o))
+                    {
+                        result.Add(o);
+                    }
+                }
+
+                executionPlan.EndOrderBy();
+
+                return result;
+            }
+
+            throw new CacheException("Order by can be used only on an ordered index");
+
+
+        }
+
+        IList<PackedObject> Distinct(IEnumerable<PackedObject> input, ExecutionPlan executionPlan, params int[] indexes)
         {
             executionPlan.BeginDistinct();
 
@@ -353,7 +395,7 @@ namespace Server.Queries
         /// <param name="atomicQuery"></param>
         /// <param name="executionPlan">the global execution plan</param>
         /// <returns></returns>
-        private IList<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, Client.Core.ExecutionPlan executionPlan)
+        private IList<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, ExecutionPlan executionPlan)
         {
             var queryExecutionPlan = new QueryExecutionPlan(atomicQuery.ToString());
             executionPlan.QueryPlans.Add(queryExecutionPlan);
@@ -446,86 +488,26 @@ namespace Server.Queries
         }
 
 
-        public Client.Core.ExecutionPlan ExecutionPlan { get; private set; }
+        public ExecutionPlan ExecutionPlan { get; private set; }
 
         private void ProcessGetRequest(GetRequest request, IClient client)
         {
 
             try
             {
-                if (request.Query.OnlyIfComplete)
+
+                var query = request.Query;
+
+                var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause.Select(s => s.Name)
+                    .ToArray());
+
+                var result = ProcessQuery(query);
+
+                var aliases = query.SelectClause.Select(s => s.Alias).ToArray();
+
+                if (query.SelectClause.Count > 0)
                 {
-                    var domainDescription = _dataStore.DomainDescription;
-                    var dataIsComplete = domainDescription != null && domainDescription.IsFullyLoaded;
-
-                    if (!dataIsComplete && domainDescription != null && !domainDescription.DescriptionAsQuery.IsEmpty())
-                        dataIsComplete = request.Query.IsSubsetOf(domainDescription.DescriptionAsQuery);
-
-
-                    if (!dataIsComplete)
-                        throw new CacheException("Full data is not available for type " +
-                                                 _dataStore.CollectionSchema.CollectionName);
-                }
-
-                IList<PackedObject> result = new List<PackedObject>();
-
-
-                var indexes =
-                    _dataStore.CollectionSchema.IndexesOfNames(request.Query.SelectClause.Select(s => s.Name)
-                        .ToArray());
-
-                var aliases = request.Query.SelectClause.Select(s => s.Alias).ToArray();
-
-
-                // pure full-text search
-                if (request.Query.IsFullTextQuery && request.Query.IsEmpty())
-                {
-                    result = ProcessFullTextQuery(request.Query.FullTextSearch, request.Query.Take);
-                }
-                // mixed search : the result wil be the intersection of the full-text result and the query result
-                else if (request.Query.IsFullTextQuery)
-                {
-                    ISet<PackedObject> queryResult = new HashSet<PackedObject>();
-                    IList<PackedObject> ftResult = new List<PackedObject>();
-                    Parallel.Invoke(
-                        () => { queryResult = ProcessQuery(request.Query, indexes).ToHashSet(); },
-                        () => { ftResult = ProcessFullTextQuery(request.Query.FullTextSearch, request.Query.Take); });
-
-                    // the order will be the one in the full-text result (it is ranked by pertinence)
-                    foreach (var o in ftResult)
-                    {
-                        if (queryResult.Contains(o))
-                        {
-                            result.Add(o);
-                        }
-                    }
-
-                }
-                else // no full-text, simple query
-                {
-                    result = ProcessQuery(request.Query, indexes);
-                }
-
-                if (request.Query.Take != 0)
-                {
-                    result = result.Take(request.Query.Take).ToList();
-                }
-
-                if (result.Count == 1)
-                {
-                    _dataStore.Touch(result[0]);
-                }
-
-
-                _dataStore.IncrementReadCount();
-                if (result.Count > 0)
-                {
-                    _dataStore.IncrementHitCount();
-                }
-
-                if (request.Query.SelectClause.Count > 0)
-                {
-                    client.SendMany(result, indexes, aliases);
+                    client.SendMany(result, indexOfSelectedProperties, aliases);
                 }
                 else
                 {
@@ -541,6 +523,83 @@ namespace Server.Queries
                 _dataStore.ProcessEviction();
             }
             
+        }
+
+        public IList<PackedObject> ProcessQuery(OrQuery query)
+        {
+            if (query.OnlyIfComplete)
+            {
+                var domainDescription = _dataStore.DomainDescription;
+                var dataIsComplete = domainDescription != null && domainDescription.IsFullyLoaded;
+
+                if (!dataIsComplete && domainDescription != null && !domainDescription.DescriptionAsQuery.IsEmpty())
+                    dataIsComplete = query.IsSubsetOf(domainDescription.DescriptionAsQuery);
+
+
+                if (!dataIsComplete)
+                    throw new CacheException("Full data is not available for type " +
+                                             _dataStore.CollectionSchema.CollectionName);
+            }
+
+            IList<PackedObject> result = new List<PackedObject>();
+
+
+            // pure full-text search
+            if (query.IsFullTextQuery && query.IsEmpty())
+            {
+                result = ProcessFullTextQuery(query.FullTextSearch, query.Take);
+            }
+            // mixed search : the result wil be the intersection of the full-text result and the query result
+            else if (query.IsFullTextQuery)
+            {
+                ISet<PackedObject> queryResult = new HashSet<PackedObject>();
+                IList<PackedObject> ftResult = new List<PackedObject>();
+                Parallel.Invoke(
+                    () => { queryResult = InternalProcessQuery(query).ToHashSet(); },
+                    () => { ftResult = ProcessFullTextQuery(query.FullTextSearch, query.Take); });
+
+                // the order will be the one in the full-text result (it is ranked by pertinence)
+                foreach (var o in ftResult)
+                {
+                    if (queryResult.Contains(o))
+                    {
+                        result.Add(o);
+                    }
+                }
+            }
+            else // no full-text, simple query
+            {
+                result = InternalProcessQuery(query);
+            }
+
+            if (query.Distinct)
+            {
+                var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause.Select(s => s.Name)
+                    .ToArray());
+
+                result = Distinct(result, ExecutionPlan, indexOfSelectedProperties);
+            }
+
+            if (query.Take != 0)
+            {
+                result = result.Take(query.Take).ToList();
+            }
+
+            if (result.Count == 1)
+            {
+                _dataStore.Touch(result[0]);
+            }
+
+
+            _dataStore.IncrementReadCount();
+
+
+            if (result.Count > 0)
+            {
+                _dataStore.IncrementHitCount();
+            }
+
+            return result;
         }
 
         public void ProcessRequest(Request request, IClient client)
@@ -621,7 +680,7 @@ namespace Server.Queries
         }
 
 
-        public IList<PackedObject> ProcessFullTextQuery(string query, int take)
+        private IList<PackedObject> ProcessFullTextQuery(string query, int take)
         {
             return _dataStore.FullTextSearch(query, take);
         }

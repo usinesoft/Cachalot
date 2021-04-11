@@ -380,64 +380,80 @@ namespace Client.Interface
 
             HashSet<RankedItem> distinctSet = new HashSet<RankedItem>();
 
+            // for full-text queries the order is given by the result rank
+            // for normal queries order is either explicit (order by clause) or thy are unordered
             if (!query.IsFullTextQuery)
             {
-                var count = 0;
-                while (true)
+                // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
+                if (query.OrderByProperty == null)
                 {
-                    var allFinished = true;
-                    foreach (var clientResult in clientResults)
+
+                    var count = 0;
+                    while (true)
                     {
-                        // limit the number of returned object if Take linq extension method was used
-                        if (query.Take > 0 && count >= query.Take) yield break;
-
-                        if (clientResult.MoveNext())
+                        var allFinished = true;
+                        foreach (var clientResult in clientResults)
                         {
-                            allFinished = false;
+                            // limit the number of returned object if Take linq extension method was used
+                            if (query.Take > 0 && count >= query.Take) yield break;
 
-                            var current = clientResult.Current; 
-                            if (query.Distinct)
+                            if (clientResult.MoveNext())
                             {
-                                if (distinctSet.Add(clientResult.Current))
+                                allFinished = false;
+
+                                var current = clientResult.Current;
+                                if (query.Distinct)
+                                {
+                                    if (distinctSet.Add(clientResult.Current))
+                                    {
+                                        yield return current;
+                                    }
+                                }
+                                else
                                 {
                                     yield return current;
                                 }
+
+                                count++;
                             }
-                            else
-                            {
-                                yield return current;    
-                            }
-                            
-                            count++;
                         }
+
+                        if (allFinished) yield break;
+                    }
+                }
+
+                // if ordered merge results by preserving order (either ascending or descending)
+                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending, clientResults) )
+                {
+                    yield return item;
+                }
+            }
+            else
+            {
+                // for full text queries we have to merge all results and sort by rank
+                var all = new List<RankedItem>();
+
+                Parallel.ForEach(clientResults, r =>
+                {
+                    List<RankedItem> resultFromClient = new List<RankedItem>();
+                    while (r.MoveNext())
+                    {
+                        resultFromClient.Add(r.Current);
                     }
 
-                    if (allFinished) yield break;
+                    lock (all)
+                    {
+                        all.AddRange(resultFromClient);
+                    }
+
+                });
+
+                foreach (var item in all.OrderByDescending(ri => ri.Rank))
+                {
+                    yield return item;
                 }
             }
 
-            // for full text queries we have to merge all results and sort by rank
-            var all = new List<RankedItem>();
-
-            Parallel.ForEach(clientResults, r =>
-            {
-                List<RankedItem> resultFromClient = new List<RankedItem>();
-                while (r.MoveNext())
-                {
-                    resultFromClient.Add(r.Current);
-                }
-
-                lock (all)
-                {
-                    all.AddRange(resultFromClient);
-                }
-
-            });
-
-            foreach (var item in all.OrderByDescending(ri => ri.Rank))
-            {
-                yield return item;
-            }
         }
 
         public void ReleaseLock(Guid sessionId)

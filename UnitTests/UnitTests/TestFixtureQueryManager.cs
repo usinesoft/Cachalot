@@ -16,36 +16,7 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureQueryManager
     {
-        private static List<Order> GenerateOrders(int count)
-        {
-            var result = new List<Order>();
-
-            var categories = new[] {"geek", "camping", "sf", "food", "games"};
-
-            var rg = new Random(Environment.TickCount);
-
-            var date = new DateTimeOffset(2020, 01, 04, 0, 0, 0, TimeSpan.Zero);
-
-            for (var i = 0; i < count; i++)
-            {
-                result.Add(new Order
-                {
-                    Id = Guid.NewGuid(),
-                    Amount = rg.NextDouble() * 100,
-                    Category = categories[i % categories.Length],
-                    ClientId = i % 100,
-                    Date = date,
-                    IsDelivered = i % 2 == 0,
-                    ProductId = rg.Next(10, 100),
-                    Quantity = rg.Next(1, 5)
-                });
-
-                date = date.AddHours(1);
-            }
-
-
-            return result;
-        }
+        
 
         private static List<AllKindsOfProperties> GenerateAllKinds(int count)
         {
@@ -126,7 +97,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(count, predicates.Count);
 
-            var objects = GenerateOrders(1000);
+            var objects = Order.GenerateTestData(1000);
 
 
             var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
@@ -282,7 +253,7 @@ namespace Tests.UnitTests
 
             var count = queries.Count;
 
-            var objects = GenerateOrders(100_000);
+            var objects = Order.GenerateTestData(100_000);
 
             var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
 
@@ -321,7 +292,7 @@ namespace Tests.UnitTests
         [Test]
         public void Order_by()
         {
-            var objects = GenerateOrders(100_000);
+            var objects = Order.GenerateTestData(100_000);
 
             var schema = TypedSchemaFactory.FromType<Order>();
 
@@ -482,7 +453,7 @@ namespace Tests.UnitTests
         public void Distinct_operator()
         {
 
-            var objects = GenerateOrders(100_000);
+            var objects = Order.GenerateTestData(100_000);
 
             var schema = TypedSchemaFactory.FromType<Order>();
 

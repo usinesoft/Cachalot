@@ -9,6 +9,7 @@ using NUnit.Framework;
 using Tests.TestData;
 using Tests.TestData.Events;
 using Trade = Tests.TestData.Instruments.Trade;
+// ReSharper disable RedundantAssignment
 
 namespace Tests.IntegrationTests
 {
@@ -16,6 +17,9 @@ namespace Tests.IntegrationTests
     [Category("Performance")]
     public class TestFixturePersistenceWithExternalServer
     {
+
+     
+
         private readonly ClientConfig _config = new ClientConfig
         {
             IsPersistent = true,
@@ -278,7 +282,7 @@ namespace Tests.IntegrationTests
 
 
         [Test]
-        public void Take_and_skip_extension_methods()
+        public void Take_extension_methods()
         {
             const int items = 10000;
             using (var connector = new Connector(_config))
@@ -362,7 +366,7 @@ namespace Tests.IntegrationTests
                 var watch = new Stopwatch();
                 watch.Start();
                 
-                var pivot = dataSource.PreparePivotRequest(null)
+                var pivot = dataSource.PreparePivotRequest()
                     .OnAxis(o => o.Category, o => o.ProductId)
                     .AggregateValues(o=>o.Amount, o=>o.Quantity)
                     .Execute();
@@ -377,6 +381,70 @@ namespace Tests.IntegrationTests
 
                 Console.WriteLine(pivot);
             }
+        }
+
+        [Test]
+        public void Order_by_with_single_server()
+        {
+            
+            using var connector = new Connector(_config);
+
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            List<Order> orders = Order.GenerateTestData(10_000);
+
+            
+            dataSource.PutMany(orders);
+
+            // warm up
+            var _ = dataSource.Where(o => o.Category == "geek").ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            var noOrder = dataSource.Where(o => o.Category == "geek").ToList();
+
+            Console.WriteLine($"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
+
+            watch.Restart();
+
+            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+
+            Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
+                
+            Assert.AreEqual(noOrder.Count, ascending.Count); 
+
+            watch.Restart();
+
+            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+
+            Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
+                
+            Assert.AreEqual(noOrder.Count, descending.Count); 
+
+            // check that they are ordered
+            
+            // check sorted ascending
+            for (int i = 0; i < ascending.Count - 1; i++)
+            {
+                Assert.LessOrEqual((int)ascending[i].Amount*10000, (int)ascending[i+1].Amount *10000);
+            }
+
+            // check sorted descending
+            for (int i = 0; i < descending.Count - 1; i++)
+            {
+                Assert.GreaterOrEqual((int)descending[i].Amount*10000, (int)descending[i+1].Amount *10000);
+            }
+
+            watch.Stop();
+
+            
         }
 
     }

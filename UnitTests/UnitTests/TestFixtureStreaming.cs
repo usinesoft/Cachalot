@@ -410,23 +410,23 @@ namespace Tests.UnitTests
         }
 
 
-        private static IEnumerable<RankedItem> MakeEnumerable(params int[] values)
+        private static IEnumerator<RankedItem> MakeEnumerable(params int[] values)
         {
-            return values.Select(v =>
+
+            foreach (var value in values)
             {
-                var jobj = new JObject();
-                jobj.Add("value", new JValue(v));
+                var jobj = new JObject {{"value", new JValue(value)}};
 
-                return new RankedItem(0, jobj);
-
-            });
+                yield return new RankedItem(0, jobj);
+            }
+            
         }
 
          [Test]
-        public void TestMergingSortedEnumerable()
+        public void TestMergingSortedEnumerableAscending()
         {
             {
-                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(1, 2, 4), MakeEnumerable(1, 3, 5),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false,MakeEnumerable(1, 2, 4), MakeEnumerable(1, 3, 5),
                     MakeEnumerable(1, 5, 6, 18)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
@@ -438,7 +438,7 @@ namespace Tests.UnitTests
             }
 
             {
-                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
                     MakeEnumerable(2, 2, 2, 2)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
@@ -450,7 +450,7 @@ namespace Tests.UnitTests
             }
 
             {
-                var ordered = OrderByHelper.MixEnumerable("value", MakeEnumerable(10, 11, 12), MakeEnumerable(1, 2, 3),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false,MakeEnumerable(10, 11, 12), MakeEnumerable(1, 2, 3),
                     MakeEnumerable(21, 22, 23, 24)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
@@ -458,6 +458,46 @@ namespace Tests.UnitTests
                 for (int i = 0; i < ordered.Count - 1; i++)
                 {
                     Assert.LessOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
+        }
+
+        [Test]
+        public void TestMergingSortedEnumerableDescending()
+        {
+            {
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true,MakeEnumerable(4, 2, 1), MakeEnumerable(5, 3, 1),
+                    MakeEnumerable(18, 6, 5, 1)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
+
+            {
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
+                    MakeEnumerable(2, 2, 2, 2)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
+                }
+            }
+
+            {
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true,MakeEnumerable(12, 11, 10), MakeEnumerable(3, 2, 1),
+                    MakeEnumerable(24, 23, 22, 21)).ToList();
+
+                Assert.AreEqual(10, ordered.Count);
+
+                for (int i = 0; i < ordered.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int) ordered[i].Item["value"], (int)ordered[i+1].Item["value"]);
                 }
             }
         }

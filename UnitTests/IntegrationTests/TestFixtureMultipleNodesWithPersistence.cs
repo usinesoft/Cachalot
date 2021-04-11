@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -164,6 +165,67 @@ namespace Tests.IntegrationTests
                 var sameFixings = dataSource.Where(e => e.EventType == "FIXING").ToList();
                 CollectionAssert.AreEqual(fixings, sameFixings);
             }
+        }
+
+
+        [Test]
+        public void Test_order_by()
+        {
+            using var connector = new Connector(_clientConfig);
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            List<Order> orders = Order.GenerateTestData(10_000);
+
+            
+            dataSource.PutMany(orders);
+
+            // warm up
+            var _ = dataSource.Where(o => o.Category == "geek").ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            var noOrder = dataSource.Where(o => o.Category == "geek").ToList();
+
+            Console.WriteLine($"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
+
+            watch.Restart();
+
+            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+
+            Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
+                
+            Assert.AreEqual(noOrder.Count, ascending.Count); 
+
+            watch.Restart();
+
+            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+
+            Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
+                
+            Assert.AreEqual(noOrder.Count, descending.Count); 
+
+            // check that they are ordered
+            
+            // check sorted ascending
+            for (int i = 0; i < ascending.Count - 1; i++)
+            {
+                Assert.LessOrEqual((int)ascending[i].Amount*10000, (int)ascending[i+1].Amount *10000);
+            }
+
+            // check sorted descending
+            for (int i = 0; i < descending.Count - 1; i++)
+            {
+                Assert.GreaterOrEqual((int)descending[i].Amount*10000, (int)descending[i+1].Amount *10000);
+            }
+
+            watch.Stop();
         }
 
         [Test]

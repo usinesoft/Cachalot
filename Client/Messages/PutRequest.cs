@@ -38,7 +38,7 @@ namespace Client.Messages
         ///     Create a put request for a specified .NET <see cref="Type" />
         /// </summary>
         /// <param name="type"></param>
-        public PutRequest(Type type) : base(DataAccessType.Write, type.FullName)
+        public PutRequest(Type type) : base(DataAccessType.Write, type.Name)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
         }

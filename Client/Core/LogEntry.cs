@@ -10,6 +10,9 @@ namespace Client.Core
     /// </summary>
     public class LogEntry
     {
+
+        public static readonly string Table = "@ACTIVITY";
+
         #region entry types
 
         public static readonly string Select = "SELECT";
@@ -26,6 +29,9 @@ namespace Client.Core
 
         [ServerSideValue(IndexType.Dictionary)]
         public string Type { get; set; }
+
+        [ServerSideValue(IndexType.Dictionary)]
+        public string CollectionName { get; set; }
 
         [ServerSideValue(IndexType.Ordered)]
         public int ExecutionTimeInMicroseconds { get; set; }

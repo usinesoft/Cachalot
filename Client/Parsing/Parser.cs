@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
-namespace Server.Parsing
+namespace Client.Parsing
 {
     public class Parser
     {
@@ -10,17 +10,33 @@ namespace Server.Parsing
         {
             var tokens = Tokenizer.TokenizeOneLine(line);
 
-            if (tokens.FirstOrDefault().Is("select")) return ParseSelect(tokens.TrimLeft("select"));
+            if (tokens.FirstOrDefault().Is("select"))
+            {
+                var root = new Node {Token = "select"};
+                return ParseQuery(tokens.TrimLeft("select"), root);
+            }
 
-            return new Node {ErrorMessage = "select keyword not found"};
+            if (tokens.FirstOrDefault().Is("count"))
+            {
+                var root = new Node {Token = "count"};
+                return ParseQuery(tokens.TrimLeft("select"), root);
+            }
+
+            if (tokens.FirstOrDefault().Is("explain"))
+            {
+                var root = new Node {Token = "count"};
+                return ParseQuery(tokens.TrimLeft("select"), root);
+            }
+
+            return new Node {ErrorMessage = "first keyword should be SELECT, COUNT or EXPLAIN"};
         }
 
-        private Node ParseSelect(IList<Token> tokens)
+        private Node ParseQuery(IList<Token> tokens, Node result)
         {
-            // a complete result will have the following children in this order: distinct, projection, table, where, order, take, skip
-            var result = new Node {Token = "select"};
+            // a complete result will have the following children in this order: distinct, projection, table, where, order, take
+            
 
-            var partsBySeparator = tokens.Split("from", "where", "take", "order");
+            var partsBySeparator = tokens.Split("from", "where", "take", "order by", "into");
 
 
             // parse the projection (can be nothing or * (the same result), ~ = all the server-side values, or an explicit list of properties with optional aliases
@@ -99,7 +115,7 @@ namespace Server.Parsing
             if (partsBySeparator.TryGetValue("take", out var afterTake)) // a take clause is present
             {
                 
-                if (afterTake.Count == 1) // oly one number can be preset after tha take clause
+                if (afterTake.Count == 1) // only one number can be preset after tha take clause
                 {
                     
                     var takeCount = afterTake[0].NormalizedText;
@@ -122,45 +138,63 @@ namespace Server.Parsing
                 }
             }
 
+            // parse the "into" clause
+            if (partsBySeparator.TryGetValue("into", out var afterInto)) // a take clause is present
+            {
+
+                if (afterInto.Count >= 1) // into is an optional clause that needs to specify a file name
+                {
+
+                    var fileName = new StringBuilder();
+                    foreach (var token in afterInto)
+                    {
+                        fileName.Append(token.Text);
+                    }
+
+                    var intoNode = new Node{Token = "into"};
+                    intoNode.Children.Add(new Node{Token = fileName.ToString() });
+                    result.Children.Add(intoNode);
+
+
+                    return result;
+                }
+
+                result.ErrorMessage = "error in INTO clause";
+                return result;
+            }
+
             // parse the order clause
-            if (partsBySeparator.TryGetValue("order", out var afterOrder)) // a take clause is present
+            if (partsBySeparator.TryGetValue("order by", out var afterOrder)) // a take clause is present
             {
                 
-                if (afterOrder.Count >=2 && afterOrder.Count <= 3 ) // after order, "by" and property name are mandatory; "descending" is optional in the last position
+                if (afterOrder.Count >=1 && afterOrder.Count <= 2 ) // after "order by", property name is mandatory; "descending" is optional in the last position
                 {
                     
-                    var by = afterOrder[0].NormalizedText;
-                    if (by != "by")
+                    var propertyName = afterOrder[0].NormalizedText;
+
+                    var orderNode = new Node{Token = "order"};
+                    orderNode.Children.Add(new Node{Token = propertyName });
+
+
+                    if (afterOrder.Count > 1)
                     {
-                        result.ErrorMessage = "error in order clause";
-                    }
-                    else
-                    {
-                        var propertyName = afterOrder[1].NormalizedText;
-
-                        var orderNode = new Node{Token = "order"};
-                        orderNode.Children.Add(new Node{Token = propertyName });
-
-
-                        if (afterOrder.Count > 2)
+                        var descending = afterOrder[1].NormalizedText;
+                        if (descending != "descending")
                         {
-                            var descending = afterOrder[2].NormalizedText;
-                            if (descending != "descending")
-                            {
-                                result.ErrorMessage = "error in order clause";
-                            }
-                            else
-                            {
-                                orderNode.Children.Add(new Node{Token = "descending" });
-                            }
-
+                            result.ErrorMessage = "error in order clause";
                         }
-                        
+                        else
+                        {
+                            orderNode.Children.Add(new Node{Token = "descending" });
+                        }
 
-                        result.Children.Add(orderNode);
                     }
+
+
+                    result.Children.Add(orderNode);
+                    
    
-                }
+                } 
                 else
                 {
                     result.ErrorMessage = "error in order clause";

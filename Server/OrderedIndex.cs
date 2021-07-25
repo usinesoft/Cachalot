@@ -37,7 +37,7 @@ namespace Server
             _tempData = new List<PackedObject>();
         }
 
-        public override bool IsOrdered => true;
+        public override IndexType IndexType => IndexType.Ordered;
 
 
         public override void Clear()

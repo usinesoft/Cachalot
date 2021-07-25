@@ -192,7 +192,7 @@ namespace Server.Transactions
                 return;
             }
 
-            var lockAcquired = _lockManager.TryAcquireWriteLock(transactionId, Constants.DelayForLock, types.ToArray());
+            var lockAcquired = _lockManager.TryAcquireWriteLock(transactionId, Constants.DelayForLockInMilliseconds, types.ToArray());
 
             if (lockAcquired)
             {

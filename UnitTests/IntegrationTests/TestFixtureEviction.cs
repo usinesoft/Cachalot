@@ -175,7 +175,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void TtlEviction()
         {
-            _client.ConfigEviction(typeof(CacheableTypeOk).FullName, EvictionType.TimeToLive, 0, 0, 1000);
+            _client.ConfigEviction(nameof(CacheableTypeOk), EvictionType.TimeToLive, 0, 0, 1000);
 
             
             // this one should be evicted because it will expire

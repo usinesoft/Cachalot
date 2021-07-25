@@ -1,4 +1,4 @@
-﻿namespace Server.Parsing
+﻿namespace Client.Parsing
 {
     public enum CharClass
     {

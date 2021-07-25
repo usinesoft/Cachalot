@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Client.Core;
 using Client.Queries;
 
-namespace Server.Parsing
+namespace Client.Parsing
 {
     public static class SqlExtensions
     {
@@ -14,12 +13,17 @@ namespace Server.Parsing
 
             OrQuery result = null;
 
-            if (node.Token == "select")
+            if (node.Token == "select" || node.Token == "count") 
             {
                 result = SelectToQuery(node, schema);
             }
 
             QueryHelper.OptimizeQuery(result);
+
+            if (node.Token == "count")
+            {
+                result!.CountOnly = true;
+            }
 
             return result;
         }

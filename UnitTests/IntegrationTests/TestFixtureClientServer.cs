@@ -206,7 +206,7 @@ namespace Tests.IntegrationTests
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 2);
 
-            var collectionName = typeof(CacheableTypeOk).FullName ?? throw new InvalidOperationException();
+            var collectionName = typeof(CacheableTypeOk).Name ?? throw new InvalidOperationException();
 
             var desc = _client.GetServerDescription();
             var hits = desc.DataStoreInfoByFullName[collectionName].HitCount;

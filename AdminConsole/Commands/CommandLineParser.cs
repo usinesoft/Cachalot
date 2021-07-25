@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
+using Client.Parsing;
 using Client.Queries;
 
 #endregion
@@ -34,7 +34,7 @@ namespace AdminConsole.Commands
         private CollectionSchema GetTypeDescriptionByName(string name)
         {
             foreach (var keyValuePair in _knownTypes)
-                if (keyValuePair.Value.TypeName.ToUpper() == name.ToUpper())
+                if (keyValuePair.Value.CollectionName.ToUpper() == name.ToUpper())
                     return keyValuePair.Value;
 
 
@@ -69,8 +69,10 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "DUMP comand needs one parameter";
+                    result.ErrorMessage = "DUMP command needs one parameter";
                 }
+
+                return result;
             }
 
             //RESTORE source_directory
@@ -88,11 +90,13 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Restore comand needs one parameter";
+                    result.ErrorMessage = "Restore command needs one parameter";
                 }
+
+                return result;
             }
 
-            //RESTORE source_directory
+            //IMPORT source_directory
             if (Parse(command, "^IMPORT\\s*(.*)", atoms))
             {
                 result = new CommandImport {CmdType = CommandType.Import};
@@ -107,8 +111,10 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Import comand needs one parameter";
+                    result.ErrorMessage = "Import command needs one parameter";
                 }
+
+                return result;
             }
 
             //RECREATE source directory
@@ -126,8 +132,10 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Recreate comand needs one parameter";
+                    result.ErrorMessage = "Recreate command needs one parameter";
                 }
+
+                return result;
             }
 
             //HELP command/HELP
@@ -150,70 +158,51 @@ namespace AdminConsole.Commands
                     result.Success = false;
                     result.ErrorMessage = "usage HELP or HELP <command>";
                 }
-            }
-            //LAST lines
-            else if (Parse(command, "^LAST\\s*(.*)", atoms))
-            {
-                result = new CommandLast {CmdType = CommandType.Log};
 
-
-                if (atoms.Count == 1)
-                {
-                    var lines = atoms[0];
-                    if (int.TryParse(lines, out _))
-                    {
-                        result.Params.Add(lines);
-                        result.Success = true;
-                    }
-                }
-                else if (atoms.Count == 0)
-                {
-                    result.Params.Add("1");
-                    result.Success = true;
-                }
-                else
-                {
-                    result.Success = false;
-                    result.ErrorMessage = "LAST comand has at most one parameter";
-                }
+                return result;
             }
+            
 
             //EXIT
-            else if (Parse(command, "^EXIT", atoms))
+            if (Parse(command, "^EXIT", atoms))
             {
                 result = new CommandBase {CmdType = CommandType.Exit, Success = true};
                 result.Success = true;
+                return result;
             }
 
             //STOP
-            else if (Parse(command, "^STOP", atoms))
+            if (Parse(command, "^STOP", atoms))
             {
-                result = new CommandStop
+                return new CommandStop
                 {
                     CmdType = CommandType.Stop,
                     Success = true
                 };
+
+                
             }
 
             //STOP
-            else if (Parse(command, "^DROP", atoms))
+            if (Parse(command, "^DROP", atoms))
             {
-                result = new CommandDrop
+                return new CommandDrop
                 {
                     CmdType = CommandType.Drop,
                     Success = true
                 };
             }
 
-            else if (Parse(command, "^READONLY", atoms))
+            if (Parse(command, "^READONLY", atoms))
             {
-                result = new CommandReadOnly
+                return new CommandReadOnly
                 {
                     CmdType = CommandType.ReadOnly,
                     Success = true
                 };
             }
-            else if (Parse(command, "^READWRITE", atoms))
+
+            if (Parse(command, "^READWRITE", atoms))
             {
                 result = new CommandReadWrite
                 {
@@ -222,48 +211,58 @@ namespace AdminConsole.Commands
                 };
             }
 
-            else if (Parse(command, "(^SELECT\\s+FROM|SELECT)\\s+(.+)\\s+(WHERE)\\s+(.+)", atoms))
+            if (command.Trim().ToLower().StartsWith("select"))
             {
                 result = new CommandSelect {CmdType = CommandType.Select};
 
-                if (atoms.Count != 4)
+                try
                 {
-                    Logger.WriteEror("Invalid syntax for SELECT. Type HELP SELECT for more information");
-                }
-                else
+                    var sqlParser = new Parser();
+                    var selectNode = sqlParser.ParseSql(command);
+                    var table = selectNode.Children.FirstOrDefault(n => n.Token == "from")?.Children.FirstOrDefault()
+                        ?.Token;
+
+                    if (table == null)
+                    {
+                        throw new NotSupportedException("Invalid syntax for SELECT. No table name");
+                    
+                    }
+
+                
+                    var schema = GetTypeDescriptionByName(table);
+
+                    if (schema == null)
+                    {
+                        throw new NotSupportedException($"Unknown table {table}");
+                    }
+
+                    var query = selectNode.ToQuery(schema);
+                    result.Query = query;
+
+                    var intoFile = selectNode.Children.FirstOrDefault(n => n.Token == "into")?.Children.FirstOrDefault()
+                        ?.Token;
+
+                    if (intoFile != null)
+                    {
+                        result.Params.Add(intoFile);
+                    }
+
+                    result.Success = true;
+                } 
+                catch (Exception e)
                 {
-                    result.Params.Add(atoms[1]); //table
-                    result.Params.Add(atoms[3]); //query
+                    Logger.WriteEror($"Error in command {e.Message}");
 
-                    try
-                    {
-                        var typeDescription = GetTypeDescriptionByName(atoms[1]);
-                        var builder = new QueryBuilder(typeDescription);
-
-                        var query = atoms[3];
-
-                        if (query.ToLower().Contains("into"))
-                        {
-                            var parts = query.Split(new[] {"into", "INTO"}, StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length == 2)
-                            {
-                                query = parts[0].Trim();
-                                // add a parameter for the file name 
-                                result.Params.Add(parts[1].Trim());
-                            }
-                        }
-
-                        result.Query = builder.GetManyWhere(query);
-                        result.Success = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.WriteEror("Invalid WHERE clause: {0}. Type HELP SELECT for more information",
-                            ex.Message);
-                    }
+                    result.Success = false;
                 }
+
+                return result;
+
             }
-            else if (Parse(command, "(^SEARCH)\\s+([a-zA-Z0-9\\.]+)\\s+(.+)", atoms))
+            
+            
+            //TODO
+            if (Parse(command, "(^SEARCH)\\s+([a-zA-Z0-9\\.]+)\\s+(.+)", atoms))
             {
                 result = new CommandSearch {CmdType = CommandType.Search};
 
@@ -279,13 +278,15 @@ namespace AdminConsole.Commands
                     try
                     {
                         var typeDescription = GetTypeDescriptionByName(atoms[1]);
-                        var builder = new QueryBuilder(typeDescription);
+                        
 
                         var ftQuery = atoms[2];
 
-                        result.Query = builder.GetMany();
-                        result.Query.FullTextSearch = ftQuery;
-                        result.Query.Take = 10;// limit the number of results when searching in admin console
+                        result.Query = new OrQuery(typeDescription.CollectionName)
+                        {
+                            FullTextSearch = ftQuery, Take = 10
+                        };
+                        // limit the number of results when searching in admin console
                         result.Success = true;
                     }
                     catch (Exception ex)
@@ -312,7 +313,7 @@ namespace AdminConsole.Commands
                     {
                         var typeDescription = GetTypeDescriptionByName(atoms[1]);
                         var builder = new QueryBuilder(typeDescription);
-                        result.Query = builder.GetManyWhere(atoms[3]);
+                        result.Query = builder.FromSql(atoms[3]);
                         result.Success = true;
                     }
                     catch (Exception ex)
@@ -366,7 +367,7 @@ namespace AdminConsole.Commands
                         var builder = new QueryBuilder(typeDescription);
 
                         if (atoms.Count == 4)
-                            result.Query = builder.GetManyWhere(atoms[3]);
+                            result.Query = builder.FromSql(atoms[3]);
                         else
                             result.Query = new OrQuery(typeDescription.CollectionName);
 
@@ -396,7 +397,7 @@ namespace AdminConsole.Commands
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "DESC comand has at most one parameter";
+                    result.ErrorMessage = "DESC command has at most one parameter";
                 }
             }
             //CONNECT server port or CONNECT config.xml
@@ -421,12 +422,12 @@ namespace AdminConsole.Commands
         }
 
         /// <summary>
-        ///     Match a regular expression against a string. If successfull return the captured strings
+        ///     Match a regular expression against a string. If successful return the captured strings
         /// </summary>
         /// <param name="toParse">string to parse</param>
         /// <param name="regex">regular expression as text</param>
         /// <param name="captures">list to be filled with captured strings</param>
-        /// <returns>true if successfull match</returns>
+        /// <returns>true if successful match</returns>
         private static bool Parse(string toParse, string regex, ICollection<string> captures)
         {
             var expression = new Regex(regex, RegexOptions.IgnoreCase);

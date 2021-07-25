@@ -30,7 +30,7 @@ namespace Tests
             var unused = queryable.Where(where).ToList();
 
             var query = executor.Expression;
-            query.CollectionName = typeof(T).FullName;
+            query.CollectionName = typeof(T).Name;
 
             return query;
         }
@@ -57,7 +57,7 @@ namespace Tests
             
 
             var query = executor.Expression;
-            query.CollectionName = typeof(T).FullName;
+            query.CollectionName = typeof(T).Name;
 
             return query;
         }
@@ -76,7 +76,7 @@ namespace Tests
             
             var query = executor.Expression;
             
-            query.CollectionName = typeof(T).FullName;
+            query.CollectionName = typeof(T).Name;
 
             return query;
         }

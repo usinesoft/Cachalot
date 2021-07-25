@@ -21,13 +21,13 @@ namespace Tests.IntegrationTests
         public void Init()
         {
             _serverChannel1 = new TcpServerChannel();
-            _server1 = new Server.Server(new NodeConfig()) { Channel = _serverChannel1 };
+            _server1 = new Server.Server(new NodeConfig {DataPath = "server1"}) { Channel = _serverChannel1 };
             _serverPort1 = _serverChannel1.Init();
             _serverChannel1.Start();
             _server1.Start();
 
             _serverChannel2 = new TcpServerChannel();
-            _server2 = new Server.Server(new NodeConfig()) { Channel = _serverChannel2 };
+            _server2 = new Server.Server(new NodeConfig {DataPath = "server2"}) { Channel = _serverChannel2 };
             _serverPort2 = _serverChannel2.Init();
             _serverChannel2.Start();
             _server2.Start();

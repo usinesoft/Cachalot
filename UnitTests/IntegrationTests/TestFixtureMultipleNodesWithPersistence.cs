@@ -1385,6 +1385,12 @@ namespace Tests.IntegrationTests
             var result3 = dataSource.Select(o => o.ClientId).ToList();
             Assert.AreEqual(1, result3.Count);
             Assert.AreEqual(101, result3[0]);
+
+            // select all with take
+
+            var result4 = dataSource.Take(1).ToList();
+            Assert.AreEqual(1, result4.Count);
+
         }
 
         [Test]
@@ -1463,6 +1469,35 @@ namespace Tests.IntegrationTests
 
 
             
+        }
+
+
+        [Test]
+        public void Sql_queries()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(10_000);
+
+            dataSource.PutMany(testData);
+
+            var r1 = dataSource.SqlQuery("select from order").ToList();
+            Assert.AreEqual(10_000, r1.Count);
+
+            var r2 = dataSource.SqlQuery("select from order take 10").ToList();
+            Assert.AreEqual(10, r2.Count);
+
+            // querying an unknown collection should throw an exception
+            Assert.Throws<CacheException>(() => dataSource.SqlQuery("select from no_table take 10").ToList());
+
+            var r3 = dataSource.SqlQuery("select distinct Category from order").ToList();
+            Assert.AreEqual(5, r3.Count);
+
+
         }
 
         [Test]

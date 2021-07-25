@@ -41,7 +41,7 @@ namespace Server.Queries
                     int count = ProcessPutRequest(putRequest);
                     watch.Stop();
 
-                    _log?.LogActivity("PUT", (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
+                    _log?.LogActivity("PUT", putRequest.CollectionName, (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
 
                     client?.SendResponse(new ItemsCountResponse {ItemsCount = count});
                 }

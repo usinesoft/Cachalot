@@ -44,13 +44,13 @@
     <None Update="node_config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="node_config_4848.json">
+    <None Update="node_config_01.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="node_config_4851.json">
+    <None Update="node_config_02.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="node_config_4852.json">
+    <None Update="node_config_03.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="server_readme.html">
@@ -62,13 +62,13 @@
     <None Update="publish.cmd">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-    <None Update="start4852.cmd">
+    <None Update="start03.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="start4851.cmd">
+    <None Update="start02.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="start4848.cmd">
+    <None Update="start01.cmd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

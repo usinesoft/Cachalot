@@ -117,13 +117,11 @@ namespace Client.Core
         {
             if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));
 
-            var name = collectionName.Split('.').Last();
 
             return new FluentToken(new CollectionSchema
             {
                 CollectionName = collectionName,
                 UseCompression = useCompression,
-                TypeName = name
             });
         }
     }

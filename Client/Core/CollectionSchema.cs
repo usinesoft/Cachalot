@@ -51,12 +51,6 @@ namespace Client.Core
         public string CollectionName { get; set; }
 
 
-        /// <summary>
-        ///     Short type name. May be the same as CollectionName. If CollectionName is a full type name with namespaces this will be the simple name
-        /// </summary>
-        [ProtoMember(3)]
-        public string TypeName { get; set; }
-
         [ProtoMember(4)] public bool UseCompression { get; set; }
 
         /// <summary>
@@ -81,7 +75,7 @@ namespace Client.Core
 
         public int OrderOf(string name)
         {
-            var property = ServerSide.FirstOrDefault(k => k.Name == name);
+            var property = ServerSide.FirstOrDefault(k => k.Name.ToLower() == name.ToLower());
             if (property != null)
                 return property.Order;
 
@@ -90,9 +84,9 @@ namespace Client.Core
 
         public int[] IndexesOfNames(params string[] names)
         {
-            var byName = ServerSide.ToDictionary(v => v.Name, v => v.Order);
+            var byName = ServerSide.ToDictionary(v => v.Name.ToLower(), v => v.Order);
 
-            return names.Select(n=>byName[n]).ToArray();
+            return names.Select(n=>byName[n.ToLower()]).ToArray();
         }
         /// <summary>
         /// </summary>
@@ -109,9 +103,7 @@ namespace Client.Core
             if (!Equals(CollectionName, collectionSchema.CollectionName))
                 return false;
 
-            if (!Equals(TypeName, collectionSchema.TypeName))
-                return false;
-
+            
             if (!Equals(UseCompression, collectionSchema.UseCompression))
                 return false;
 

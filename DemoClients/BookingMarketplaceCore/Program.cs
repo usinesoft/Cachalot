@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Cachalot.Linq;
+using Client.Core.Linq;
 using Client.Interface;
 
 
@@ -121,7 +122,7 @@ namespace BookingMarketplace
             return result;
         }
 
-        private static void Main(string[] args)
+        private static void Main()
         {
             var config = new ClientConfig
             {
@@ -131,13 +132,12 @@ namespace BookingMarketplace
             try
             {
                 // quick test with external server
-                using (var connector = new Connector(config))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("test with external server");
-                    Console.WriteLine("---------------------------");
-                    PerfTest(connector);
-                }
+                using var connector = new Connector(config);
+                
+                Console.WriteLine();
+                Console.WriteLine("test with external server");
+                Console.WriteLine("---------------------------");
+                PerfTest(connector);
             }
             catch (CacheException e)
             {
@@ -147,13 +147,12 @@ namespace BookingMarketplace
             try
             {
                 // quick test with in-process server
-                using (var connector = new Connector(new ClientConfig { IsPersistent = true }))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("test with in-process server");
-                    Console.WriteLine("---------------------------");
-                    PerfTest(connector);
-                }
+                using var connector = new Connector(new ClientConfig { IsPersistent = true });
+                
+                Console.WriteLine();
+                Console.WriteLine("test with in-process server");
+                Console.WriteLine("---------------------------");
+                PerfTest(connector);
             }
             catch (CacheException e)
             {
@@ -167,10 +166,11 @@ namespace BookingMarketplace
             // first delete all data to start with a clean database
             connector.AdminInterface().DropDatabase();
 
+            connector.DeclareCollection<Home>();
 
-            var properties = connector.DataSource<Home>();
+            var homes = connector.DataSource<Home>();
 
-            var ids = connector.GenerateUniqueIds("property_id", 1);
+            var ids = connector.GenerateUniqueIds("home_id", 1);
 
             var property = new Home
             {
@@ -187,19 +187,19 @@ namespace BookingMarketplace
             // warm up
 
             // this is an insert
-            properties.Put(property);
+            homes.Put(property);
 
-            var reloaded = properties.First(p => p.Id == property.Id);
+            var reloaded = homes.First(p => p.Id == property.Id);
 
             // this is an update
-            properties.Put(property);
+            homes.Put(property);
 
             // performance test
 
             var watch = new Stopwatch();
 
             watch.Start();
-            for (var i = 0; i < TestIterations; i++) properties.Put(property);
+            for (var i = 0; i < TestIterations; i++) homes.Put(property);
 
             watch.Stop();
 
@@ -207,7 +207,7 @@ namespace BookingMarketplace
 
             watch.Reset();
             watch.Start();
-            for (var i = 0; i < TestIterations; i++) reloaded = properties.First(p => p.Id == property.Id);
+            for (var i = 0; i < TestIterations; i++) reloaded = homes.First(p => p.Id == property.Id);
 
             watch.Stop();
 
@@ -215,7 +215,7 @@ namespace BookingMarketplace
 
             watch.Reset();
             watch.Start();
-            for (var i = 0; i < TestIterations; i++) reloaded = properties[property.Id];
+            for (var i = 0; i < TestIterations; i++) reloaded = homes[property.Id];
 
             watch.Stop();
 
@@ -240,7 +240,7 @@ namespace BookingMarketplace
             watch.Reset();
             watch.Start();
 
-            properties.PutMany(items);
+            homes.PutMany(items);
 
             watch.Stop();
 
@@ -252,7 +252,7 @@ namespace BookingMarketplace
             watch.Start();
 
             IList<Home> inParis = new List<Home>();
-            for (var i = 0; i < 10; i++) inParis = properties.Where(p => p.Town == "Paris").ToList();
+            for (var i = 0; i < 10; i++) inParis = homes.Where(p => p.Town == "Paris").ToList();
 
             watch.Stop();
 
@@ -264,7 +264,7 @@ namespace BookingMarketplace
 
             IList<Home> inParisNotExpensiveWithManyRooms = new List<Home>();
             for (var i = 0; i < 10; i++)
-                inParisNotExpensiveWithManyRooms = properties
+                inParisNotExpensiveWithManyRooms = homes
                     .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
                     .ToList();
 
@@ -279,7 +279,7 @@ namespace BookingMarketplace
 
             IList<Home> inParisAvailableToday = new List<Home>();
             for (var i = 0; i < 10; i++)
-                inParisAvailableToday = properties
+                inParisAvailableToday = homes
                     .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
                     .ToList();
 
@@ -293,7 +293,7 @@ namespace BookingMarketplace
 
             IList<Home> inParisAvailableTomorrow = new List<Home>();
             for (var i = 0; i < 10; i++)
-                inParisAvailableTomorrow = properties
+                inParisAvailableTomorrow = homes
                     .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today.AddDays(1)))
                     .ToList();
 
@@ -306,7 +306,7 @@ namespace BookingMarketplace
             watch.Reset();
             watch.Start();
 
-            properties.PutMany(inParisNotExpensiveWithManyRooms);
+            homes.PutMany(inParisNotExpensiveWithManyRooms);
 
             watch.Stop();
 
@@ -322,7 +322,7 @@ namespace BookingMarketplace
 
             IList<Home> result1 = new List<Home>();
             for (var i = 0; i < 10; i++)
-                result1 = properties.FullTextSearch("Nice beach").ToList();
+                result1 = homes.FullTextSearch("Nice beach").ToList();
 
             watch.Stop();
 
@@ -338,7 +338,7 @@ namespace BookingMarketplace
 
             IList<Home> result2 = new List<Home>();
             for (var i = 0; i < 10; i++)
-                result2 = properties.FullTextSearch("close metro").ToList();
+                result2 = homes.FullTextSearch("close metro").ToList();
 
             watch.Stop();
 
@@ -353,7 +353,7 @@ namespace BookingMarketplace
 
             IList<Home> result3 = new List<Home>();
             for (var i = 0; i < 10; i++)
-                result3 = properties.FullTextSearch("rue de la mort").Take(10).ToList();
+                result3 = homes.FullTextSearch("rue de la mort").Take(10).ToList();
 
             watch.Stop();
 
@@ -367,7 +367,7 @@ namespace BookingMarketplace
             watch.Reset();
             watch.Start();
 
-            properties.DeleteMany(p =>
+            homes.DeleteMany(p =>
                 p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
 
             watch.Stop();

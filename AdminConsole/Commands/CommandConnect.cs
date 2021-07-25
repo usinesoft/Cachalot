@@ -15,7 +15,7 @@ namespace AdminConsole.Commands
             try
             {
                 // server or cluster my be specified as 
-                // hostname                 => single node mode port defaults to 4848
+                // hostname                 => single node mode port defaults to 48401
                 // hostname port            => single node mode
                 // hostname: port           => single node mode
                 // config.xml               => single node or cluster specified as configuration file
@@ -27,7 +27,7 @@ namespace AdminConsole.Commands
 
                 if (!singleServerMode) server = Params[0];
 
-                var port = 4848;
+                var port = Constants.DefaultPort;
 
                 if (Params.Count > 0) server = Params[0];
                 if (Params.Count > 1) port = int.Parse(Params[1]);

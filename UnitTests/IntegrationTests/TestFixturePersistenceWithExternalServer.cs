@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Cachalot.Linq;
 using Client.Core.Linq;
@@ -17,8 +18,35 @@ namespace Tests.IntegrationTests
     [Category("Performance")]
     public class TestFixturePersistenceWithExternalServer
     {
+        private const int ServerPort = 48402;
 
-     
+        private Process _process;
+
+        [OneTimeSetUp]
+        public void StartServer()
+        {
+            var path = "../../../../bin/Release/Server/netcoreapp3.1";
+
+            var fullPath = Path.Combine(path, "server.exe");
+
+            var currentDir = Directory.GetCurrentDirectory();
+
+            _process = new Process
+            {
+                StartInfo = {FileName = fullPath, Arguments = "02", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal}
+            };
+
+            _process.Start();
+        }
+
+
+        [OneTimeTearDown]
+        public void StopServer()
+        {
+            
+            _process.Kill(true);
+            _process.WaitForExit();
+        }
 
         private readonly ClientConfig _config = new ClientConfig
         {
@@ -28,10 +56,12 @@ namespace Tests.IntegrationTests
                 new ServerConfig
                 {
                     Host = "localhost",
-                    Port = 6666
+                    Port = 48402
                 }
             }
         };
+
+        
 
 
         [Test]
@@ -46,7 +76,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "localhost",
-                        Port = 6666
+                        Port = 48402
                     }
                 }
             };
@@ -67,7 +97,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "127.0.0.1",
-                        Port = 6666
+                        Port = 48402
                     }
                 }
             };
@@ -88,7 +118,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "::1",
-                        Port = 6666
+                        Port = 48402
                     }
                 }
             };
@@ -100,7 +130,7 @@ namespace Tests.IntegrationTests
             }
 
             // works with connection string too
-            using (var connector = new Connector("localhost:6666"))
+            using (var connector = new Connector("localhost:48402"))
             {
                 connector.GenerateUniqueIds("event", 1);
             }

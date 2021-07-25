@@ -6,6 +6,7 @@ using Channel;
 using Client.Core;
 using Newtonsoft.Json;
 using Server.Persistence;
+using Constants = Channel.Constants;
 
 namespace Server
 {
@@ -30,7 +31,7 @@ namespace Server
         {
             try
             {
-                var configFile = Constants.NodeConfigFileName;
+                var configFile = Persistence.Constants.NodeConfigFileName;
 
                 if (instance != null)
                 {
@@ -74,7 +75,7 @@ namespace Server
                 _listener.Init(nodeConfig.TcpPort);
                 
 
-                var fullDataPath = Path.GetFullPath(nodeConfig.DataPath ?? Constants.DataPath);
+                var fullDataPath = Path.GetFullPath(nodeConfig.DataPath ?? Persistence.Constants.DataPath);
 
                 var persistentDescription = nodeConfig.IsPersistent ? fullDataPath : " NO";
 

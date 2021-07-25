@@ -13,14 +13,14 @@ namespace AdminConsole
     {
         private static void Main(string[] args)
         {
-            // by default conect to the local server
+            // by default connect to the local server
             var server = "localhost";
             if (args.Length > 0)
                 server = args[0];
 
-
             // default port
-            var port = 4848;
+            var port = Constants.DefaultPort;
+
             if (args.Length > 1)
                 if (int.TryParse(args[1], out var customPort))
                     port = customPort;
@@ -50,7 +50,7 @@ namespace AdminConsole
 
                 //Profiler.Logger = new ProfileOutput(Console.Out);
                 var parser = new CommandLineParser(serverDesc);
-                Logger.Write("Type HELP for command list. Advanced autocompletion is also available");
+                Logger.Write("Type HELP for command list. Advanced auto-completion is also available");
 
                 ConsoleExt.SetLine(">>");
 
@@ -108,10 +108,12 @@ namespace AdminConsole
                             var shiftPressed = (result.Modifiers & ConsoleModifiers.Shift) != 0;
                             var cyclingDirection =
                                 shiftPressed ? CyclingDirections.Backward : CyclingDirections.Forward;
-                            line = result.LineBeforeKeyPress.LineBeforeCursor.TrimStart('>');
+                            
+                            var lineBefore = result.LineBeforeKeyPress.LineBeforeCursor.TrimStart('>');
+                            var lineAfter = result.LineBeforeKeyPress.LineAfterCursor;
 
                             var autoCompletedLine =
-                                cyclingAutoComplete.AutoComplete(line, cyclingDirection);
+                                cyclingAutoComplete.AutoComplete(lineBefore, lineAfter, cyclingDirection);
 
                             ConsoleExt.SetLine(">>" + autoCompletedLine);
                             break;

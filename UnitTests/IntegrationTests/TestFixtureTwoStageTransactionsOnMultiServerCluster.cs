@@ -267,7 +267,7 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account {Id = accountIds[1], Balance = 0});
 
 
-                // make a many transfer between two accounts
+                // make a many transfers between two accounts
 
                 {
                     var transferredMoney = 334;
@@ -349,6 +349,75 @@ namespace Tests.IntegrationTests
 
                 Assert.AreEqual(0, transfers.Count());
             }
+        }
+
+        [Test]
+        public void Delete_many_in_transaction()
+        {
+            using var connector = new Connector(_clientConfig);
+            
+            connector.DeclareCollection<Account>("delete_test");
+
+            const int count = 2000;
+            const int classes = 10;
+            
+            var accountIds = connector.GenerateUniqueIds("account_id", count);
+
+            var accounts = connector.DataSource<Account>("delete_test");
+
+            var all = new List<Account>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var acc = new Account {Id = accountIds[i], Balance = i % classes};
+                all.Add(acc);
+            }
+
+            accounts.PutMany(all);
+
+            Assert.AreEqual(count, accounts.Count());
+            
+            Assert.AreEqual(count / classes, accounts.Count(acc=>acc.Balance == 3));
+
+            var random = new Random(Environment.TickCount);
+
+            Parallel.Invoke(
+                () =>
+            {
+
+                for (int i = 0; i < classes; i++)
+                {
+                    var transaction = connector.BeginTransaction();
+                    transaction.DeleteMany<Account>(acc=> acc.Balance == i, "delete_test");
+                    transaction.Commit();
+                    Thread.Sleep(random.Next(200));
+                }
+            },
+                () =>
+                {
+                    var notDeleted = count;
+
+                    while (notDeleted > 0)
+                    {
+                        connector.ConsistentRead(ctx =>
+                        {
+                            notDeleted = accounts.Count();
+
+                            var chunkSize = count / classes;
+
+                            
+
+                            Assert.AreEqual(0, notDeleted % chunkSize, "only complete chunks are deleted");
+
+                            Console.WriteLine($"found {notDeleted} items");
+
+                        }, "delete_test");
+
+                        Thread.Sleep(random.Next(200));
+                    }
+                        
+                   
+                });
         }
 
         [Test]
@@ -821,7 +890,7 @@ namespace Tests.IntegrationTests
                                     Assert.AreEqual(sumTransferred,myAccounts[1].Balance);
 
 
-                                }, typeof(MoneyTransfer).FullName, typeof(Account).FullName);
+                                }, nameof(MoneyTransfer), nameof(Account));
 
                                 
 

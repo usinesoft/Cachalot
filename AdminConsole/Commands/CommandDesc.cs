@@ -35,7 +35,7 @@ namespace AdminConsole.Commands
                 {
                     var tableName = Params[0];
                     foreach (var typeDescription in serverInfo.Schema)
-                        if (tableName.ToUpper() == typeDescription.TypeName.ToUpper())
+                        if (tableName.ToUpper() == typeDescription.CollectionName.ToUpper())
                         {
                             LogTypeInfo(typeDescription);
                             break;
@@ -47,7 +47,7 @@ namespace AdminConsole.Commands
                     {
                         Logger.Write("");
                         Logger.Write("Server process");
-                        Logger.Write("----------------------------------------------------------------------------");
+                        Logger.Write("------------------------------------------------------------------");
 
                         //Logger.Write("    server name  = {0}", serverInfo.ServerProcessInfo.Host);
                         Logger.Write("      image type = {0} bits", info.Bits);
@@ -61,26 +61,29 @@ namespace AdminConsole.Commands
                     }
 
                     Logger.Write("Tables");
-                    Logger.Write("-----------------------------------------------------------------------------");
+                    
 
                     var header =
-                        $"| {"Name",15} | {"Zip",5} |";
-
+                        $"| {"Name",35} | {"Zip",5} |";
+                    
+                    var  line = new string('-', header.Length);
+                    
+                    Logger.Write(line);
                     Logger.Write(header);
-                    Logger.Write("-----------------------------------------------------------------------------");
+                    Logger.Write(line);
 
                     foreach (var typeDescription in serverInfo.Schema)
                     {
                         var compression = typeDescription.UseCompression.ToString();
 
 
-                        Logger.Write("| {0,15} | {1,5} |",
-                            typeDescription.TypeName,
+                        Logger.Write("| {0,35} | {1,5} |",
+                            typeDescription.CollectionName,
                             compression
                         );
                     }
 
-                    Logger.Write("-----------------------------------------------------------------------------");
+                    Logger.Write(line);
                 }
 
 
@@ -102,22 +105,24 @@ namespace AdminConsole.Commands
         private static void LogTypeInfo(CollectionSchema desc)
         {
             Logger.Write("");
-            Logger.Write("{0} ({1})", desc.TypeName.ToUpper(), desc.CollectionName);
-            Logger.Write("-------------------------------------------------------------------------------------------");
-            var header = $"| {"property",25} | {"index type",13} | {"data type",9} | {"ordered",8} | {"full txt",8}| {"server-side",10}|";
+            Logger.Write("{0} ({1})", desc.CollectionName.ToUpper(), desc.CollectionName);
+            var header = $"| {"property",45} | {"index type",13} |";
+
+            var  line = new string('-', header.Length);
+
+            Logger.Write(line);
+            
 
             Logger.Write(header);
-            Logger.Write("-------------------------------------------------------------------------------------------");
+            Logger.Write(line);
 
-            Logger.Write(desc.PrimaryKeyField.ToString());
+            
+            foreach (var keyInfo in desc.ServerSide)
+            {
+                Logger.Write($"| {keyInfo.Name,45} | {keyInfo.IndexType,13} | ");
+            }
 
-            foreach (var keyInfo in desc.UniqueKeyFields) Logger.Write(keyInfo.ToString());
-
-            foreach (var keyInfo in desc.IndexFields) Logger.Write(keyInfo.ToString());
-
-            foreach (var keyInfo in desc.ServerSide) Logger.Write(keyInfo.ToString());
-
-            Logger.Write("-------------------------------------------------------------------------------------------");
+            Logger.Write(line);
         }
     }
 }

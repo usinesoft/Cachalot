@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Client.Core;
 using Client.Interface;
 
 
@@ -7,14 +8,14 @@ namespace BookingMarketplace
 {
     public class Home
     {
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Id { get; set; }
 
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string CountryCode { get; set; }
 
         [FullTextIndexation]
-        [Index(KeyDataType.StringKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public string Town { get; set; }
         
         [FullTextIndexation]
@@ -26,16 +27,16 @@ namespace BookingMarketplace
 
         public string OwnerPhone { get; set; }
 
-        [Index(KeyDataType.IntKey, ordered:true)]
+        [ServerSideValue(IndexType.Ordered)]
         public int Rooms { get; set; }
 
-        [Index(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public int Bathrooms { get; set; }
 
-        [Index(KeyDataType.IntKey, ordered:true)]
+        [ServerSideValue(IndexType.Ordered)]
         public decimal PriceInEuros { get; set; }
 
-        [Index(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Dictionary)]
         public List<DateTime> AvailableDates { get; set; } = new List<DateTime>(); 
     
         [FullTextIndexation]

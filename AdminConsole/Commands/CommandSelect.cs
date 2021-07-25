@@ -33,12 +33,12 @@ namespace AdminConsole.Commands
                 Profiler.IsActive = true;
                 Profiler.Start("SELECT");
 
-                listResult = client.GetMany(Query).Select(r=>r.Item).Cast<JObject>().ToList();
+                listResult = client.GetMany(Query).Select(r=>r.Item).ToList();
 
                 var dumpOk = true;
 
-                // the third parameter(optional) is the output file name
-                if (Params.Count == 3) dumpOk = Logger.DumpFile(Params[2]);
+                // if an into clause was specified the file name is in the single optional parameter
+                if (Params.Count == 1) dumpOk = Logger.DumpFile(Params[0]);
 
                 if (dumpOk)
                 {
@@ -51,17 +51,17 @@ namespace AdminConsole.Commands
 
                     Logger.Write("]");
 
-                    if (Params.Count == 3) Logger.EndDump();
+                    if (Params.Count == 1) Logger.EndDump();
                 }
             }
             catch (CacheException ex)
             {
-                Logger.WriteEror("Can not execute GET : {0} {1}", ex.Message, ex.ServerMessage);
+                Logger.WriteEror("Can not execute SELECT : {0} {1}", ex.Message, ex.ServerMessage);
                 return client;
             }
             catch (Exception ex)
             {
-                Logger.WriteEror("Can not execute GET : {0}", ex.Message);
+                Logger.WriteEror("Can not execute SELECT : {0}", ex.Message);
                 return client;
             }
             finally

@@ -26,10 +26,5 @@ namespace Client.Tools
                     .Compile();
         }
 
-        public static string PropertyKey(this PropertyInfo propertyInfo)
-        {
-            // ReSharper disable once PossibleNullReferenceException
-            return propertyInfo.DeclaringType.FullName + "." + propertyInfo.Name;
-        }
     }
 }

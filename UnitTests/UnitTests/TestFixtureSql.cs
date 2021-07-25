@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.Linq;
 using Client.Core;
 using Client.Messages;
+using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
-using Server.Parsing;
 using Tests.TestData;
 
 namespace Tests.UnitTests

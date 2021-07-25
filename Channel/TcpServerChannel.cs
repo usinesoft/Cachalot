@@ -101,9 +101,9 @@ namespace Channel
                         break;
 
                     // if its a simple ping do not expect a request
-                    if (inputType == Consts.PingCookie)
+                    if (inputType == Constants.PingCookie)
                     {
-                        clientStream.WriteByte(Consts.PingCookie);
+                        clientStream.WriteByte(Constants.PingCookie);
                     }
                     else
                     {
@@ -122,6 +122,7 @@ namespace Channel
 
                         if (request.IsSimple)
                         {
+                            // ReSharper disable once RedundantAssignment
                             var ackOkay = Streamer.ReadAck(clientStream);
                             Debug.Assert(ackOkay);
                         }
@@ -165,21 +166,20 @@ namespace Channel
 
             public bool? ShouldContinue()
             {
-                var receiveTimeout = 0;
                 try
                 {
                     SendResponse(new ReadyResponse());
 
-                    receiveTimeout = _tcpClient.ReceiveTimeout;
+                    
 
 #if !DEBUG
-                    _tcpClient.ReceiveTimeout = Consts.ClientTimeoutInMilliseconds;
+                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
 #endif
 
                     Stream stream = _tcpClient.GetStream();
 
                     var cookie = stream.ReadByte();
-                    if (cookie != Consts.RequestCookie) return null;
+                    if (cookie != Constants.RequestCookie) return null;
 
                     var answer = Streamer.FromStream<Request>(stream);
 
@@ -197,11 +197,6 @@ namespace Channel
                 {
                     return null;
                 }
-            }
-
-            public void WaitForAck()
-            {
-                Streamer.ReadAck(_tcpClient.GetStream());
             }
 
             public void SendResponse(Response response)
@@ -229,7 +224,7 @@ namespace Channel
                     Stream stream = _tcpClient.GetStream();
 
                     // if less items than a threshold serialize into a buffer so the read-lock can be released immediately
-                    if (items.Count < Consts.StreamingThreshold)
+                    if (items.Count < Constants.StreamingThreshold)
                     {
                         var memStream = new MemoryStream();
                         Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);

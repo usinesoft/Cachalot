@@ -9,6 +9,10 @@ using Client.Queries;
 namespace Client.Messages.Pivot
 {
     
+    /// <summary>
+    /// A pivot definition has three components. A filter expressed as a query, an ordered list of aggregation axis, a list of properties to aggregate
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class PivotDefinition<T> 
     {
         private readonly IDataClient _client;

@@ -109,8 +109,7 @@ namespace Client.Messages
 
         public override string ToString()
         {
-            return
-                $"| {Name,25} | {IndexType,13} |";
+            return $"{nameof(Name)}: {Name}, {nameof(IndexType)}: {IndexType}, {nameof(Order)}: {Order}, {nameof(IsCollection)}: {IsCollection}";
         }
     }
 }

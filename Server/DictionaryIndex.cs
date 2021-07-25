@@ -30,7 +30,7 @@ namespace Server
             _data = new Dictionary<KeyValue, HashSet<PackedObject>>();
         }
 
-        public override bool IsOrdered => false;
+        public override IndexType IndexType => IndexType.Dictionary;
 
         public override void BeginFill()
         {

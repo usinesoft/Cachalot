@@ -271,8 +271,7 @@ namespace Client.Interface
             schema = schema.Clone();
 
             schema.CollectionName = collectionName;
-            schema.TypeName = collectionName;
-
+            
             var request = new RegisterTypeRequest(schema, shard == -1 ? ShardIndex:shard, ShardsCount);
 
             var response = Channel.SendRequest(request);

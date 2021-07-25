@@ -168,7 +168,7 @@ namespace Tests.UnitTests
         [Test]
         public void FluentDescriptionIsEquivalentToTheOldOne()
         {
-            var description = SchemaFactory.New("Tests.TestData.Order")
+            var description = SchemaFactory.New("Order")
                 .PrimaryKey("Id")
                 .WithServerSideValue("Amount", IndexType.Ordered)
                 .WithServerSideValue("Quantity")

@@ -35,16 +35,19 @@ namespace Server.HostServices.Logger
 
         public DataStore ActivityTable { get; set; } 
 
-        public void LogActivity(string type, int executionTimeInMicroseconds, string detail, string query = null, ExecutionPlan plan = null)
+        public void LogActivity(string type, string collectionName, int executionTimeInMicroseconds, string detail,
+            string query = null, ExecutionPlan plan = null)
         {
             // log in the file
             Log(LogLevel.Info, $"{detail} took {executionTimeInMicroseconds} μs");
 
-            // log in the special @ACTIVITY table
+            // log in the special @ACTIVITY table unless the log concerns the @ACTIVITY table itself
+            if (collectionName == LogEntry.Table)
+                return;
 
             lock (_messageQueue)
             {
-                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(type, executionTimeInMicroseconds, detail, query, plan));
+                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(collectionName, executionTimeInMicroseconds, detail, query, plan));
             }
 
         }
@@ -108,7 +111,7 @@ namespace Server.HostServices.Logger
 
             // initialize the @ACTIVITY table
             var schema = TypedSchemaFactory.FromType<LogEntry>();
-            schema.CollectionName = "@ACTIVITY";
+            schema.CollectionName = LogEntry.Table;
 
             ActivityTable = new DataStore(schema, new LruEvictionPolicy(20_000, 1000), new FullTextConfig() );
 
@@ -152,7 +155,7 @@ namespace Server.HostServices.Logger
                     List<PackedObject> entries = new List<PackedObject>();
                     foreach (var item in newItems.Where(i=>i.Entry != null))
                     {
-                        entries.Add(PackedObject.Pack(item.Entry, schema, "@ACTIVITY"));
+                        entries.Add(PackedObject.Pack(item.Entry, schema, LogEntry.Table));
                     }
 
                     ActivityTable.InternalPutMany(entries, false);

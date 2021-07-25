@@ -176,7 +176,7 @@ namespace AdminConsole.ConsoleUtils
 
             SetConsoleActionForNonCtrlModifierCombinations(ConsoleKey.D8, new InsertCharacterAction());
 
-            SetDefaultConsoleActionForCtrlModifierCombinations(new IgnoreAction());
+            SetDefaultConsoleActionForCtrlModifierCombinations(new InsertCharacterAction());
             SetConsoleActionForCtrlModifierCombinations(ConsoleKey.H, new BackspaceAction());
             SetConsoleActionForCtrlModifierCombinations(ConsoleKey.Backspace, new RemovePrecedingAction());
             SetConsoleActionForCtrlModifierCombinations(ConsoleKey.LeftArrow, new MoveCursorToBeginAction());

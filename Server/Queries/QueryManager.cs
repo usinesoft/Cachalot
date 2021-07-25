@@ -72,42 +72,34 @@ namespace Server.Queries
             foreach (var atomicQuery in andQuery.Elements)
             {
                 var name = atomicQuery.PropertyName;
+                
+                var index = _dataStore.TryGetIndex(name);
+
                 if (atomicQuery.Operator == QueryOperator.Eq || atomicQuery.Operator == QueryOperator.In || atomicQuery.Operator == QueryOperator.Contains)
                 {
+                    
+
                     // for primary or unique key we do not need more than one index 
-                    if (_dataStore.CollectionSchema.PrimaryKeyField.Name == name)
+                    if (index.IndexType == IndexType.Primary || index.IndexType == IndexType.Unique)
                     {
-                        var primary = _dataStore.PrimaryIndex;
                         
                         // no need to count for the primary index. Waste of time as it wil always be the only index used
-                        return new List<IndexRanking>{new IndexRanking(primary, atomicQuery, -1)};
+                        return new List<IndexRanking>{new IndexRanking(index, atomicQuery, -1)};
                     }
 
-                    if (_dataStore.CollectionSchema.UniqueKeyFields.Any(f => f.Name == name))
-                    {
-                        var unique = _dataStore.UniqueIndex(name);
-                        
-                        // no need to count for the unique index. Waste of time as it wil always be the only index used
-                        return new List<IndexRanking>{new IndexRanking(unique, atomicQuery, -1)};
-                    }
+                    var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
+                    result.Add(new IndexRanking(index, atomicQuery, indexResultCount));
 
-                    if (_dataStore.CollectionSchema.IndexFields.Any(f => f.Name == name))
-                    {
-                        var index = _dataStore.Index(name);
-                        var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
-
-                        result.Add(new IndexRanking(index, atomicQuery, indexResultCount));
-                    }
                 }
                 else if(atomicQuery.IsComparison) // in this case we can only use ordered indexes
                 {
-                    if (_dataStore.CollectionSchema.IndexFields.Any(f => f.Name == name && f.IndexType == IndexType.Ordered))
+                    if (index != null && index.IndexType == IndexType.Ordered)
                     {
-                        var index = _dataStore.Index(name);
                         var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
 
                         result.Add(new IndexRanking(index, atomicQuery, indexResultCount));
                     }
+                    
                 }
 
             }
@@ -335,7 +327,7 @@ namespace Server.Queries
                 executionPlan.End();
                 ExecutionPlan = executionPlan;
 
-                _log?.LogActivity("QUERY", executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
+                _log?.LogActivity("QUERY", query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
 
             }
         }
@@ -345,11 +337,14 @@ namespace Server.Queries
         {
 
             List<PackedObject> result = new List<PackedObject>(selectedItems.Count);
-            if (_dataStore.CollectionSchema.IndexFields.Any(f => f.Name == orderByProperty && f.IndexType == IndexType.Ordered))
+
+            var index = _dataStore.TryGetIndex(orderByProperty);
+
+            if (index.IndexType == IndexType.Ordered)
             {
                 executionPlan.BeginOrderBy();
 
-                var index = _dataStore.Index(orderByProperty);
+                
                 foreach (var o in index.GetAll(orderByIsDescending))
                 {
                     if (selectedItems.Contains(o))
@@ -418,58 +413,56 @@ namespace Server.Queries
             }
 
 
+            var index = _dataStore.TryGetIndex(atomicQuery.PropertyName);
 
-            if (_dataStore.CollectionSchema.IndexFields.Any(f => f.Name == atomicQuery.PropertyName))
+            if (index != null)
             {
-                var index = _dataStore.Index(atomicQuery.PropertyName);
-
-                if (index != null)
+                
+                if (atomicQuery.Operator == QueryOperator.Eq) // works with all kinds of indexes
                 {
-                    if (atomicQuery.Operator == QueryOperator.Eq) // works with all kinds of indexes
+                    try
                     {
-                        try
-                        {
-                            queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
-                            queryExecutionPlan.StartIndexUse();
+                        queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
+                        queryExecutionPlan.StartIndexUse();
 
-                            return index.GetMany(atomicQuery.Values).ToList();
-                        }
-                        finally
-                        {
-                            queryExecutionPlan.EndIndexUse();
-                        }
+                        return index.GetMany(atomicQuery.Values).ToList();
                     }
-
-                    if (index.IsOrdered && atomicQuery.IsComparison)
+                    finally
                     {
-                        try
-                        {
-                            queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
-                            queryExecutionPlan.StartIndexUse();
-
-                            return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
-                        }
-                        finally
-                        {
-                            queryExecutionPlan.EndIndexUse();
-                        }
+                        queryExecutionPlan.EndIndexUse();
                     }
-
-                    if (atomicQuery.Operator == QueryOperator.In || atomicQuery.Operator == QueryOperator.Contains && !index.IsOrdered)
-                    {
-                        try
-                        {
-                            queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
-                            queryExecutionPlan.StartIndexUse();
-
-                            return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
-                        }
-                        finally
-                        {
-                            queryExecutionPlan.EndIndexUse();
-                        }
-                    } 
                 }
+
+                if (index.IndexType == IndexType.Ordered && atomicQuery.IsComparison)
+                {
+                    try
+                    {
+                        queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
+                        queryExecutionPlan.StartIndexUse();
+
+                        return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
+                    }
+                    finally
+                    {
+                        queryExecutionPlan.EndIndexUse();
+                    }
+                }
+
+                if (atomicQuery.Operator == QueryOperator.In || atomicQuery.Operator == QueryOperator.Contains)
+                {
+                    try
+                    {
+                        queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
+                        queryExecutionPlan.StartIndexUse();
+
+                        return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
+                    }
+                    finally
+                    {
+                        queryExecutionPlan.EndIndexUse();
+                    }
+                } 
+            
 
             }
 

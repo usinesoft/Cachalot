@@ -35,8 +35,12 @@ namespace Channel
             {
                 var client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}, NoDelay = true};
 
-                client.Connect(_address, _port);
+                var result = client.BeginConnect(_address, _port, null, null);
 
+                var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
+
+                if (!success)
+                    return null;
 
                 return client;
             }
@@ -57,13 +61,13 @@ namespace Channel
             try
             {
                 var stream = tcp.GetStream();
-                stream.WriteByte(Consts.PingCookie); // ping 
+                stream.WriteByte(Constants.PingCookie); // ping 
                 var pingAnswer = stream.ReadByte();
 
                 // this should never happen. 
-                if (pingAnswer != Consts.PingCookie) throw new NotSupportedException("Wrong answer to ping request");
+                if (pingAnswer != Constants.PingCookie) throw new NotSupportedException("Wrong answer to ping request");
 
-                return pingAnswer == Consts.PingCookie;
+                return pingAnswer == Constants.PingCookie;
             }
             catch (Exception)
             {

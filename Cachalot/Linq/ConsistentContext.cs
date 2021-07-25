@@ -25,7 +25,7 @@ namespace Cachalot.Linq
 
         public IQueryable<T> Collection<T>(string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             if(!AvailableCollections.Contains(collectionName))
                 throw new NotSupportedException($"The collection {collectionName} is not available in this context");

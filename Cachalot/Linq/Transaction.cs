@@ -32,7 +32,7 @@ namespace Cachalot.Linq
 
         public void Put<T>(T item, string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             var packed = Pack(item, collectionName);
 
@@ -59,7 +59,7 @@ namespace Cachalot.Linq
         /// <param name="collectionName"></param>
         public void UpdateIf<T>(T newValue, Expression<Func<T, bool>> test, string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             var packed = Pack(newValue, collectionName);
 
@@ -93,9 +93,11 @@ namespace Cachalot.Linq
             return query;
         }
 
+
+        //TODO to be tested
         public void DeleteMany<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             var query = PredicateToQuery(where, collectionName);
 
@@ -109,7 +111,7 @@ namespace Cachalot.Linq
        
         public void Delete<T>(T item, string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             var packed = Pack(item, collectionName);
 

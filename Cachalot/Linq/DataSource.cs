@@ -7,9 +7,9 @@ using Client.Core.Linq;
 using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
+using Client.Parsing;
 using Client.Queries;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
 using Remotion.Linq;
 using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
 using Remotion.Linq.Parsing.Structure;
@@ -17,7 +17,6 @@ using Remotion.Linq.Parsing.Structure.NodeTypeProviders;
 
 namespace Cachalot.Linq
 {
-
     /// <summary>
     ///     All data access and update methods. Implements a powerful linq provider
     /// </summary>
@@ -30,29 +29,31 @@ namespace Cachalot.Linq
         }
 
         private readonly IDataClient _client;
-        
+
         /// <summary>
-        /// This one is mandatory
+        ///     This one is mandatory
         /// </summary>
         private readonly CollectionSchema _collectionSchema;
-        
-        
+
+
         private readonly string _collectionName;
 
-        PackedObject Pack(T item)
+        private PackedObject Pack(T item)
         {
             return PackedObject.Pack(item, _collectionSchema, _collectionName);
         }
 
         /// <summary>
-        /// If all the parameters are null the DataSource can be used only to convert an expression to a query, not to manipulate data 
+        ///     If all the parameters are null the DataSource can be used only to convert an expression to a query, not to
+        ///     manipulate data
         /// </summary>
         /// <param name="connector"></param>
         /// <param name="collectionName"></param>
         /// <param name="collectionSchema"></param>
         /// <param name="sessionId"></param>
-        internal DataSource([NotNull] Connector connector, [NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema, Guid sessionId = default)
-            : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema, sessionId, collectionName ))
+        internal DataSource([NotNull] Connector connector, [NotNull] string collectionName,
+            [NotNull] CollectionSchema collectionSchema, Guid sessionId = default)
+            : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema, sessionId, collectionName))
         {
             if (connector == null) throw new ArgumentNullException(nameof(connector));
 
@@ -61,7 +62,6 @@ namespace Cachalot.Linq
             _collectionName = collectionName ?? throw new ArgumentNullException(nameof(collectionName));
 
             _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
-
         }
 
 
@@ -89,7 +89,8 @@ namespace Cachalot.Linq
             {
                 var query = new QueryBuilder(_collectionSchema).GetOne(primaryKey);
                 query.CollectionName = _collectionName;
-                return _client.GetMany( query).Select(ri=>((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer)).FirstOrDefault();
+                return _client.GetMany(query).Select(ri => ri.Item.ToObject<T>(SerializationHelper.Serializer))
+                    .FirstOrDefault();
             }
         }
 
@@ -142,15 +143,25 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        ///     Only used in cache-only mode (no persistence). Can activate Less Recently Used eviction for a data type.
+        ///     Only used in cache-only mode (no persistence). Eviction is activated by collection.
+        ///     Two types of eviction are supported for now: LRU (Less Recently Used) or TTL (Time To Live)
+        ///     In LRU mode the
+        ///     <param name="limit"></param>
+        ///     and
+        ///     <param name="itemsToRemove"></param>
+        ///     are used
+        ///     In TTL mode only
+        ///     <param name="timeLimitInMilliseconds"></param>
+        ///     is used
         ///     When the <paramref name="limit" /> is reached the less recently used  <paramref name="itemsToRemove" /> items are
         ///     evicted
         /// </summary>
-        /// <param name="evictionType"></param>
-        /// <param name="limit"></param>
-        /// <param name="itemsToRemove"></param>
-        /// <param name="timeLimitInMilliseconds"></param>
-        public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100, int timeLimitInMilliseconds = 0)
+        /// <param name="evictionType">LRU or TTL</param>
+        /// <param name="limit">threshold that triggers the eviction in LRU mode</param>
+        /// <param name="itemsToRemove">number of items to be evicted when the threshold is reached in LRU mode</param>
+        /// <param name="timeLimitInMilliseconds">items older than the specified value are evicted in TTL mode</param>
+        public void ConfigEviction(EvictionType evictionType, int limit, int itemsToRemove = 100,
+            int timeLimitInMilliseconds = 0)
         {
             if (evictionType == EvictionType.LessRecentlyUsed && limit == 0)
                 throw new ArgumentException("If LRU eviction is used, a positive limit must be specified");
@@ -174,11 +185,24 @@ namespace Cachalot.Linq
 
 
         /// <summary>
+        ///     Get items with SQL query
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        public IEnumerable<T> SqlQuery(string sql)
+        {
+            var query = new Parser().ParseSql(sql).ToQuery(_collectionSchema);
+
+            return _client.GetMany(query).Select(ri => QueryExecutor.FromJObject<T>(ri.Item));
+        }
+
+
+        /// <summary>
         ///     Update or insert an object
         /// </summary>
         /// <param name="item"></param>
         /// <param name="excludedFromEviction">In cache-only mode,if tue the item is never evicted from the cache</param>
-        public void Put(T item, bool excludedFromEviction = false) 
+        public void Put(T item, bool excludedFromEviction = false)
         {
             _client.Put(_collectionName, Pack(item), excludedFromEviction);
         }
@@ -222,6 +246,11 @@ namespace Cachalot.Linq
         }
 
 
+        /// <summary>
+        ///     Creates a pivot definition. It will be enriched with axis list and properties to be aggregated
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public PivotDefinition<T> PreparePivotRequest(Expression<Func<T, bool>> filter = null)
         {
             var query = filter != null ? PredicateToQuery(filter) : new OrQuery(_collectionName);
@@ -230,12 +259,16 @@ namespace Cachalot.Linq
         }
 
 
-        
+        /// <summary>
+        ///     Precompile an expression tree as a query. It can be used to avoid parsing the expression tree multiple times
+        /// </summary>
+        /// <param name="where"></param>
+        /// <param name="collectionName"></param>
+        /// <returns></returns>
         public OrQuery PredicateToQuery(Expression<Func<T, bool>> where, string collectionName = null)
         {
-
             collectionName ??= _collectionSchema.CollectionName;
-         
+
             // create a fake queryable to force query parsing and capture resolution
             var executor = new NullExecutor(_collectionSchema, collectionName);
             var queryable = new NullQueryable<T>(executor);
@@ -248,10 +281,19 @@ namespace Cachalot.Linq
             return query;
         }
 
+        /// <summary>
+        ///     Get many with a precompiled query. Useful hen the same query is used multiple times
+        /// </summary>
+        /// <param name="query"></param>
+        /// <returns></returns>
+        public IEnumerable<T> WithPrecompiledQuery(OrQuery query)
+        {
+            return _client.GetMany(query).Select(ri => QueryExecutor.FromJObject<T>(ri.Item));
+        }
 
         /// <summary>
         ///     Conditional update. The item is updated only if the predicate evaluated server-site against the PREVIOUS value is
-        ///     true
+        ///     true. The test and update are processed as an atomic operation.
         ///     Can be used in "optimistic synchronization" scenarios.
         ///     Throws an exception if the condition is not satisfied
         /// </summary>
@@ -283,7 +325,7 @@ namespace Cachalot.Linq
 
 
             var kv = new KeyValue(oldTimestamp,
-                new KeyInfo( "Timestamp", 0, IndexType.Dictionary));
+                new KeyInfo("Timestamp", 0, IndexType.Dictionary));
 
             var q = new AtomicQuery(_collectionSchema.KeyByName(kv.KeyName), kv);
             var andQuery = new AndQuery();
@@ -303,7 +345,7 @@ namespace Cachalot.Linq
 
         /// <summary>
         ///     Update or insert a collection of objects. Items are fed by package to optimize network transport.
-        ///     For new items an optimized bulk insert algorithm is used
+        ///     For many items an optimized bulk insert algorithm is used
         ///     This method is transactional on a single node cluster
         /// </summary>
         /// <param name="items"></param>

@@ -107,8 +107,7 @@ namespace Client.Core
             var result = new CollectionSchema
             {
                 UseCompression = useCompression,
-                TypeName = type.Name,
-                CollectionName = type.FullName
+                CollectionName = type.Name
             };
 
             var props = type.GetProperties();

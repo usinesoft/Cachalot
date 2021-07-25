@@ -86,7 +86,7 @@ First step is to instantiate a <strong>Connector</strong> which needs a &quot;cl
 We can read the configuration from an external file or specify it as a connection string. For the moment, let’s build it manually.</p>
 <pre><code>var config = new ClientConfig
 {
-	Servers = {new ServerConfig {Host = &quot;localhost&quot;, Port = 4848}}
+	Servers = {new ServerConfig {Host = &quot;localhost&quot;, Port = 48401}}
 };
 
 using (var connector = new Cachalot.Linq.Connector(config))

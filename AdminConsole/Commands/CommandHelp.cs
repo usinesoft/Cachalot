@@ -1,3 +1,4 @@
+using Channel;
 using Client.Core;
 using Client.Interface;
 
@@ -130,7 +131,7 @@ namespace AdminConsole.Commands
                         break;
                     case "CONNECT":
                         Logger.Write("Connect to a single node or a Cachalot cluster");
-                        Logger.Write("connect (no parameter): by default connect to localhost 4848");
+                        Logger.Write($"connect (no parameter): by default connect to localhost {Constants.DefaultPort}");
                         Logger.Write("connect server port   : connect to a specific node");
                         Logger.Write("connect config.xml    : connect to a cluster described by a configuration file");
 

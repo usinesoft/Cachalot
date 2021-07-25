@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace Server.Parsing
+namespace Client.Parsing
 {
     public static class TokenExtensions
     {
@@ -72,8 +72,38 @@ namespace Server.Parsing
             return result;
         }
 
+
+        /// <summary>
+        /// Process multi-work keywords: "order by" for example should be treated as a single token
+        /// </summary>
+        /// <param name="original"></param>
+        /// <param name="separator"></param>
+        /// <returns></returns>
+        static IEnumerable<Token> JoinIfKeyword(this IList<Token> original, params string[] separator)
+        {
+            for (int i = 0; i < original.Count -1; i++)
+            {
+                var joined = original[i].NormalizedText + " " + original[i+1].NormalizedText;
+                if (separator.Contains(joined))
+                {
+                    yield return new Token{NormalizedText = joined, Text = joined, TokenType = CharClass.LetterOrDigit};
+                    i++;
+                }
+                else
+                {
+                    yield return original[i];
+                }
+            }
+
+            // the last one can not be part of a multi-word keyword
+            yield return original[^1];
+        }
+
         public static IDictionary<string, IList<Token>> Split(this IList<Token> original, params string[] separator)
         {
+
+            original = original.JoinIfKeyword(separator).ToList();
+
             var result = new Dictionary<string, IList<Token>>();
 
             var one = new List<Token>();
@@ -111,7 +141,7 @@ namespace Server.Parsing
 
             for (int i = startingAt; i < original.Count; i++)
             {
-                result.Append(original[i].NormalizedText);
+                result.Append(original[i].Text);
             }
 
             return result.ToString();

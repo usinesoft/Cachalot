@@ -144,7 +144,7 @@ namespace Server
                 }
                 else 
                 {
-                    bool lockAcquired = lockManager.TryAcquireReadLock(lockRequest.SessionId, Constants.DelayForLock,
+                    bool lockAcquired = lockManager.TryAcquireReadLock(lockRequest.SessionId, Constants.DelayForLockInMilliseconds,
                         lockRequest.CollectionsToLock.ToArray());
 
                     client.SendResponse(new LockResponse{Success = lockAcquired});
@@ -239,13 +239,28 @@ namespace Server
 
         private void ProcessDataRequest(DataRequest dataRequest, IClient client)
         {
+            // the collection name is case insensitive
+            var key = DataStores.Keys.FirstOrDefault(k => dataRequest.CollectionName.ToLower() == k.ToLower());
 
-            // for now there is one special table containing the activity log. It is always non persistent and it has an LRU eviction policy
-            DataStore dataStore = dataRequest.CollectionName == "@ACTIVITY" ? _serviceContainer.Log.ActivityTable : DataStores.TryGetValue(dataRequest.CollectionName);
+            DataStore dataStore = null;
+            if (key != null)
+            {
+                dataStore = DataStores.TryGetValue(key);
+            }
+            else
+            {
+                // for now there is one special table containing the activity log. It is always non persistent and it has an LRU eviction policy
+
+                if (dataRequest.CollectionName.ToLower() == "@activity")
+                {
+                    dataStore = _serviceContainer.Log.ActivityTable;
+                }
+            }
+
 
             if (dataStore == null)
             {
-                throw new NotSupportedException("Not registered type : " + dataRequest.CollectionName);
+                throw new NotSupportedException("Unknown collection : " + dataRequest.CollectionName);
             }
 
             
@@ -548,6 +563,21 @@ namespace Server
                     response.AddDataStoreInfo(info);
                 }
 
+
+                // add the special @ACTIVITY table (it may not be initialized in test environments)
+                if (_serviceContainer.Log != null)
+                {
+                    var activityInfo = new DataStoreInfo
+                    {
+                        FullTypeName = LogEntry.Table,
+                        Count = _serviceContainer.Log.ActivityTable.DataByPrimaryKey.Count
+                    };
+
+                    response.AddDataStoreInfo(activityInfo);
+
+                    response.AddTypeDescription(_serviceContainer.Log.ActivityTable.CollectionSchema);
+                }
+                
 
                 var currentProcess = Process.GetCurrentProcess();
 

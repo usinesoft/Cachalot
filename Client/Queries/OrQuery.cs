@@ -196,7 +196,7 @@ namespace Client.Queries
 
         public static OrQuery Empty<T>()
         {
-            return new OrQuery(typeof(T).FullName);
+            return new OrQuery(typeof(T).Name);
         }
 
         public static OrQuery Empty(string collectionName)

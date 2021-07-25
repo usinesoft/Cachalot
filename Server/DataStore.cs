@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,9 +33,20 @@ namespace Server
             return new UniqueIndex(name, _dataByUniqueKey[name]);
         }
 
-        public IReadOnlyIndex Index(string name)
+        
+        /// <summary>
+        /// Find index by unique ase insensitive name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public IReadOnlyIndex TryGetIndex(string name)
         {
-            return _dataByIndexKey[name];
+            if (String.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
+                return new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
+
+            return _dataByIndexKey.FirstOrDefault(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ??
+                   (IReadOnlyIndex)_dataByUniqueKey.Where(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase))
+                       .Select(i => new UniqueIndex(i.Key, i.Value)).FirstOrDefault();
         }
 
         #endregion

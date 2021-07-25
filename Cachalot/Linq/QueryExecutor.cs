@@ -71,12 +71,12 @@ namespace Cachalot.Linq
             return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri=>FromJObject<T>(ri.Item));
         }
 
-        T FromJObject<T>(JObject jObject)
+        public static T FromJObject<T>(JObject jObject)
         {
             var t = typeof(T);
             bool isPrimitiveType = t.IsPrimitive || t.IsValueType || (t == typeof(string)||t == typeof(DateTime))||t == typeof(DateTimeOffset)||t == typeof(decimal);
 
-            if (jObject.Count == 1)
+            if (jObject.Count == 1 && isPrimitiveType)
             {
                 return jObject.Properties().First().Value.ToObject<T>();
             }

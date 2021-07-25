@@ -325,7 +325,7 @@ namespace Tests.UnitTests
             using (var stream = new MemoryStream())
             {
                 //request
-                Streamer.ToStream(stream, new GetRequest(qbuilder.GetManyWhere("IndexKeyValue > 1000")));
+                Streamer.ToStream(stream, new GetRequest(qbuilder.FromSql("select from CacheableTypeOk where IndexKeyValue > 1000")));
                 Streamer.ToStream(stream, put);
                 Streamer.ToStream(stream, remove);
                 Streamer.ToStream(stream, register);
@@ -389,7 +389,7 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType(typeof(TradeLike));
 
             var builder = new QueryBuilder(typeof(TradeLike));
-            var kval = builder.MakeKeyValue("Nominal", 0);
+            var kval = new KeyValue(10, schema.KeyByName("Nominal"));
             var stream = new MemoryStream();
             Serializer.Serialize(stream, kval);
             stream.Seek(0, SeekOrigin.Begin);

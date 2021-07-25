@@ -1,8 +1,8 @@
 {
   "IsPersistent": true,
   "ClusterName": "test",
-  "TcpPort": 4848,
-  "DataPath": "root/4848",
+  "TcpPort": 48401,
+  "DataPath": "root/01",
   "FullTextConfig": {
     "TokensToIgnore": ["qui", "du", "rue"]
   }

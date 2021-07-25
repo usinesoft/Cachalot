@@ -40,8 +40,8 @@ namespace StressTests
 
         private static void PerformReconnectionTests()
         {
-            //using var connector = new Connector("localhost:48481");
-            using var connector = new Connector("localhost:4851+localhost:4852");
+            
+            using var connector = new Connector("localhost:48401+localhost:48402");
 
 
             while (true)

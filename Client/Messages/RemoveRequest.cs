@@ -19,7 +19,7 @@ namespace Client.Messages
         /// <param name="type"></param>
         /// <param name="primaryKeyValue"></param>
         public RemoveRequest(Type type, KeyValue primaryKeyValue)
-            : base(DataAccessType.Write, type.FullName)
+            : base(DataAccessType.Write, type.Name)
         {
             PrimaryKey = primaryKeyValue;
         }

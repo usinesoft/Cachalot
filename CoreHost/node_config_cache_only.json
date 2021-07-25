@@ -1,5 +1,5 @@
 {
   "IsPersistent": false,
   "ClusterName": "test",
-  "TcpPort": 4848
+  "TcpPort": 48401
 }

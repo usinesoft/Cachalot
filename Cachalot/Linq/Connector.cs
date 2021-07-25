@@ -44,78 +44,105 @@ namespace Cachalot.Linq
         }
 
 
-
-        readonly object _consistentReadSync = new object();
+        #region consistent read
 
         /// <summary>
         /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
         /// give a consistent result. No write operation (normal or transactional) will be executed while the context is open.
         /// 
         /// </summary>
-        /// <param name="action"></param>
+        /// <param name="action">Should contain a list of queries performed on a <see cref="ConsistentContext"/></param>
         /// <param name="collections"></param>
         public void ConsistentRead(Action<ConsistentContext> action, [NotNull] params string[] collections)
         {
-            //lock (_consistentReadSync)
+            
+            if (collections.Length == 0)
+                throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
+
+
+            // check that the collections have been declared
+            lock (_collectionSchema)
             {
-                if (collections.Length == 0)
-                    throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
-
-
-                // check that the collections have been declared
-                lock (_collectionSchema)
-                {
-                    foreach (var collection in collections)
-                        if (!_collectionSchema.ContainsKey(collection))
-                            throw new NotSupportedException(
-                                $"Unknown collection {collection}. Use Connector.DeclareCollection");
-                }
-
-                Guid sessionId = default;
-                try
-                {
-                    sessionId = Client.AcquireLock(false, collections);
-
-                    action(new ConsistentContext(sessionId, this, collections));
-                }
-                finally
-                {
-                    Client.ReleaseLock(sessionId);
-                }
+                foreach (var collection in collections)
+                    if (!_collectionSchema.ContainsKey(collection))
+                        throw new NotSupportedException(
+                            $"Unknown collection {collection}. Use Connector.DeclareCollection");
             }
 
+            Guid sessionId = default;
+            try
+            {
+                sessionId = Client.AcquireLock(false, collections);
+
+                action(new ConsistentContext(sessionId, this, collections));
+            }
+            finally
+            {
+                Client.ReleaseLock(sessionId);
+            }
+        
+
         }
 
+        /// <summary>
+        /// Helper for one collection with default naming
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <param name="action"></param>
         public void ConsistentRead<T1>(Action<ConsistentContext> action)
         {
-            ConsistentRead(action, typeof(T1).FullName);
+            ConsistentRead(action, typeof(T1).Name);
         }
        
+        /// <summary>
+        /// Helper for two collections with default naming
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <param name="action"></param>
         public void ConsistentRead<T1, T2>(Action<ConsistentContext> action)
         {
-            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName);
-        }
-
-        public void ConsistentRead<T1, T2, T3>(Action<ConsistentContext> action)
-        {
-            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName, typeof(T3).FullName);
-        }
-
-        public void ConsistentRead<T1, T2, T3, T4>(Action<ConsistentContext> action)
-        {
-            ConsistentRead(action, typeof(T1).FullName, typeof(T2).FullName, typeof(T3).FullName, typeof(T4).FullName);
+            ConsistentRead(action, typeof(T1).Name, typeof(T2).Name);
         }
 
 
         /// <summary>
+        /// Helper for three collections with default naming
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <param name="action"></param>
+        public void ConsistentRead<T1, T2, T3>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).Name, typeof(T2).Name, typeof(T3).Name);
+        }
+
+        /// <summary>
+        /// Helper for four collections with default naming
+        /// </summary>
+        /// <typeparam name="T1"></typeparam>
+        /// <typeparam name="T2"></typeparam>
+        /// <typeparam name="T3"></typeparam>
+        /// <typeparam name="T4"></typeparam>
+        /// <param name="action"></param>
+        public void ConsistentRead<T1, T2, T3, T4>(Action<ConsistentContext> action)
+        {
+            ConsistentRead(action, typeof(T1).Name, typeof(T2).Name, typeof(T3).Name, typeof(T4).Name);
+        }
+
+        #endregion
+
+
+        /// <summary>
         /// Declare collection with implicit schema (inferred from the type)
-        /// If the collection name is not specified, the full name of the type is used
+        /// If the collection name is not specified, the name of the type is used
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collectionName"></param>
         public void DeclareCollection<T>(string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             
@@ -215,6 +242,10 @@ namespace Cachalot.Linq
             }
         }
 
+        /// <summary>
+        /// Initiate a write-only transaction
+        /// </summary>
+        /// <returns></returns>
         public Transaction BeginTransaction()
         {
             return new Transaction(this);
@@ -243,6 +274,9 @@ namespace Cachalot.Linq
         }
 
 
+        /// <summary>
+        /// Special collection containing the server-side activity log
+        /// </summary>
         public IQueryable<LogEntry> ActivityLog
         {
             get
@@ -255,7 +289,7 @@ namespace Cachalot.Linq
 
         public DataSource<T> DataSource<T>(string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             lock (_collectionSchema)
             {
@@ -271,7 +305,7 @@ namespace Cachalot.Linq
 
         internal IQueryable<T> ReadOnlyCollection<T>(Guid sessionId, string collectionName = null)
         {
-            collectionName ??= typeof(T).FullName;
+            collectionName ??= typeof(T).Name;
 
             lock (_collectionSchema)
             {

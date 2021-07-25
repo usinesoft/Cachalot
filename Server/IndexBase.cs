@@ -28,7 +28,7 @@ namespace Server
 
         protected KeyInfo KeyInfo { get; }
 
-        public abstract bool IsOrdered { get; }
+        public abstract IndexType IndexType { get; }
 
         public abstract void BeginFill();
 
@@ -75,7 +75,7 @@ namespace Server
     {
         string Name { get; }
 
-        bool IsOrdered { get; }
+        IndexType IndexType { get; }
 
         ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 
@@ -90,20 +90,24 @@ namespace Server
 
 
     /// <summary>
-    /// Wrap a simple dictionary as a read-only index. Useful for primary key and unique key indexes
+    /// Wrap a simple dictionary as a read-only index. Useful for uniform access to all index types
     /// </summary>
     internal class UniqueIndex : IReadOnlyIndex
     {
         private readonly IDictionary<KeyValue, PackedObject> _dictionary;
+        private readonly bool _isPrimary;
 
-        public UniqueIndex(string name, IDictionary<KeyValue, PackedObject> dictionary)
+        public UniqueIndex(string name, IDictionary<KeyValue, PackedObject> dictionary, bool isPrimary = false)
         {
             _dictionary = dictionary;
+            _isPrimary = isPrimary;
             Name = name;
         }
 
         public string Name { get; }
-        public bool IsOrdered => false;
+
+        public IndexType IndexType => _isPrimary ? IndexType.Primary : IndexType.Unique;
+
         public ISet<PackedObject> GetMany([NotNull] IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
         {
             if (values == null) throw new ArgumentNullException(nameof(values));

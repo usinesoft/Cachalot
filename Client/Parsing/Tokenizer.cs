@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace Server.Parsing
+namespace Client.Parsing
 {
     public static class Tokenizer
     {

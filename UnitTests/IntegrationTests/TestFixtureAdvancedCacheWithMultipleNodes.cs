@@ -67,6 +67,8 @@ namespace Tests.IntegrationTests
 
         private void StartServers(int serverCount = 0)
         {
+
+            Console.WriteLine("starting servers");
             _clientConfig = new ClientConfig();
             _servers = new List<ServerInfo>();
 
@@ -78,8 +80,12 @@ namespace Tests.IntegrationTests
                 serverInfo.Server = new Server.Server(new NodeConfig{DataPath = $"server{i:D2}"})
                     {Channel = serverInfo.Channel}; // start non-persistent server
                 serverInfo.Port = serverInfo.Channel.Init(); // get the dynamically allocated ports
+                Console.WriteLine($"starting server on port {serverInfo.Port}");
+                
                 serverInfo.Channel.Start();
+                Console.WriteLine("channel started");
                 serverInfo.Server.Start();
+                Console.WriteLine("server started");
 
                 _servers.Add(serverInfo);
 

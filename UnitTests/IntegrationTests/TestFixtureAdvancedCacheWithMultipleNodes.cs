@@ -68,31 +68,41 @@ namespace Tests.IntegrationTests
         private void StartServers(int serverCount = 0)
         {
 
-            Console.WriteLine("starting servers");
-            _clientConfig = new ClientConfig();
-            _servers = new List<ServerInfo>();
-
-            serverCount = serverCount == 0 ? ServerCount : serverCount;
-
-            for (var i = 0; i < serverCount; i++)
+            try
             {
-                var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                serverInfo.Server = new Server.Server(new NodeConfig{DataPath = $"server{i:D2}"})
-                    {Channel = serverInfo.Channel}; // start non-persistent server
-                serverInfo.Port = serverInfo.Channel.Init(); // get the dynamically allocated ports
-                Console.WriteLine($"starting server on port {serverInfo.Port}");
+                Trace.WriteLine("starting servers");
+
+            
+                _clientConfig = new ClientConfig();
+                _servers = new List<ServerInfo>();
+
+                serverCount = serverCount == 0 ? ServerCount : serverCount;
+
+                for (var i = 0; i < serverCount; i++)
+                {
+                    var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
+                    serverInfo.Server = new Server.Server(new NodeConfig{DataPath = $"server{i:D2}"})
+                        {Channel = serverInfo.Channel}; // start non-persistent server
+                    serverInfo.Port = serverInfo.Channel.Init(); // get the dynamically allocated ports
+                    Trace.WriteLine($"starting server on port {serverInfo.Port}");
                 
-                serverInfo.Channel.Start();
-                Console.WriteLine("channel started");
-                serverInfo.Server.Start();
-                Console.WriteLine("server started");
+                    serverInfo.Channel.Start();
+                    Trace.WriteLine("channel started");
+                    serverInfo.Server.Start();
+                    Trace.WriteLine("starting servers");
 
-                _servers.Add(serverInfo);
+                    _servers.Add(serverInfo);
 
-                _clientConfig.Servers.Add(
-                    new ServerConfig {Host = "localhost", Port = serverInfo.Port});
+                    _clientConfig.Servers.Add(
+                        new ServerConfig {Host = "localhost", Port = serverInfo.Port});
+                }
+
             }
-
+            catch (Exception e)
+            {
+                Trace.WriteLine(e);
+                throw;
+            }
 
             Thread.Sleep(500); //be sure the server nodes are started
         }

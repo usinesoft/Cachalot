@@ -93,7 +93,7 @@ namespace Server
 
                 _cacheServer.StopRequired += (sender, args) =>
                 {
-                    HostServices.HostServices.Stop();
+                    
                     Stop();
 
                     _stopEvent.Set();

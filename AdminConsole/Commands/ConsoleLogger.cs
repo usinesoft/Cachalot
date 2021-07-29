@@ -9,6 +9,7 @@ namespace AdminConsole.Commands
 
         public void Write(string message)
         {
+            
             var colorBefore = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             //ConsoleExt.CurrentLine = message;

@@ -1,4 +1,5 @@
 ﻿using System;
+using Client.Core;
 using Client.Interface;
 
 namespace Accounts
@@ -6,20 +7,20 @@ namespace Accounts
     public class MoneyTransfer
     {
 
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Id { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public decimal Amount { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Dictionary)]
         public DateTime Date { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Dictionary)]
         public int SourceAccount { get; set; }
 
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Dictionary)]
         public int DestinationAccount { get; set; }
 
     }

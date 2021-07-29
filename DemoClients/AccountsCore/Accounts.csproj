@@ -16,17 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="two_nodes_cluster.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="two_nodes_cluster.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Cachalot.Client" Version="2.0.1" />
+    <PackageReference Include="Cachalot.Client" Version="2.0.2" />
   </ItemGroup>
 
   <ItemGroup>

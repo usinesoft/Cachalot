@@ -1,14 +1,15 @@
-﻿using Client.Interface;
+﻿using Client.Core;
+using Client.Interface;
 
 namespace Accounts
 {
     public class Account
     {
 
-        [PrimaryKey(KeyDataType.IntKey)]
+        [ServerSideValue(IndexType.Primary)]
         public int Id { get; set; }
 
-        [Index(KeyDataType.IntKey, true)]
+        [ServerSideValue(IndexType.Ordered)]
         public decimal Balance { get; set; }
     }
 }

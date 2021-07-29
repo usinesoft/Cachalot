@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using AdminConsole.AutoCompleteUtils;
 using AdminConsole.Commands;
 using AdminConsole.ConsoleUtils;
@@ -50,9 +51,12 @@ namespace AdminConsole
 
                 //Profiler.Logger = new ProfileOutput(Console.Out);
                 var parser = new CommandLineParser(serverDesc);
-                Logger.Write("Type HELP for command list. Advanced auto-completion is also available");
+                Logger.Write("Type HELP for command list. Advanced auto-completion is also available ...");
 
+                
+                
                 ConsoleExt.SetLine(">>");
+                
 
                 var running = true;
                 var cyclingAutoComplete = new CyclingAutoComplete {KnownTypes = serverDesc?.Schema.ToList()};
@@ -69,10 +73,19 @@ namespace AdminConsole
                             {
                                 if (cmd.CmdType != CommandType.Exit)
                                 {
-                                    var title = Console.Title;
-                                    Console.Title = " WORKING...";
+                                    var title = "";
+                                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                    {
+                                        title = Console.Title;
+                                        Console.Title = " WORKING...";
+                                    }
+
                                     client = cmd.TryExecute(client);
-                                    Console.Title = title;
+
+                                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                    {
+                                        Console.Title = title;
+                                    }
 
                                     // table definitions may have changed by command execution (connect, import, recreate) 
                                     // or by external action
@@ -124,7 +137,7 @@ namespace AdminConsole
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
             }
         }
     }

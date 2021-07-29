@@ -17,9 +17,13 @@ namespace Host
 
             var service = new HostedService(HostServices.Log, stopEvent);
 
-            service.Start(instance);
+            if (service.Start(instance))
+            {
+                stopEvent.WaitOne();
 
-            stopEvent.WaitOne();
+            }
+
+            
         }
     }
 }

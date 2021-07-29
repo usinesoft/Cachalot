@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using AdminConsole.ConsoleUtils.ConsoleActions;
 
 namespace AdminConsole.ConsoleUtils
@@ -300,8 +301,12 @@ namespace AdminConsole.ConsoleUtils
 
         private static void UpdateBufferWidth()
         {
-            Console.BufferWidth = Math.Max(Console.BufferWidth,
-                Math.Min(byte.MaxValue, Math.Max(_maxLineLength, CurrentLine.Length + 1)));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Console.BufferWidth = Math.Max(Console.BufferWidth,
+                    Math.Min(byte.MaxValue, Math.Max(_maxLineLength, CurrentLine.Length + 1)));
+            }
+            
         }
 
         private static void UpdateBuffer()

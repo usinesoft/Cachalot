@@ -126,7 +126,7 @@ namespace BookingMarketplace
         {
             var config = new ClientConfig
             {
-                Servers = {new ServerConfig {Host = "localhost", Port = 4848}}
+                Servers = {new ServerConfig {Host = "localhost", Port = 48401}}
             };
 
             try

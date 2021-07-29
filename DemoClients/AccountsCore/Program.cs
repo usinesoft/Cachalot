@@ -16,20 +16,17 @@ namespace Accounts
         {
             
 
-            var config = new ClientConfig();
-            config.LoadFromFile("two_nodes_cluster.xml");
             
             try
             {
                 // quick test with a cluster of two nodes
-                using (var connector = new Connector(config))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("test with a cluster of two servers");
-                    Console.WriteLine("-------------------------------------");
+                using var connector = new Connector("localhost:48401 + localhost:48402");
+
+                Console.WriteLine();
+                Console.WriteLine("test with a cluster of two servers");
+                Console.WriteLine("-------------------------------------");
                     
-                    PerfTest(connector);
-                }
+                PerfTest(connector);
             }
             catch (CacheException e)
             {
@@ -38,20 +35,14 @@ namespace Accounts
 
             try
             {
-                config = new ClientConfig
-                {
-                    Servers = { new ServerConfig { Host = "127.0.0.1", Port = 4848 } }
-                };
-
                 // quick test with one external server
-                using (var connector = new Connector(config))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("test with one server");
-                    Console.WriteLine("-------------------------------------");
+                using var connector = new Connector("localhost:48401" );
 
-                    PerfTest(connector);
-                }
+                Console.WriteLine();
+                Console.WriteLine("test with one server");
+                Console.WriteLine("-------------------------------------");
+
+                PerfTest(connector);
             }
             catch (CacheException e)
             {
@@ -61,14 +52,12 @@ namespace Accounts
             try
             {
                 // quick test with in-process server
-                using (var connector = new Connector(new ClientConfig { IsPersistent = true }))
-                {
-                   
-                    Console.WriteLine();
-                    Console.WriteLine("test with in-process server");
-                    Console.WriteLine("---------------------------");
-                    PerfTest(connector);
-                }
+                using var connector = new Connector(new ClientConfig { IsPersistent = true });
+
+                Console.WriteLine();
+                Console.WriteLine("test with in-process server");
+                Console.WriteLine("---------------------------");
+                PerfTest(connector);
             }
             catch (CacheException e)
             {
@@ -83,6 +72,9 @@ namespace Accounts
             // first delete all data to start with a clean database
             connector.AdminInterface().DropDatabase();
             
+            connector.DeclareCollection<Account>();
+            connector.DeclareCollection<MoneyTransfer>();
+
             var accounts = connector.DataSource<Account>();
 
             

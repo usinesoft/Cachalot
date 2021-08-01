@@ -293,10 +293,11 @@ namespace Server.Persistence
         public void Stop()
         {
             _shouldContinue = false;
+            
+
+            _singleConsumer.Join(500);
+
             TransactionLog.Dispose();
-
-            _singleConsumer.Join();
-
 
             _storage.Dispose();
         }

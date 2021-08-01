@@ -1,10 +1,12 @@
-﻿using System;
+﻿//#define DEBUG_VERBOSE
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
@@ -52,7 +54,13 @@ namespace Channel
 
         public void Stop()
         {
-            _listener.Stop();
+            Dbg.Trace("before _listener.Server.Disconnect();");
+            _listener.Server.Disconnect(false);
+            Dbg.Trace("after _listener.Server.Disconnect();");
+            Dbg.Trace("before _listener.Server.Close();");
+            _listener.Server.Close();
+            Dbg.Trace("after _listener.Server.Close();");
+            //_listener.Stop();
         }
 
         private void WaitForClients()

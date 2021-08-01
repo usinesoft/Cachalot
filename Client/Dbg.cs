@@ -62,5 +62,6 @@ namespace Client
             _simulatedException = 0;
             _shardToFail = -1; // all
         }
+
     }
 }

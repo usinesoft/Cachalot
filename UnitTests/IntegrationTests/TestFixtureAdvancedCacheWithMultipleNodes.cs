@@ -1,4 +1,6 @@
-﻿using System;
+﻿//#define DEBUG_VERBOSE
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -46,13 +48,19 @@ namespace Tests.IntegrationTests
 
         private const int ServerCount = 10;
 
+        
 
         private void StopServers()
         {
             foreach (var serverInfo in _servers)
             {
+                Dbg.Trace("begin channel stop ");
                 serverInfo.Channel.Stop();
+                Dbg.Trace("end channel stop ");
+                
+                Dbg.Trace("begin server stop ");
                 serverInfo.Server.Stop();
+                Dbg.Trace("end server stop ");
             }
         }
 

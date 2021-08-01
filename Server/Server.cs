@@ -278,9 +278,13 @@ namespace Server
 
         public void Stop()
         {
+            Dbg.Trace("begin data container stop ");
             _dataContainer.Stop();
+            Dbg.Trace("end data container stop ");
 
+            Dbg.Trace("begin persistence engine stop ");
             _persistenceEngine?.Stop();
+            Dbg.Trace("end persistence engine stop ");
 
             Dbg.Trace("SERVER STOPPED");
         }

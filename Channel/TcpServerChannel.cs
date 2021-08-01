@@ -54,13 +54,26 @@ namespace Channel
 
         public void Stop()
         {
-            Dbg.Trace("before _listener.Server.Disconnect();");
-            _listener.Server.Disconnect(false);
-            Dbg.Trace("after _listener.Server.Disconnect();");
-            Dbg.Trace("before _listener.Server.Close();");
-            _listener.Server.Close();
-            Dbg.Trace("after _listener.Server.Close();");
-            //_listener.Stop();
+            try
+            {
+                Dbg.Trace("before _listener.Server.Disconnect();");
+                _listener.Server.Disconnect(false);
+                Dbg.Trace("after _listener.Server.Disconnect();");
+                
+                
+                
+                //_listener.Stop();
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+            finally
+            {
+                Dbg.Trace("before _listener.Server.Close();");
+                _listener.Server.Close();
+                Dbg.Trace("after _listener.Server.Close();");
+            }
         }
 
         private void WaitForClients()

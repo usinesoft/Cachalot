@@ -70,22 +70,7 @@ namespace Tests.IntegrationTests
             }
         }
 
-
-        private void RestartOneServer()
-        {
-            var serverInfo = _servers[0];
-
-            serverInfo.Channel.Stop();
-            serverInfo.Server.Stop();
-
-            // restart on the same port
-            serverInfo.Port = serverInfo.Channel.Init(serverInfo.Port);
-            serverInfo.Channel.Start();
-            serverInfo.Server.Start();
-
-            Thread.Sleep(500);
-        }
-
+        
 
         private ClientConfig _clientConfig;
 
@@ -115,7 +100,7 @@ namespace Tests.IntegrationTests
             }
 
             _clientConfig.ConnectionPoolCapacity = 10;
-            _clientConfig.PreloadedConnections = 4;
+            _clientConfig.PreloadedConnections = 3;
 
 
             Thread.Sleep(500); //be sure the server nodes are started

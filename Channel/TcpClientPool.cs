@@ -25,7 +25,7 @@ namespace Channel
 
             _address = _address.MapToIPv6();
 
-            Preload(preloaded);
+            PreLoad(preloaded);
         }
 
 

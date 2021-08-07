@@ -1,8 +1,12 @@
+//#define DEBUG_VERBOSE
+
 #region
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using Client;
 
 #endregion
 
@@ -16,22 +20,28 @@ namespace Channel
     /// </summary>
     public abstract class PoolStrategy<T> : IDisposable where T : class
     {
-        private const int DefaultMaxPendingClaims = 3;
+        private const int DefaultMaxPendingClaims = 1;
 
         private readonly Queue<T> _pool;
 
-        private readonly Semaphore _pooledResourcesLock;
+        //private readonly Semaphore _pooledResourcesLock;
         private long _maxPendingClaims = DefaultMaxPendingClaims;
 
         private long _pendingResourceClaims;
+
+        private readonly SemaphoreSlim _poolEvent;
+        //private readonly ManualResetEvent _poolEvent = new ManualResetEvent(true);
 
         protected PoolStrategy(int poolCapacity, int preloaded = 0)
         {
             PoolCapacity = poolCapacity;
             _pool = new Queue<T>(poolCapacity);
-            _pooledResourcesLock = new Semaphore(0, poolCapacity);
+            
+            _poolEvent = new SemaphoreSlim(0, PoolCapacity);
 
-            Preload(preloaded);
+            PreLoad(preloaded);
+
+            
         }
 
         public int PoolCapacity { get; }
@@ -60,9 +70,9 @@ namespace Channel
             }
         }
 
-        protected void Preload(int resourcesToPreload)
+        protected void PreLoad(int resourcesToPreLoad)
         {
-            for (var i = 0; i < resourcesToPreload; i++)
+            for (var i = 0; i < resourcesToPreLoad; i++)
             {
                 var res = GetShinyNewResource();
                 if (res != null)
@@ -82,24 +92,29 @@ namespace Channel
         {
             lock (_pool)
             {
-                //put null resources to notify the client that the external provider is not available any more
-                //if (resource == null || IsStillValid(resource))
-                {
-                    _pool.Enqueue(resource);
+                Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Put");
+                
+                _pool.Enqueue(resource);
 
-                    if (_pool.Count > PoolCapacity)
-                        while (_pool.Count > PoolCapacity)
-                        {
-                            var toDispose = _pool.Dequeue();
-                            Release(toDispose);
-                        }
-                    else
-                        _pooledResourcesLock.Release();
+                
+                if (_pool.Count > PoolCapacity)
+                {
+                    Dbg.Trace("Too many resources. Remove older ones");
+
+                    while (_pool.Count > PoolCapacity)
+                    {
+                        var toDispose = _pool.Dequeue();
+                        Release(toDispose);
+                    }
+                    
                 }
-                //else
-                //{
-                //    Release(resource);
-                //}
+
+                if (_poolEvent.CurrentCount < _pool.Count)
+                {
+                    _poolEvent.Release(_pool.Count - _poolEvent.CurrentCount);
+                }
+                
+         
             }
         }
 
@@ -116,7 +131,18 @@ namespace Channel
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     var newOne = GetShinyNewResource();
-                    InternalPut(IsStillValid(newOne) ? newOne : null);
+                    
+                    if (newOne != null)
+                    {
+                        Dbg.Trace("new resource put into pool");
+                    }
+                    else
+                    {
+                        Dbg.Trace("can not get new resource");
+                    }
+                    
+
+                    InternalPut(newOne);
                     //assume the provider is down
                     Interlocked.Decrement(ref _pendingResourceClaims);
                 });
@@ -133,31 +159,46 @@ namespace Channel
         /// </returns>
         public T Get()
         {
+
+            bool poolIsEmpty = false;
+
             lock (_pool)
             {
+                Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Get");
+
+
                 if (_pool.Count == 0)
+                {
                     AsyncClaimNewResource();
+                    poolIsEmpty = true;
+                    
+                }
+                else
+                {
+                    Dbg.Trace("resource found");
+                    var resource = _pool.Dequeue();
+
+                    //if null it means the external resource provider is not available anymore
+                    if (resource == null)
+                        return null;
+
+                    //a pooled resource may not be valid any more
+                    if (IsStillValid(resource))
+                        return resource;
+                }
+                    
             }
 
-            _pooledResourcesLock.WaitOne();
-
-
-            lock (_pool)
+            if (poolIsEmpty)
             {
-                var resource = _pool.Dequeue();
-
-                //if null it means the external resource provider is not available anymore
-                if (resource == null)
-                    return null;
-
-                //a pooled resource may not be valid any more
-                if (IsStillValid(resource))
-                    return resource;
+                _poolEvent.Wait();
+                
             }
+            
 
-            //here we got a non null resource from the external provider 
-            //but it is not valid. Try again. if the external provider is not available it should return null
             return Get(); //recursive call
+
+            
         }
 
         /// <summary>
@@ -168,6 +209,7 @@ namespace Channel
         {
             if (resource == null)
                 throw new ArgumentNullException(nameof(resource));
+            
             InternalPut(resource);
         }
 
@@ -199,6 +241,7 @@ namespace Channel
                 }
 
                 _disposed = true;
+                _poolEvent.Release();
             }
         }
 

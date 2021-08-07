@@ -197,26 +197,31 @@ namespace Channel
 
             var client = _connectionPool.Get();
 
-            if (client == null || client.Connected == false)
-                throw new CacheException("Not connected to server");
+            try
+            {
+                if (client == null || client.Connected == false)
+                    throw new CacheException("Not connected to server");
 
-            var stream = client.GetStream();
+                var stream = client.GetStream();
 
-            stream.WriteByte(Constants.RequestCookie);
+                stream.WriteByte(Constants.RequestCookie);
 
-            Streamer.ToStream(stream, request);
+                Streamer.ToStream(stream, request);
 
-            var response = Streamer.FromStream<Response>(stream);
+                var response = Streamer.FromStream<Response>(stream);
 
-            Streamer.SendAck(stream);
+                Streamer.SendAck(stream);
 
-            _connectionPool.Put(client);
-
-            if (response == null)
-                throw new CacheException("Error : invalid response from server");
+                if (response == null)
+                    throw new CacheException("Error : invalid response from server");
 
 
-            return response;
+                return response;
+            }
+            finally
+            {
+                _connectionPool.Put(client);
+            }
         }
 
 

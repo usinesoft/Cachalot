@@ -25,15 +25,19 @@ namespace Tests.IntegrationTests
         [OneTimeSetUp]
         public void StartServer()
         {
-            var path = "../../../../bin/Release/Server/netcoreapp3.1";
+            #if DEBUG
+                var path = "../../../../bin/Debug/Server/netcoreapp3.1";
+            #else
+                var path = "../../../../bin/Release/Server/netcoreapp3.1";
+            #endif
 
-            var fullPath = Path.Combine(path, "server.exe");
+            var fullPath = Path.Combine(path, "server.dll");
 
-            var currentDir = Directory.GetCurrentDirectory();
+            Directory.GetCurrentDirectory();
 
             _process = new Process
             {
-                StartInfo = {FileName = fullPath, Arguments = "02", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal}
+                StartInfo = {FileName = "dotnet", Arguments = $"{fullPath} 02", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal}
             };
 
             _process.Start();

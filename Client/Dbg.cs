@@ -15,7 +15,7 @@ namespace Client
         [Conditional("DEBUG_VERBOSE")]
         public static void Trace(string message)
         {
-            var msg = $" thread {Thread.CurrentThread.ManagedThreadId}  {message}";
+            var msg = $"{DateTime.Now:hh:mm:ss.fff} thread {Thread.CurrentThread.ManagedThreadId:D3}  {message}";
 
             if (message.ToLower().StartsWith("end ") || message.ToLower().StartsWith("stop ")) Debug.Unindent();
 

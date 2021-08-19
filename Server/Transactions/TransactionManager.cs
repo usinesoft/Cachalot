@@ -9,6 +9,7 @@ using Client.Messages;
 using Client.Tools;
 using Server.Persistence;
 using Server.Queries;
+using Constants = Server.Persistence.Constants;
 
 namespace Server.Transactions
 {

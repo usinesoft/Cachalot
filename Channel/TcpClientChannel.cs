@@ -5,6 +5,7 @@ using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
+using JetBrains.Annotations;
 using ProtoBuf;
 
 namespace Channel
@@ -12,6 +13,34 @@ namespace Channel
     public class TcpClientChannel : IClientChannel
     {
         private readonly TcpClientPool _connectionPool;
+
+
+        readonly Dictionary<Guid, TcpClient> _connectionBySession = new Dictionary<Guid, TcpClient>();
+
+        public void ReserveConnection(Guid sessionId)
+        {
+            
+            var connection = _connectionPool.Get();
+            if (connection == null)
+            {
+                throw new CacheException("Not connected to server");
+            }
+
+            lock (_connectionBySession)
+            {
+                _connectionBySession.Add(sessionId, connection);
+            }
+
+        }
+
+        public void ReleaseConnection(Guid sessionId)
+        {
+            lock (_connectionBySession)
+            {
+                _connectionPool.Put(_connectionBySession[sessionId]);
+                _connectionBySession.Remove(sessionId);
+            }
+        }
 
         /// <summary>
         ///     Use the static constructor to prepare the serializers thus preventing a race condition when lazy-initializing in
@@ -29,9 +58,9 @@ namespace Channel
 
         private class TcpSession : Session
         {
-            public TcpSession(TcpClient client)
+            public TcpSession([NotNull] TcpClient client)
             {
-                Client = client;
+                Client = client ?? throw new ArgumentNullException(nameof(client));
             }
 
             public TcpClient Client { get; }
@@ -60,12 +89,19 @@ namespace Channel
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            var client = _connectionPool.Get();
+            Guid sessionId = default;
+            if (request is IHasSession hasSession)
+            {
+                sessionId = hasSession.SessionId;
+            }
 
-            if (client == null || client.Connected == false)
+            var connection = InternalGetConnection(sessionId);
+
+
+            if (connection == null || connection.Connected == false)
                 throw new CacheException("Not connected to server");
 
-            var stream = client.GetStream();
+            var stream = connection.GetStream();
             try
             {
                 stream.WriteByte(Constants.RequestCookie);
@@ -79,7 +115,12 @@ namespace Channel
             finally
             {
                 Streamer.SendAck(stream);
-                _connectionPool.Put(client);
+
+                if (sessionId == default)
+                {
+                    _connectionPool.Put(connection);
+                }
+                
             }
         }
 
@@ -97,6 +138,7 @@ namespace Channel
             if (!(session is TcpSession tcpSession))
                 throw new ArgumentException("Invalid session type", nameof(session));
 
+            
             _connectionPool.Put(tcpSession.Client);
         }
 
@@ -188,21 +230,49 @@ namespace Channel
             return response is ReadyResponse;
         }
 
-       
+
+        /// <summary>
+        /// Use a reserved connection if available (inside a consistent read operation), otherwise get a new one
+        /// </summary>
+        /// <param name="sessionId"></param>
+        /// <returns></returns>
+        TcpClient InternalGetConnection(Guid sessionId)
+        {
+            TcpClient connection = null;
+
+            
+            lock (_connectionBySession)
+            {
+                _connectionBySession.TryGetValue(sessionId, out connection);
+            }
+
+            // otherwise get a new one
+            connection ??= _connectionPool.Get();
+
+            return connection;
+
+        }
+
         public Response SendRequest(Request request)
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
 
-            var client = _connectionPool.Get();
+            Guid sessionId = default;
+            if (request is IHasSession hasSession)
+            {
+                sessionId = hasSession.SessionId;
+            }
 
+            var connection = InternalGetConnection(sessionId);
+            
             try
             {
-                if (client == null || client.Connected == false)
+                if (connection == null || connection.Connected == false)
                     throw new CacheException("Not connected to server");
 
-                var stream = client.GetStream();
+                var stream = connection.GetStream();
 
                 stream.WriteByte(Constants.RequestCookie);
 
@@ -220,7 +290,11 @@ namespace Channel
             }
             finally
             {
-                _connectionPool.Put(client);
+                if (sessionId == default) // not in a session so return the connection to the pool
+                {
+                    _connectionPool.Put(connection);
+                }
+                
             }
         }
 

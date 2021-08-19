@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Xml;
+using Client.Core;
 
 #endregion
 
@@ -65,6 +66,11 @@ namespace Client.Interface
                         PreloadedConnections = int.Parse(pool[1]);
                     }
                 }
+            }
+            else
+            {
+                ConnectionPoolCapacity = Constants.DefaultPoolCapacity;
+                PreloadedConnections = Constants.DefaultPreloadedConnections;
             }
 
             var servers = connectionString.Split('+');

@@ -466,6 +466,8 @@ namespace Client.Interface
                     client.ReleaseLock(sessionId);
                     
                 });
+
+                
             }
             catch (AggregateException e)
             {
@@ -724,13 +726,19 @@ namespace Client.Interface
             CacheClients[node].UpdateIf(newValue, testAsQuery);
         }
 
+        
         public Guid AcquireLock(bool writeAccess, params string[] collections)
         {
+            
+
             Guid sessionId = Guid.NewGuid();
 
             LockPolicy.SmartRetry(()=> TryAcquireLock(sessionId, writeAccess, collections));
 
             return sessionId;
+    
+        
+            
         }
 
         private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
@@ -738,6 +746,11 @@ namespace Client.Interface
             bool[] resultByClient = new bool[CacheClients.Count];
             try
             {
+                // to avoid deadlock between the pool and the distributed locks reserve connections for all servers
+                foreach (var client in CacheClients)
+                {
+                    client.ReserveConnection(sessionId);
+                }
 
                 Parallel.For(0, CacheClients.Count, i =>
                 {
@@ -754,6 +767,12 @@ namespace Client.Interface
                     if(resultByClient[i])
                         CacheClients[i].ReleaseLock(sessionId);
                 });
+
+                // release the connections too
+                foreach (var client in CacheClients)
+                {
+                    client.ReleaseConnections(sessionId);
+                }
 
                 return false;
 
@@ -816,6 +835,14 @@ namespace Client.Interface
             catch (AggregateException e)
             {
                 if (e.InnerException != null) throw e.InnerException;
+            }
+        }
+
+        public void ReleaseConnections(Guid sessionId)
+        {
+            foreach (var client in CacheClients)
+            {
+                client.ReleaseConnections(sessionId);
             }
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Channel;
 using Client.Core;
 using Client.Interface;
@@ -46,6 +47,11 @@ namespace Cachalot.Linq
 
         #region consistent read
 
+
+        //TODO check if it can work on the aggregator only
+        readonly SemaphoreSlim _consistentReadSync = new SemaphoreSlim(10, 10);
+
+
         /// <summary>
         /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
         /// give a consistent result. No write operation (normal or transactional) will be executed while the context is open.
@@ -72,13 +78,22 @@ namespace Cachalot.Linq
             Guid sessionId = default;
             try
             {
+                _consistentReadSync.Wait();
+
                 sessionId = Client.AcquireLock(false, collections);
 
                 action(new ConsistentContext(sessionId, this, collections));
             }
             finally
             {
-                Client.ReleaseLock(sessionId);
+                if (sessionId != default)
+                {
+                    Client.ReleaseLock(sessionId);
+                    Client.ReleaseConnections(sessionId);
+                }
+
+                _consistentReadSync.Release();
+                
             }
         
 
@@ -196,7 +211,7 @@ namespace Cachalot.Linq
                 {
                     var serverCfg = config.Servers[0];
 
-                    var channel = new TcpClientChannel(new TcpClientPool(4, 1, serverCfg.Host, serverCfg.Port));
+                    var channel = new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity, config.PreloadedConnections, serverCfg.Host, serverCfg.Port));
 
                     Client = new DataClient {Channel = channel};
                 }
@@ -208,7 +223,7 @@ namespace Cachalot.Linq
                     foreach (var serverConfig in config.Servers)
                     {
                         var channel =
-                            new TcpClientChannel(new TcpClientPool(4, 1, serverConfig.Host, serverConfig.Port));
+                            new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity, config.PreloadedConnections, serverConfig.Host, serverConfig.Port));
 
                         var client = new DataClient
                         {

@@ -3,7 +3,7 @@ using System.Text;
 using Client.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Server.Persistence;
+using Constants = Server.Persistence.Constants;
 
 namespace Server
 {

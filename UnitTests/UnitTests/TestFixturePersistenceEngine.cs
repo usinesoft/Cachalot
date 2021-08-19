@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
 using Tests.TestData;
+using Constants = Server.Persistence.Constants;
 
 namespace Tests.UnitTests
 {

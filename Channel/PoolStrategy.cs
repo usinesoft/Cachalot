@@ -20,26 +20,23 @@ namespace Channel
     /// </summary>
     public abstract class PoolStrategy<T> : IDisposable where T : class
     {
-        private const int DefaultMaxPendingClaims = 1;
+        private const int DefaultMaxPendingClaims = 4;
 
         private readonly Queue<T> _pool;
 
-        //private readonly Semaphore _pooledResourcesLock;
         private long _maxPendingClaims = DefaultMaxPendingClaims;
 
         private long _pendingResourceClaims;
 
         private readonly SemaphoreSlim _poolEvent;
-        //private readonly ManualResetEvent _poolEvent = new ManualResetEvent(true);
+        
 
-        protected PoolStrategy(int poolCapacity, int preloaded = 0)
+        protected PoolStrategy(int poolCapacity)
         {
             PoolCapacity = poolCapacity;
             _pool = new Queue<T>(poolCapacity);
             
             _poolEvent = new SemaphoreSlim(0, PoolCapacity);
-
-            PreLoad(preloaded);
 
             
         }
@@ -92,7 +89,9 @@ namespace Channel
         {
             lock (_pool)
             {
-                Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Put");
+                //Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Put");
+
+                Dbg.Trace($"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut before");
                 
                 _pool.Enqueue(resource);
 
@@ -114,6 +113,7 @@ namespace Channel
                     _poolEvent.Release(_pool.Count - _poolEvent.CurrentCount);
                 }
                 
+                Dbg.Trace($"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut after");
          
             }
         }
@@ -130,21 +130,24 @@ namespace Channel
 
                 ThreadPool.QueueUserWorkItem(delegate
                 {
-                    var newOne = GetShinyNewResource();
-                    
-                    if (newOne != null)
+                    try
                     {
-                        Dbg.Trace("new resource put into pool");
-                    }
-                    else
-                    {
-                        Dbg.Trace("can not get new resource");
-                    }
-                    
+                        var newOne = GetShinyNewResource();
 
-                    InternalPut(newOne);
-                    //assume the provider is down
-                    Interlocked.Decrement(ref _pendingResourceClaims);
+                        Dbg.Trace(newOne != null ? "new resource put into pool" : "can not get new resource");
+
+                        InternalPut(newOne);
+                        //assume the provider is down
+                    }
+                    catch (Exception e)
+                    {
+                        Dbg.Trace(e.ToString());
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref _pendingResourceClaims);
+                    }
+                    
                 });
             }
         }
@@ -164,7 +167,8 @@ namespace Channel
 
             lock (_pool)
             {
-                Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Get");
+                //Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Get");
+                Dbg.Trace($"pool:{GetHashCode()} resources {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in Get");
 
 
                 if (_pool.Count == 0)
@@ -175,7 +179,7 @@ namespace Channel
                 }
                 else
                 {
-                    Dbg.Trace("resource found");
+                    Dbg.Trace($"pool:{GetHashCode()} resource found");
                     var resource = _pool.Dequeue();
 
                     //if null it means the external resource provider is not available anymore
@@ -189,10 +193,10 @@ namespace Channel
                     
             }
 
+            // wait for new connections outside the pool lock
             if (poolIsEmpty)
             {
                 _poolEvent.Wait();
-                
             }
             
 
@@ -241,7 +245,11 @@ namespace Channel
                 }
 
                 _disposed = true;
-                _poolEvent.Release();
+                if (_poolEvent.CurrentCount < PoolCapacity)
+                {
+                    _poolEvent.Release(PoolCapacity - _poolEvent.CurrentCount);
+                }
+                
             }
         }
 

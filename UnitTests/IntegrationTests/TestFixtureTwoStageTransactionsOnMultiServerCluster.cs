@@ -1,4 +1,6 @@
-﻿using System;
+﻿//#define DEBUG_VERBOSE
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -23,6 +25,9 @@ namespace Tests.IntegrationTests
     [TestFixture]
     public class TestFixtureTwoStageTransactionsOnMultiServerCluster
     {
+        public int Servers { set; get; } = 3;
+        public int Threads { set; get; } = 20;
+
         [TearDown]
         public void Exit()
         {
@@ -40,7 +45,7 @@ namespace Tests.IntegrationTests
                     Directory.Delete($"server{i:D2}", true);
 
 
-            StartServers();
+            StartServers(ServerCount);
         }
 
         private class ServerInfo
@@ -99,8 +104,8 @@ namespace Tests.IntegrationTests
                     new ServerConfig {Host = "localhost", Port = serverInfo.Port});
             }
 
-            _clientConfig.ConnectionPoolCapacity = 10;
-            _clientConfig.PreloadedConnections = 3;
+            _clientConfig.ConnectionPoolCapacity = 20;
+            _clientConfig.PreloadedConnections = 10;
 
 
             Thread.Sleep(500); //be sure the server nodes are started
@@ -821,125 +826,132 @@ namespace Tests.IntegrationTests
         [Test]
         public void Consistent_reads_and_transactions_run_in_parallel()
         {
-            using (var connector = new Connector(_clientConfig))
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Account>();  
+            connector.DeclareCollection<MoneyTransfer>();  
+
+            var accounts = connector.DataSource<Account>();
+
+                
+            var accountIds = connector.GenerateUniqueIds("account_id", 2);
+            var transferIds = connector.GenerateUniqueIds("transfer_id", Threads);
+
+            accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
+            accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+                
+
+            //run in parallel a sequence of transactions and consistent read-only operation
+            List<Account> all = accounts.ToList();
+            try
             {
-
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
-
-                var accounts = connector.DataSource<Account>();
-
-                const int iterations = 101;
-
-                var accountIds = connector.GenerateUniqueIds("account_id", 2);
-                var transferIds = connector.GenerateUniqueIds("transfer_id", iterations);
-
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
-
-
-                var watch = new Stopwatch();
-                watch.Start();
-
-                // run in parallel a sequence of transactions and consistent read-only operation 
-                List<Account> all = accounts.ToList();
-                try
-                {
-                    Parallel.Invoke(
-                        () =>
+                Parallel.Invoke(
+                    () =>
+                    {
+                        Parallel.For(0, Threads, i =>
                         {
-                            Parallel.For(0, iterations, i =>
+
+                            // ReSharper disable once AccessToDisposedClosure
+                            connector.ConsistentRead(ctx =>
                             {
 
-                                // ReSharper disable once AccessToDisposedClosure
-                                connector.ConsistentRead(ctx =>
-                                {
-                                    
-                                    var myAccounts = ctx.Collection<Account>().ToList();
-                                    Assert.AreEqual(2, myAccounts.Count);
+                                var myAccounts = ctx.Collection<Account>().ToList();
 
-                                    // with consistent reed we do not see the updates during a transaction. The sum of the accounts balance should always be 1000
-                                    Assert.AreEqual(1000, myAccounts.Sum(acc=>acc.Balance));
+                                Dbg.Trace($"Done step 1 for iteration {i}");
 
-                                    var transfers = ctx.Collection<MoneyTransfer>();
-                                
-                                    
-                                    var tr = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
+                                Assert.AreEqual(2, myAccounts.Count);
 
-                                    var trAll = transfers.ToList();
+                                // with consistent reed we do not see the updates during a transaction. The sum of the accounts balance should always be 1000
+                                Assert.AreEqual(1000, myAccounts.Sum(acc => acc.Balance));
 
-                                    //check consistency between transfer and balance
-
-                                    var sumTransferred = tr.Sum(tr => tr.Amount);
-
-                                    Assert.AreEqual(sumTransferred,myAccounts[1].Balance);
+                                var transfers = ctx.Collection<MoneyTransfer>();
 
 
-                                }, nameof(MoneyTransfer), nameof(Account));
+                                var tr = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
-                                
+                                Dbg.Trace($"Done step 2 for iteration {i}");
 
-                            });
-                        },
-                        () =>
-                        {
-                            
-                            for (var i = 0; i < iterations; i++)
-                            {
+                                //check consistency between transfer and balance
+
+                                var sumTransferred = tr.Sum(tr => tr.Amount);
+
+                                Assert.AreEqual(sumTransferred, myAccounts[1].Balance);
+
+                                Console.WriteLine($"Balance = {myAccounts[1].Balance} Transferred = {sumTransferred}");
+
+                                Dbg.Trace($"Done for iteration {i}");
+
+                            }, nameof(MoneyTransfer), nameof(Account));
 
 
-                                var transfer = new MoneyTransfer
-                                {
-                                    Id = transferIds[i],
-                                    Amount = 10,
-                                    Date = DateTime.Today,
-                                    SourceAccount = all[0].Id,
-                                    DestinationAccount = all[1].Id
-                                };
 
-                                all[0].Balance -= 10;
-                                all[1].Balance += 10;
-
-                                var transaction = connector.BeginTransaction();
-                                transaction.Put(all[0]);
-                                transaction.Put(all[1]);
-                                transaction.Put(transfer);
-                                transaction.Commit();
-                            }
                         });
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    Assert.Fail(e.Message);
-                }
+                    },
+                    () =>
+                    {
 
-                watch.Stop();
+                        for (var i = 0; i < Threads; i++)
+                        {
 
-                Console.WriteLine($"{iterations} iterations took {watch.ElapsedMilliseconds} ms");
+
+                            var transfer = new MoneyTransfer
+                            {
+                                Id = transferIds[i],
+                                Amount = 10,
+                                Date = DateTime.Today,
+                                SourceAccount = all[0].Id,
+                                DestinationAccount = all[1].Id
+                            };
+
+                            all[0].Balance -= 10;
+                            all[1].Balance += 10;
+
+                            var transaction = connector.BeginTransaction();
+                            transaction.Put(all[0]);
+                            transaction.Put(all[1]);
+                            transaction.Put(transfer);
+                            transaction.Commit();
+
+                            Console.WriteLine("Transaction committed");
+                        }
+                    });
             }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Assert.Fail(e.Message);
+            }
+
+            watch.Stop();
+
+            Console.WriteLine($"{Threads} threads on {Servers} servers took {watch.ElapsedMilliseconds} ms");
 
             // check that the data is persistent (force the external server to reload data)
-            StopServers();
-            StartServers();
-            using (var connector = new Connector(_clientConfig))
-            {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+            //StopServers();
+            //StartServers();
+            //using (var connector = new Connector(_clientConfig))
+            //{
+            //    connector.DeclareCollection<Account>();  
+            //    connector.DeclareCollection<MoneyTransfer>();  
 
-                var accounts = connector.DataSource<Account>();
-                var myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
+            //    var accounts = connector.DataSource<Account>();
+            //    var myAccounts = accounts.ToList();
+            //    Assert.AreEqual(2, myAccounts.Count);
 
 
-                var sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
+            //    var sum = myAccounts.Sum(acc => acc.Balance);
+            //    Assert.AreEqual(1000, sum);
 
-                Assert.IsTrue(myAccounts.All(acc => acc.Balance != 1000),
-                    "The balance is unchanged when reloading data");
+            //    Assert.IsTrue(myAccounts.All(acc => acc.Balance != 1000),
+            //        "The balance is unchanged when reloading data");
 
-                Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-            }
+            //    Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
+            //}
         }
 
 

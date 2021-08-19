@@ -16,8 +16,9 @@ namespace Tests.UnitTests
         }
 
 
-        public SlowProviderPool(int poolCapacity, int preloaded) : base(poolCapacity, preloaded)
+        public SlowProviderPool(int poolCapacity, int preloaded) : base(poolCapacity)
         {
+            PreLoad(preloaded);
         }
 
         public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);

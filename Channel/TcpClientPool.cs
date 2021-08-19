@@ -3,6 +3,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using Client.Core;
 
 #endregion
 
@@ -37,9 +38,9 @@ namespace Channel
 
                 var result = client.BeginConnect(_address, _port, null, null);
 
-                var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
+                result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
 
-                if (!success)
+                if (!client.Connected)
                     return null;
 
                 return client;

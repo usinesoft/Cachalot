@@ -9,7 +9,7 @@ namespace Client.Messages
     /// 
     /// </summary>
     [ProtoContract]
-    public class LockRequest : Request
+    public class LockRequest : Request, IHasSession
     {
         public override RequestClass RequestClass => RequestClass.DataAccess;
 

@@ -536,6 +536,8 @@ namespace Client.Interface
 
             var sessionId = Guid.NewGuid();
 
+            Channel.ReserveConnection(sessionId);
+
             LockPolicy.SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
 
             return sessionId;
@@ -573,28 +575,29 @@ namespace Client.Interface
 
         public void ReleaseLock(Guid sessionId)
         {
-            if(sessionId == default)
-                throw new ArgumentException("Invalid sessionId");
-
-            var request = new LockRequest
-            {
-                SessionId = sessionId,
-                Unlock = true,
-                
-            };
-
-            var response = Channel.SendRequest(request);
-
-            if (response is LockResponse)
-            {
-                return;
-            }
             
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while writing an object to the cache", exResponse.Message,
-                    exResponse.CallStack);
+                if(sessionId == default)
+                    throw new ArgumentException("Invalid sessionId in ReleaseLock");
 
-            throw new CacheException("Unexpected response type for AcquireLock");
+                var request = new LockRequest
+                {
+                    SessionId = sessionId,
+                    Unlock = true,
+                
+                };
+
+                var response = Channel.SendRequest(request);
+
+                if (response is LockResponse)
+                {
+                    return;
+                }
+            
+                if (response is ExceptionResponse exResponse)
+                    throw new CacheException("Error while writing an object to the cache", exResponse.Message,
+                        exResponse.CallStack);
+
+                throw new CacheException("Unexpected response type for AcquireLock");
         }
 
         public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)
@@ -663,6 +666,16 @@ namespace Client.Interface
 
             if (response is ExceptionResponse exResponse)
                 throw new CacheException("Error while declaring a domain", exResponse.Message, exResponse.CallStack);
+        }
+
+        public void ReserveConnection(Guid sessionId)
+        {
+            Channel.ReserveConnection(sessionId);
+        }
+
+        public void ReleaseConnections(Guid sessionId)
+        {
+            Channel.ReleaseConnection(sessionId);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Channel
+﻿namespace Client.Core
 {
     public static class Constants
     {
@@ -19,5 +19,10 @@
         public static readonly int StreamingThreshold = 50000;
         
         public static readonly int DefaultPort = 48401;
+        
+        public static readonly int DefaultPoolCapacity = 4;
+        
+        public static readonly int DefaultPreloadedConnections = 1;
+
     }
 }

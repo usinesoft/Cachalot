@@ -34,7 +34,16 @@ namespace Channel
 
         #endregion
 
-       
+
+        public void ReserveConnection(Guid sessionId)
+        {
+            // nothing to do in this case
+        }
+
+        public void ReleaseConnection(Guid sessionId)
+        {
+            // nothing to do in this case
+        }
 
         private class ClientData : IClient
         {

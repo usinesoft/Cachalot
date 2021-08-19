@@ -7,7 +7,7 @@ using ProtoBuf;
 namespace Client.Messages
 {
     [ProtoContract]
-    public class GetRequest : DataRequest
+    public class GetRequest : DataRequest, IHasSession
     {
         public GetRequest(OrQuery query, Guid sessionId = default)
             : base(DataAccessType.Read, query.CollectionName, sessionId)

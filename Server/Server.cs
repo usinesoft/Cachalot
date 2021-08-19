@@ -7,6 +7,7 @@ using Client.Core;
 using Client.Messages;
 using Client.Tools;
 using Server.Persistence;
+using Constants = Server.Persistence.Constants;
 
 namespace Server
 {

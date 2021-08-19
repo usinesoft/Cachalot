@@ -13,6 +13,7 @@ using Client.Messages;
 using Client.Tools;
 using Server.FullTextSearch;
 using Server.Persistence;
+using Constants = Server.Persistence.Constants;
 
 #endregion
 

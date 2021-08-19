@@ -18,11 +18,7 @@ namespace Tests.UnitTests
         }
 
 
-        public UnreliableProviderPool(int poolCapacity, int preloaded)
-            : base(poolCapacity, preloaded)
-        {
-        }
-
+       
         public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);
 
         protected override ExpiryResource GetShinyNewResource()

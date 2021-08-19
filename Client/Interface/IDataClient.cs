@@ -188,6 +188,8 @@ namespace Client.Interface
 
         void ReleaseLock(Guid sessionId);
 
+        void ReleaseConnections(Guid sessionId);
+
         #region cache only methods
 
         /// <summary>

@@ -16,6 +16,18 @@ namespace Client.ChannelInterface
         /// <returns></returns>
         Response SendRequest(Request request);
 
+
+        /// <summary>
+        /// Get a connection from the pool and keep it for multiple usages
+        /// </summary>
+        /// <param name="sessionId"></param>
+        void ReserveConnection(Guid sessionId);
+
+        /// <summary>
+        /// Release the reserved connection
+        /// </summary>
+        void ReleaseConnection(Guid sessionId);
+
        
         IEnumerable<RankedItem> SendStreamRequest(Request request);
 

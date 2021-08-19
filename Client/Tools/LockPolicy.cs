@@ -24,7 +24,7 @@ namespace Client.Tools
 
                 // this heuristic took lots of tests to nail down; it is a compromise between 
                 // wait time for one client and average time for all clients
-                var delay = ThreadLocalRandom.Instance.Next(10 * (iteration % 5));
+                var delay = ThreadLocalRandom.Instance.Next(50 * (iteration % 5 + 1));
 
                 wait.Wait(delay);
                 

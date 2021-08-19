@@ -33,10 +33,8 @@ namespace Tests.UnitTests
             //this call will claim an external resource as the one available in the pool is
             //not valid any more
             pool.Get();
-            Assert.AreEqual(pool.NewResourceClaims, 3);
+            Assert.AreEqual(4, pool.NewResourceClaims);
 
-            //the pool should be empty now
-            Assert.AreEqual(pool.ResourcesInPool, 0);
         }
 
         [Test]
@@ -51,6 +49,7 @@ namespace Tests.UnitTests
                     var res = pool.Get();
                     Thread.Sleep(50);
                     pool.Put(res);
+                    // ReSharper disable once AccessToModifiedClosure
                     Interlocked.Increment(ref count);
                 });
 
@@ -59,83 +58,82 @@ namespace Tests.UnitTests
             var claimCount = pool.NewResourceClaims;
 
             //as consumer threads are much faster than the resource provider, most of the connections
-            //are recicled ones not new ones
+            //are recycled ones not new ones
             Assert.IsTrue(claimCount < 100);
         }
 
-        [Test]
-        public void PreloadedResourcePool()
-        {
-            var pool = new SlowProviderPool(4, 3);
+        //[Test]
+        //public void PreloadedResourcePool()
+        //{
+        //    var pool = new SlowProviderPool(4, 3);
 
-            Assert.AreEqual(pool.NewResourceClaims, 3);
+        //    Assert.AreEqual(pool.NewResourceClaims, 3);
 
-            Assert.AreEqual(pool.ResourcesInPool, 3);
+        //    Assert.AreEqual(pool.ResourcesInPool, 3);
 
-            //three requests should be served by the pool without claiming external resource
-            var res1 = pool.Get();
-            var res2 = pool.Get();
-            var res3 = pool.Get();
+        //    //three requests should be served by the pool without claiming external resource
+        //    var res1 = pool.Get();
+        //    var res2 = pool.Get();
+        //    var res3 = pool.Get();
 
-            Assert.AreEqual(pool.NewResourceClaims, 3);
+        //    Assert.AreEqual(3, pool.NewResourceClaims, 3);
 
-            //this one is claimed from outside
-            var res4 = pool.Get();
-            Assert.AreEqual(pool.NewResourceClaims, 4);
+        //    //this one is claimed from outside
+        //    var res4 = pool.Get();
+        //    Assert.AreEqual(4,pool.NewResourceClaims);
 
-            //this one too
-            var res5 = pool.Get();
-            Assert.AreEqual(pool.NewResourceClaims, 5);
+        //    //this one too
+        //    var res5 = pool.Get();
+        //    Assert.AreEqual(5, pool.NewResourceClaims);
 
-            //put back 5 resorces ( the first one should be released as capacity is exceeded)
-            pool.Put(res1);
-            pool.Put(res2);
-            pool.Put(res3);
-            pool.Put(res4);
-            pool.Put(res5);
+        //    //put back 5 resources ( the first one should be released as capacity is exceeded)
+        //    pool.Put(res1);
+        //    pool.Put(res2);
+        //    pool.Put(res3);
+        //    pool.Put(res4);
+        //    pool.Put(res5);
 
-            Assert.AreEqual(pool.ResourcesInPool, 4);
-            //res1 was relesed, the next returned one should be res2
-            var res2Again = pool.Get();
-            Assert.AreSame(res2, res2Again);
-        }
+        //    Assert.AreEqual(pool.ResourcesInPool, 4);
+        //    //res1 was released, the next returned one should be res2
+        //    var res2Again = pool.Get();
+        //    Assert.AreSame(res2, res2Again);
+        //}
 
         [Test]
         public void UnreliableResourceProvider()
         {
-            using (var pool = new UnreliableProviderPool(4, 0))
+            using var pool = new UnreliableProviderPool(4);
+
+            Assert.IsTrue(pool.NewResourceClaims <= 3);
+
+            var validCount = 0;
+            var nonNull = 0;
+            for (var i = 0; i < 5000; i++)
             {
-                Assert.IsTrue(pool.NewResourceClaims <= 3);
+                var resource = pool.Get();
 
-                var validCount = 0;
-                var nonNull = 0;
-                for (var i = 0; i < 5000; i++)
+
+                if (resource != null)
                 {
-                    var resource = pool.Get();
+                    nonNull++;
 
-
-                    if (resource != null)
+                    if (resource.IsValid)
                     {
-                        nonNull++;
+                        resource.Use();
+                        validCount++;
 
-                        if (resource.IsValid)
-                        {
-                            resource.Use();
-                            validCount++;
-
-                            pool.Put(resource);
-                        }
+                        pool.Put(resource);
                     }
                 }
-
-
-                Assert.IsTrue(validCount == nonNull && nonNull < 5000);
-                Assert.IsTrue(validCount > 1000); //around 90% of the resources should be valid
-
-                Assert.IsTrue(pool.NewResourceClaims > 3);
-
-                pool.ClearAll();
             }
+
+
+            Assert.IsTrue(validCount == nonNull && nonNull < 5000);
+            Assert.IsTrue(validCount > 1000); //around 90% of the resources should be valid
+
+            Assert.IsTrue(pool.NewResourceClaims > 3);
+
+            pool.ClearAll();
         }
     }
 }

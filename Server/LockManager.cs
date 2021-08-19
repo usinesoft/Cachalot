@@ -1,7 +1,10 @@
+//#define DEBUG_VERBOSE
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Client;
 using Client.Tools;
 using JetBrains.Annotations;
 
@@ -69,6 +72,8 @@ namespace Server
                     SpinWait(4);
                 }
 
+                Dbg.Trace($"write lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
+
                 return result;
             }
 
@@ -92,6 +97,8 @@ namespace Server
                     SpinWait(4);
                 }
 
+                Dbg.Trace($"read lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
+
                 return result;
             }
 
@@ -107,6 +114,8 @@ namespace Server
 
                     ReadCount--;
                 }
+
+                Dbg.Trace($"exit read readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
             }
 
             public void ExitWrite()
@@ -120,7 +129,11 @@ namespace Server
                         throw new NotSupportedException("Calling ExitWrite() when no write lock is hold");
 
                     _writeCount = 0;
+
+                    _pendingWriteRequest = false;
                 }
+
+                Dbg.Trace($"exit write readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
             }
 
             /// <summary>
@@ -236,6 +249,16 @@ namespace Server
             if (!result && lockedResources.Any()) RemoveReadLock(lockedResources.ToArray());
 
 
+            if (result)
+            {
+                Dbg.Trace($"read lock success for {string.Join(' ',resourceNames)} session {sessionId}");
+            }
+            else
+            {
+                Dbg.Trace($"read lock failed for {string.Join(' ',resourceNames)} session {sessionId}");
+            }
+            
+
             return result;
         }
 
@@ -274,6 +297,14 @@ namespace Server
 
             if (!result && lockedResources.Any()) RemoveWriteLock(lockedResources.ToArray());
 
+            if (result)
+            {
+                Dbg.Trace($"write lock success for {string.Join(' ',resourceNames)} session {sessionId}");
+            }
+            else
+            {
+                Dbg.Trace($"write lock failed for {string.Join(' ',resourceNames)} session {sessionId}" );
+            }
 
             return result;
         }
@@ -334,7 +365,7 @@ namespace Server
         public bool CheckLock(Guid sessionId, bool writeAccess, params string[] resourceNames)
         {
             if (sessionId == default)
-                throw new ArgumentException("Invalid sessionId");
+                throw new ArgumentException("Invalid sessionId in CheckLock");
 
             if (resourceNames.Length == 0)
                 throw new ArgumentException(
@@ -352,8 +383,11 @@ namespace Server
 
         public void CloseSession(Guid sessionId)
         {
+
+            Dbg.Trace($"Close session called for {sessionId}");
+
             if (sessionId == default)
-                throw new ArgumentException("Invalid sessionId");
+                throw new ArgumentException("Invalid sessionId in CloseSession");
 
 
             var session = _activeSessions.TryRemove(sessionId);

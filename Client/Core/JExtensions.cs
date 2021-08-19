@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Client.Messages;
 using Newtonsoft.Json.Linq;
 
@@ -84,7 +85,7 @@ namespace Client.Core
 
             if (type == KeyValue.OriginalType.SomeFloat)
             {
-                if (double.TryParse(valueAsString, out var fv))
+                if(double.TryParse(valueAsString, NumberStyles.Any, CultureInfo.InvariantCulture, out var fv))
                 {
                     return fv;
                 }

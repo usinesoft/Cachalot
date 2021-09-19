@@ -58,6 +58,9 @@ namespace Server
         /// <param name="e"></param>
         private void HandleRequestReceived(object sender, RequestEventArgs e)
         {
+            
+            Dbg.Trace("request received ");
+
             if (e.Request is ImportDumpRequest importRequest)
             {
                 ManageImportRequest(importRequest, e.Client);

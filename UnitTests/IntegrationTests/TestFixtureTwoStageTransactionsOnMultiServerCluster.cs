@@ -40,12 +40,12 @@ namespace Tests.IntegrationTests
         [SetUp]
         public void Init()
         {
-            for (var i = 0; i < ServerCount; i++)
+            for (var i = 0; i < Servers; i++)
                 if (Directory.Exists($"server{i:D2}"))
                     Directory.Delete($"server{i:D2}", true);
 
 
-            StartServers(ServerCount);
+            StartServers(Servers);
         }
 
         private class ServerInfo
@@ -57,7 +57,7 @@ namespace Tests.IntegrationTests
 
         private List<ServerInfo> _servers = new List<ServerInfo>();
 
-        private const int ServerCount = 3;
+        private const int DefaultServerCount = 3;
 
         [OneTimeSetUp]
         public void RunBeforeAnyTests()
@@ -84,7 +84,7 @@ namespace Tests.IntegrationTests
             _clientConfig = new ClientConfig();
             _servers = new List<ServerInfo>();
 
-            serverCount = serverCount == 0 ? ServerCount : serverCount;
+            serverCount = serverCount == 0 ? DefaultServerCount : serverCount;
 
             for (var i = 0; i < serverCount; i++)
             {
@@ -104,7 +104,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig {Host = "localhost", Port = serverInfo.Port});
             }
 
-            _clientConfig.ConnectionPoolCapacity = 20;
+            _clientConfig.ConnectionPoolCapacity = 10;
             _clientConfig.PreloadedConnections = 10;
 
 
@@ -593,7 +593,7 @@ namespace Tests.IntegrationTests
                     Parallel.Invoke(
                         () =>
                         {
-                            Parallel.For(0, 200, i =>
+                            Parallel.For(0, Threads, i =>
                             {
                                 // this is a non transactional request
                                 var myAccounts = accounts.ToList();
@@ -611,7 +611,7 @@ namespace Tests.IntegrationTests
                             List<Account> myAccounts = accounts.ToList();
 
                             
-                            for (var i = 0; i < 200; i++)
+                            for (var i = 0; i < Threads; i++)
                             {
                                 var transfer = new MoneyTransfer
                                 {

@@ -1,3 +1,5 @@
+#define DEBUG_VERBOSE
+
 #region
 
 using System;
@@ -237,6 +239,8 @@ namespace Server
 
         private void ProcessDataRequest(DataRequest dataRequest, IClient client)
         {
+            Dbg.Trace($"data request for session {dataRequest.SessionId}");
+
             // the collection name is case insensitive
             var key = DataStores.Keys.FirstOrDefault(k => dataRequest.CollectionName.ToLower() == k.ToLower());
 

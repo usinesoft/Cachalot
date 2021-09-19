@@ -1,3 +1,4 @@
+//#define DEBUG_VERBOSE
 using System;
 using System.Threading;
 
@@ -9,7 +10,8 @@ namespace Client.Tools
         {
             int iteration = 0;
 
-            var wait = new SemaphoreSlim(1, 1);
+            // its ok to be local, just meant to always block temporarily
+            //var wait = new SemaphoreSlim(0, 1);
 
             while (true)
             {
@@ -24,11 +26,16 @@ namespace Client.Tools
 
                 // this heuristic took lots of tests to nail down; it is a compromise between 
                 // wait time for one client and average time for all clients
-                var delay = ThreadLocalRandom.Instance.Next(50 * (iteration % 5 + 1));
+                var delay = ThreadLocalRandom.Instance.Next(10 * (iteration % 15 + 1));
 
-                wait.Wait(delay);
+                //wait.Wait(delay);
+                Thread.Sleep(delay);
                 
+                Dbg.Trace($"Thread {Thread.CurrentThread.ManagedThreadId} smart retry delay {delay} for iteration {iteration}");
             }
+
+            
+            Dbg.Trace($"Thread {Thread.CurrentThread.ManagedThreadId} Smart retry finished in {iteration} iterations");
 
             return iteration;
         }

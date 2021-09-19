@@ -175,6 +175,14 @@ namespace Client.Interface
                 try
                 {
 
+                    // reserve sessions for all server to prevent a deadlock between the connection pool and the server-side locks
+                    foreach (var client in Clients)
+                    {
+                        var session = client.Channel.BeginSession();
+                        SessionByServer[client.ShardIndex] = session;
+                    }
+
+
                     // send transaction requests
                     Parallel.ForEach(Clients, client =>
                     {
@@ -182,8 +190,8 @@ namespace Client.Interface
 
                         try
                         {
-                            var session = client.Channel.BeginSession();
-                            SessionByServer[client.ShardIndex] = session;
+
+                            var session = SessionByServer[client.ShardIndex];
 
                             Dbg.Trace(
                                 $"C: Sending transaction request to server {client.ShardIndex} transaction {TransactionId} connector {GetHashCode()}");

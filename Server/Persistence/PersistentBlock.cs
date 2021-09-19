@@ -97,10 +97,7 @@ namespace Server.Persistence
 
                 PrimaryKey = reader.ReadString();
 
-                //if (PrimaryKey == "StressTests.AbstractEntity4b612432-118f-4fe9-ad95-10947e686e4d")
-                //{
-
-                //}
+               
                 LastTransactionId = reader.ReadInt32();
 
                 BlockStatus = (BlockStatus) reader.ReadInt32();

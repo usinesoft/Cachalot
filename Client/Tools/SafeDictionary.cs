@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Client.Tools
 {
@@ -120,6 +119,7 @@ namespace Client.Tools
         {
             if(_factory == null)
                 throw new NotSupportedException("Get or create called on a SafeDictionary instance that does not have a factory defined");
+            
             lock (_innerDictionary)
             {
                 if (!_innerDictionary.TryGetValue(key, out var value))
@@ -153,24 +153,7 @@ namespace Client.Tools
             }
         }
 
-        public IList<TValue> ForKeys(ICollection<TKey> keys)
-        {
-            var result = new List<TValue>();
-
-            lock (_innerDictionary)
-            {
-                foreach (var key in keys)
-                {
-                    if(_innerDictionary.TryGetValue(key, out var value))
-                    {
-                        result.Add(value);
-                    }
-                }
-            }
-
-            return result;
-        }
-
+        
         public IList<KeyValuePair<TKey, TValue>> Pairs
         {
             get

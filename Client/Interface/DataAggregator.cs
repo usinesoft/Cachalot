@@ -1,3 +1,5 @@
+#define DEBUG_VERBOSE
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +16,9 @@ using Client.Tools;
 
 namespace Client.Interface
 {
-    public partial class DataAggregator : IDataClient
+    public partial class 
+        
+        DataAggregator : IDataClient
     {
 
         private readonly object _transactionSync = new object();
@@ -362,6 +366,8 @@ namespace Client.Interface
 
         public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
         {
+            Dbg.Trace($"GetMany for session {sessionId}");
+
              var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
             try
@@ -461,6 +467,8 @@ namespace Client.Interface
             
             try
             {
+                Dbg.Trace($"Aggregator release lock for session {sessionId}");
+
                 Parallel.ForEach(CacheClients, client =>
                 {
                     client.ReleaseLock(sessionId);
@@ -647,6 +655,7 @@ namespace Client.Interface
             // the same connector will not execute transactions in parallel
             lock (_transactionSync)
             {
+                Dbg.Trace("Entered transaction");
 
                 var status = new TransactionState();
 

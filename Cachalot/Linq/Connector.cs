@@ -1,8 +1,11 @@
+#define DEBUG_VERBOSE
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Channel;
+using Client;
 using Client.Core;
 using Client.Interface;
 using JetBrains.Annotations;
@@ -82,10 +85,18 @@ namespace Cachalot.Linq
 
                 sessionId = Client.AcquireLock(false, collections);
 
+                Dbg.Trace($"Entered consistent read for session {sessionId}");
+
                 action(new ConsistentContext(sessionId, this, collections));
+            }
+            catch (Exception e)
+            {
+                Dbg.Trace($"exception in consistent read session {sessionId} : {e.Message}");
             }
             finally
             {
+                Dbg.Trace($"exit consistent read session {sessionId}");
+
                 if (sessionId != default)
                 {
                     Client.ReleaseLock(sessionId);

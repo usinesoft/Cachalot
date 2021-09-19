@@ -33,6 +33,7 @@ namespace Channel
             _listener.Server.DualMode = true;
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             _listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
+            
 
             _listener.Start();
 
@@ -78,6 +79,7 @@ namespace Channel
 
         private void WaitForClients()
         {
+            
             while (true)
                 try
                 {
@@ -92,8 +94,9 @@ namespace Channel
                     var clientThread = new Thread(ClientLoop);
                     clientThread.Start(client);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Dbg.Trace("error in WaitForClients:" + ex.Message);
                     break;
                 }
 
@@ -118,6 +121,8 @@ namespace Channel
                 {
                     var inputType = clientStream.ReadByte();
 
+                    Dbg.Trace($"input type {inputType}");
+
                     if (inputType == -1) // connection closed
                         break;
 
@@ -130,6 +135,7 @@ namespace Channel
                     {
                         var request = Streamer.FromStream<Request>(clientStream);
 
+                        Dbg.Trace($"request received in client loop");
 
                         if (RequestReceived != null)
                         {
@@ -146,6 +152,7 @@ namespace Channel
                             // ReSharper disable once RedundantAssignment
                             var ackOkay = Streamer.ReadAck(clientStream);
                             Debug.Assert(ackOkay);
+                            
                         }
                     }
                 }
@@ -192,10 +199,9 @@ namespace Channel
                     SendResponse(new ReadyResponse());
 
                     
-
-#if !DEBUG
-                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
-#endif
+//#if !DEBUG
+//                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
+//#endif
 
                     Stream stream = _tcpClient.GetStream();
 

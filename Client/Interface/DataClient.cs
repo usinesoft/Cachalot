@@ -1,15 +1,13 @@
+#define  DEBUG_VERBOSE
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
 using Client.Tools;
-using Newtonsoft.Json.Linq;
 
 namespace Client.Interface
 {
@@ -246,6 +244,7 @@ namespace Client.Interface
 
         public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
         {
+            Dbg.Trace($"one client GetMany for session {sessionId}");
             var request = new GetRequest(query, sessionId);
 
             return Channel.SendStreamRequest(request);
@@ -576,6 +575,8 @@ namespace Client.Interface
         public void ReleaseLock(Guid sessionId)
         {
             
+            Dbg.Trace($"one client release lock for session {sessionId}");
+
                 if(sessionId == default)
                     throw new ArgumentException("Invalid sessionId in ReleaseLock");
 

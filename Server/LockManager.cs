@@ -1,9 +1,8 @@
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Client;
 using Client.Tools;
 using JetBrains.Annotations;
@@ -13,144 +12,10 @@ namespace Server
     public class LockManager : ILockManager
     {
         /// <summary>
-        ///     Like ReadWriteLOck (much simpler in fact) but not by-thread (as a session can be open by a thread and closed by
+        ///     Like ReadWriteLock (much simpler in fact) but not by-thread (as a session can be open by a thread and closed by
         ///     another)
         /// </summary>
-        private class ServerSideLock
-        {
-            private int _writeCount;
-
-            private bool _pendingWriteRequest;
-
-            private readonly object _sync = new object();
-
-            public int ReadCount { get; private set; }
-
-            private static readonly int ProcessorCount = Environment.ProcessorCount;
-
-            private static readonly int Retries = 100;
-
-            private static readonly int MaxReads = ProcessorCount;
-
-            private static void SpinWait(int spinCount)
-            {
-                const int lockSpinCycles = 20;
-
-                //Exponential back-off
-                if (spinCount < 5 && ProcessorCount > 1)
-                    Thread.SpinWait(lockSpinCycles * spinCount);
-                else
-                    Thread.Sleep(0);
-            }
-
-
-            public bool TryEnterWrite()
-            {
-                var result = false;
-
-                for (var i = 0; i < Retries; i++)
-                {
-                    lock (_sync)
-                    {
-                        if (ReadCount > 0 || _writeCount > 0)
-                        {
-                            if (_writeCount == 0) // do not mark as pending write if there is already a write lock
-                                _pendingWriteRequest = true;
-                        }
-                        else
-                        {
-                            _writeCount++;
-
-                            _pendingWriteRequest = false;
-
-                            result = true;
-
-                            break;
-                        }
-                    }
-
-                    SpinWait(4);
-                }
-
-                Dbg.Trace($"write lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
-
-                return result;
-            }
-
-            public bool TryEnterRead()
-            {
-                var result = false;
-
-                for (var i = 0; i < Retries; i++)
-                {
-                    lock (_sync)
-                    {
-                        if (_writeCount == 0 && !_pendingWriteRequest && ReadCount < MaxReads)
-                        {
-                            result = true;
-                            ReadCount++;
-
-                            break;
-                        }
-                    }
-
-                    SpinWait(4);
-                }
-
-                Dbg.Trace($"read lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
-
-                return result;
-            }
-
-            public void ExitRead()
-            {
-                lock (_sync)
-                {
-                    if (_writeCount > 0)
-                        throw new NotSupportedException("Calling ExitRead() when a write lock is hold");
-
-                    if (ReadCount == 0)
-                        throw new NotSupportedException("Calling ExitRead() when no read lock is hold");
-
-                    ReadCount--;
-                }
-
-                Dbg.Trace($"exit read readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
-            }
-
-            public void ExitWrite()
-            {
-                lock (_sync)
-                {
-                    if (ReadCount > 0)
-                        throw new NotSupportedException("Calling ExitWrite() when o read lock is hold");
-
-                    if (_writeCount == 0)
-                        throw new NotSupportedException("Calling ExitWrite() when no write lock is hold");
-
-                    _writeCount = 0;
-
-                    _pendingWriteRequest = false;
-                }
-
-                Dbg.Trace($"exit write readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
-            }
-
-            /// <summary>
-            ///     Only called by administrator
-            /// </summary>
-            public void ForceReset()
-            {
-                while (true)
-                    lock (_sync)
-                    {
-                        ReadCount = 0;
-                        _writeCount = 0;
-
-                        break;
-                    }
-            }
-        }
+        
 
 
         private class Session
@@ -329,6 +194,8 @@ namespace Server
 
                     if (@lock.ReadCount == 0) _locksCurrentlyTaken.Remove(@lock);
                 }
+
+                Dbg.Trace($"removed read lock for {string.Join(' ',resourceNames)}");
             }
         }
 
@@ -344,6 +211,8 @@ namespace Server
 
                     _locksCurrentlyTaken.Remove(@lock);
                 }
+
+                Dbg.Trace($"removed write lock for {string.Join(' ',resourceNames)}");
             }
         }
 
@@ -364,6 +233,8 @@ namespace Server
 
         public bool CheckLock(Guid sessionId, bool writeAccess, params string[] resourceNames)
         {
+            Dbg.Trace($"Enter check lock for session {sessionId}");
+
             if (sessionId == default)
                 throw new ArgumentException("Invalid sessionId in CheckLock");
 
@@ -378,7 +249,11 @@ namespace Server
 
             if (session.IsWriteLock != writeAccess) return false;
 
-            return resourceNames.All(c => session.LockedResources.Contains(c));
+            var result =  resourceNames.All(c => session.LockedResources.Contains(c));
+
+            Dbg.Trace($"Check lock result = {result} for session {sessionId}");
+
+            return result;
         }
 
         public void CloseSession(Guid sessionId)

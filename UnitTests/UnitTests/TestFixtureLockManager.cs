@@ -63,13 +63,13 @@ namespace Tests.UnitTests
             var watch = new Stopwatch();
             watch.Start();
 
-            int iterations = 10_000;
+            var iterations = 10_000;
             Parallel.For(0, iterations, i =>
             {
                 Parallel.Invoke(
-                    () => mgr.DoWithReadLock(ReadAbc,  "a", "b", "c"),
+                    () => mgr.DoWithReadLock(ReadAbc, "a", "b", "c"),
                     () => mgr.DoWithReadLock(ReadA, "a"),
-                    () => mgr.DoWithWriteLock(WriteAbc,  "a", "b", "c"),
+                    () => mgr.DoWithWriteLock(WriteAbc, "a", "b", "c"),
                     () => mgr.DoWithWriteLock(WriteA, "a")
                 );
             });
@@ -80,8 +80,49 @@ namespace Tests.UnitTests
             Console.WriteLine($"retries = {mgr.Retries}");
             Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
 
-            
-            int locks = mgr.GetCurrentlyHoldLocks();
+
+            var locks = mgr.GetCurrentlyHoldLocks();
+
+            Assert.AreEqual(0, locks);
+        }
+
+        [Test]
+        public void No_deadlock_if_much_more_reads_than_writes()
+        {
+            var mgr = new LockManager();
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            var iterations = 10_000;
+
+
+            Parallel.Invoke(() =>
+                {
+                    Parallel.For(0, iterations, i =>
+                    {
+                        mgr.DoWithReadLock(ReadAbc, "a", "b", "c");
+                        mgr.DoWithReadLock(ReadA, "a");
+                    });
+                },
+                () =>
+                {
+                    for (var i = 0; i < iterations; i++)
+                    {
+                        mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
+                    }
+                }
+            );
+
+
+            watch.Stop();
+
+            Console.WriteLine($"{iterations} iterations took {watch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"retries = {mgr.Retries}");
+            Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
+
+
+            var locks = mgr.GetCurrentlyHoldLocks();
 
             Assert.AreEqual(0, locks);
         }
@@ -95,7 +136,7 @@ namespace Tests.UnitTests
             var watch = new Stopwatch();
             watch.Start();
 
-            int iterations = 10_000;
+            var iterations = 10_000;
             Parallel.For(0, iterations, i =>
             {
                 Parallel.Invoke(
@@ -119,7 +160,6 @@ namespace Tests.UnitTests
                         mgr.AcquireLock(session, true, "a", "b", "c");
                         WriteAbc();
                         mgr.CloseSession(session);
-                        
                     },
                     () =>
                     {
@@ -136,29 +176,29 @@ namespace Tests.UnitTests
             Console.WriteLine($"retries = {mgr.Retries}");
             Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
 
-            
-            int locks = mgr.GetCurrentlyHoldLocks();
+
+            var locks = mgr.GetCurrentlyHoldLocks();
 
             Assert.AreEqual(0, locks);
         }
 
         [Test]
-        public void Mixed_use_of_sessions_and_simple_accesses_simulating_both_transactional_and_non_transactional_clients()
+        public void
+            Mixed_use_of_sessions_and_simple_accesses_simulating_both_transactional_and_non_transactional_clients()
         {
             var mgr = new LockManager();
 
             var watch = new Stopwatch();
             watch.Start();
 
-          
 
-            int iterations = 100;
+            var iterations = 100;
             Parallel.For(0, iterations, i =>
             {
                 Parallel.Invoke(
                     () =>
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (var i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, false, "a", "b", "c");
@@ -168,7 +208,7 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (var i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, false, "a");
@@ -178,18 +218,17 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (var i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, true, "a", "b", "c");
                             WriteAbc();
                             mgr.CloseSession(session);
                         }
-                        
                     },
                     () =>
                     {
-                        for (int i = 0; i < iterations; i++)
+                        for (var i = 0; i < iterations; i++)
                         {
                             var session = Guid.NewGuid();
                             mgr.AcquireLock(session, true, "a");
@@ -199,33 +238,21 @@ namespace Tests.UnitTests
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
-                        {
-                            mgr.DoWithReadLock(ReadAbc, "a", "b", "c");
-                        }
+                        for (var i = 0; i < 100; i++) mgr.DoWithReadLock(ReadAbc, "a", "b", "c");
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
-                        {
-                            mgr.DoWithReadLock(ReadA, "a");
-                        }
+                        for (var i = 0; i < 100; i++) mgr.DoWithReadLock(ReadA, "a");
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
-                        {
-                            mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
-                        }
+                        for (var i = 0; i < 100; i++) mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
                     },
                     () =>
                     {
-                        for (int i = 0; i < 100; i++)
-                        {
-                            mgr.DoWithWriteLock(WriteA, "a");
-                        }
+                        for (var i = 0; i < 100; i++) mgr.DoWithWriteLock(WriteA, "a");
                     });
-        });
+            });
 
             watch.Stop();
 
@@ -233,8 +260,8 @@ namespace Tests.UnitTests
             Console.WriteLine($"retries = {mgr.Retries}");
             Console.WriteLine($"a = {_resourceA.Count} b = {_resourceB.Count} c = {_resourceC.Count}");
 
-            
-            int locks = mgr.GetCurrentlyHoldLocks();
+
+            var locks = mgr.GetCurrentlyHoldLocks();
 
             Assert.AreEqual(0, locks);
         }
@@ -254,22 +281,22 @@ namespace Tests.UnitTests
             Assert.AreEqual(3, lockManager.GetCurrentlyHoldLocks());
 
             Assert.IsTrue(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
-            
+
             // false because it is a read-only lock
             Assert.False(lockManager.CheckLock(sessionId, true, "x", "y", "z"));
 
-            lockManager.CloseSession( sessionId);
+            lockManager.CloseSession(sessionId);
 
             Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
 
             // session no longer active
             Assert.IsFalse(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
-            
-            
+
+
             lockManager.AcquireLock(sessionId, true, "tony", "tara");
             Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks());
 
-            
+
             Thread.Sleep(500);
 
             Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks(100));
@@ -277,28 +304,26 @@ namespace Tests.UnitTests
             var locks = lockManager.ForceRemoveAllLocks(100);
 
             A.CallTo(() => log.LogEvent(EventType.LockRemoved, null, 0)).MustHaveHappened();
-            
+
             Assert.AreEqual(2, locks);
 
             Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
-            
-
         }
 
         [Test]
         public void Consistent_read_sessions()
         {
-            ILockManager lockManager = new LockManager(null);
+            ILockManager lockManager = new LockManager();
 
             var session = Guid.NewGuid();
 
             lockManager.AcquireLock(session, false, "x", "y", "z");
-            
 
-            bool success = lockManager.CheckLock(session,false,  "x");
+
+            var success = lockManager.CheckLock(session, false, "x");
             Assert.IsTrue(success);
 
-           
+
             // try with a new session (should not work)
             success = lockManager.CheckLock(Guid.NewGuid(), false, "x");
             Assert.IsFalse(success);
@@ -311,10 +336,9 @@ namespace Tests.UnitTests
             success = lockManager.CheckLock(session, true, "nope");
             Assert.IsFalse(success);
 
-            
+
             // trying to close an inactive session throws an exception
             Assert.Throws<NotSupportedException>(() => lockManager.CloseSession(Guid.NewGuid()));
-            
         }
     }
 }

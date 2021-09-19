@@ -1,4 +1,4 @@
-#define DEBUG_VERBOSE
+//#define DEBUG_VERBOSE
 
 using System;
 using System.Collections.Concurrent;

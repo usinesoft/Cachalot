@@ -2,7 +2,7 @@
   "profiles": {
     "Spike": {
       "commandName": "Project",
-      "commandLineArgs": "2 30"
+      "commandLineArgs": "2 50"
     }
   }
 }

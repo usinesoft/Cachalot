@@ -6,6 +6,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Client;
 using Client.ChannelInterface;
 using Client.Core;
@@ -91,8 +92,12 @@ namespace Channel
                     }
 
                     Interlocked.Increment(ref _connections);
-                    var clientThread = new Thread(ClientLoop);
-                    clientThread.Start(client);
+
+                    Task.Run(async () =>
+                    {
+                        await ClientLoop(client);
+                    });
+
                 }
                 catch (Exception ex)
                 {
@@ -107,7 +112,7 @@ namespace Channel
             }
         }
 
-        private void ClientLoop(object state)
+        private async Task ClientLoop(object state)
         {
             var client = (TcpClient) state;
 
@@ -119,13 +124,17 @@ namespace Channel
             {
                 while (client.Connected)
                 {
-                    var inputType = clientStream.ReadByte();
+                    var buffer = new byte[1];
+                    var bytesCount = await clientStream.ReadAsync(buffer, 0,1);
+
+                    if (bytesCount == -1) // connection closed
+                        break;
+
+                    var inputType = buffer[0];
 
                     Dbg.Trace($"input type {inputType}");
 
-                    if (inputType == -1) // connection closed
-                        break;
-
+                    
                     // if its a simple ping do not expect a request
                     if (inputType == Constants.PingCookie)
                     {
@@ -133,7 +142,7 @@ namespace Channel
                     }
                     else
                     {
-                        var request = Streamer.FromStream<Request>(clientStream);
+                        var request = await Streamer.FromStreamAsync<Request>(clientStream);
 
                         Dbg.Trace($"request received in client loop");
 

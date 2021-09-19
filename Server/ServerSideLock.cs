@@ -75,7 +75,7 @@ namespace Server
                 SpinWait(4);
             }
 
-            Debug.Assert(result ? _writeCount > 0:ReadCount > 0);
+            Debug.Assert(!result || _writeCount > 0);
 
             Dbg.Trace($"lock = {_id} write lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest} maxReads = {MaxReads}");
 

@@ -853,7 +853,7 @@ namespace Tests.IntegrationTests
                 Parallel.Invoke(
                     () =>
                     {
-                        Parallel.For(0, Threads, i =>
+                        Parallel.For(0, Threads,new ParallelOptions{MaxDegreeOfParallelism = 10},   i =>
                         {
 
                             // ReSharper disable once AccessToDisposedClosure
@@ -890,7 +890,7 @@ namespace Tests.IntegrationTests
 
 
 
-                        });
+                        }); 
                     },
                     () =>
                     {

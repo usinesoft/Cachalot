@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
@@ -44,6 +45,49 @@ namespace Client.Core
                 mode = SerializationMode.ProtocolBuffers;
 
             return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
+        }
+
+
+        
+        public static async Task<TItem> FromStreamAsync<TItem>(Stream stream)
+        {
+            // itemCount always one here
+            var buffer = new byte[sizeof(int)];
+            await stream.ReadAsync(buffer, 0,sizeof(int));
+            var itemCount = BitConverter.ToInt32(buffer, 0);
+            
+            if (itemCount != 1)
+            {
+                var msg = $"Waiting for one object, found {itemCount}";
+                throw new StreamingException(msg);
+            }
+
+            // use protocol buffers or json
+            buffer = new byte[sizeof(bool)];
+            await stream.ReadAsync(buffer, 0,sizeof(bool));
+            var useProtocolBuffers = BitConverter.ToBoolean(buffer, 0);
+
+            // use compression
+            await stream.ReadAsync(buffer, 0,sizeof(bool));
+            var useCompression = BitConverter.ToBoolean(buffer, 0);
+            
+            // read and ignore the rank (not used for single objects)
+            buffer = new byte[sizeof(double)];
+            await stream.ReadAsync(buffer, 0,sizeof(double));
+            
+            // size of raw data
+            buffer = new byte[sizeof(int)];
+            await stream.ReadAsync(buffer, 0,sizeof(int));
+            var dataSize = BitConverter.ToInt32(buffer, 0);
+
+            buffer = new byte[dataSize];
+            await stream.ReadAsync(buffer, 0,dataSize);
+
+            var mode = SerializationMode.Json;
+            if (useProtocolBuffers)
+                mode = SerializationMode.ProtocolBuffers;
+
+            return SerializationHelper.ObjectFromBytes<TItem>(buffer, mode, useCompression);
         }
 
         public static void ToStream<TItem>(Stream stream, TItem item, CollectionSchema collectionSchema = null)

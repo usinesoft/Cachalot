@@ -1019,6 +1019,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Import_real_data_set()
         {
+            
             var schema = TypedSchemaFactory.FromType(typeof(Business));
 
             var serializer = new JsonSerializer();

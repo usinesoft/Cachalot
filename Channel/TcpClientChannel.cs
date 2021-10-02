@@ -290,7 +290,7 @@ namespace Channel
             }
             finally
             {
-                if (sessionId == default) // not in a session so return the connection to the pool
+                if (sessionId == default && connection != null) // not in a session so return the connection to the pool
                 {
                     _connectionPool.Put(connection);
                 }

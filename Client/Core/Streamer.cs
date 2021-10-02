@@ -47,6 +47,20 @@ namespace Client.Core
             return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
         }
 
+        public static async Task<byte[]> ReadDataAsync(Stream stream, int dataSize)
+        {
+            var result = new byte[dataSize];
+
+            int offset = 0;
+            
+            while (offset < dataSize)
+            {
+                int read = await stream.ReadAsync(result, offset,dataSize - offset);
+                offset += read;
+            }
+            
+            return result;
+        }
 
         
         public static async Task<TItem> FromStreamAsync<TItem>(Stream stream)
@@ -80,14 +94,14 @@ namespace Client.Core
             await stream.ReadAsync(buffer, 0,sizeof(int));
             var dataSize = BitConverter.ToInt32(buffer, 0);
 
-            buffer = new byte[dataSize];
-            await stream.ReadAsync(buffer, 0,dataSize);
-
+            // raw data
+            var data = await ReadDataAsync(stream, dataSize);
+            
             var mode = SerializationMode.Json;
             if (useProtocolBuffers)
                 mode = SerializationMode.ProtocolBuffers;
 
-            return SerializationHelper.ObjectFromBytes<TItem>(buffer, mode, useCompression);
+            return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
         }
 
         public static void ToStream<TItem>(Stream stream, TItem item, CollectionSchema collectionSchema = null)

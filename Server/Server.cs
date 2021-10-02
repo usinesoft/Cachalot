@@ -6,6 +6,7 @@ using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Tools;
+using ProtoBuf.Meta;
 using Server.Persistence;
 using Constants = Server.Persistence.Constants;
 
@@ -260,10 +261,18 @@ namespace Server
 
         public event EventHandler<EventArgs> StopRequired;
 
+        static Server()
+        {
+            // initialize protobuf metadata
+            RuntimeTypeModel.Default.CompileInPlace();
+            
+        }
+
         public void Start()
         {
             Dbg.Trace("starting server");
 
+        
             _startTime = DateTime.Now;
 
 

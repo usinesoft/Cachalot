@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using Cachalot.Linq;
+using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
@@ -18,18 +20,16 @@ namespace Tests.IntegrationTests
     [Category("Performance")]
     public class TestFixturePersistenceWithExternalServer
     {
-        private const int ServerPort = 48402;
-
         private Process _process;
 
         [OneTimeSetUp]
         public void StartServer()
         {
-            #if DEBUG
-                var path = "../../../../bin/Debug/Server/netcoreapp3.1";
-            #else
+#if DEBUG
+            var path = "../../../../bin/Debug/Server/netcoreapp3.1";
+#else
                 var path = "../../../../bin/Release/Server/netcoreapp3.1";
-            #endif
+#endif
 
             var fullPath = Path.Combine(path, "server.dll");
 
@@ -37,7 +37,7 @@ namespace Tests.IntegrationTests
 
             _process = new Process
             {
-                StartInfo = {FileName = "dotnet", Arguments = $"{fullPath} 02", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal}
+                StartInfo = { FileName = "dotnet", Arguments = $"{fullPath}", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal }
             };
 
             _process.Start();
@@ -47,7 +47,7 @@ namespace Tests.IntegrationTests
         [OneTimeTearDown]
         public void StopServer()
         {
-            
+
             _process.Kill(true);
             _process.WaitForExit();
         }
@@ -60,7 +60,7 @@ namespace Tests.IntegrationTests
                 new ServerConfig
                 {
                     Host = "localhost",
-                    Port = 48402
+                    Port = Constants.DefaultPort
                 }
             }
         };
@@ -80,7 +80,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "localhost",
-                        Port = 48402
+                        Port = Constants.DefaultPort
                     }
                 }
             };
@@ -101,7 +101,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "127.0.0.1",
-                        Port = 48402
+                        Port = Constants.DefaultPort
                     }
                 }
             };
@@ -122,7 +122,7 @@ namespace Tests.IntegrationTests
                     new ServerConfig
                     {
                         Host = "::1",
-                        Port = 48402
+                        Port = Constants.DefaultPort
                     }
                 }
             };
@@ -134,7 +134,7 @@ namespace Tests.IntegrationTests
             }
 
             // works with connection string too
-            using (var connector = new Connector("localhost:48402"))
+            using (var connector = new Connector($"localhost:{Constants.DefaultPort}"))
             {
                 connector.GenerateUniqueIds("event", 1);
             }

@@ -2,7 +2,6 @@
 
 using System.IO;
 using System.Text;
-using Client.Messages;
 using ICSharpCode.SharpZipLib.GZip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -53,7 +52,7 @@ namespace Client.Core
 
         {
             if (mode != SerializationMode.Json)
-                return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
+                return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
 
 
             JsonTextReader reader;
@@ -77,15 +76,14 @@ namespace Client.Core
             if (obj.UseCompression)
             {
                 var stream = new MemoryStream(obj.ObjectData);
-                using (var zInStream = new GZipInputStream(stream))
-                {
-                    var stream2 = new MemoryStream();
-                    zInStream.CopyTo(stream2);
+                using var zInStream = new GZipInputStream(stream);
 
-                    var json = Encoding.UTF8.GetString(stream2.ToArray());
+                var stream2 = new MemoryStream();
+                zInStream.CopyTo(stream2);
 
-                    return JToken.Parse(json).ToString(Formatting.Indented);
-                }
+                var json = Encoding.UTF8.GetString(stream2.ToArray());
+
+                return JToken.Parse(json).ToString(Formatting.Indented);
             }
 
             {
@@ -102,7 +100,7 @@ namespace Client.Core
 
             if (mode == SerializationMode.Json) return ObjectFromStream<TItem>(stream, mode, compress);
 
-            return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Fixed32);
+            return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
         }
 
         public static void ObjectToStream<TItem>(TItem obj, Stream stream, SerializationMode mode, bool compress)
@@ -126,21 +124,19 @@ namespace Client.Core
             }
             else
             {
-                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Fixed32);
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Base128);
             }
         }
 
         public static byte[] ObjectToBytes<TItem>(TItem obj, SerializationMode mode, bool useCompression)
         {
-            using (var output = new MemoryStream())
-            {
-                if (mode == SerializationMode.Json)
-                    ObjectToStream(obj, output, mode, useCompression);
-                else
-                    ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Fixed32);
+            using var output = new MemoryStream();
+            if (mode == SerializationMode.Json)
+                ObjectToStream(obj, output, mode, useCompression);
+            else
+                ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Base128);
 
-                return output.ToArray();
-            }
+            return output.ToArray();
         }
 
 

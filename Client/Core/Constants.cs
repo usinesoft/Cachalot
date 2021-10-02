@@ -14,7 +14,7 @@
         
         public static readonly int ReceiveTimeoutInMilliseconds = 1000;
         
-        public static readonly int ConnectionTimeoutInMilliseconds = 1000;
+        public static readonly int ConnectionTimeoutInMilliseconds = 3000;
         
         public static readonly int StreamingThreshold = 50000;
         

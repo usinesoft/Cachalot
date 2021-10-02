@@ -37,30 +37,31 @@ namespace Channel
             {
                 var client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}, NoDelay = true};
 
-                
-                var connectDone = new ManualResetEvent (false);
+                client.Connect(_address, _port);
 
-                var endConnect = new AsyncCallback (o => {
+                //var connectDone = new ManualResetEvent (false);
 
-                    try
-                    {
-                        var state = (TcpClient) o.AsyncState;
-                        state.EndConnect(o);
-                    }
-                    catch (Exception)
-                    {
-                        // ignore
-                    }
-                    finally
-                    {
-                        connectDone.Set ();    
-                    }
+                //var endConnect = new AsyncCallback (o => {
+
+                //    try
+                //    {
+                //        var state = (TcpClient) o.AsyncState;
+                //        state.EndConnect(o);
+                //    }
+                //    catch (Exception)
+                //    {
+                //        // ignore
+                //    }
+                //    finally
+                //    {
+                //        connectDone.Set ();    
+                //    }
                     
-                });
+                //});
 
                 
-                client.BeginConnect(_address, _port, endConnect, client);
-                connectDone.WaitOne (TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
+                //client.BeginConnect(_address, _port, endConnect, client);
+                //connectDone.WaitOne (TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
 
                 
                 if (!client.Connected)

@@ -45,7 +45,11 @@ namespace Channel
                     try
                     {
                         var state = (TcpClient) o.AsyncState;
-                        state.EndConnect (o);
+                        state.EndConnect(o);
+                    }
+                    catch (Exception)
+                    {
+                        // ignore
                     }
                     finally
                     {

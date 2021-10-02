@@ -26,15 +26,7 @@ namespace Tests.UnitTests
             var res3 = pool.Get();
             Assert.AreEqual(pool.NewResourceClaims, 2);
 
-            //invalidate a resource and put it back to the pool
-            res3.IsValid = false;
-            pool.Put(res3);
-
-            //this call will claim an external resource as the one available in the pool is
-            //not valid any more
-            pool.Get();
-            Assert.AreEqual(4, pool.NewResourceClaims);
-
+           
         }
 
         [Test]

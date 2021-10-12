@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
@@ -95,18 +94,16 @@ namespace Server
     internal class UniqueIndex : IReadOnlyIndex
     {
         private readonly IDictionary<KeyValue, PackedObject> _dictionary;
-        private readonly bool _isPrimary;
-
-        public UniqueIndex(string name, IDictionary<KeyValue, PackedObject> dictionary, bool isPrimary = false)
+        
+        public UniqueIndex(string name, IDictionary<KeyValue, PackedObject> dictionary)
         {
             _dictionary = dictionary;
-            _isPrimary = isPrimary;
             Name = name;
         }
 
         public string Name { get; }
 
-        public IndexType IndexType => _isPrimary ? IndexType.Primary : IndexType.Unique;
+        public IndexType IndexType => IndexType.Primary;
 
         public ISet<PackedObject> GetMany([NotNull] IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
         {

@@ -71,6 +71,11 @@ namespace Client.Queries
         /// </summary>
         [field:ProtoMember(10)] public bool OrderByIsDescending { get; set; }
 
+        /// <summary>
+        /// Simple query. Search one element by primary key
+        /// </summary>
+        [field:ProtoMember(11)] public bool ByPrimaryKey { get; set; }
+
        
         #endregion
 
@@ -175,6 +180,8 @@ namespace Client.Queries
         {
             return Elements.Count == 0;
         }
+
+        
 
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);

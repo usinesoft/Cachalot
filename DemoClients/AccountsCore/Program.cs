@@ -20,7 +20,8 @@ namespace Accounts
             try
             {
                 // quick test with a cluster of two nodes
-                using var connector = new Connector("localhost:48401 + localhost:48402");
+                using var connector = new Connector("localhost:48401+localhost:48402");
+                var cluster = connector.GetClusterDescription();
 
                 Console.WriteLine();
                 Console.WriteLine("test with a cluster of two servers");

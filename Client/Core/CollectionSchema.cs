@@ -59,11 +59,7 @@ namespace Client.Core
         [field: ProtoMember(5)] public ISet<string> FullText { get; } = new HashSet<string>();
 
 
-        /// <summary>
-        ///     The unique keys
-        /// </summary>
-        [JsonIgnore] public IList<KeyInfo> UniqueKeyFields => ServerSide.Where(v=>v.IndexType ==  IndexType.Unique).ToList();
-
+        
         /// <summary>
         ///     The index fields
         /// </summary>

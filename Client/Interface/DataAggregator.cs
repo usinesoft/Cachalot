@@ -368,7 +368,23 @@ namespace Client.Interface
         {
             Dbg.Trace($"GetMany for session {sessionId}");
 
-             var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
+            // do not work too hard if it is a simple query by primary key
+            if (query.ByPrimaryKey)
+            {
+                var primaryKey = query.Elements[0].Elements[0].Value;
+
+                var node = WhichNode(primaryKey);
+
+                var one =  CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
+                if (one != null)
+                {
+                    yield return one;
+                }
+
+                yield break;
+            }
+
+            var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
             try
             {

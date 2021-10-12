@@ -42,7 +42,7 @@ namespace Tests.TestData
         }
 
 
-        [ServerSideValue(IndexType.Unique)]
+        [ServerSideValue(IndexType.Dictionary)]
         public int ContractId
         {
             get => _contractId;

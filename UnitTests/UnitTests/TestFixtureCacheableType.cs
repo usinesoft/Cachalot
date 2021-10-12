@@ -63,9 +63,9 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
             Assert.IsNotNull(schema.PrimaryKeyField);
             Assert.AreEqual(schema.CollectionName, nameof(CacheableTypeOk));
-            Assert.AreEqual(schema.UniqueKeyFields.Count, 1);
+           
 
-            Assert.AreEqual(schema.IndexFields.Count, 4);
+            Assert.AreEqual(schema.IndexFields.Count, 5);
             Assert.AreEqual(schema.FullText.Count, 2);
         }
     }

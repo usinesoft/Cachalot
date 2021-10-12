@@ -208,6 +208,17 @@ namespace Client.Parsing
                 query.Elements.Add(andQuery);
             }
 
+            if (query.Elements.Count == 1 && query.Elements[0].Elements.Count == 1)
+            {
+                var atomic = query.Elements[0].Elements[0];
+
+                if (atomic.Operator == QueryOperator.Eq && atomic.Value.KeyName == schema.PrimaryKeyField.Name)
+                {
+                    query.ByPrimaryKey = true;
+                }
+                
+            }
+
 
 
         }

@@ -36,7 +36,21 @@ namespace Client.Core.Linq
         {
             base.VisitQueryModel(queryModel);
 
+
             QueryHelper.OptimizeQuery(RootExpression);
+
+
+            // mark simple queries by primary key to simplify processing
+            if (RootExpression.Elements.Count == 1 && RootExpression.Elements[0].Elements.Count == 1)
+            {
+                var atomic = RootExpression.Elements[0].Elements[0];
+
+                if (atomic.Operator == QueryOperator.Eq && atomic.Value.KeyName == _collectionSchema.PrimaryKeyField.Name)
+                {
+                    RootExpression.ByPrimaryKey = true;
+                }
+                
+            }
         }
 
 

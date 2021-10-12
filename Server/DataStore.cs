@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Client.Interface;
 using Client.Messages;
 using Client.Tools;
 using Server.FullTextSearch;
-using Server.Persistence;
 using Constants = Server.Persistence.Constants;
 
 #endregion
@@ -29,10 +27,6 @@ namespace Server
 
         public IReadOnlyIndex PrimaryIndex => new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
 
-        public IReadOnlyIndex UniqueIndex(string name)
-        {
-            return new UniqueIndex(name, _dataByUniqueKey[name]);
-        }
 
         
         /// <summary>
@@ -45,9 +39,7 @@ namespace Server
             if (String.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
                 return new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
 
-            return _dataByIndexKey.FirstOrDefault(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ??
-                   (IReadOnlyIndex)_dataByUniqueKey.Where(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase))
-                       .Select(i => new UniqueIndex(i.Key, i.Value)).FirstOrDefault();
+            return _dataByIndexKey.FirstOrDefault(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ;
         }
 
         #endregion
@@ -67,12 +59,7 @@ namespace Server
         /// </summary>
         private readonly Dictionary<string, IndexBase> _dataByIndexKey;
 
-        /// <summary>
-        ///     List of indexes for unique keys
-        /// </summary>
-        private readonly Dictionary<string, Dictionary<KeyValue, PackedObject>> _dataByUniqueKey;
-
-
+       
         private readonly FullTextIndex _fullTextIndex;
 
 
@@ -109,12 +96,6 @@ namespace Server
             //initialize the primary key dictionary
             DataByPrimaryKey = new Dictionary<KeyValue, PackedObject>();
 
-
-            //initialize the unique keys dictionaries (one by unique key) 
-            _dataByUniqueKey = new Dictionary<string, Dictionary<KeyValue, PackedObject>>();
-
-            foreach (var keyInfo in collectionSchema.UniqueKeyFields)
-                _dataByUniqueKey.Add(keyInfo.Name, new Dictionary<KeyValue, PackedObject>());
 
             //initialize the indexes (one by index key)
             _dataByIndexKey = new Dictionary<string, IndexBase>();
@@ -196,12 +177,7 @@ namespace Server
 
             DataByPrimaryKey.Add(primaryKey, packedObject);
 
-            foreach (var metadata in CollectionSchema.UniqueKeyFields)
-            {
-                var value = packedObject.Values[metadata.Order];
-                var dictionaryToUse = _dataByUniqueKey[value.KeyName];
-                dictionaryToUse.Add(value, packedObject);
-            }
+           
 
             foreach (var index in _dataByIndexKey)
                 index.Value.Put(packedObject);
@@ -241,8 +217,7 @@ namespace Server
 
             foreach (var metadata in CollectionSchema.ServerSide)
             {
-                if (metadata.IndexType == IndexType.Unique)
-                    _dataByUniqueKey[metadata.Name].Remove(toRemove[metadata.Order]);
+               
                 if (metadata.IndexType == IndexType.Ordered || metadata.IndexType == IndexType.Dictionary)
                     _dataByIndexKey[metadata.Name].RemoveOne(toRemove);
             }
@@ -259,9 +234,7 @@ namespace Server
             EvictionPolicy.Clear();
             DataByPrimaryKey.Clear();
 
-            foreach (var indexByKey in _dataByUniqueKey)
-                indexByKey.Value.Clear();
-
+            
             foreach (var index in _dataByIndexKey)
                 index.Value.Clear();
 
@@ -314,10 +287,7 @@ namespace Server
 
             foreach (var item in items)
             {
-                foreach (var metadata in CollectionSchema.ServerSide)
-                    if (metadata.IndexType == IndexType.Unique)
-                        _dataByUniqueKey[metadata.Name].Remove(item[metadata.Order]);
-
+                
                 // if present remove it from the full-text index
                 _fullTextIndex?.DeleteDocument(item.PrimaryKey);
 

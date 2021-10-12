@@ -51,6 +51,7 @@ namespace Client.Queries
             var andQuery = new AndQuery();
             query.Elements.Add(andQuery);
             andQuery.Elements.Add(new AtomicQuery(_collectionSchema.PrimaryKeyField, keyValue));
+            query.ByPrimaryKey = true;
 
             return query;
         }

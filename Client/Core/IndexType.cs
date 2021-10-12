@@ -10,10 +10,7 @@ namespace Client.Core
         /// The one and unique primary key
         /// </summary>
         Primary,
-        /// <summary>
-        /// Zero on more unique keys can be declared for a collection
-        /// </summary>
-        Unique,
+        
         /// <summary>
         /// Dictionary index (fast search but the comparison operators are not indexed)
         /// </summary>

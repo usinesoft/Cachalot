@@ -80,7 +80,7 @@ namespace Server.Queries
                     
 
                     // for primary or unique key we do not need more than one index 
-                    if (index.IndexType == IndexType.Primary || index.IndexType == IndexType.Unique)
+                    if (index.IndexType == IndexType.Primary)
                     {
                         
                         // no need to count for the primary index. Waste of time as it wil always be the only index used
@@ -404,12 +404,6 @@ namespace Server.Queries
                     return _dataStore.PrimaryIndex.GetMany(atomicQuery.Values).ToList();
                 }
 
-                if (atomicQuery.IndexType == IndexType.Unique)
-                {
-                    var uniqueIndex = _dataStore.UniqueIndex(atomicQuery.PropertyName);
-
-                    return uniqueIndex.GetMany(atomicQuery.Values).ToList();
-                }
             }
 
 

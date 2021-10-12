@@ -40,7 +40,7 @@ namespace Tests.TestData
             set => _primaryKey = value;
         }
 
-        [ServerSideValue(IndexType.Unique)]
+        [ServerSideValue(IndexType.Dictionary)]
         public int UniqueKey
         {
             get => _uniqueKey;

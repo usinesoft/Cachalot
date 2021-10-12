@@ -64,7 +64,8 @@ namespace Tests.UnitTests
             watch.Start();
 
             var iterations = 10_000;
-            Parallel.For(0, iterations, i =>
+            
+            Parallel.For(0, iterations, new ParallelOptions{MaxDegreeOfParallelism = 10}, i =>
             {
                 Parallel.Invoke(
                     () => mgr.DoWithReadLock(ReadAbc, "a", "b", "c"),

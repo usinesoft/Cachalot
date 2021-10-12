@@ -126,13 +126,15 @@ namespace BookingMarketplace
         {
             var config = new ClientConfig
             {
-                Servers = {new ServerConfig {Host = "localhost", Port = 48401}}
+                Servers = {new ServerConfig {Host = "localhost", Port = 48401}, new ServerConfig {Host = "localhost", Port = 48402}}
             };
 
             try
             {
                 // quick test with external server
-                using var connector = new Connector(config);
+                using var connector = new Connector("localhost:48401+localhost:48402");
+                
+                connector.AdminInterface().DropDatabase();
                 
                 Console.WriteLine();
                 Console.WriteLine("test with external server");
@@ -198,20 +200,20 @@ namespace BookingMarketplace
 
             var watch = new Stopwatch();
 
-            watch.Start();
-            for (var i = 0; i < TestIterations; i++) homes.Put(property);
+            //watch.Start();
+            //for (var i = 0; i < TestIterations; i++) homes.Put(property);
 
-            watch.Stop();
+            //watch.Stop();
 
-            Console.WriteLine($"Updating {TestIterations} items one by one took {watch.ElapsedMilliseconds} ms");
+            //Console.WriteLine($"Updating {TestIterations} items one by one took {watch.ElapsedMilliseconds} ms");
 
-            watch.Reset();
-            watch.Start();
-            for (var i = 0; i < TestIterations; i++) reloaded = homes.First(p => p.Id == property.Id);
+            //watch.Reset();
+            //watch.Start();
+            //for (var i = 0; i < TestIterations; i++) reloaded = homes.First(p => p.Id == property.Id);
 
-            watch.Stop();
+            //watch.Stop();
 
-            Console.WriteLine($"Loading {TestIterations} items one by one (linq) took {watch.ElapsedMilliseconds} ms");
+            //Console.WriteLine($"Loading {TestIterations} items one by one (linq) took {watch.ElapsedMilliseconds} ms");
 
             watch.Reset();
             watch.Start();
@@ -223,158 +225,158 @@ namespace BookingMarketplace
                 $"Loading {TestIterations} items one by one (primary key) took {watch.ElapsedMilliseconds} ms");
 
 
-            const int feedObjects = 100000;
-            var pids = connector.GenerateUniqueIds("property_id", feedObjects);
+            //const int feedObjects = 100000;
+            //var pids = connector.GenerateUniqueIds("property_id", feedObjects);
 
-            var items = GenerateMany(pids);
+            //var items = GenerateMany(pids);
 
-            var hashset = new HashSet<int>(pids);
-            // check they are all identical
-            if (hashset.Count != pids.Length)
-            {
-                throw new NotSupportedException("ids are not unique");
-            }
-
-
-            // feed many
-            watch.Reset();
-            watch.Start();
-
-            homes.PutMany(items);
-
-            watch.Stop();
-
-            Console.WriteLine($"Inserting {feedObjects} items at once took {watch.ElapsedMilliseconds} ms");
-
-            // get many
-
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> inParis = new List<Home>();
-            for (var i = 0; i < 10; i++) inParis = homes.Where(p => p.Town == "Paris").ToList();
-
-            watch.Stop();
-
-            Console.WriteLine($"Select {inParis.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            // get many with complex query
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> inParisNotExpensiveWithManyRooms = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                inParisNotExpensiveWithManyRooms = homes
-                    .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
-                    .ToList();
-
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Select {inParisNotExpensiveWithManyRooms.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            // get many with contains operator
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> inParisAvailableToday = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                inParisAvailableToday = homes
-                    .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
-                    .ToList();
-
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Select with list index {inParisAvailableToday.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> inParisAvailableTomorrow = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                inParisAvailableTomorrow = homes
-                    .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today.AddDays(1)))
-                    .ToList();
-
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Select with list index {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            // update many
-            watch.Reset();
-            watch.Start();
-
-            homes.PutMany(inParisNotExpensiveWithManyRooms);
-
-            watch.Stop();
+            //var hashset = new HashSet<int>(pids);
+            //// check they are all identical
+            //if (hashset.Count != pids.Length)
+            //{
+            //    throw new NotSupportedException("ids are not unique");
+            //}
 
 
-            Console.WriteLine(
-                $"Update  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
+            //// feed many
+            //watch.Reset();
+            //watch.Start();
 
-            Console.WriteLine("Full text search:");
+            //homes.PutMany(items);
+
+            //watch.Stop();
+
+            //Console.WriteLine($"Inserting {feedObjects} items at once took {watch.ElapsedMilliseconds} ms");
+
+            //// get many
+
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> inParis = new List<Home>();
+            //for (var i = 0; i < 10; i++) inParis = homes.Where(p => p.Town == "Paris").ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine($"Select {inParis.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
+
+            //// get many with complex query
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> inParisNotExpensiveWithManyRooms = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    inParisNotExpensiveWithManyRooms = homes
+            //        .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
+            //        .ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine(
+            //    $"Select {inParisNotExpensiveWithManyRooms.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
+
+            //// get many with contains operator
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> inParisAvailableToday = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    inParisAvailableToday = homes
+            //        .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
+            //        .ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine(
+            //    $"Select with list index {inParisAvailableToday.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
+
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> inParisAvailableTomorrow = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    inParisAvailableTomorrow = homes
+            //        .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today.AddDays(1)))
+            //        .ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine(
+            //    $"Select with list index {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
+
+            //// update many
+            //watch.Reset();
+            //watch.Start();
+
+            //homes.PutMany(inParisNotExpensiveWithManyRooms);
+
+            //watch.Stop();
+
+
+            //Console.WriteLine(
+            //    $"Update  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
+
+            //Console.WriteLine("Full text search:");
 
             
-            watch.Reset();
-            watch.Start();
+            //watch.Reset();
+            //watch.Start();
 
-            IList<Home> result1 = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                result1 = homes.FullTextSearch("Nice beach").ToList();
+            //IList<Home> result1 = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    result1 = homes.FullTextSearch("Nice beach").ToList();
 
-            watch.Stop();
+            //watch.Stop();
 
-            Console.WriteLine(
-                $"Select {result1.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+            //Console.WriteLine(
+            //    $"Select {result1.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
 
-            Console.WriteLine(
-                $"bast match:  {result1.First().Id}");
-
-
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> result2 = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                result2 = homes.FullTextSearch("close metro").ToList();
-
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Select {result2.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
-
-            Console.WriteLine(
-                $"bast match:  {result2.First().Id}");
-
-            watch.Reset();
-            watch.Start();
-
-            IList<Home> result3 = new List<Home>();
-            for (var i = 0; i < 10; i++)
-                result3 = homes.FullTextSearch("rue de la mort").Take(10).ToList();
-
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Select {result3.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
-
-            Console.WriteLine(
-                $"bast match:  {result3.First().Id}");
-
-            // delete many with complex query
-            watch.Reset();
-            watch.Start();
-
-            homes.DeleteMany(p =>
-                p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
-
-            watch.Stop();
+            //Console.WriteLine(
+            //    $"bast match:  {result1.First().Id}");
 
 
-            Console.WriteLine(
-                $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> result2 = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    result2 = homes.FullTextSearch("close metro").ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine(
+            //    $"Select {result2.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+
+            //Console.WriteLine(
+            //    $"bast match:  {result2.First().Id}");
+
+            //watch.Reset();
+            //watch.Start();
+
+            //IList<Home> result3 = new List<Home>();
+            //for (var i = 0; i < 10; i++)
+            //    result3 = homes.FullTextSearch("rue de la mort").Take(10).ToList();
+
+            //watch.Stop();
+
+            //Console.WriteLine(
+            //    $"Select {result3.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
+
+            //Console.WriteLine(
+            //    $"bast match:  {result3.First().Id}");
+
+            //// delete many with complex query
+            //watch.Reset();
+            //watch.Start();
+
+            //homes.DeleteMany(p =>
+            //    p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
+
+            //watch.Stop();
+
+
+            //Console.WriteLine(
+            //    $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
 
         }
 

@@ -17,7 +17,7 @@ namespace Client.Tools
         /// <returns></returns>
         public static IEnumerable<RankedItem> MixOrderedEnumerators(string orderedPropertyName, bool descending = false, params IEnumerator<RankedItem>[] sources)
         {
-            return descending? MergePreserveOrderDescending(sources, ri => (JValue) ri.Item.GetValue(orderedPropertyName)):
+            return descending? MergePreserveOrderDescending(sources, ri => (JValue) ri.Item.GetValue(orderedPropertyName,StringComparison.InvariantCultureIgnoreCase)):
                 MergePreserveOrderAscending(sources, ri => (JValue) ri.Item.GetValue(orderedPropertyName));
 
         }

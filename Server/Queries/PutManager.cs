@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using Client;
 using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
@@ -69,6 +70,9 @@ namespace Server.Queries
 
         private int ProcessPutRequest(PutRequest putRequest)
         {
+
+            Dbg.Trace($"Put request {putRequest.Items.Count:D5} items put session{putRequest.SessionId}");
+
             // a feed session may contain multiple requests
             if (putRequest.SessionId != default)
             {
@@ -82,7 +86,11 @@ namespace Server.Queries
 
                     _dataStore.InternalPutMany(all, putRequest.ExcludeFromEviction);
 
+                    Dbg.Trace($"End of session {all.Count:D5} items put session{putRequest.SessionId}");
+
                     return all.Count;
+
+                    
 
                 }
 

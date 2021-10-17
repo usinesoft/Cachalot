@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Client.Core;
 using Client.Queries;
 using JetBrains.Annotations;
@@ -88,7 +89,7 @@ namespace Client.Messages
 
             var request = new PutRequest(CollectionName)
             {
-                EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+                EndOfSession = false, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
             };
 
             result.Add(request);
@@ -101,13 +102,20 @@ namespace Client.Messages
                 {
                     request = new PutRequest(CollectionName)
                     {
-                        EndOfSession = EndOfSession, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+                        EndOfSession = false, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
                     };
 
                     result.Add(request);
                     size = 0;
                 }
             }
+
+
+            if (EndOfSession) // add an empty request to trigger updating sorted indexes server side
+            {
+                result.Add(new PutRequest(CollectionName){EndOfSession = EndOfSession,SessionId = SessionId});
+            }
+            
 
 
             return result;

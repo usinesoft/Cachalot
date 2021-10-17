@@ -211,14 +211,14 @@ namespace Client.Interface
             if (items == null)
                 throw new ArgumentNullException(nameof(items));
 
-            
-
             var sessionId = Guid.NewGuid();
 
             
             // initialize one request per node
             var requests = new PutRequest[CacheClients.Count];
 
+            int totalSent = 0;
+            int total = 0;
 
             // Parallelize both nodes and requests (multiple requests for the same node are executed in parallel if multiple connections are available in the pool)
             var tasks = new List<Task>();
@@ -227,12 +227,11 @@ namespace Client.Interface
 
                 var node = WhichNode(item);
 
-                if (requests[node] == null)
-                    requests[node] = new PutRequest(collectionName)
-                    {
-                        ExcludeFromEviction = excludeFromEviction,
-                        SessionId = sessionId
-                    };
+                requests[node] ??= new PutRequest(collectionName)
+                {
+                    ExcludeFromEviction = excludeFromEviction,
+                    SessionId = sessionId
+                };
 
                 var request = requests[node];
 
@@ -243,12 +242,17 @@ namespace Client.Interface
                     var task = Task.Factory.StartNew(re =>
                     {
                         var put = (PutRequest) re;
+                        Interlocked.Add(ref total, put.Items.Count);
+
                         var split = put.SplitWithMaxSize();
 
                         foreach (var putRequest in split)
                         {
                             var response =
                                 CacheClients[node].Channel.SendRequest(putRequest);
+
+                            Interlocked.Add(ref totalSent, putRequest.Items.Count);
+
                             if (response is ExceptionResponse exResponse)
                                 throw new CacheException(
                                     "Error while writing an object to the cache",
@@ -267,6 +271,17 @@ namespace Client.Interface
                 }
             }
 
+            try
+            {
+                Task.WaitAll(tasks.ToArray());
+                Dbg.Trace($"{tasks.Count} tasks finished");
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
+
+            tasks.Clear();
 
             //send the last packet left for each node
             for (var node = 0; node < CacheClients.Count; node++)
@@ -281,11 +296,23 @@ namespace Client.Interface
                     var n = node;
                     var task = Task.Factory.StartNew(re =>
                     {
-                        var response = CacheClients[n].Channel.SendRequest((PutRequest) re);
-                        if (response is ExceptionResponse exResponse)
-                            throw new CacheException(
-                                "Error while writing an object to the cache",
-                                exResponse.Message, exResponse.CallStack);
+                        var put = (PutRequest) re;
+                        Interlocked.Add(ref total, put.Items.Count);
+                        var split = put.SplitWithMaxSize();
+                        
+
+                        foreach (var putRequest in split)
+                        {
+                            var response =
+                                CacheClients[n].Channel.SendRequest(putRequest);
+
+                            Interlocked.Add(ref totalSent, putRequest.Items.Count);
+
+                            if (response is ExceptionResponse exResponse)
+                                throw new CacheException(
+                                    "Error while writing an object to the cache",
+                                    exResponse.Message, exResponse.CallStack);    
+                        }
                     }, request);
 
                     tasks.Add(task);

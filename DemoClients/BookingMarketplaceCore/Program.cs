@@ -5,6 +5,8 @@ using System.Linq;
 using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
+using Remotion.Linq.Clauses;
+// ReSharper disable AccessToModifiedClosure
 
 
 namespace BookingMarketplace
@@ -27,7 +29,7 @@ namespace BookingMarketplace
                 new[] {"Ottawa", "Toronto", "Quebec", "Vancouver"},
             };
 
-            var rand = new Random();
+            var rand = new Random(Environment.TickCount);
 
 
             var result = new List<Home>(ids.Length);
@@ -124,20 +126,31 @@ namespace BookingMarketplace
 
         private static void Main()
         {
-            var config = new ClientConfig
-            {
-                Servers = {new ServerConfig {Host = "localhost", Port = 48401}, new ServerConfig {Host = "localhost", Port = 48402}}
-            };
+           
 
             try
             {
-                // quick test with external server
+                // test with a cluster of two nodes
                 using var connector = new Connector("localhost:48401+localhost:48402");
                 
-                connector.AdminInterface().DropDatabase();
+                Console.WriteLine();
+                Console.WriteLine("test with a cluster of two nodes");
+                Console.WriteLine("---------------------------");
+                PerfTest(connector);
+            }
+            catch (CacheException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            try
+            {
+                // test with one external server
+                using var connector = new Connector("localhost:48401");
+                
                 
                 Console.WriteLine();
-                Console.WriteLine("test with external server");
+                Console.WriteLine("test with one external server");
                 Console.WriteLine("---------------------------");
                 PerfTest(connector);
             }
@@ -151,6 +164,7 @@ namespace BookingMarketplace
                 // quick test with in-process server
                 using var connector = new Connector(new ClientConfig { IsPersistent = true });
                 
+                
                 Console.WriteLine();
                 Console.WriteLine("test with in-process server");
                 Console.WriteLine("---------------------------");
@@ -162,107 +176,163 @@ namespace BookingMarketplace
             }
         }
 
+
+        public static void RunOnce(Action action, string message)
+        {
+            try
+            {
+                var watch = new Stopwatch();
+
+                watch.Start();
+
+                action();
+
+                watch.Stop();
+
+                Console.WriteLine($" {message} took {watch.ElapsedMilliseconds} ms");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($" {message} failed: {e.Message}");
+            }
+
+        }
+
+        public static void Benchmark(Action action, string message)
+        {
+            try
+            {
+                // warm-up do not count
+                action();
+
+                var watch = new Stopwatch();
+
+                watch.Start();
+
+                const int iterations = 10;
+                for (int i = 0; i < iterations; i++)
+                {
+                    action();
+                }
+
+                watch.Stop();
+
+                Console.WriteLine($" {iterations} times {message} took {watch.ElapsedMilliseconds} ms average={watch.ElapsedMilliseconds/iterations} ms");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($" {message} failed: {e.Message}");
+            }
+
+        }
+
+        public static void CheckThat<T>(Predicate<T> check, string messageIfFails, T toCheck)
+        {
+            if (!check(toCheck))
+            {
+                throw new NotSupportedException(messageIfFails);
+            }
+        }
+
         private static void PerfTest(Connector connector)
         {
-            
-            // first delete all data to start with a clean database
             connector.AdminInterface().DropDatabase();
-
+            
             connector.DeclareCollection<Home>();
 
             var homes = connector.DataSource<Home>();
 
-            var ids = connector.GenerateUniqueIds("home_id", 1);
+            const int feedObjects = 100_000;
+            var pids = connector.GenerateUniqueIds("property_id", feedObjects);
 
-            var property = new Home
+            var items = GenerateMany(pids);
+            var distinctIds = items.Select(i => i.Id).Distinct().Count();
+
+            // 1 feed with many objects
+            RunOnce(() => homes.PutMany(items), $"feeding the collection with {feedObjects} objects");
+
+            int c1 = homes.Count();
+            homes.PutMany(items);
+
+            int c2 = homes.Count();
+
+            // 2 read one object at a time
+            const int objectsRead = 1000;
+            
+            Benchmark(() =>
             {
-                Id = ids[0],
-                Adress = "14 rue du chien qui fume",
-                Bathrooms = 1,
-                CountryCode = "FR",
-                PriceInEuros = 125,
-                Rooms = 2,
-                Town = "Paris"
-            };
+                for (int i = 0; i < objectsRead; i++)
+                {
+                    var _ = homes[pids[i]];
+                }
+            }, $"reading {objectsRead} objects one by one by primary key");
+
+            Benchmark(() =>
+            {
+                for (int i = 0; i < objectsRead; i++)
+                {
+                    var _ = homes.First(h=>h.Id == pids[i]);
+                }
+            }, $"reading {objectsRead} objects one by one with linq");
+
+            Benchmark(() =>
+            {
+                for (int i = 0; i < objectsRead; i++)
+                {
+                    var _ = homes.SqlQuery($"select from home where id={pids[i]}").First();
+                }
+            }, $"reading {objectsRead} objects one by one with sql");
 
 
-            // warm up
+            // 3 get many with simple query
 
-            // this is an insert
-            homes.Put(property);
+            var inParis = items.Where(p => p.Town == "Paris").ToList();
+            var resultCount = inParis.Count;
+            inParis = homes.Where(p => p.Town == "Paris").ToList();
+            inParis = homes.SqlQuery("select from home where town = Paris").ToList();
 
-            var reloaded = homes.First(p => p.Id == property.Id);
+            Benchmark(() =>
+            {
+                inParis = homes.Where(p => p.Town == "Paris").ToList();
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParis);
 
-            // this is an update
-            homes.Put(property);
+            }, $"reading {resultCount} objects with simple linq query");
 
-            // performance test
+            Benchmark(() =>
+            {
+                inParis = homes.SqlQuery("select from home where town = Paris").ToList();
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParis);
 
-            var watch = new Stopwatch();
+            }, $"reading {resultCount} objects with simple sql query");
 
-            //watch.Start();
-            //for (var i = 0; i < TestIterations; i++) homes.Put(property);
+            // 4 get many with multiple predicate query
 
-            //watch.Stop();
+            var inParisNotExpensiveWithManyRooms = items
+                .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
+                .ToList();
+            resultCount = inParisNotExpensiveWithManyRooms.Count;
 
-            //Console.WriteLine($"Updating {TestIterations} items one by one took {watch.ElapsedMilliseconds} ms");
+            Benchmark(() =>
+            {
+                inParisNotExpensiveWithManyRooms = homes
+                    .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
+                    .ToList();
 
-            //watch.Reset();
-            //watch.Start();
-            //for (var i = 0; i < TestIterations; i++) reloaded = homes.First(p => p.Id == property.Id);
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisNotExpensiveWithManyRooms);
 
-            //watch.Stop();
+            }, $"reading {resultCount} objects with 3 predicate linq query");
 
-            //Console.WriteLine($"Loading {TestIterations} items one by one (linq) took {watch.ElapsedMilliseconds} ms");
+            Benchmark(() =>
+            {
+                inParisNotExpensiveWithManyRooms = homes.SqlQuery("select from home where town=Paris and priceineuros > 150 and PriceInEuros < 200 and rooms > 2")
+                    .ToList();
 
-            watch.Reset();
-            watch.Start();
-            for (var i = 0; i < TestIterations; i++) reloaded = homes[property.Id];
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisNotExpensiveWithManyRooms);
 
-            watch.Stop();
-
-            Console.WriteLine(
-                $"Loading {TestIterations} items one by one (primary key) took {watch.ElapsedMilliseconds} ms");
-
-
-            //const int feedObjects = 100000;
-            //var pids = connector.GenerateUniqueIds("property_id", feedObjects);
-
-            //var items = GenerateMany(pids);
-
-            //var hashset = new HashSet<int>(pids);
-            //// check they are all identical
-            //if (hashset.Count != pids.Length)
-            //{
-            //    throw new NotSupportedException("ids are not unique");
-            //}
+            }, $"reading {resultCount} objects with 3 predicate sql query");
 
 
-            //// feed many
-            //watch.Reset();
-            //watch.Start();
-
-            //homes.PutMany(items);
-
-            //watch.Stop();
-
-            //Console.WriteLine($"Inserting {feedObjects} items at once took {watch.ElapsedMilliseconds} ms");
-
-            //// get many
-
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> inParis = new List<Home>();
-            //for (var i = 0; i < 10; i++) inParis = homes.Where(p => p.Town == "Paris").ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine($"Select {inParis.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            //// get many with complex query
-            //watch.Reset();
-            //watch.Start();
+            
 
             //IList<Home> inParisNotExpensiveWithManyRooms = new List<Home>();
             //for (var i = 0; i < 10; i++)

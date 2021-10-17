@@ -11,6 +11,7 @@ using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
+using Client.Messages;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server;
@@ -167,6 +168,34 @@ namespace Tests.IntegrationTests
             }
         }
 
+        [Test]
+        public void Feed_many_sends_all_data()
+        {
+
+            // check that empty request are correctly split
+            //var empty = new PutRequest("test"){EndOfSession = true, SessionId = Guid.NewGuid()};
+            //var split = empty.SplitWithMaxSize();
+            //Assert.AreEqual(1,split.Count);
+            //Assert.IsTrue(split[0].EndOfSession);
+            //Assert.IsEmpty(split[0].Items);
+
+
+
+
+            using var connector = new Connector(_clientConfig);
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            
+            List<Order> orders = Order.GenerateTestData(100_000);
+
+            dataSource.PutMany(orders);
+
+            Assert.AreEqual(100_000, dataSource.Count());
+        }
 
         [Test]
         public void Test_order_by()

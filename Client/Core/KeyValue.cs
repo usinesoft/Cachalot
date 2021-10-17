@@ -350,7 +350,13 @@ namespace Client.Core
             {
                 return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
             }
-            return _hashCode.CompareTo(other._hashCode);
+
+            if (Type == other.Type)
+            {
+                return _hashCode.CompareTo(other._hashCode);
+            }
+
+            return NumericValue.CompareTo(other.NumericValue);
         }
 
 

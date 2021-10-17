@@ -126,16 +126,16 @@ namespace BookingMarketplace
 
         private static void Main()
         {
-           
+
 
             try
             {
                 // test with a cluster of two nodes
                 using var connector = new Connector("localhost:48401+localhost:48402");
-                
+
                 Console.WriteLine();
                 Console.WriteLine("test with a cluster of two nodes");
-                Console.WriteLine("---------------------------");
+                Console.WriteLine("--------------------------------");
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -151,7 +151,7 @@ namespace BookingMarketplace
                 
                 Console.WriteLine();
                 Console.WriteLine("test with one external server");
-                Console.WriteLine("---------------------------");
+                Console.WriteLine("-----------------------------");
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -177,7 +177,7 @@ namespace BookingMarketplace
         }
 
 
-        public static void RunOnce(Action action, string message)
+        private static void RunOnce(Action action, string message)
         {
             try
             {
@@ -198,7 +198,7 @@ namespace BookingMarketplace
 
         }
 
-        public static void Benchmark(Action action, string message)
+        private static void Benchmark(Action action, string message)
         {
             try
             {
@@ -246,17 +246,22 @@ namespace BookingMarketplace
             var pids = connector.GenerateUniqueIds("property_id", feedObjects);
 
             var items = GenerateMany(pids);
-            var distinctIds = items.Select(i => i.Id).Distinct().Count();
-
+            
+            //////////////////////////////////////////////////////
             // 1 feed with many objects
+
             RunOnce(() => homes.PutMany(items), $"feeding the collection with {feedObjects} objects");
 
-            int c1 = homes.Count();
-            homes.PutMany(items);
+            var count = homes.Count();
+            if ( count != items.Count)
+            {
+                throw new NotSupportedException($"fed {items.Count} but count returned {count}");
+            }
+            
 
-            int c2 = homes.Count();
-
+            //////////////////////////////////////////////////////
             // 2 read one object at a time
+
             const int objectsRead = 1000;
             
             Benchmark(() =>
@@ -265,7 +270,7 @@ namespace BookingMarketplace
                 {
                     var _ = homes[pids[i]];
                 }
-            }, $"reading {objectsRead} objects one by one by primary key");
+            }, $"reading {objectsRead} objects one by one using primary key");
 
             Benchmark(() =>
             {
@@ -273,7 +278,7 @@ namespace BookingMarketplace
                 {
                     var _ = homes.First(h=>h.Id == pids[i]);
                 }
-            }, $"reading {objectsRead} objects one by one with linq");
+            }, $"reading {objectsRead} objects one by one using linq");
 
             Benchmark(() =>
             {
@@ -281,15 +286,16 @@ namespace BookingMarketplace
                 {
                     var _ = homes.SqlQuery($"select from home where id={pids[i]}").First();
                 }
-            }, $"reading {objectsRead} objects one by one with sql");
+            }, $"reading {objectsRead} objects one by one using sql");
 
-
+            //////////////////////////////////////////////////////
             // 3 get many with simple query
 
             var inParis = items.Where(p => p.Town == "Paris").ToList();
             var resultCount = inParis.Count;
-            inParis = homes.Where(p => p.Town == "Paris").ToList();
-            inParis = homes.SqlQuery("select from home where town = Paris").ToList();
+            
+            Console.WriteLine("select from home where town = Paris");
+            Console.WriteLine();
 
             Benchmark(() =>
             {
@@ -305,12 +311,18 @@ namespace BookingMarketplace
 
             }, $"reading {resultCount} objects with simple sql query");
 
+
+            //////////////////////////////////////////////////////
             // 4 get many with multiple predicate query
+
 
             var inParisNotExpensiveWithManyRooms = items
                 .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
                 .ToList();
             resultCount = inParisNotExpensiveWithManyRooms.Count;
+
+            Console.WriteLine("select from home where town=Paris and priceineuros >= 150 and PriceInEuros <= 200 and rooms > 2");
+            Console.WriteLine();
 
             Benchmark(() =>
             {
@@ -324,7 +336,7 @@ namespace BookingMarketplace
 
             Benchmark(() =>
             {
-                inParisNotExpensiveWithManyRooms = homes.SqlQuery("select from home where town=Paris and priceineuros > 150 and PriceInEuros < 200 and rooms > 2")
+                inParisNotExpensiveWithManyRooms = homes.SqlQuery("select from home where town=Paris and priceineuros >= 150 and PriceInEuros <= 200 and rooms > 2")
                     .ToList();
 
                 CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisNotExpensiveWithManyRooms);

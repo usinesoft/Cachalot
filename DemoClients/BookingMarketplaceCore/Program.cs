@@ -5,7 +5,7 @@ using System.Linq;
 using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
-using Remotion.Linq.Clauses;
+
 // ReSharper disable AccessToModifiedClosure
 
 
@@ -13,9 +13,7 @@ namespace BookingMarketplace
 {
     internal class Program
     {
-        private static readonly int TestIterations = 10000;
-
-
+        
         private static IList<Home> GenerateMany(int[] ids)
         {
 
@@ -71,7 +69,7 @@ namespace BookingMarketplace
             // manually add some items for full-text search testing
             var h1 = new Home
             {
-                Id = ids[ids.Length - 3],
+                Id = ids[^3],
                 Adress = "14 rue de la mort qui tue",
                 Bathrooms = rand.Next(1,4),
                 CountryCode = "FR",
@@ -87,7 +85,7 @@ namespace BookingMarketplace
 
             var h2 = new Home
             {
-                Id = ids[ids.Length - 2],
+                Id = ids[^2],
                 Adress = "15 allée de l'amour",
                 Bathrooms = rand.Next(1,4),
                 CountryCode = "FR",
@@ -103,7 +101,7 @@ namespace BookingMarketplace
 
             var h3 = new Home
             {
-                Id = ids[ids.Length - 1],
+                Id = ids[^1],
                 Adress = "156 db du gral Le Clerc",
                 Bathrooms = rand.Next(1,4),
                 CountryCode = "FR",
@@ -124,6 +122,28 @@ namespace BookingMarketplace
             return result;
         }
 
+        static void Title(string message)
+        {
+            var colorBefore = Console.ForegroundColor;
+            
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(message.ToUpper());
+            Console.WriteLine();
+
+            Console.ForegroundColor = colorBefore;
+        }
+
+        static void Header(string message)
+        {
+            var colorBefore = Console.ForegroundColor;
+            
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine(message);
+            Console.ForegroundColor = colorBefore;
+        }
+
         private static void Main()
         {
 
@@ -133,9 +153,8 @@ namespace BookingMarketplace
                 // test with a cluster of two nodes
                 using var connector = new Connector("localhost:48401+localhost:48402");
 
-                Console.WriteLine();
-                Console.WriteLine("test with a cluster of two nodes");
-                Console.WriteLine("--------------------------------");
+                Title("test with a cluster of two nodes");
+                
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -148,10 +167,8 @@ namespace BookingMarketplace
                 // test with one external server
                 using var connector = new Connector("localhost:48401");
                 
+                Title("test with one external server");
                 
-                Console.WriteLine();
-                Console.WriteLine("test with one external server");
-                Console.WriteLine("-----------------------------");
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -164,10 +181,8 @@ namespace BookingMarketplace
                 // quick test with in-process server
                 using var connector = new Connector(new ClientConfig { IsPersistent = true });
                 
+                Title("test with in-process server");
                 
-                Console.WriteLine();
-                Console.WriteLine("test with in-process server");
-                Console.WriteLine("---------------------------");
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -226,7 +241,7 @@ namespace BookingMarketplace
 
         }
 
-        public static void CheckThat<T>(Predicate<T> check, string messageIfFails, T toCheck)
+        private static void CheckThat<T>(Predicate<T> check, string messageIfFails, T toCheck)
         {
             if (!check(toCheck))
             {
@@ -250,6 +265,8 @@ namespace BookingMarketplace
             //////////////////////////////////////////////////////
             // 1 feed with many objects
 
+            Header("Feeding data");
+
             RunOnce(() => homes.PutMany(items), $"feeding the collection with {feedObjects} objects");
 
             var count = homes.Count();
@@ -262,6 +279,8 @@ namespace BookingMarketplace
             //////////////////////////////////////////////////////
             // 2 read one object at a time
 
+            Header("Reading objects one by one");
+
             const int objectsRead = 1000;
             
             Benchmark(() =>
@@ -270,7 +289,7 @@ namespace BookingMarketplace
                 {
                     var _ = homes[pids[i]];
                 }
-            }, $"reading {objectsRead} objects one by one using primary key");
+            }, $"reading {objectsRead} objects using primary key");
 
             Benchmark(() =>
             {
@@ -278,7 +297,7 @@ namespace BookingMarketplace
                 {
                     var _ = homes.First(h=>h.Id == pids[i]);
                 }
-            }, $"reading {objectsRead} objects one by one using linq");
+            }, $"reading {objectsRead} objects using linq");
 
             Benchmark(() =>
             {
@@ -286,7 +305,7 @@ namespace BookingMarketplace
                 {
                     var _ = homes.SqlQuery($"select from home where id={pids[i]}").First();
                 }
-            }, $"reading {objectsRead} objects one by one using sql");
+            }, $"reading {objectsRead} objects using sql");
 
             //////////////////////////////////////////////////////
             // 3 get many with simple query
@@ -294,35 +313,34 @@ namespace BookingMarketplace
             var inParis = items.Where(p => p.Town == "Paris").ToList();
             var resultCount = inParis.Count;
             
-            Console.WriteLine("select from home where town = Paris");
-            Console.WriteLine();
+            Header("select from home where town = Paris");
+            
 
             Benchmark(() =>
             {
                 inParis = homes.Where(p => p.Town == "Paris").ToList();
                 CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParis);
 
-            }, $"reading {resultCount} objects with simple linq query");
+            }, $"reading {resultCount} objects with linq");
 
             Benchmark(() =>
             {
                 inParis = homes.SqlQuery("select from home where town = Paris").ToList();
                 CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParis);
 
-            }, $"reading {resultCount} objects with simple sql query");
+            }, $"reading {resultCount} objects with sql ");
 
 
             //////////////////////////////////////////////////////
             // 4 get many with multiple predicate query
-
 
             var inParisNotExpensiveWithManyRooms = items
                 .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
                 .ToList();
             resultCount = inParisNotExpensiveWithManyRooms.Count;
 
-            Console.WriteLine("select from home where town=Paris and priceineuros >= 150 and PriceInEuros <= 200 and rooms > 2");
-            Console.WriteLine();
+            Header("select from home where town=Paris and PriceInEuros >= 150 and PriceInEuros <= 200 and rooms > 2");
+            
 
             Benchmark(() =>
             {
@@ -332,7 +350,7 @@ namespace BookingMarketplace
 
                 CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisNotExpensiveWithManyRooms);
 
-            }, $"reading {resultCount} objects with 3 predicate linq query");
+            }, $"reading {resultCount} objects with linq");
 
             Benchmark(() =>
             {
@@ -341,124 +359,118 @@ namespace BookingMarketplace
 
                 CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisNotExpensiveWithManyRooms);
 
-            }, $"reading {resultCount} objects with 3 predicate sql query");
+            }, $"reading {resultCount} objects with sql");
 
 
+            //////////////////////////////////////////////////////
+            // 5 query with contains operator 
+
+            var inParisAvailableToday = items
+                .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
+                .ToList();
+
+            resultCount = inParisAvailableToday.Count;
+
+            Header($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d}");
+            
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes
+                    .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
+                    .ToList();
+
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisAvailableToday);
+
+            }, $"reading {resultCount} objects with linq");
+
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes.SqlQuery($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d}").ToList();
+                
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisAvailableToday);
+
+            }, $"reading {resultCount} objects with sql");
+
+            Header($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d} order by PriceInEuros descending take 10");
+            
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes
+                    .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today)).OrderByDescending(h=>h.PriceInEuros).Take(10)
+                    .ToList();
+
+                CheckThat(r=>r.Count == 10, "wrong number of objects in result", inParisAvailableToday);
+
+            }, "reading 10 objects with linq");
+
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes.SqlQuery($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d} order by PriceInEuros descending take 10").ToList();
+                
+                CheckThat(r=>r.Count == 10, "wrong number of objects in result", inParisAvailableToday);
+
+            }, "reading 10 objects with sql");
+
+            Header($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d} order by PriceInEuros");
+            
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes
+                    .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today)).OrderBy(h=>h.PriceInEuros)
+                    .ToList();
+
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisAvailableToday);
+
+            }, $"reading {resultCount} objects with linq");
+
+            Benchmark(() =>
+            {
+                inParisAvailableToday = homes.SqlQuery($"select from home where town=Paris and AvailableDates contains {DateTime.Today:d} order by PriceInEuros").ToList();
+                
+                CheckThat(r=>r.Count == resultCount, "wrong number of objects in result", inParisAvailableToday);
+
+            }, $"reading {resultCount} objects with sql");
+
+
+            //////////////////////////////////////////////////////
+            // 6 full text search
+
+            Header("full-text search");
+
+            int ftCount = 0;
+            Benchmark(() =>
+            {
+                var result = homes.FullTextSearch("Nice beach").ToList();
+                ftCount = result.Count;
+
+            }, "searching for 'Nice beach'");
+            Console.WriteLine($" -> found {ftCount} objects ");
             
 
-            //IList<Home> inParisNotExpensiveWithManyRooms = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    inParisNotExpensiveWithManyRooms = homes
-            //        .Where(p => p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2)
-            //        .ToList();
+            Benchmark(() =>
+            {
+                var result = homes.FullTextSearch("close metro").ToList();
+                ftCount = result.Count;
+                
+            }, "searching for 'close metro'");
+            Console.WriteLine($" -> found {ftCount} objects ");
 
-            //watch.Stop();
+            Benchmark(() =>
+            {
+                var result = homes.FullTextSearch("close metro").ToList();
+                ftCount = result.Count;
+                
+            }, "searching for 'ps4'");
+            Console.WriteLine($" -> found {ftCount} objects ");
 
-            //Console.WriteLine(
-            //    $"Select {inParisNotExpensiveWithManyRooms.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
+            Benchmark(() =>
+            {
+                var result = homes.FullTextSearch("rue de la mort").ToList();
+                ftCount = result.Count;
+                
+            }, "searching for 'rue de la mort'");
+            Console.WriteLine($" -> found {ftCount} objects ");
 
-            //// get many with contains operator
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> inParisAvailableToday = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    inParisAvailableToday = homes
-            //        .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today))
-            //        .ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine(
-            //    $"Select with list index {inParisAvailableToday.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> inParisAvailableTomorrow = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    inParisAvailableTomorrow = homes
-            //        .Where(p => p.Town == "Paris" && p.AvailableDates.Contains(DateTime.Today.AddDays(1)))
-            //        .ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine(
-            //    $"Select with list index {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds / 10} ms");
-
-            //// update many
-            //watch.Reset();
-            //watch.Start();
-
-            //homes.PutMany(inParisNotExpensiveWithManyRooms);
-
-            //watch.Stop();
-
-
-            //Console.WriteLine(
-            //    $"Update  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
-
-            //Console.WriteLine("Full text search:");
-
-            
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> result1 = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    result1 = homes.FullTextSearch("Nice beach").ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine(
-            //    $"Select {result1.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
-
-            //Console.WriteLine(
-            //    $"bast match:  {result1.First().Id}");
-
-
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> result2 = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    result2 = homes.FullTextSearch("close metro").ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine(
-            //    $"Select {result2.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
-
-            //Console.WriteLine(
-            //    $"bast match:  {result2.First().Id}");
-
-            //watch.Reset();
-            //watch.Start();
-
-            //IList<Home> result3 = new List<Home>();
-            //for (var i = 0; i < 10; i++)
-            //    result3 = homes.FullTextSearch("rue de la mort").Take(10).ToList();
-
-            //watch.Stop();
-
-            //Console.WriteLine(
-            //    $"Select {result3.Count} items at once with full-text search took {watch.ElapsedMilliseconds / 10} ms");
-
-            //Console.WriteLine(
-            //    $"bast match:  {result3.First().Id}");
-
-            //// delete many with complex query
-            //watch.Reset();
-            //watch.Start();
-
-            //homes.DeleteMany(p =>
-            //    p.Town == "Paris" && p.PriceInEuros >= 150 && p.PriceInEuros <= 200 && p.Rooms > 2);
-
-            //watch.Stop();
-
-
-            //Console.WriteLine(
-            //    $"Delete  {inParisAvailableTomorrow.Count} items at once took {watch.ElapsedMilliseconds } ms");
 
         }
 

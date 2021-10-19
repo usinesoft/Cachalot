@@ -11,8 +11,8 @@ The application tests transactional performance in 3 cases:
 * a cluster of two servers
 * an in-process server
 
-In order to run this example application, three servers need to be started on ports: **4848,4851,4852**
+In order to run this example application, two servers need to be started on ports: **48401,48402**
+Command files are provided to start these servers: **start01.cmd** and **start02.cmd**
 
 The port is specified in **node_config.json**
 
-If you are using the dotnet-core server, command scripts are available **start4848.cmd ...** 

@@ -120,9 +120,21 @@ namespace BookingMarketplace
             return result;
         }
 
-        private static void Main()
-        {
+        private static int ObjectCount = 100_000;
 
+        private static void Main(string[] args)
+        {
+            if (args.Length > 0)
+            {
+                try
+                {
+                    ObjectCount = int.Parse(args[0]);
+                }
+                catch (Exception )
+                {
+                    Console.WriteLine("Argument ignored. Only one integer argument can be specified");
+                }
+            }
 
             try
             {

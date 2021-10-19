@@ -16,10 +16,10 @@ namespace BookingMarketplace
 
             var homes = connector.DataSource<Home>();
 
-            const int feedObjects = 100_000;
-            var pids = connector.GenerateUniqueIds("property_id", feedObjects);
+            int feedObjects = ObjectCount;
+            var ids = connector.GenerateUniqueIds("property_id", feedObjects);
 
-            var items = GenerateTestData(pids);
+            var items = GenerateTestData(ids);
 
             //////////////////////////////////////////////////////
             // 1 feed with many objects
@@ -46,7 +46,7 @@ namespace BookingMarketplace
             {
                 for (int i = 0; i < objectsRead; i++)
                 {
-                    var _ = homes[pids[i]];
+                    var _ = homes[ids[i]];
                 }
             }, $"reading {objectsRead} objects using primary key");
 
@@ -54,7 +54,7 @@ namespace BookingMarketplace
             {
                 for (int i = 0; i < objectsRead; i++)
                 {
-                    var _ = homes.First(h => h.Id == pids[i]);
+                    var _ = homes.First(h => h.Id == ids[i]);
                 }
             }, $"reading {objectsRead} objects using linq");
 
@@ -62,7 +62,7 @@ namespace BookingMarketplace
             {
                 for (int i = 0; i < objectsRead; i++)
                 {
-                    var _ = homes.SqlQuery($"select from home where id={pids[i]}").First();
+                    var _ = homes.SqlQuery($"select from home where id={ids[i]}").First();
                 }
             }, $"reading {objectsRead} objects using sql");
 
@@ -215,6 +215,7 @@ namespace BookingMarketplace
             {
                 Console.WriteLine(result.ToString());
             }
+            Console.WriteLine();
 
             Benchmark(() =>
             {

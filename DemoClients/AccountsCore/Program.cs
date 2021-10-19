@@ -7,7 +7,7 @@ using Client.Interface;
 
 namespace Accounts
 {
-    internal class Program
+    internal partial class Program
     {
 
         const int TestIterations = 1000;
@@ -15,17 +15,14 @@ namespace Accounts
         private static void Main(string[] args)
         {
             
-
             
             try
             {
                 // quick test with a cluster of two nodes
                 using var connector = new Connector("localhost:48401+localhost:48402");
-                var cluster = connector.GetClusterDescription();
+                
+                Title("test with a cluster of two servers");
 
-                Console.WriteLine();
-                Console.WriteLine("test with a cluster of two servers");
-                Console.WriteLine("-------------------------------------");
                     
                 PerfTest(connector);
             }
@@ -39,10 +36,8 @@ namespace Accounts
                 // quick test with one external server
                 using var connector = new Connector("localhost:48401" );
 
-                Console.WriteLine();
-                Console.WriteLine("test with one server");
-                Console.WriteLine("-------------------------------------");
-
+                Title("test with one server");
+                
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -55,9 +50,8 @@ namespace Accounts
                 // quick test with in-process server
                 using var connector = new Connector(new ClientConfig { IsPersistent = true });
 
-                Console.WriteLine();
-                Console.WriteLine("test with in-process server");
-                Console.WriteLine("---------------------------");
+                Title("test with in-process server");
+                
                 PerfTest(connector);
             }
             catch (CacheException e)
@@ -78,19 +72,23 @@ namespace Accounts
 
             var accounts = connector.DataSource<Account>();
 
+            Header($"creating {TestIterations} accounts");
             
-            // create the accounts
-            for (int i = 0; i < TestIterations; i++)
+            RunOnce(() =>
             {
-                accounts.Put(new Account { Id = i, Balance = 1000 });
-            }
+                for (int i = 0; i < TestIterations; i++)
+                {
+                    accounts.Put(new Account { Id = i, Balance = 1000 });
+                }
+            }, "account creation");
+            
 
 
-            var tids = Enumerable.Range(0, TestIterations).ToArray();
+            var ids = Enumerable.Range(0, TestIterations).ToArray();
 
             try
             {
-                tids = connector.GenerateUniqueIds("transfer_id", TestIterations);
+                ids = connector.GenerateUniqueIds("transfer_id", TestIterations);
             }
             catch (Exception)
             {
@@ -102,6 +100,7 @@ namespace Accounts
 
             int failed = 0;
 
+            Header($"creating data transfers between random accounts and update the source and destination account transactionally");
             var sw = new Stopwatch();
 
             sw.Start();
@@ -128,7 +127,7 @@ namespace Accounts
                     Date = DateTime.Today,
                     SourceAccount = src,
                     DestinationAccount = dst,
-                    Id = tids[i]
+                    Id = ids[i]
                 });
 
                 try

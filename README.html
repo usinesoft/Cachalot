@@ -48,7 +48,8 @@ These results are for a cluster with two nodes. Most operations are faster as th
 </ul>
 </li>
 <li><p>Running this query on one million objects</p>
-<pre><code>select from home where town=Paris and AvailableDates contains 10/19/2021 order by PriceInEuros descending take 10
+<pre><code>select from home where town=Paris and AvailableDates contains 10/19/2021 order by 
+PriceInEuros descending take 10
 </code></pre>
 <ul>
 <li>22 milliseconds</li>
@@ -183,18 +184,20 @@ Two types of indexes are available:</p>
 </code></pre>
 <p>With these new indexes, we can now do some useful queries</p>
 <pre><code class="language-csharp">var results = homes.Where(
-p =&gt; p.PriceInEuros &lt;= 200 &amp;&amp; 
-p.Rooms &gt; 1 
-&amp;&amp; p.Town == &quot;Paris&quot;)
-.Take(10);
+		p =&gt; p.PriceInEuros &lt;= 200 &amp;&amp; 
+			p.Rooms &gt; 1 &amp;&amp; 
+			p.Town == &quot;Paris&quot;
+	)
+	.Take(10);
 
 </code></pre>
 <p>The query is, of course, executed server-side, including the take operator. At most, ten objects cross the network to the client.
 The &quot;Contains&quot; extension method is also supported</p>
 <pre><code class="language-csharp">var towns = new[] {&quot;Paris&quot;, &quot;Nice&quot;};
+
 var one  = homes.First(
-p =&gt; p.PriceInEuros &lt; 150 &amp;&amp; 
-towns.Contains(p.Town));
+	p =&gt; p.PriceInEuros &lt; 150 &amp;&amp; 
+		towns.Contains(p.Town));
 
 
 </code></pre>
@@ -431,7 +434,7 @@ o =&gt; categories.Contains( o.Category));
 var resultWithPrecompiled =
 dataSource.WithPrecompiledQuery(query).ToList();
 </code></pre>
-<p>Compressing object data</p>
+<h1 id="compressing-object-data">Compressing object data</h1>
 <p>The business objects are stored internally in a type-agnostic format.</p>
 <p>Server-side properties are stored in a binary format that is an excellent compromise between memory consumption and comparison speed, and all the object data is stored as UTF-8 encoded JSON.</p>
 <p>&quot;Packing&quot; is the process of transforming a .NET object in the internal format.</p>
@@ -455,9 +458,10 @@ However, it has an impact on packing time. When objects are retrieved, they are 
 <p>Null values are perfectly acceptable for index fields, which allows us to expose indexed properties that make sense only for a specific child type.</p>
 <p>Example of code that queries a collection having an abstract class as type. <strong>IncreaseDecrease</strong> inheriths the abstract class <strong>Event</strong></p>
 <pre><code class="language-csharp">var events = connector.DataSource&lt;Event&gt;();
+
 var increaseEvents = events.Where(
-evt =&gt; evt.EventType == &quot;IncreaseDecrease&quot; &amp;&amp; 
-evt.EventDate == DateTime.Today
+	evt =&gt; evt.EventType == &quot;IncreaseDecrease&quot; &amp;&amp; 
+	evt.EventDate == DateTime.Today
 ).Cast&lt;IncreaseDecrease&gt;();
 </code></pre>
 <h1 id="conditional-operations-and-optimistic-synchronization">Conditional operations and &quot;optimistic synchronization.&quot;</h1>
@@ -713,7 +717,7 @@ Assert.Throws&lt;CacheException&gt;(() =&gt;
 <p>It means you need enough memory to store all your data.</p>
 <p>Each node loads everything in memory when it starts (Cachalot is a contraction of &quot;Cache a lot&quot; 😊)</p>
 <p>We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.</p>
-<p>We can use it as a very efficient cache for big data applications but not the golden source.</p>
+<p>We can use it as a very efficient cache for big-data applications but not the golden source.</p>
 <p><a href="https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf">https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf</a></p>
 
 

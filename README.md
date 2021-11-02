@@ -43,7 +43,8 @@ These results are for a cluster with two nodes. Most operations are faster as th
 
 -	Running this query on one million objects 
 	```
-	select from home where town=Paris and AvailableDates contains 10/19/2021 order by PriceInEuros descending take 10
+	select from home where town=Paris and AvailableDates contains 10/19/2021 order by 
+	PriceInEuros descending take 10
 	```
     - 22 milliseconds
 
@@ -216,10 +217,11 @@ With these new indexes, we can now do some useful queries
 
 ```csharp
 var results = homes.Where(
-p => p.PriceInEuros <= 200 && 
-p.Rooms > 1 
-&& p.Town == "Paris")
-.Take(10);
+		p => p.PriceInEuros <= 200 && 
+			p.Rooms > 1 && 
+			p.Town == "Paris"
+	)
+	.Take(10);
 
 ```
 
@@ -229,9 +231,10 @@ The "Contains" extension method is also supported
 
 ```csharp
 var towns = new[] {"Paris", "Nice"};
+
 var one  = homes.First(
-p => p.PriceInEuros < 150 && 
-towns.Contains(p.Town));
+	p => p.PriceInEuros < 150 && 
+		towns.Contains(p.Town));
 
 
 ```
@@ -558,7 +561,7 @@ var resultWithPrecompiled =
 dataSource.WithPrecompiledQuery(query).ToList();
 ```
 
-Compressing object data
+# Compressing object data
 
 The business objects are stored internally in a type-agnostic format.
 
@@ -601,9 +604,10 @@ Example of code that queries a collection having an abstract class as type. **In
 
 ```csharp
 var events = connector.DataSource<Event>();
+
 var increaseEvents = events.Where(
-evt => evt.EventType == "IncreaseDecrease" && 
-evt.EventDate == DateTime.Today
+	evt => evt.EventType == "IncreaseDecrease" && 
+	evt.EventDate == DateTime.Today
 ).Cast<IncreaseDecrease>();
 ```
 
@@ -940,7 +944,7 @@ Each node loads everything in memory when it starts (Cachalot is a contraction o
 
 We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.
 
-We can use it as a very efficient cache for big data applications but not the golden source.
+We can use it as a very efficient cache for big-data applications but not the golden source.
 
 
 

@@ -1,6 +1,6 @@
 ﻿namespace Tests.TestData.Events
 {
-    public abstract class NegotiatedProductEvent : ProductEvent
+    public abstract class NegotiatedEvent : Event
     {
         public abstract bool NeedsConfirmation { get; }
     }

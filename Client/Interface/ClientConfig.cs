@@ -51,6 +51,11 @@ namespace Client.Interface
         /// <param name="connectionString"></param>
         public  ClientConfig(string connectionString)
         {
+
+            // if none is specified create an empty ClientConfig that is used to instantiate an in-process server
+            if (string.IsNullOrWhiteSpace(connectionString))
+                return;
+
             // the part after ; contains the connection pool parameters
             if (connectionString.Contains(';'))
             {

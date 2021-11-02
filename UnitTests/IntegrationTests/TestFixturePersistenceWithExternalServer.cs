@@ -150,11 +150,11 @@ namespace Tests.IntegrationTests
                 
                 connector.AdminInterface().DropDatabase();
 
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
                 connector.DeclareCollection<Trade>();
 
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
                 var trades = connector.DataSource<Trade>();
 
                 var factory = new ProductFactory(connector);
@@ -323,14 +323,14 @@ namespace Tests.IntegrationTests
             using (var connector = new Connector(_config))
             {
                 connector.AdminInterface().DropDatabase();
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var ids = connector.GenerateUniqueIds("event", items);
 
                 var eventDate = DateTime.Today.AddYears(-10);
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < items; i++)
                 {
                     switch (i % 3)

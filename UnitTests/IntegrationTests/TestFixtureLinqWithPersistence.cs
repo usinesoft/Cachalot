@@ -40,9 +40,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256"));
 
@@ -62,9 +62,9 @@ namespace Tests.IntegrationTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var reloaded = (FixingEvent) events[1];
 
@@ -81,9 +81,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
 
@@ -109,9 +109,9 @@ namespace Tests.IntegrationTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var reloaded = (FixingEvent) events[1];
 
@@ -212,11 +212,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -237,11 +237,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, null),
@@ -269,10 +269,10 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
-                var dataSource = connector.DataSource<ProductEvent>();
+                connector.DeclareCollection<Event>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -306,9 +306,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
 
                 // check same data after reload
@@ -324,8 +324,8 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
-                var dataSource = connector.DataSource<ProductEvent>();
+                connector.DeclareCollection<Event>();
+                var dataSource = connector.DataSource<Event>();
 
 
                 // check same data after reload
@@ -342,11 +342,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -435,11 +435,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -450,7 +450,7 @@ namespace Tests.IntegrationTests
 
                 Assert.AreEqual(180, newOne.Value);
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(2, "TOTAL", 190, "IRD-400"),
                     new Increase(3, 190, "EQ-256")
@@ -472,11 +472,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -497,11 +497,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),

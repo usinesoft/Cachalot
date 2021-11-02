@@ -6,7 +6,7 @@ using Client.Interface;
 
 namespace Tests.TestData.Events
 {
-    public abstract class ProductEvent
+    public abstract class Event
     {
         [ServerSideValue(IndexType.Primary)] public int EventId { get; set; }
 
@@ -23,7 +23,7 @@ namespace Tests.TestData.Events
 
         [ServerSideValue(IndexType.Ordered)] public DateTime Timestamp { get; set; }
 
-        protected bool Equals(ProductEvent other)
+        protected bool Equals(Event other)
         {
             return EventId == other.EventId;
         }
@@ -33,7 +33,7 @@ namespace Tests.TestData.Events
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((ProductEvent) obj);
+            return Equals((Event) obj);
         }
 
         public override int GetHashCode()
@@ -41,12 +41,12 @@ namespace Tests.TestData.Events
             return EventId;
         }
 
-        public static bool operator ==(ProductEvent left, ProductEvent right)
+        public static bool operator ==(Event left, Event right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator !=(ProductEvent left, ProductEvent right)
+        public static bool operator !=(Event left, Event right)
         {
             return !Equals(left, right);
         }

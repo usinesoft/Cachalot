@@ -205,11 +205,11 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {
@@ -270,11 +270,11 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent >();
+                connector.DeclareCollection<Event >();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {

@@ -2,7 +2,7 @@
 
 namespace Tests.TestData.Events
 {
-    public class Increase : NegotiatedProductEvent
+    public class Increase : NegotiatedEvent
     {
         public Increase(int id, decimal delta, string dealId)
         {

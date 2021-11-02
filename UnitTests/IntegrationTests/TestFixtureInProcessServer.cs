@@ -21,7 +21,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Insert_one_item()
         {
-            using (var connector = new Connector(new ClientConfig()))
+            using (var connector = new Connector(""))
             {
                 connector.DeclareCollection<Person>();
 

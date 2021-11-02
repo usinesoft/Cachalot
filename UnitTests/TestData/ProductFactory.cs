@@ -14,7 +14,7 @@ namespace Tests.TestData
             _connector = connector;
         }
 
-        public (Instruments.Trade trade, ProductEvent creationEvent) CreateOption(int quantity, int unitPrice,
+        public (Instruments.Trade trade, Event creationEvent) CreateOption(int quantity, int unitPrice,
             string counterparty, string portfolio, string underlying, decimal strike, bool isPut, bool cashSettlement,
             bool isAmerican, int monthsToMaturity)
         {
@@ -59,7 +59,7 @@ namespace Tests.TestData
         }
 
 
-        public (Instruments.Trade trade, ProductEvent increaseEvent) IncreaseOption(Instruments.Trade trade,
+        public (Instruments.Trade trade, Event increaseEvent) IncreaseOption(Instruments.Trade trade,
             decimal deltaQuantity)
         {
             var newVersion = trade.Clone();

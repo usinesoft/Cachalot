@@ -399,11 +399,11 @@ namespace Tests.UnitTests
 
             using (var connector = new Connector(config))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),

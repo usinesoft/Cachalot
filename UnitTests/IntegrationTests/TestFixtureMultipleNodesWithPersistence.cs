@@ -138,11 +138,11 @@ namespace Tests.IntegrationTests
         public void Check_that_the_order_of_returned_items_is_stable()
         {
             using var connector = new Connector(_clientConfig);
-            connector.DeclareCollection<ProductEvent>();
+            connector.DeclareCollection<Event>();
 
-            var dataSource = connector.DataSource<ProductEvent>();
+            var dataSource = connector.DataSource<Event>();
 
-            var events = new List<ProductEvent>();
+            var events = new List<Event>();
             for (var i = 0; i < 100; i++)
                 switch (i % 3)
                 {
@@ -262,11 +262,11 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256"));
 
@@ -286,8 +286,8 @@ namespace Tests.IntegrationTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
-                var events = connector.DataSource<ProductEvent>();
+                connector.DeclareCollection<Event>();
+                var events = connector.DataSource<Event>();
 
                 var reloaded = (FixingEvent) events[1];
 
@@ -302,9 +302,9 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
 
@@ -330,9 +330,9 @@ namespace Tests.IntegrationTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var reloaded = (FixingEvent) events[1];
 
@@ -413,11 +413,11 @@ namespace Tests.IntegrationTests
         public void Connection_is_restored_when_a_server_restarts()
         {
             using var connector = new Connector(_clientConfig);
-            connector.DeclareCollection<ProductEvent>();
+            connector.DeclareCollection<Event>();
 
-            var dataSource = connector.DataSource<ProductEvent>();
+            var dataSource = connector.DataSource<Event>();
 
-            dataSource.PutMany(new ProductEvent[]
+            dataSource.PutMany(new Event[]
             {
                 new FixingEvent(1, "AXA", 150, "EQ-256"),
                 new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -445,15 +445,15 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
                 var clusterDescription = connector.GetClusterDescription();
 
                 Assert.AreEqual(_servers.Count, clusterDescription.ServersStatus.Length);
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {
@@ -486,9 +486,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
@@ -511,11 +511,11 @@ namespace Tests.IntegrationTests
             int maxId2;
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {
@@ -555,9 +555,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var eventAfterDump = dataSource[55555];
                 Assert.IsNotNull(eventAfterDump);
@@ -738,11 +738,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 110; i++)
                     switch (i % 3)
                     {
@@ -799,7 +799,7 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
                 var admin = connector.AdminInterface();
 
@@ -809,7 +809,7 @@ namespace Tests.IntegrationTests
 
                 admin.InitializeFromDump(fullPath);
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var countAfter = dataSource.Count(e => e.EventType == "INCREASE");
 
@@ -839,9 +839,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var countAfter = dataSource.Count(e => e.EventType == "INCREASE");
 
@@ -1101,11 +1101,11 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {
@@ -1133,9 +1133,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var eventAfterDump = dataSource[55555];
                 Assert.IsNotNull(eventAfterDump);
@@ -1180,9 +1180,9 @@ namespace Tests.IntegrationTests
             // check that everything is persisted
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var events = new[] {55555, 66666};
                 var evts = dataSource.Where(e => events.Contains(e.EventId)).ToList();
@@ -1243,9 +1243,9 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
 
@@ -1273,9 +1273,9 @@ namespace Tests.IntegrationTests
             // check also that it has not been saved in the persistence storage
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var events = connector.DataSource<ProductEvent>();
+                var events = connector.DataSource<Event>();
 
                 var reloaded = (FixingEvent) events[1];
 
@@ -1290,11 +1290,11 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                dataSource.PutMany(new ProductEvent[]
+                dataSource.PutMany(new Event[]
                 {
                     new FixingEvent(1, "AXA", 150, "EQ-256"),
                     new FixingEvent(2, "TOTAL", 180, "IRD-400"),
@@ -1328,9 +1328,9 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
@@ -1358,11 +1358,11 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<ProductEvent>();
+                connector.DeclareCollection<Event>();
 
-                var dataSource = connector.DataSource<ProductEvent>();
+                var dataSource = connector.DataSource<Event>();
 
-                var events = new List<ProductEvent>();
+                var events = new List<Event>();
                 for (var i = 0; i < 100; i++)
                     switch (i % 3)
                     {
@@ -1497,8 +1497,18 @@ namespace Tests.IntegrationTests
             var result6 = dataSource.Where(o=> o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
 
+            // with precompiled queries
+             var categories = new [] { "sf", "travel"};
 
-            
+             var resultWithLinq = dataSource.Where(o=> categories.Contains( o.Category)).ToList();
+
+             var query = dataSource.PredicateToQuery(o=> categories.Contains( o.Category));
+             var resultWithPrecompiled = dataSource.WithPrecompiledQuery(query).ToList();
+             
+             Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
+
+
+
         }
 
 

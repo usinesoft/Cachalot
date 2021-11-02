@@ -2,7 +2,7 @@
 
 namespace Tests.TestData.Events
 {
-    public class Create : NegotiatedProductEvent
+    public class Create : NegotiatedEvent
     {
         public Create(int id, string dealId)
         {

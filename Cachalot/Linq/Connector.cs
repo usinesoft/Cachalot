@@ -204,7 +204,7 @@ namespace Cachalot.Linq
         {
             if (Client == null)
             {
-                if (config.Servers == null || config.Servers.Count == 0)
+                if (config?.Servers == null || config.Servers.Count == 0)
                 {
                     var channel = new InProcessChannel();
                     Client = new DataClient{Channel = channel};

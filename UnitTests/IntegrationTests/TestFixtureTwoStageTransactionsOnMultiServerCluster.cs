@@ -874,7 +874,7 @@ namespace Tests.IntegrationTests
 
                                 var tr = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
-                                Dbg.Trace($"Done step 2 for iteration {i}");
+                                Dbg.Trace($"Done step 2 for iteration {i}");    
 
                                 //check consistency between transfer and balance
 

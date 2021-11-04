@@ -19,7 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="readme.html">
+    <None Update="readme_booking.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="readme_booking.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="run_booking.cmd">

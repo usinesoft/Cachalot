@@ -20,10 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="readme.html">
+    <None Update="readme_accounts.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="readme.md">
+    <None Update="readme_accounts.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="run_accounts.cmd">

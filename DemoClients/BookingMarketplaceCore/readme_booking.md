@@ -5,4 +5,8 @@ This demo client implements a toy booking site, as described in the user guide (
 
 It is mostly a showcase of the massive feeding and querying capabilities of the database.
 
-To run this client, a server must be started on port **4848**. ( which is the default unless specified otherwise in **node_config.json**)
+In order to run this example application, two servers need to be started on ports: **48401,48402**
+Command files are provided to start these servers: **start01.cmd** and **start02.cmd**
+
+The port is specified in **node_config.json**
+

@@ -1,17 +1,23 @@
-﻿<!DOCTYPE html>
-<html>
-<head>
-    <title>Cachalot DB v2</title>
-</head>
-<body>
 
-    <h1 id="cachalot-db-v2">Cachalot DB v2</h1>
-<h1 id="what-is-cachalot-db">What is Cachalot DB?</h1>
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cachalot-QuickStart</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><p><img src="https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot.svg?raw=true" alt="cachalot db"></p>
+<h1 id="cachalot-db-v2">Cachalot DB v2</h1>
+<h2 id="what-is-cachalot-db">What is Cachalot DB?</h2>
 <h4 id="an-in-memory-database-for-dotnet-applications">An in-memory database for dotnet applications</h4>
 <p>All data is available in memory and distributed on multiple nodes, allowing for blazing-fast queries. Like Redis but with some significant differences:</p>
 <ul>
 <li><strong>Persistence is transactional</strong>; all update operations are written into a persistent transaction log before being applied to memory.</li>
-<li>It has a <strong>full query model</strong> available through SQL and LINQ. It supports all usual operators like projections, distinct, order by, and, of course, a complete where clause. Everything is done server-side.</li>
+<li>It has a <strong>full query model</strong> available through <strong>SQL</strong> and <strong>LINQ</strong>. It supports all usual operators like projections, distinct, order by, and, of course, a complete where clause. Everything is done server-side.</li>
 <li>It supports both dictionary and ordered indexes. A highly optimized query processor chooses the best index, combining multiple indexes for one query.</li>
 <li>It can compute <strong>pivot tables</strong> server-side even on a cluster of many nodes</li>
 <li>A high-speed <strong>full-text search</strong>. You can do either full-text search, traditional queries, or combine the two.</li>
@@ -20,217 +26,230 @@
 <li><strong>Bulk inserts</strong>: when feeding with large quantities of data, ordered indexes are sorted only once at the end to ensure optimum performance.</li>
 <li>When used as a distributed cache (persistence disabled), an inventive mechanism allows the description of the cached data, thus enabling complex queries to be served from cache only if all the concerned data is available.</li>
 </ul>
-<h1 id="how-fast-is-it">How fast is it?</h1>
+<h2 id="how-fast-is-it">How fast is it?</h2>
 <h4 id="very-fast">Very fast</h4>
 <p>Two demo applications are available in the release package:</p>
 <ul>
 <li><strong>BookingMarketplace</strong> is testing feeding data and query capabilities</li>
 <li><strong>Accounts</strong> is testing the transactional capabilities</li>
 </ul>
-<p>Feel free to check by yourself. Here are some typical results on a reasonably powerful machine.
+<p>Feel free to check by yourself. Here are some typical results on a reasonably powerful machine.<br>
 These results are for a cluster with two nodes. Most operations are faster as the number of nodes increases.</p>
 <ul>
-<li><p>Feeding one million objects into the database</p>
+<li>
+<p>Feeding one million objects into the database</p>
 <ul>
 <li>2678 milliseconds</li>
 </ul>
 </li>
-<li><p>Reading 1000 objects one by one (out of one million) by primary key</p>
+<li>
+<p>Reading 1000 objects one by one  by primary key (out of one million)</p>
 <ul>
 <li>219 milliseconds</li>
 </ul>
 </li>
-<li><p>Reading 6000 objects (out of one million) with this query</p>
-<pre><code>select from home where town = Paris
+<li>
+<p>Reading 6000 objects (out of one million) with this query</p>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">select</span> <span class="token keyword">from</span> home <span class="token keyword">where</span> town <span class="token operator">=</span> Paris
 </code></pre>
 <ul>
 <li>113 milliseconds</li>
 </ul>
 </li>
-<li><p>Running this query on one million objects</p>
-<pre><code>select from home where town=Paris and AvailableDates contains 10/19/2021 order by 
-PriceInEuros descending take 10
+<li>
+<p>Running this query on one million objects</p>
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">select</span> <span class="token keyword">from</span> home <span class="token keyword">where</span> town<span class="token operator">=</span>Paris <span class="token operator">and</span> AvailableDates <span class="token keyword">contains</span> <span class="token number">10</span><span class="token operator">/</span><span class="token number">19</span><span class="token operator">/</span><span class="token number">2021</span> <span class="token keyword">order</span> <span class="token keyword">by</span> 
+PriceInEuros descending take <span class="token number">10</span>
 </code></pre>
 <ul>
 <li>22 milliseconds</li>
 </ul>
 </li>
-<li><p>Computing a full  pivot table  (no filter) with two axes and two aggregations</p>
+<li>
+<p>Computing a full  pivot table  (no filter) with two axes and two aggregations</p>
 <ul>
 <li>28 milliseconds</li>
 </ul>
 </li>
-<li><p>Running a transaction with a conditional update</p>
+<li>
+<p>Running a transaction with a conditional update</p>
 <ul>
 <li>Less than two milliseconds</li>
 </ul>
 </li>
 </ul>
-<h1 id="show-me-some-code-first">Show me some code first</h1>
+<h2 id="show-me-some-code-first">Show me some code first</h2>
 <h4 id="deep-dive-first-details-after">Deep dive first, details after</h4>
-<p>Let's prepare our business objects for database storage.</p>
+<p>Let’s prepare our business objects for database storage.</p>
 <p>We start with a toy website that allows renting homes between individuals.</p>
 <p>A simple description of a real estate property would be.</p>
-<pre><code class="language-csharp">public class Home
-{
-	public string CountryCode { get; set; }
-	public string Town { get; set; }
-	public string Address { get; set; }
-	public string Owner { get; set; }
-	public string OwnerEmail { get; set; }
-	public string OwnerPhone { get; set; }
-	public int Rooms { get; set; }
-	public int Bathrooms { get; set; }
-	public int PriceInEuros { get; set; }
-}
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> CountryCode <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Town <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Address <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Owner <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> OwnerEmail <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> OwnerPhone <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Rooms <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Bathrooms <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> PriceInEuros <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
 </code></pre>
-<p>To store a business object in a database, it needs a primary key. As there is no &quot;natural&quot; one, in this case, we will add a numeric Id.</p>
-<pre><code class="language-csharp">public class Home
-{
-	[PrimaryKey(KeyDataType.IntKey)]
-	public int Id { get; set; }
+<p>To store a business object in a database, it needs a primary key. As there is no “natural” one, in this case, we will add a numeric Id.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
+	<span class="token punctuation">[</span><span class="token function">PrimaryKey</span><span class="token punctuation">(</span>KeyDataType<span class="token punctuation">.</span>IntKey<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
 	°°°
-}
+<span class="token punctuation">}</span>
 </code></pre>
-<p>Any simple type can be used for the primary key, for example, Guid, string, DateTime.
-The first step is to instantiate a Connector that needs a connection string.</p>
-<pre><code class="language-csharp">using var connector = new Connector(&quot;localhost:48401&quot;);
+<p>Any simple type can be used for the primary key, for example, <strong>Guid</strong>, <strong>string</strong>, <strong>DateTime</strong>.<br>
+The first step is to instantiate a <strong>Connector</strong> that needs a connection string.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">using</span> <span class="token keyword">var</span> connector <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Connector</span><span class="token punctuation">(</span><span class="token string">"localhost:48401"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-connector.DeclareCollection&lt;Home&gt;();
+connector<span class="token punctuation">.</span><span class="token generic-method function">DeclareCollection<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-var homes = connector.DataSource&lt;Home&gt;();
+<span class="token keyword">var</span> homes <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token generic-method function">DataSource<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// the rest of the code goes here
+<span class="token comment">// the rest of the code goes here</span>
 
 </code></pre>
 <p>There is one last step before storing an object in the database. We need to generate a unique value for the primary key.</p>
-<p>In the case of a GUID primary key, we can generate the value locally; there is no collision risk.</p>
-<p>For numeric primary keys, we can ask the database to generate the unique key.</p>
-<p>It can produce multiple unique values at once.</p>
+<blockquote>
+<p>In the case of a GUID primary key, we can generate the value locally;<br>
+there is no collision risk.</p>
+</blockquote>
+<p>For numeric primary keys, we can ask the database to generate the unique key.<br>
+It can produce multiple unique values at once.</p>
 <p><em>Unlike other databases, you do not need to create a unique value generator explicitly. The first call with an unknown generator name will automatically create it</em>*</p>
-<pre><code class="language-csharp">var ids = connector.GenerateUniqueIds(&quot;home_id&quot;, 1);
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> ids <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token function">GenerateUniqueIds</span><span class="token punctuation">(</span><span class="token string">"home_id"</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-var home = new Home
-{
-	Id = ids[0],
-	Adress = &quot;14 rue du chien qui fume&quot;,
-	Bathrooms = 1,
-	CountryCode = &quot;FR&quot;,
-	PriceInEuros = 125,
-	Rooms = 2, 
-	Town = &quot;Paris&quot;
-};
+<span class="token keyword">var</span> home <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
+	Id <span class="token operator">=</span> ids<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>
+	Adress <span class="token operator">=</span> <span class="token string">"14 rue du chien qui fume"</span><span class="token punctuation">,</span>
+	Bathrooms <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">,</span>
+	CountryCode <span class="token operator">=</span> <span class="token string">"FR"</span><span class="token punctuation">,</span>
+	PriceInEuros <span class="token operator">=</span> <span class="token number">125</span><span class="token punctuation">,</span>
+	Rooms <span class="token operator">=</span> <span class="token number">2</span><span class="token punctuation">,</span> 
+	Town <span class="token operator">=</span> <span class="token string">"Paris"</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
 
-homes.Put(home);
+homes<span class="token punctuation">.</span><span class="token function">Put</span><span class="token punctuation">(</span>home<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>Now your first object is safely stored in the database.</p>
 <p>For the moment, you can only retrieve it by the primary key.</p>
 <p>Three ways to do it:</p>
-<pre><code class="language-csharp">var h = homes[property.Id];
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> h <span class="token operator">=</span> homes<span class="token punctuation">[</span>property<span class="token punctuation">.</span>Id<span class="token punctuation">]</span><span class="token punctuation">;</span>
 
-// Or with a LINQ expression.
-var h = homes.First(p =&gt; p.Id == home.Id);
+<span class="token comment">// Or with a LINQ expression.</span>
+<span class="token keyword">var</span> h <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">First</span><span class="token punctuation">(</span>p <span class="token operator">=</span><span class="token operator">&gt;</span> p<span class="token punctuation">.</span>Id <span class="token operator">==</span> home<span class="token punctuation">.</span>Id<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// Or with SQL 
-var h = homes.SqlQuery($&quot;select from home where id={ids[i]}&quot;)
-.First();
+<span class="token comment">// Or with SQL </span>
+<span class="token keyword">var</span> h <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">SqlQuery</span><span class="token punctuation">(</span>$<span class="token string">"select from home where id={ids[i]}"</span><span class="token punctuation">)</span>
+<span class="token punctuation">.</span><span class="token function">First</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 </code></pre>
 <p>The first one is faster as there is no need to parse the expression tree or the SQL.</p>
-<p>&quot;Put&quot; will insert new items (new primary key) and update the existing ones by default.</p>
-<p>We will see later how to do conditional updates or &quot;insert only if new.&quot;</p>
+<p>“Put” will insert new items (new primary key) and update the existing ones by default.</p>
+<p>We will see later how to do conditional updates or “insert only if new.”</p>
 <p>You probably have higher expectations from a modern database than merely storing and retrieving objects by primary key. And you are right.</p>
-<h1 id="server-side-values">Server-side values</h1>
+<h2 id="server-side-values">Server-side values</h2>
 <h4 id="an-important-design-choice">An important design choice</h4>
 <p>In <strong>Cachalot DB</strong>, an object can be as complex as you want, but we can apply query expressions only on the root level properties tagged as server-side visible.</p>
 <p>Both simple types and collections of simple types at the root level can be server-side visible.</p>
-<p>That allows for a very efficient query processing and avoids any constraints on the serialization format that can be as compact as possible.
-Server-side values can be indexed or not. We can query non-indexed server-side properties, but the queries will generally be more efficient on indexed ones.
+<p>That allows for a very efficient query processing and avoids any constraints on the serialization format that can be as compact as possible.<br>
+Server-side values can be indexed or not. We can query non-indexed server-side properties, but the queries will generally be more efficient on indexed ones.<br>
 Two types of indexes are available:</p>
 <ul>
 <li><strong>Dictionary</strong>: very fast update and search, but only equality operators can exploit them</li>
 <li><strong>Ordered</strong>: fast search, slower update but can be used efficiently for comparison operators and sorting</li>
 </ul>
 <p>Massive insert/update operations (<strong>DataSource.PutMany</strong> method) are well optimized. After the size reaches a threshold (50 items by default), the action is treated as a bulk insert. In this case, ordered indexes are sorted only once at the end.</p>
-<h1 id="more-code">More code.</h1>
-<h3 id="adding-indexes-to-the-home-class">Adding indexes to the &quot;Home&quot; class</h3>
-<pre><code class="language-csharp">public class Home
-{
-	[ServerSideValue(IndexType.Primary)]
-	public int Id { get; set; }
+<h2 id="more-code.">More code.</h2>
+<h4 id="adding-indexes-to-the-home-class">Adding indexes to the “Home” class</h4>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Primary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public string CountryCode { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> CountryCode <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public string Town { get; set; }
-	public string Adress { get; set; }
-	public string Owner { get; set; }
-	public string OwnerEmail { get; set; }
-	public string OwnerPhone { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Town <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Adress <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Owner <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> OwnerEmail <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> OwnerPhone <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Ordered)]
-	public int Rooms { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Rooms <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public int Bathrooms { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Bathrooms <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Ordered)]
-	public decimal PriceInEuros { get; set; }
-}
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">decimal</span> PriceInEuros <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
 </code></pre>
 <p>With these new indexes, we can now do some useful queries</p>
-<pre><code class="language-csharp">var results = homes.Where(
-		p =&gt; p.PriceInEuros &lt;= 200 &amp;&amp; 
-			p.Rooms &gt; 1 &amp;&amp; 
-			p.Town == &quot;Paris&quot;
-	)
-	.Take(10);
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> results <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>p <span class="token operator">=</span><span class="token operator">&gt;</span> 
+		p<span class="token punctuation">.</span>PriceInEuros <span class="token operator">&lt;=</span> <span class="token number">200</span> <span class="token operator">&amp;&amp;</span> 
+		p<span class="token punctuation">.</span>Rooms <span class="token operator">&gt;</span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> 
+		p<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span>
+	<span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">Take</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 </code></pre>
-<p>The query is, of course, executed server-side, including the take operator. At most, ten objects cross the network to the client.
-The &quot;Contains&quot; extension method is also supported</p>
-<pre><code class="language-csharp">var towns = new[] {&quot;Paris&quot;, &quot;Nice&quot;};
+<p>The query is, of course, executed server-side, including the take operator. At most, ten objects cross the network to the client.<br>
+The “Contains” extension method is also supported</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> towns <span class="token operator">=</span> <span class="token keyword">new</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token punctuation">{</span><span class="token string">"Paris"</span><span class="token punctuation">,</span> <span class="token string">"Nice"</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
 
-var one  = homes.First(
-	p =&gt; p.PriceInEuros &lt; 150 &amp;&amp; 
-		towns.Contains(p.Town));
+<span class="token keyword">var</span> one  <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">First</span><span class="token punctuation">(</span> p <span class="token operator">=</span><span class="token operator">&gt;</span> 
+	p<span class="token punctuation">.</span>PriceInEuros <span class="token operator">&lt;</span> <span class="token number">150</span> <span class="token operator">&amp;&amp;</span> 
+	towns<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span>p<span class="token punctuation">.</span>Town<span class="token punctuation">)</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 
 </code></pre>
 <p>The previous LINQ expression is equivalent to the SQL:</p>
-<pre><code> SELECT * from HOME where PriceInEuros &lt; 150 and Town IN (&quot;Paris&quot;, &quot;Nice&quot;)
+<pre class=" language-sql"><code class="prism  language-sql"> <span class="token keyword">SELECT</span> <span class="token operator">*</span> <span class="token keyword">from</span> HOME <span class="token keyword">where</span> PriceInEuros <span class="token operator">&lt;</span> <span class="token number">150</span> <span class="token operator">and</span> Town <span class="token operator">IN</span> <span class="token punctuation">(</span><span class="token string">"Paris"</span><span class="token punctuation">,</span> <span class="token string">"Nice"</span><span class="token punctuation">)</span>
 </code></pre>
-<p>Another use of the Contains extension, which does not have an equivalent in traditional SQL, is explained next.</p>
-<h1 id="indexing-collection-properties">Indexing collection properties</h1>
-<p>Let's enrich our business object. It would be helpful to have a list of available dates for each home.</p>
-<p>Adding this new property enables some exciting features.</p>
-<pre><code class="language-csharp">[ServerSideValue(IndexType.Dictionary)]
-public List&lt;DateTime&gt; AvailableDates { get; set; } 
-= new List&lt;DateTime&gt;(); 
-
-
+<p>Another use of the <strong>Contains</strong> extension, which does not have an equivalent in traditional SQL, is explained next.</p>
+<h2 id="indexing-collection-properties">Indexing collection properties</h2>
+<p>Let’s enrich our business object. It would be helpful to have a list of available dates for each home.<br>
+Adding this new property enables some exciting features.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token keyword">public</span> List<span class="token operator">&lt;</span>DateTime<span class="token operator">&gt;</span> AvailableDates <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> 
+	<span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">List</span><span class="token operator">&lt;</span>DateTime<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> 
 
 </code></pre>
 <p>It is a collection property, and it can be indexed the same way as the scalar properties.</p>
 <p>Now we can search for homes available at a specific date</p>
-<pre><code class="language-csharp">var availableNextWeek = homes.Where(
-	p =&gt; p.Town == &quot;Paris&quot; &amp;&amp; 
-	p.AvailableDates.Contains(DateTime.Today.AddDays(7));
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> availableNextWeek <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>p <span class="token operator">=</span><span class="token operator">&gt;</span> 
+	p<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span> <span class="token operator">&amp;&amp;</span> 
+	p<span class="token punctuation">.</span>AvailableDates<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span>DateTime<span class="token punctuation">.</span>Today<span class="token punctuation">.</span><span class="token function">AddDays</span><span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">)</span>
+	<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 </code></pre>
-<p>This method has no direct equivalent in the classical SQL databases, and it conveniently replaces some of the uses for the traditional JOIN operator.</p>
-<h1 id="coffee-break">Coffee break</h1>
+<blockquote>
+<p>This method has no direct equivalent in the classical SQL databases,<br>
+and it conveniently replaces some of the uses for the traditional JOIN<br>
+operator.</p>
+</blockquote>
+<h2 id="coffee-break">Coffee break</h2>
 <h4 id="some-explanations-about-what-we-have-done-so-far">Some explanations about what we have done so far</h4>
 <h5 id="the-connector">The connector</h5>
-<p>The first thing to do when connecting to a database is to instantiate a Connector class. The only parameter is a connection string.</p>
-<pre><code class="language-csharp">var connector = new Connector(&quot;localhost:48401+localhost:48402&quot;);
+<p>The first thing to do when connecting to a database is to instantiate a <strong>Connector</strong> class. The only parameter is a connection string.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> connector <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Connector</span><span class="token punctuation">(</span><span class="token string">"localhost:48401+localhost:48402"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>This line will connect to a cluster of two nodes on the local machine. Multiple nodes are separated by &quot;+&quot; and are specified as &quot;machine: port.&quot; You can use hostnames or IP addresses to specify a machine.
-Data is uniformly distributed on all the nodes in the cluster by using a sharding algorithm applied to the primary key.
+<p>This line will connect to a cluster of two nodes on the local machine. Multiple nodes are separated by “+” and are specified as “machine: port.” You can use hostnames or IP addresses to specify a machine.<br>
+Data is uniformly distributed on all the nodes in the cluster by using a sharding algorithm applied to the primary key.<br>
 The connector contains a connection pool for each node in the cluster. The connection pool has three responsibilities:</p>
 <ul>
 <li>Limit the number of simultaneous connections for a client</li>
@@ -241,142 +260,172 @@ The connector contains a connection pool for each node in the cluster. The conne
 </ul>
 </li>
 </ul>
-<p>By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding &quot;; capacity, preloaded&quot;  at the end of the connection string.</p>
-<pre><code class="language-csharp">var connector = new Connector(&quot;SRVPRD1040:48401; 10, 4&quot;);
+<p>By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding “<strong>;</strong> capacity**,** preloaded”  at the end of the connection string.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> connector <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Connector</span><span class="token punctuation">(</span><span class="token string">"SRVPRD1040:48401; 10, 4"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>Instantiating a connector is quite expensive operation. It should be done only once in the application lifecycle.</p>
+<blockquote>
+<p>Instantiating a connector is quite expensive operation. It should be<br>
+done only once in the application lifecycle.</p>
 <p>Disposing of the connector closes all the connections in the pool.</p>
+</blockquote>
 <h5 id="collections-and-schemas">Collections and schemas</h5>
-<p>Once we have an instance of the connector, we need to declare the collections.
-A name and a CollectionSchema define a collection. A schema contains all the information needed to convert an object from .NET to server representation and index it server-side.</p>
-<pre><code class="language-csharp">connector.DeclareCollection&lt;Home&gt;();
+<p>Once we have an instance of the connector, we need to declare the collections.<br>
+A <strong>name</strong> and a <strong>CollectionSchema</strong> define a collection.</p>
+<blockquote>
+<p>A schema contains all the information needed to convert an object from<br>
+.NET to server representation and index it server-side.</p>
+</blockquote>
+<pre class=" language-csharp"><code class="prism  language-csharp">connector<span class="token punctuation">.</span><span class="token generic-method function">DeclareCollection<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>This line is shorthand for declaring a collection with the same name as the type and a schema created automatically from the attributes on the properties in the class.
+<p>This line is shorthand for declaring a collection with the same name as the type and a schema created automatically from the attributes on the properties in the class.<br>
 It is equivalent to:</p>
-<pre><code class="language-csharp">var schema = TypedSchemaFactory.FromType(typeof(Home));
-var name = typeof(Home).Name;
-connector.DeclareCollection(name, schema);
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> schema <span class="token operator">=</span> TypedSchemaFactory<span class="token punctuation">.</span><span class="token function">FromType</span><span class="token punctuation">(</span><span class="token keyword">typeof</span><span class="token punctuation">(</span>Home<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> name <span class="token operator">=</span> <span class="token keyword">typeof</span><span class="token punctuation">(</span>Home<span class="token punctuation">)</span><span class="token punctuation">.</span>Name<span class="token punctuation">;</span>
+connector<span class="token punctuation">.</span><span class="token function">DeclareCollection</span><span class="token punctuation">(</span>name<span class="token punctuation">,</span> schema<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>When using the simplified version, you can also specify a different collection name.</p>
-<pre><code class="language-csharp">connector.DeclareCollection&lt;Home&gt;(“homes”);
+<pre class=" language-csharp"><code class="prism  language-csharp">connector<span class="token punctuation">.</span><span class="token generic-method function">DeclareCollection<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>“homes”<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>In all the examples, we have used attributes to define the properties that are visible server-side. There is another way: we can explicitly specify a schema.</p>
-<pre><code class="language-csharp">var schema = SchemaFactory.New(&quot;heroes&quot;)
-		.PrimaryKey(&quot;id&quot;)
-		.WithServerSideCollection(&quot;tags&quot;)
-		.WithServerSideValue(&quot;name&quot;, IndexType.Dictionary)
-		.WithServerSideValue(&quot;age&quot;, IndexType.Ordered)
-		.EnableFullTextSearch(&quot;tags&quot;, &quot;name&quot;)
-		.Build();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> schema <span class="token operator">=</span> SchemaFactory<span class="token punctuation">.</span><span class="token function">New</span><span class="token punctuation">(</span><span class="token string">"heroes"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">PrimaryKey</span><span class="token punctuation">(</span><span class="token string">"id"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">WithServerSideCollection</span><span class="token punctuation">(</span><span class="token string">"tags"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">WithServerSideValue</span><span class="token punctuation">(</span><span class="token string">"name"</span><span class="token punctuation">,</span> IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">WithServerSideValue</span><span class="token punctuation">(</span><span class="token string">"age"</span><span class="token punctuation">,</span> IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">EnableFullTextSearch</span><span class="token punctuation">(</span><span class="token string">"tags"</span><span class="token punctuation">,</span> <span class="token string">"name"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">Build</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>Multiple collections (with different names) can share the same schema.</p>
-<p>When declaring a collection, if already defined on the server with a different schema, all data will be reindexed. This is a costly operation.
-It is useful when deploying a new version of a client application, but otherwise, all clients should use the same schema.</p>
+<blockquote>
+<p>When declaring a collection, if already defined on the server with a<br>
+different schema, all data will be reindexed. This is a costly<br>
+operation. It is useful when deploying a new version of a client<br>
+application, but otherwise, all clients should use the same schema.</p>
+</blockquote>
 <h4 id="data-sources">Data sources</h4>
-<p>A data source is the client-side view of a server-side collection. It implements <strong>IQueryable</strong>, thus enabling direct use with LINQ expressions.
+<p>A data source is the client-side view of a server-side collection. It implements <strong>IQueryable</strong>, thus enabling direct use with LINQ expressions.<br>
 To get a data source from the connector, specify the type and eventually the collection name if different from the type name.</p>
-<pre><code class="language-csharp">var homes = connector.DataSource&lt;Home&gt;();
-var homes = connector.DataSource&lt;Home&gt;(&quot;homes&quot;);
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> homes <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token generic-method function">DataSource<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> homes <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token generic-method function">DataSource<span class="token punctuation">&lt;</span>Home<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token string">"homes"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h1 id="full-text-search">Full-text search</h1>
-<p>A very efficient and customizable full-text indexation is available starting version 1.1.3.
-First, we need to prepare the business objects for full-text indexation. We do it the usual way with a specific tag. Let's index as full text the address, the town, and the comments.</p>
-<pre><code class="language-csharp">public class Home
-{
+<h2 id="full-text-search">Full-text search</h2>
+<p>A very efficient and customizable full-text indexation is available starting version 1.1.3.<br>
+First, we need to prepare the business objects for full-text indexation. We do it the usual way with a specific tag. Let’s index as full text the address, the town, and the comments.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
 	…
-        [FullTextIndexation]
-        [ServerSideValue(IndexType.Dictionary)]
-        public string Town { get; set; }
+        <span class="token punctuation">[</span>FullTextIndexation<span class="token punctuation">]</span>
+        <span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Town <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
         
-        [FullTextIndexation]
-        public string Adress { get; set; }
+        <span class="token punctuation">[</span>FullTextIndexation<span class="token punctuation">]</span>
+        <span class="token keyword">public</span> <span class="token keyword">string</span> Adress <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
 	…
 
-        [FullTextIndexation]
-        public List&lt;Comment&gt; Comments { get; set; } 
-			= new List&lt;Comment&gt;(); 
-}
+        <span class="token punctuation">[</span>FullTextIndexation<span class="token punctuation">]</span>
+        <span class="token keyword">public</span> List<span class="token operator">&lt;</span>Comment<span class="token operator">&gt;</span> Comments <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span> 
+			<span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">List</span><span class="token operator">&lt;</span>Comment<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> 
+<span class="token punctuation">}</span>
 
 </code></pre>
-<p>You notice that full-text indexation can be applied to ordinarily indexed
-properties and to properties that are not available to LINQ queries.</p>
+<p>You notice that full-text indexation can be applied to ordinarily indexed properties and to properties that are not available to LINQ queries.</p>
 <p><em>We can apply it to scalar and collection properties.</em></p>
-<p>A new LINQ extension method is provided: <strong>FullTextSearch</strong>. It is accessible through the <strong>DataSource</strong> class.
+<p>A new LINQ extension method is provided: <strong>FullTextSearch</strong>. It is accessible through the <strong>DataSource</strong> class.<br>
 It can be used alone or mixed with common predicates. The result will be the intersection of the sets returned by the LINQ and the full-text query in the second case.</p>
-<pre><code class="language-csharp">// pure full-text search
-var result = homes.FullTextSearch(&quot;Paris close metro&quot;).ToList();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token comment">// pure full-text search</span>
+<span class="token keyword">var</span> result <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">FullTextSearch</span><span class="token punctuation">(</span><span class="token string">"Paris close metro"</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// mixed search
-var inParisAvailableTomorrow = homes.Where(
-		p =&gt; p.Town == &quot;Paris&quot; 
-		&amp;&amp; p.AvailableDates.Contains(DateTime.Today.AddDays(1))
-	)
-	.FullTextSearch(&quot;close metro&quot;)
-	.ToList();
+<span class="token comment">// mixed search</span>
+<span class="token keyword">var</span> inParisAvailableTomorrow <span class="token operator">=</span> homes<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>p <span class="token operator">=</span><span class="token operator">&gt;</span> 
+		p<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span> <span class="token operator">&amp;&amp;</span> 
+		p<span class="token punctuation">.</span>AvailableDates<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span>DateTime<span class="token punctuation">.</span>Today<span class="token punctuation">.</span><span class="token function">AddDays</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>		
+	<span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">FullTextSearch</span><span class="token punctuation">(</span><span class="token string">"close metro"</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 </code></pre>
-<p>In both cases, the full-text query gives the order (most pertinent items first).</p>
-<h2 id="fine-tuning-the-full-text-search">Fine-tuning the full-text search</h2>
-<p>In any language, some words have no meaning by themselves but are useful to build sentences. For example, in English: &quot;to&quot;, &quot;the&quot;, &quot;that&quot;, &quot;at&quot;, &quot;a&quot;. They are called &quot;stop words&quot; and are usually the most frequent words in a language.
-The speed of the full-text search is greatly improved if we do not index them. The configuration file &quot;node_config.json&quot; allows us to specify them. This part should be identical for all nodes in a cluster.</p>
-<pre><code class="language-json">{
-  &quot;IsPersistent&quot;: true,
-  &quot;ClusterName&quot;: &quot;test&quot;,
-  &quot;TcpPort&quot;: 4848,
-  &quot;DataPath&quot;: &quot;root/4848&quot;,
-  &quot;FullTextConfig&quot;: {
-    &quot;TokensToIgnore&quot;: [&quot;qui&quot;, &quot;du&quot;, &quot;rue&quot;]
-  }
-}
+<blockquote>
+<p>In both cases, the full-text query gives the order (most pertinent<br>
+items first).</p>
+</blockquote>
+<h3 id="fine-tuning-the-full-text-search">Fine-tuning the full-text search</h3>
+<p>In any language, some words have no meaning by themselves but are useful to build sentences. For example, in English: “to”, “the”, “that”, “at”, “a”. They are called <strong>“stop words”</strong> and are usually the most frequent words in a language.<br>
+The speed of the full-text search is greatly improved if we do not index them. The configuration file <strong>node_config.json</strong> allows us to specify them. This part should be identical for all nodes in a cluster.</p>
+<pre class=" language-json"><code class="prism  language-json"><span class="token punctuation">{</span>
+  <span class="token string">"IsPersistent"</span><span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  <span class="token string">"ClusterName"</span><span class="token punctuation">:</span> <span class="token string">"test"</span><span class="token punctuation">,</span>
+  <span class="token string">"TcpPort"</span><span class="token punctuation">:</span> <span class="token number">4848</span><span class="token punctuation">,</span>
+  <span class="token string">"DataPath"</span><span class="token punctuation">:</span> <span class="token string">"root/4848"</span><span class="token punctuation">,</span>
+  <span class="token string">"FullTextConfig"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"TokensToIgnore"</span><span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token string">"qui"</span><span class="token punctuation">,</span> <span class="token string">"du"</span><span class="token punctuation">,</span> <span class="token string">"rue"</span><span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 </code></pre>
-<p>When a node starts, it generates in the &quot;DataPath&quot; folder a text file containing the 100 most frequent words: <strong>most_frequent_tokens.txt</strong>.
-These are good candidates to ignore, and you may need to add other words depending on your business case. For example, it is good to avoid indexing &quot;road&quot; or &quot;avenue&quot; if you enable a full-text search on addresses.</p>
-<h1 id="computing-pivot-tables-server-side">Computing pivot tables server-side</h1>
+<p>When a node starts, it generates in the “DataPath” folder a text file containing the 100 most frequent words: <strong>most_frequent_tokens.txt</strong>.</p>
+<blockquote>
+<p>These are good candidates to ignore, and you may need to add other<br>
+words depending on your business case. For example, it is good to<br>
+avoid indexing “road” or “avenue” if you enable a full-text search on<br>
+addresses.</p>
+</blockquote>
+<h2 id="computing-pivot-tables-server-side">Computing pivot tables server-side</h2>
 <p>A pivot table is a hierarchical aggregation of numeric values. A pivot definition consists of:</p>
 <ul>
-<li>An optional filter to restrict the calculation to a subset of data.
-o	We can use any query, but operators like DISTINCT, ORDER BY or TAKE, make no sense for a pivot table calculation</li>
-<li>An ordered list of axes.
-o	They are optional, too; if no one is specified, the aggregation is done on the whole collection, and the result contains a single level of aggregation
-o	The axis must be server-side visible (indexed or not)</li>
-<li>A list of numeric values to aggregate (at least one must be specified)
-o	They must be server-side visible (indexed or not)</li>
+<li>An optional <strong>filter</strong> to restrict the calculation to a subset of data.
+<ul>
+<li>We can use any query, but operators like DISTINCT, ORDER BY or TAKE, make no sense for a pivot table calculation</li>
+</ul>
+</li>
+<li>An ordered list of <strong>axes</strong>.
+<ul>
+<li>They are optional, too; if no one is specified, the aggregation is done on the whole collection, and the result contains a single level of aggregation</li>
+<li>The axis must be server-side visible (indexed or not)</li>
+</ul>
+</li>
+<li>A list of <strong>numeric values to aggregate</strong> (at least one must be specified)
+<ul>
+<li>They must be server-side visible (indexed or not)</li>
+</ul>
+</li>
 </ul>
 <p>For example, an <strong>Order</strong> class:</p>
-<pre><code class="language-csharp">public class Order
-{
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Order</span>
+<span class="token punctuation">{</span>
 
-	[ServerSideValue(IndexType.Primary)]
-	public Guid Id { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Primary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> Guid Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	// indexed value to aggregate
-	[ServerSideValue(IndexType.Ordered)]
-	public double Amount { get; set; }
+	<span class="token comment">// indexed value to aggregate</span>
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">double</span> Amount <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	// non indexed value to aggregate
-	[ServerSideValue]
-	public int Quantity { get; set; }
+	<span class="token comment">// non indexed value to aggregate</span>
+	<span class="token punctuation">[</span>ServerSideValue<span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Quantity <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public string Category { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">string</span> Category <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public int ProductId { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> ProductId <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	...
+	<span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
 	
-}
+<span class="token punctuation">}</span>
 </code></pre>
-<p>We can aggregate the whole collection on Amount and Quantity and use Category, ProductId as axes.</p>
-<pre><code class="language-csharp">var pivot = dataSource.PreparePivotRequest()
-		.OnAxis(o =&gt; o.Category, o =&gt; o.ProductId)
-		.AggregateValues(o=&gt;o.Amount, o=&gt;o.Quantity)
-		.Execute();
+<p>We can aggregate the whole collection on <strong>Amount</strong> and <strong>Quantity</strong> and use <strong>Category</strong>, <strong>ProductId</strong> as axes.</p>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> pivot <span class="token operator">=</span> dataSource<span class="token punctuation">.</span><span class="token function">PreparePivotRequest</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">OnAxis</span><span class="token punctuation">(</span>o <span class="token operator">=</span><span class="token operator">&gt;</span> o<span class="token punctuation">.</span>Category<span class="token punctuation">,</span> o <span class="token operator">=</span><span class="token operator">&gt;</span> o<span class="token punctuation">.</span>ProductId<span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">AggregateValues</span><span class="token punctuation">(</span>o<span class="token operator">=</span><span class="token operator">&gt;</span>o<span class="token punctuation">.</span>Amount<span class="token punctuation">,</span> o<span class="token operator">=</span><span class="token operator">&gt;</span>o<span class="token punctuation">.</span>Quantity<span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">Execute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>To specify a filter, add a LINQ query as a parameter to the method <strong>PreparePivotRequest</strong>.</p>
-<pre><code>Calling pivot.ToString() will return:
-ColumnName: Amount, Count: 100000, Sum: 1015000.00
+<blockquote>
+<p>To specify a filter, add a LINQ query as a parameter to the method<br>
+<strong>PreparePivotRequest</strong>.</p>
+</blockquote>
+<p>Calling <strong>pivot.ToString()</strong> will return:</p>
+<pre><code>ColumnName: Amount, Count: 100000, Sum: 1015000.00
 ColumnName: Quantity, Count: 100000, Sum: 200000
     Category = science
     ColumnName: Amount, Count: 20000, Sum: 203000.00
@@ -396,176 +445,197 @@ ColumnName: Quantity, Count: 100000, Sum: 200000
         ProductId = 1005
         ColumnName: Amount, Count: 10000, Sum: 101500.00
         ColumnName: Quantity, Count: 10000, Sum: 20000
+     ....
 
 </code></pre>
-<h1 id="other-methods-of-the-api">Other methods of the API</h1>
+<h2 id="other-methods-of-the-api">Other methods of the API</h2>
 <p>In addition to querying and putting single items, the DataSource class exposes other essential methods.</p>
-<h2 id="deleting-items-from-the-database">Deleting items from the database</h2>
-<pre><code class="language-csharp">// delete one object
-homes.Delete(home);
+<h3 id="deleting-items-from-the-database">Deleting items from the database</h3>
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token comment">// delete one object</span>
+homes<span class="token punctuation">.</span><span class="token function">Delete</span><span class="token punctuation">(</span>home<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// delete multiple objects
-homes.DeleteMany(p =&gt; p.Town == &quot;Paris&quot;);
+<span class="token comment">// delete multiple objects</span>
+homes<span class="token punctuation">.</span><span class="token function">DeleteMany</span><span class="token punctuation">(</span>p <span class="token operator">=</span><span class="token operator">&gt;</span> p<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h2 id="inserting-or-updating-many-objects">Inserting or updating many objects</h2>
-<pre><code class="language-csharp">dataSource.PutMany(collection);
+<h3 id="inserting-or-updating-many-objects">Inserting or updating many objects</h3>
+<pre class=" language-csharp"><code class="prism  language-csharp">dataSource<span class="token punctuation">.</span><span class="token function">PutMany</span><span class="token punctuation">(</span>collection<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>This method is very optimized for vast collections of objects</p>
 <ul>
 <li>Packets of objects are sent together in the network</li>
 <li>For massive groups, the ordered indexes are sorted only after the insertion of the last object. It is like a BULK INSERT in classical SQL databases</li>
 </ul>
-<p>The parameter is an <strong>IEnumerable</strong>. This choice allows to generation of data while inserting it into the database dynamically. The complete collection does not need to be present in the client's memory.</p>
-<h2 id="deleting-the-whole-content-of-the-collection">Deleting the whole content of the collection</h2>
-<pre><code class="language-csharp">dataSource.Truncate();
+<blockquote>
+<p>The parameter is an <strong>IEnumerable</strong>. This choice allows to generation<br>
+of data while inserting it into the database dynamically. The complete<br>
+collection does not need to be present in the client’s memory.</p>
+</blockquote>
+<h3 id="deleting-the-whole-content-of-the-collection">Deleting the whole content of the collection</h3>
+<pre class=" language-csharp"><code class="prism  language-csharp">dataSource<span class="token punctuation">.</span><span class="token function">Truncate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h2 id="precompiled-queries">Precompiled queries</h2>
+<h3 id="precompiled-queries">Precompiled queries</h3>
 <p>In general, the query parsing time is a tiny percentage of the data retrieval time.</p>
-<p><em>Surprisingly the SQL parsing is faster than LINQ expression processing.</em>*</p>
+<blockquote>
+<p>Surprisingly the SQL parsing is faster than LINQ expression<br>
+processing.</p>
+</blockquote>
 <p>For the queries that return a small number of items and that are executed often, we can squeeze some more processing speed by precompiling them:</p>
-<pre><code class="language-csharp">// you can replace this
-var resultWithLinq = dataSource.Where(
-o =&gt; categories.Contains( o.Category)).ToList();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token comment">// you can replace this</span>
+<span class="token keyword">var</span> resultWithLinq <span class="token operator">=</span> dataSource<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>
+	o <span class="token operator">=</span><span class="token operator">&gt;</span> categories<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span> o<span class="token punctuation">.</span>Category<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// by this (if the same query is used many times)
-var query = dataSource.PredicateToQuery(
-o =&gt; categories.Contains( o.Category));
+<span class="token comment">// by this (if the same query is used many times)</span>
+<span class="token keyword">var</span> query <span class="token operator">=</span> dataSource<span class="token punctuation">.</span><span class="token function">PredicateToQuery</span><span class="token punctuation">(</span>
+	o <span class="token operator">=</span><span class="token operator">&gt;</span> categories<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span> o<span class="token punctuation">.</span>Category<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-var resultWithPrecompiled =
-dataSource.WithPrecompiledQuery(query).ToList();
+<span class="token keyword">var</span> resultWithPrecompiled <span class="token operator">=</span>
+	dataSource<span class="token punctuation">.</span><span class="token function">WithPrecompiledQuery</span><span class="token punctuation">(</span>query<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h1 id="compressing-object-data">Compressing object data</h1>
+<h2 id="compressing-object-data">Compressing object data</h2>
 <p>The business objects are stored internally in a type-agnostic format.</p>
 <p>Server-side properties are stored in a binary format that is an excellent compromise between memory consumption and comparison speed, and all the object data is stored as UTF-8 encoded JSON.</p>
-<p>&quot;Packing&quot; is the process of transforming a .NET object in the internal format.</p>
+<p>“Packing” is the process of transforming a .NET object in the internal format.</p>
 <p>Packing is done client-side; the server only uses the indexes and manipulates the object as row data. It has no dependency on the concrete .NET datatype.</p>
-<p>By default, the JSON data is not compressed, but compression may benefit objects that take more than a few kilobytes.</p>
-<p>For an object that takes 10 KB in JSON, the compression ratio is around 1:10.</p>
+<blockquote>
+<p>By default, the JSON data is not compressed, but compression may<br>
+benefit objects that take more than a few kilobytes.<br>
+For an object that takes 10 KB in JSON, the compression ratio is<br>
+around 1:10.</p>
+</blockquote>
 <p>To enable compression, add a single attribute to the business data type.</p>
-<pre><code class="language-csharp">[Storage(compressed:true)]
-public class Home
-{
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token punctuation">[</span><span class="token function">Storage</span><span class="token punctuation">(</span>compressed<span class="token punctuation">:</span><span class="token keyword">true</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Home</span>
+<span class="token punctuation">{</span>
    °°°
 
 </code></pre>
-<p>Using compressed objects is transparent for the client code.
-However, it has an impact on packing time. When objects are retrieved, they are unpacked (which may imply decompression).</p>
+<p>Using compressed objects is transparent for the client code. However, it has an impact on packing time.<br>
+When objects are retrieved, they are unpacked (which may imply decompression).</p>
 <p>In conclusion, compression may be beneficial, starting with medium-sized objects if you are ready to pay a small price, client-side only, for data insertion and retrieval.</p>
-<h1 id="storing-polymorphic-collections-in-the-database">Storing polymorphic collections in the database</h1>
+<h2 id="storing-polymorphic-collections-in-the-database">Storing polymorphic collections in the database</h2>
 <p>Polymorphic collections are natively supported. Type information is stored internally in the JSON (as <strong>$type</strong> property), and the client API uses it to deserialize the proper concrete type.</p>
+<blockquote>
 <p>The base type can be abstract.</p>
+</blockquote>
 <p>To store a polymorphic collection, we must expose all required server-side values on the base type.</p>
 <p>Null values are perfectly acceptable for index fields, which allows us to expose indexed properties that make sense only for a specific child type.</p>
 <p>Example of code that queries a collection having an abstract class as type. <strong>IncreaseDecrease</strong> inheriths the abstract class <strong>Event</strong></p>
-<pre><code class="language-csharp">var events = connector.DataSource&lt;Event&gt;();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> events <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token generic-method function">DataSource<span class="token punctuation">&lt;</span>Event<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-var increaseEvents = events.Where(
-	evt =&gt; evt.EventType == &quot;IncreaseDecrease&quot; &amp;&amp; 
-	evt.EventDate == DateTime.Today
-).Cast&lt;IncreaseDecrease&gt;();
+<span class="token keyword">var</span> increaseEvents <span class="token operator">=</span> events<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>
+	evt <span class="token operator">=</span><span class="token operator">&gt;</span> evt<span class="token punctuation">.</span>EventType <span class="token operator">==</span> <span class="token string">"IncreaseDecrease"</span> <span class="token operator">&amp;&amp;</span> 
+	evt<span class="token punctuation">.</span>EventDate <span class="token operator">==</span> DateTime<span class="token punctuation">.</span>Today
+<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token generic-method function">Cast<span class="token punctuation">&lt;</span>IncreaseDecrease<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h1 id="conditional-operations-and-optimistic-synchronization">Conditional operations and &quot;optimistic synchronization.&quot;</h1>
-<p>A typical &quot;put&quot; operation adds an object or updates an existent one using the primary key as object identity.
+<h2 id="conditional-operations-and-optimistic-synchronization.">Conditional operations and “optimistic synchronization.”</h2>
+<p>A typical “put” operation adds an object or updates an existent one using the primary key as object identity.<br>
 More advanced use cases may arise:</p>
 <ol>
 <li>Add an object only if it is not already there and tell me if it was effectively added</li>
 <li>Update an existent object only if the current version in the database satisfies a condition</li>
 </ol>
-<p>The first one is available through the <strong>TryAdd</strong> operation on the <strong>DataSource</strong> class.
+<p>The first one is available through the <strong>TryAdd</strong> operation on the <strong>DataSource</strong> class.<br>
 If the object was already there, it is not modified, and the return value is false.</p>
 <p>The test on the object availability and the insertion are executed as an atomic operation. The object cannot be updated or deleted by another client in-between.</p>
-<p>That can be useful for data initialization, creating singleton objects, distributed locks, etc.</p>
-<p>The second use case is handy for, but not limited to, the implementation of &quot;optimistic synchronization&quot;.</p>
+<blockquote>
+<p>That can be useful for data initialization, creating singleton<br>
+objects, distributed locks, etc.</p>
+</blockquote>
+<p>The second use case is handy for, but not limited to, the implementation of “optimistic synchronization”.</p>
 <p>If we need to be sure that nobody else modified an object while we were editing it (manually or algorithmically), there are two possibilities</p>
 <ul>
 <li>Lock the object during the edit operation. This choice is not the best option for a modern distributed system. A distributed lock is not suitable for massively parallel processing, and if it is not released automatically (due to client or network failure), manual intervention by an administrator is required</li>
-<li>Use &quot;optimistic synchronization,&quot; also known as &quot;optimistic lock&quot;: do not lock but require that, when saving the modified object, the one in the database did not change since. Otherwise, the operation fails, and we must retry (load + edit + save).</li>
+<li>Use “optimistic synchronization,” also known as “optimistic lock”: do not lock but require that, when saving the modified object, the one in the database did not change since. Otherwise, the operation fails, and we must retry (load + edit + save).</li>
 </ul>
 <p>We can achieve this in different ways:</p>
 <ul>
 <li>Add a version on an object. When we save version n+1, we require that the object in the database is still at version n.</li>
 </ul>
-<pre><code class="language-csharp">item.Version = n + 1;
-data.UpdateIf(item, i=&gt; i.Version == n);
+<pre class=" language-csharp"><code class="prism  language-csharp">item<span class="token punctuation">.</span>Version <span class="token operator">=</span> n <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">;</span>
+data<span class="token punctuation">.</span><span class="token function">UpdateIf</span><span class="token punctuation">(</span>item<span class="token punctuation">,</span> i<span class="token operator">=</span><span class="token operator">&gt;</span> i<span class="token punctuation">.</span>Version <span class="token operator">==</span> n<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <ul>
 <li>Add a timestamp on an object. When we save a modified object, we require the timestamp of the version in the database is identical to that of the object before our update.</li>
 </ul>
-<pre><code class="language-csharp">var oldTimestamp = item.Timestamp;
-item.Timestamp = DateTime.Now;
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> oldTimestamp <span class="token operator">=</span> item<span class="token punctuation">.</span>Timestamp<span class="token punctuation">;</span>
+item<span class="token punctuation">.</span>Timestamp <span class="token operator">=</span> DateTime<span class="token punctuation">.</span>Now<span class="token punctuation">;</span>
 
-data.UpdateIf(item, I =&gt; i.Timestamp == oldTimestamp);
+data<span class="token punctuation">.</span><span class="token function">UpdateIf</span><span class="token punctuation">(</span>item<span class="token punctuation">,</span> I <span class="token operator">=</span><span class="token operator">&gt;</span> i<span class="token punctuation">.</span>Timestamp <span class="token operator">==</span> oldTimestamp<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>This feature can be even more helpful when committing multiple object modifications in a transaction. If a condition is not satisfied with one object, roll back the whole transaction.</p>
-<h1 id="two-stage-transactions">Two-Stage Transactions</h1>
+<blockquote>
+<p>This feature can be even more helpful when committing multiple object<br>
+modifications in a transaction. If a condition is not satisfied with<br>
+one object, roll back the whole transaction.</p>
+</blockquote>
+<h2 id="two-stage-transactions">Two-Stage Transactions</h2>
 <p>The most important thing to understand about two-stage transactions is when you need them.</p>
-<p>Most of the time, you don't.</p>
+<p>Most of the time, you don’t.</p>
 <p>An operation that involves one single object (Put, TryAdd, UpdateIf, Delete) is always transactional.</p>
 <p>It is durable (operations are synchronously saved to an append-only transaction log) and atomic. An object will be visible to the rest of the world only fully updated or fully inserted.</p>
 <p>On a single-node cluster, operations on multiple objects (PutMany, DeleteMany) are also transactional.</p>
 <p>You need two-stage transactions only if you must transactionally manipulate multiple objects on a multi-node cluster.</p>
-<p>As usual, let's build a small example: a toy banking system that allows money transfers between accounts. There are two types of business objects: <strong>Account</strong> and <strong>AccountOperation</strong>.
+<p>As usual, let’s build a small example: a toy banking system that allows money transfers between accounts. There are two types of business objects: <strong>Account</strong> and <strong>AccountOperation</strong>.<br>
 The complete example is included in the release package (<strong>Accounts</strong> application).</p>
-<p>Imagine lots of money transfers happening in parallel.
+<p>Imagine lots of money transfers happening in parallel.<br>
 We would like to:</p>
 <ul>
-<li>Subtract an amount of money from the source account only if the balance is superior to the amount</li>
+<li>Subtract an amount of money from the source account <strong>only if the balance is superior to the amount</strong></li>
 <li>Add the same amount to the target account</li>
 <li>Create a money-transfer object to keep track of accounts history</li>
 </ul>
-<p><em>All this should happen (or fail) as an atomic operation.</em></p>
+<p><strong>All this should happen (or fail) as an atomic operation.</strong></p>
 <p>The business object definition:</p>
-<pre><code class="language-csharp">// this is an account containing only it's current balance
-public class Account
-{
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token comment">// this is an account containing only it's current balance</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Account</span>
+<span class="token punctuation">{</span>
 
-	[ServerSideValue(IndexType.Primary)]
-	public int Id { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Primary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Ordered)]
-	public decimal Balance { get; set; }
-}
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">decimal</span> Balance <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
-// this is a money transfer between accounts
-public class MoneyTransfer
-{
+<span class="token comment">// this is a money transfer between accounts</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">MoneyTransfer</span>
+<span class="token punctuation">{</span>
 
-	[ServerSideValue(IndexType.Primary)]
-	public int Id { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Primary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> Id <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Ordered)]
-	public decimal Amount { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Ordered<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">decimal</span> Amount <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public DateTime Date { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> DateTime Date <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public int SourceAccount { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> SourceAccount <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
 
-	[ServerSideValue(IndexType.Dictionary)]
-	public int DestinationAccount { get; set; }
+	<span class="token punctuation">[</span><span class="token function">ServerSideValue</span><span class="token punctuation">(</span>IndexType<span class="token punctuation">.</span>Dictionary<span class="token punctuation">)</span><span class="token punctuation">]</span>
+	<span class="token keyword">public</span> <span class="token keyword">int</span> DestinationAccount <span class="token punctuation">{</span> <span class="token keyword">get</span><span class="token punctuation">;</span> <span class="token keyword">set</span><span class="token punctuation">;</span> <span class="token punctuation">}</span>
 
-}
+<span class="token punctuation">}</span>
 </code></pre>
 <p>The transfer as a transaction:</p>
-<pre><code class="language-csharp">srcAccount.Balance -= transferred;
-dstAccount.Balance += transferred;
+<pre class=" language-csharp"><code class="prism  language-csharp">srcAccount<span class="token punctuation">.</span>Balance <span class="token operator">-</span><span class="token operator">=</span> transferred<span class="token punctuation">;</span>
+dstAccount<span class="token punctuation">.</span>Balance <span class="token operator">+</span><span class="token operator">=</span> transferred<span class="token punctuation">;</span>
 
-var transaction = connector.BeginTransaction();
-transaction.UpdateIf(srcAccount, 
-account =&gt; account.Balance &gt;= transferred
-);
-transaction.Put(dstAccount);
-transaction.Put(new MoneyTransfer
-{
-	Amount = transferred,
-	Date = DateTime.Today,
-	SourceAccount = src,
-	DestinationAccount = dst,
-	Id = ids[i]
-});
-transaction.Commit();
+<span class="token keyword">var</span> transaction <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token function">BeginTransaction</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+transaction<span class="token punctuation">.</span><span class="token function">UpdateIf</span><span class="token punctuation">(</span>srcAccount<span class="token punctuation">,</span> 
+account <span class="token operator">=</span><span class="token operator">&gt;</span> account<span class="token punctuation">.</span>Balance <span class="token operator">&gt;=</span> transferred
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+transaction<span class="token punctuation">.</span><span class="token function">Put</span><span class="token punctuation">(</span>dstAccount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+transaction<span class="token punctuation">.</span><span class="token function">Put</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">MoneyTransfer</span>
+<span class="token punctuation">{</span>
+	Amount <span class="token operator">=</span> transferred<span class="token punctuation">,</span>
+	Date <span class="token operator">=</span> DateTime<span class="token punctuation">.</span>Today<span class="token punctuation">,</span>
+	SourceAccount <span class="token operator">=</span> src<span class="token punctuation">,</span>
+	DestinationAccount <span class="token operator">=</span> dst<span class="token punctuation">,</span>
+	Id <span class="token operator">=</span> ids<span class="token punctuation">[</span>i<span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+transaction<span class="token punctuation">.</span><span class="token function">Commit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>The operations allowed inside a transaction are:</p>
 <ul>
@@ -574,50 +644,52 @@ transaction.Commit();
 <li>DeleteMany</li>
 <li>UpdateIf</li>
 </ul>
-<p>If we use conditional update (UpdateIf) and the condition is not satisfied by one object, the whole transaction rolls back.</p>
-<h1 id="consistent-read-context">Consistent read context</h1>
-<p>Consistent read is new functionality available in version 2.
-It enables multiple queries to be executed in a context that guarantees that data do not change during the execution of all the queries.
+<blockquote>
+<p>If we use conditional update (UpdateIf) and the condition is not<br>
+satisfied by one object, the whole transaction rolls back.</p>
+</blockquote>
+<h2 id="consistent-read-context">Consistent read context</h2>
+<p>Consistent read is new functionality available in version 2.<br>
+It enables multiple queries to be executed in a context that guarantees that data do not change during the execution of all the queries.<br>
 Multiple <strong>ConsistentRead</strong> methods are available on the <strong>Connector</strong> class.</p>
 <p>A simplified version of the method is available for up to four collections when using default collection names.</p>
-<pre><code class="language-csharp">connector.ConsistentRead&lt;MoneyTransfer, Account&gt;(ctx =&gt;
-{
-	var myAccounts = ctx.Collection&lt;Account&gt;().ToList();
+<pre class=" language-csharp"><code class="prism  language-csharp">connector<span class="token punctuation">.</span><span class="token generic-method function">ConsistentRead<span class="token punctuation">&lt;</span>MoneyTransfer<span class="token punctuation">,</span> Account<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span>ctx <span class="token operator">=</span><span class="token operator">&gt;</span>
+<span class="token punctuation">{</span>
+	<span class="token keyword">var</span> myAccounts <span class="token operator">=</span> ctx<span class="token punctuation">.</span><span class="token generic-method function">Collection<span class="token punctuation">&lt;</span>Account<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 	
-	Assert.AreEqual(2, myAccounts.Count);
+	Assert<span class="token punctuation">.</span><span class="token function">AreEqual</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> myAccounts<span class="token punctuation">.</span>Count<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-	// The sum of the accounts balance should always be 1000
-	Assert.AreEqual(1000, myAccounts.Sum(acc =&gt; acc.Balance));
+	<span class="token comment">// The sum of the accounts balance should always be 1000</span>
+	Assert<span class="token punctuation">.</span><span class="token function">AreEqual</span><span class="token punctuation">(</span><span class="token number">1000</span><span class="token punctuation">,</span> myAccounts<span class="token punctuation">.</span><span class="token function">Sum</span><span class="token punctuation">(</span>acc <span class="token operator">=</span><span class="token operator">&gt;</span> acc<span class="token punctuation">.</span>Balance<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-	var transfers = ctx.Collection&lt;MoneyTransfer&gt;();
+	<span class="token keyword">var</span> transfers <span class="token operator">=</span> ctx<span class="token punctuation">.</span><span class="token generic-method function">Collection<span class="token punctuation">&lt;</span>MoneyTransfer<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-	var tr = transfers
-		.Where(t =&gt; t.SourceAccount == myAccounts[0].Id).ToList();
+	<span class="token keyword">var</span> tr <span class="token operator">=</span> transfers
+		<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>t <span class="token operator">=</span><span class="token operator">&gt;</span> t<span class="token punctuation">.</span>SourceAccount <span class="token operator">==</span> myAccounts<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>Id<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-	//check consistency between transfer and balance
-	var sumTransferred = tr.Sum(tr =&gt; tr.Amount);
+	<span class="token comment">//check consistency between transfer and balance</span>
+	<span class="token keyword">var</span> sumTransferred <span class="token operator">=</span> tr<span class="token punctuation">.</span><span class="token function">Sum</span><span class="token punctuation">(</span>tr <span class="token operator">=</span><span class="token operator">&gt;</span> tr<span class="token punctuation">.</span>Amount<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-	Assert.AreEqual(sumTransferred, myAccounts[1].Balance);
+	Assert<span class="token punctuation">.</span><span class="token function">AreEqual</span><span class="token punctuation">(</span>sumTransferred<span class="token punctuation">,</span> myAccounts<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">.</span>Balance<span class="token punctuation">)</span><span class="token punctuation">;</span>
 	
 
-});
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>When using explicit collection names, this version of the method should be used</p>
-<pre><code class="language-csharp">void ConsistentRead(Action&lt;ConsistentContext&gt; action, params string[] collections)
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">void</span> <span class="token function">ConsistentRead</span><span class="token punctuation">(</span>Action<span class="token operator">&lt;</span>ConsistentContext<span class="token operator">&gt;</span> action<span class="token punctuation">,</span> <span class="token keyword">params</span> <span class="token keyword">string</span><span class="token punctuation">[</span><span class="token punctuation">]</span> collections<span class="token punctuation">)</span>
 </code></pre>
-<h1 id="in-process-server">In-process server</h1>
-<p>In some cases, if the quantity of data is bounded and a single node has enough memory to keep all the data, you can instantiate a Cachalot server directly inside your server process.
-This configuration will give blazing fast responses as there is no more network latency involved.
+<h2 id="in-process-server">In-process server</h2>
+<p>In some cases, if the quantity of data is bounded and a single node has enough memory to keep all the data, you can instantiate a Cachalot server directly inside your server process.<br>
+This configuration will give blazing fast responses as there is no more network latency involved.<br>
 To do this, pass an empty string as a connection string to the Connector constructor.</p>
-<pre><code class="language-csharp">var connector = new Connector(&quot;&quot;);
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> connector <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Connector</span><span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<p>This will instantiate a server inside the connector object, and communications will be done by simple in-process calls, not a TCP channel.
-The Connector class implements IDisposable. Disposing of the Connector will graciously stop the server.</p>
-<p>The connector should be instantiated and disposed of only once in the application lifetime.
- </p>
-<h1 id="using-cachalot-as-a-distributed-cache-with-unique-features">Using Cachalot as a distributed cache with unique features</h1>
-<h2 id="serving-single-objects-from-a-cache">Serving single objects from a cache</h2>
-<p>The most frequent use-case for a distributed cache is to store objects identified by the primary key.
+<p>This will instantiate a server inside the connector object, and communications will be done by simple in-process calls, not a TCP channel.<br>
+The Connector class implements <strong>IDisposable</strong>. Disposing of the <strong>Connector</strong> will graciously stop the server.</p>
+<p>The connector should be instantiated and disposed of only once in the application lifetime.</p>
+<h2 id="using-cachalot-as-a-distributed-cache-with-unique-features">Using Cachalot as a distributed cache with unique features</h2>
+<h3 id="serving-single-objects-from-a-cache">Serving single objects from a cache</h3>
+<p>The most frequent use-case for a distributed cache is to store objects identified by the primary key.<br>
 An external database contains the persistent data and, when an object is accessed, we first try to get it from the cache and, if not available, load it from the database. Usually, when we load an object from the database, we also store it into the cache.</p>
 <pre><code>Item = cache.TryGet(itemKey)
 If Item found 
@@ -628,19 +700,22 @@ Else
      return Item
 </code></pre>
 <p>The cache progressively fills with data when using this simple pattern, and its hit-ratio improves over time.</p>
-<p>This cache usage is usually associated with an <strong>eviction policy</strong> to avoid excessive memory consumption.
+<p>This cache usage is usually associated with an <strong>eviction policy</strong> to avoid excessive memory consumption.<br>
 An eviction policy is an algorithm used to decide which objects to remove.</p>
 <ul>
-<li>The most frequently used eviction policy is &quot;Least Recently Used,&quot; abbreviated <strong>LRU</strong>. In this case, every time we access an object, its associated timestamp is updated. When eviction is triggered, we remove the items with the oldest timestamp.</li>
-<li>Another supported policy is &quot;Time To Live,&quot; abbreviated <strong>TTL</strong>. The objects have a limited lifespan, and ze remove them when too old.</li>
+<li>The most frequently used eviction policy is “Least Recently Used,” abbreviated <strong>LRU</strong>. In this case, every time we access an object, its associated timestamp is updated. When eviction is triggered, we remove the items with the oldest timestamp.</li>
+<li>Another supported policy is “Time To Live,” abbreviated <strong>TTL</strong>. The objects have a limited lifespan, and ze remove them when too old.</li>
 </ul>
-<h2 id="serving-complex-queries-from-a-cache">Serving complex queries from a cache</h2>
-<p>The single-object access mode is helpful in some real-world cases like storing session information for websites, partially filled forms, blog articles, and much more.
+<h3 id="serving-complex-queries-from-a-cache">Serving complex queries from a cache</h3>
+<p>The single-object access mode is helpful in some real-world cases like storing session information for websites, partially filled forms, blog articles, and much more.<br>
 But sometimes, we need to retrieve a collection of objects from a cache with a SQL-like query.</p>
-<p>And we would like the cache to return a result only if it can guarantee that all the data concerned by the query is available.
-The obvious issue here is:</p>
+<blockquote>
+<p>And we would like the cache to return a result only if it can<br>
+guarantee that all the data concerned by the query is available. The<br>
+obvious issue here is:</p>
 <p><em>How do we know if all data is available in the cache?</em></p>
-<h3 id="first-case-all-data-in-the-database-is-available-into-the-cache">First case: all data in the database is available into the cache</h3>
+</blockquote>
+<h4 id="first-case-all-data-in-the-database-is-available-into-the-cache">First case: all data in the database is available into the cache</h4>
 <p>In the simplest case, we can guarantee that all data in the database is also in the cache. It requires that RAM is available for all the data in the database.</p>
 <p>The cache is either preloaded by an external component (for example, each morning) or lazily loaded when we first access it.</p>
 <p>Two methods are available in the <strong>DataSource</strong> class to manage this use case.</p>
@@ -649,77 +724,85 @@ The obvious issue here is:</p>
 <li>A method used to declare that all data is available for a given data type: <strong>DeclareFullyLoaded</strong>.</li>
 </ul>
 <p>Here is a code example extracted from a unit test</p>
-<pre><code class="language-csharp">var dataSource = connector.DataSource&lt;ProductEvent&gt;();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> dataSource <span class="token operator">=</span> connector<span class="token punctuation">.</span><span class="token generic-method function">DataSource<span class="token punctuation">&lt;</span>ProductEvent<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-dataSource.PutMany(events);
+dataSource<span class="token punctuation">.</span><span class="token function">PutMany</span><span class="token punctuation">(</span>events<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// here an exception will be thrown
-Assert.Throws&lt;CacheException&gt;(() =&gt;
-	dataSource.Where(e =&gt; e.EventType == &quot;FIXING&quot;)
-		.OnlyIfComplete()
-		.ToList()
-);
+<span class="token comment">// here an exception will be thrown</span>
+Assert<span class="token punctuation">.</span><span class="token generic-method function">Throws<span class="token punctuation">&lt;</span>CacheException<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span>
+	dataSource<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>e <span class="token operator">=</span><span class="token operator">&gt;</span> e<span class="token punctuation">.</span>EventType <span class="token operator">==</span> <span class="token string">"FIXING"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">OnlyIfComplete</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// declare that all data is available
-dataSource.DeclareFullyLoaded();
+<span class="token comment">// declare that all data is available</span>
+dataSource<span class="token punctuation">.</span><span class="token function">DeclareFullyLoaded</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// here it works fine
-var fixings = dataSource
-	.Where(e =&gt; e.EventType == &quot;FIXING&quot;)
-	.OnlyIfComplete()
-	.ToList();
+<span class="token comment">// here it works fine</span>
+<span class="token keyword">var</span> fixings <span class="token operator">=</span> dataSource
+	<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>e <span class="token operator">=</span><span class="token operator">&gt;</span> e<span class="token punctuation">.</span>EventType <span class="token operator">==</span> <span class="token string">"FIXING"</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">OnlyIfComplete</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-Assert.Greater(fixings.Count, 0);
+Assert<span class="token punctuation">.</span><span class="token function">Greater</span><span class="token punctuation">(</span>fixings<span class="token punctuation">.</span>Count<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// declare that data is not available again
-dataSource.DeclareFullyLoaded(false);
+<span class="token comment">// declare that data is not available again</span>
+dataSource<span class="token punctuation">.</span><span class="token function">DeclareFullyLoaded</span><span class="token punctuation">(</span><span class="token keyword">false</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-// an exception will be thrown again
-Assert.Throws&lt;CacheException&gt;(() =&gt;
-	dataSource.Where(e =&gt; e.EventType == &quot;FIXING&quot;)
-		.OnlyIfComplete()
-		.ToList()
-);
+<span class="token comment">// an exception will be thrown again</span>
+Assert<span class="token punctuation">.</span><span class="token generic-method function">Throws<span class="token punctuation">&lt;</span>CacheException<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">&gt;</span>
+	dataSource<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>e <span class="token operator">=</span><span class="token operator">&gt;</span> e<span class="token punctuation">.</span>EventType <span class="token operator">==</span> <span class="token string">"FIXING"</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">OnlyIfComplete</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+		<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
-<h3 id="second-case-a-subset-of-the-database-is-available-into-the-cache">Second case: a subset of the database is available into the cache</h3>
+<h4 id="second-case-a-subset-of-the-database-is-available-into-the-cache">Second case: a subset of the database is available into the cache</h4>
 <p>For this use case, Cachalot provides an inventive solution:</p>
 <ul>
 <li>Describe preloaded data as a query (expressed as LINQ expression)</li>
-<li>When querying data, the cache will determine if the query is a subset of the preloaded data</li>
+<li>When querying data, the cache will determine if the query is a <strong>subset</strong> of the preloaded data</li>
 </ul>
-<p>The two methods (of class DataSource) involved in this process are:</p>
+<p>The two methods (of class <strong>DataSource</strong>) involved in this process are:</p>
 <ul>
-<li>The same OnlyIfComplete LINQ extension</li>
-<li>DeclareLoadedDomain method. Its parameter is a LINQ expression that defines a subdomain of the global data</li>
+<li>The same <strong>OnlyIfComplete</strong> LINQ extension</li>
+<li><strong>DeclareLoadedDomain</strong> method. Its parameter is a LINQ expression that defines a subdomain of the global data</li>
 </ul>
 <p>For example in the case of a renting site like Airbnb, we would like to store all houses in the most visited cities in the cache.</p>
-<pre><code class="language-csharp">homes.DeclareLoadedDomain(h=&gt;h.Town == &quot;Paris&quot; || h.Town == &quot;Nice&quot;);
+<pre class=" language-csharp"><code class="prism  language-csharp">homes<span class="token punctuation">.</span><span class="token function">DeclareLoadedDomain</span><span class="token punctuation">(</span>h<span class="token operator">=</span><span class="token operator">&gt;</span>h<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span> <span class="token operator">||</span> h<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Nice"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>Then this query will succeed as it is a subset of the specified domain</p>
-<pre><code class="language-csharp">var result = homes
-	.Where( h =&gt; h.Town == &quot;Paris&quot; &amp;&amp; h.Rooms &gt;= 2)
-	.OnlyIfComplete()
-	.ToList();
+<pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> result <span class="token operator">=</span> homes
+	<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span> h <span class="token operator">=</span><span class="token operator">&gt;</span> h<span class="token punctuation">.</span>Town <span class="token operator">==</span> <span class="token string">"Paris"</span> <span class="token operator">&amp;&amp;</span> h<span class="token punctuation">.</span>Rooms <span class="token operator">&gt;=</span> <span class="token number">2</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">OnlyIfComplete</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <p>But this one will throw an exception</p>
-<pre><code class="language-csharp">result = homes
-	.Where(h =&gt; h.CountryCode == &quot;FR&quot; &amp;&amp; h.Rooms == 2)
-	.OnlyIfComplete()
-	.ToList()
+<pre class=" language-csharp"><code class="prism  language-csharp">result <span class="token operator">=</span> homes
+	<span class="token punctuation">.</span><span class="token function">Where</span><span class="token punctuation">(</span>h <span class="token operator">=</span><span class="token operator">&gt;</span> h<span class="token punctuation">.</span>CountryCode <span class="token operator">==</span> <span class="token string">"FR"</span> <span class="token operator">&amp;&amp;</span> h<span class="token punctuation">.</span>Rooms <span class="token operator">==</span> <span class="token number">2</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">OnlyIfComplete</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+	<span class="token punctuation">.</span><span class="token function">ToList</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 </code></pre>
-<p><em>If we omit the call to OnlyIfComplete, it will merely return the elements in the cache that match the query.</em></p>
+<blockquote>
+<p>If we omit the call to OnlyIfComplete, it will merely return the<br>
+elements in the cache that match the query.</p>
+</blockquote>
 <p><em>Domain declaration and eviction policy are, of course, mutually exclusive on a collection. Automatic eviction would make data incomplete.</em></p>
-<h1 id="what-is-cachalot-db-good-at">What is Cachalot DB good at?</h1>
+<h2 id="what-is-cachalot-db-good-at">What is Cachalot DB good at?</h2>
 <p>We designed Cachalot DB to be blazing fast and transactional.</p>
 <p>As always, there is a trade-off in terms of what it can not do.</p>
-<p>The infamous CAP Theorem proves that a distributed system cannot be at the same time fault-tolerant and transactionally consistent, and we chose transactional consistency.</p>
+<blockquote>
+<p>The infamous CAP Theorem proves that a distributed system cannot be at<br>
+the same time fault-tolerant and transactionally consistent, and we<br>
+chose transactional consistency.</p>
+</blockquote>
 <p>To achieve high-speed data access, it loads all data in memory.</p>
 <p>It means you need enough memory to store all your data.</p>
-<p>Each node loads everything in memory when it starts (Cachalot is a contraction of &quot;Cache a lot&quot; 😊)</p>
+<p>Each node loads everything in memory when it starts (Cachalot is a contraction of “Cache a lot” 😊)</p>
 <p>We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.</p>
 <p>We can use it as a very efficient cache for big-data applications but not the golden source.</p>
-<p><a href="https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf">https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf</a></p>
-
-
+</div>
 </body>
+
 </html>
+Cachalot-QuickStart
+Displaying Cachalot-QuickStart.

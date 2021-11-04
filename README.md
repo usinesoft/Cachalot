@@ -1,13 +1,17 @@
+
+
+
+![cachalot db](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot.svg?raw=true) 
 # Cachalot DB v2
 
+ 
 
-
-# What is Cachalot DB?
+## What is Cachalot DB?
 #### An in-memory database for dotnet applications
 
 All data is available in memory and distributed on multiple nodes, allowing for blazing-fast queries. Like Redis but with some significant differences:
 -	**Persistence is transactional**; all update operations are written into a persistent transaction log before being applied to memory.
--	It has a **full query model** available through SQL and LINQ. It supports all usual operators like projections, distinct, order by, and, of course, a complete where clause. Everything is done server-side.
+-	It has a **full query model** available through **SQL** and **LINQ**. It supports all usual operators like projections, distinct, order by, and, of course, a complete where clause. Everything is done server-side.
 -	It supports both dictionary and ordered indexes. A highly optimized query processor chooses the best index, combining multiple indexes for one query.
 -	It can compute **pivot tables** server-side even on a cluster of many nodes
 -	A high-speed **full-text search**. You can do either full-text search, traditional queries, or combine the two.
@@ -17,7 +21,7 @@ All data is available in memory and distributed on multiple nodes, allowing for 
 -	When used as a distributed cache (persistence disabled), an inventive mechanism allows the description of the cached data, thus enabling complex queries to be served from cache only if all the concerned data is available.
 
 
-# How fast is it?
+## How fast is it?
 #### Very fast
 
 Two demo applications are available in the release package:
@@ -30,19 +34,19 @@ These results are for a cluster with two nodes. Most operations are faster as th
 
 	- 2678 milliseconds
 
--	Reading 1000 objects one by one (out of one million) by primary key 
+-	Reading 1000 objects one by one  by primary key (out of one million)
 
     - 219 milliseconds
 
 -	Reading 6000 objects (out of one million) with this query 
 
-	```
+	```sql
 	select from home where town = Paris
 	```
     - 113 milliseconds
 
 -	Running this query on one million objects 
-	```
+	```sql
 	select from home where town=Paris and AvailableDates contains 10/19/2021 order by 
 	PriceInEuros descending take 10
 	```
@@ -55,7 +59,7 @@ These results are for a cluster with two nodes. Most operations are faster as th
     - Less than two milliseconds
 
 
-# Show me some code first
+## Show me some code first
 #### Deep dive first, details after 
 
 Let's prepare our business objects for database storage.
@@ -94,8 +98,8 @@ public class Home
 }
 ```
 
-Any simple type can be used for the primary key, for example, Guid, string, DateTime. 
-The first step is to instantiate a Connector that needs a connection string. 
+Any simple type can be used for the primary key, for example, **Guid**, **string**, **DateTime**. 
+The first step is to instantiate a **Connector** that needs a connection string. 
 
 ```csharp
 using var connector = new Connector("localhost:48401");
@@ -111,10 +115,10 @@ var homes = connector.DataSource<Home>();
 
 There is one last step before storing an object in the database. We need to generate a unique value for the primary key.
 
-In the case of a GUID primary key, we can generate the value locally; there is no collision risk.
+> In the case of a GUID primary key, we can generate the value locally;
+> there is no collision risk.
 
 For numeric primary keys, we can ask the database to generate the unique key.
-
 It can produce multiple unique values at once.
 
 *Unlike other databases, you do not need to create a unique value generator explicitly. The first call with an unknown generator name will automatically create it**
@@ -165,7 +169,7 @@ We will see later how to do conditional updates or "insert only if new."
 You probably have higher expectations from a modern database than merely storing and retrieving objects by primary key. And you are right.
 
 
-# Server-side values
+## Server-side values
 #### An important design choice
 
 In **Cachalot DB**, an object can be as complex as you want, but we can apply query expressions only on the root level properties tagged as server-side visible.
@@ -181,8 +185,8 @@ Two types of indexes are available:
 Massive insert/update operations (**DataSource.PutMany** method) are well optimized. After the size reaches a threshold (50 items by default), the action is treated as a bulk insert. In this case, ordered indexes are sorted only once at the end.
 
 
-# More code. 
-### Adding indexes to the "Home" class
+## More code. 
+#### Adding indexes to the "Home" class
 
 
 ```csharp
@@ -216,10 +220,10 @@ public class Home
 With these new indexes, we can now do some useful queries
 
 ```csharp
-var results = homes.Where(
-		p => p.PriceInEuros <= 200 && 
-			p.Rooms > 1 && 
-			p.Town == "Paris"
+var results = homes.Where(p => 
+		p.PriceInEuros <= 200 && 
+		p.Rooms > 1 && 
+		p.Town == "Paris"
 	)
 	.Take(10);
 
@@ -232,35 +236,33 @@ The "Contains" extension method is also supported
 ```csharp
 var towns = new[] {"Paris", "Nice"};
 
-var one  = homes.First(
-	p => p.PriceInEuros < 150 && 
-		towns.Contains(p.Town));
+var one  = homes.First( p => 
+	p.PriceInEuros < 150 && 
+	towns.Contains(p.Town)
+);
 
 
 ```
 
 The previous LINQ expression is equivalent to the SQL:
 
-```
+```sql
  SELECT * from HOME where PriceInEuros < 150 and Town IN ("Paris", "Nice")
 ```
 
 
-Another use of the Contains extension, which does not have an equivalent in traditional SQL, is explained next.
+Another use of the **Contains** extension, which does not have an equivalent in traditional SQL, is explained next.
 
 
-# Indexing collection properties
+## Indexing collection properties
 
 Let's enrich our business object. It would be helpful to have a list of available dates for each home.
-
 Adding this new property enables some exciting features.
 
 ```csharp
 [ServerSideValue(IndexType.Dictionary)]
 public List<DateTime> AvailableDates { get; set; } 
-= new List<DateTime>(); 
-
-
+	= new List<DateTime>(); 
 
 ```
 
@@ -269,21 +271,24 @@ It is a collection property, and it can be indexed the same way as the scalar pr
 Now we can search for homes available at a specific date
 
 ```csharp
-var availableNextWeek = homes.Where(
-	p => p.Town == "Paris" && 
-	p.AvailableDates.Contains(DateTime.Today.AddDays(7));
+var availableNextWeek = homes.Where(p => 
+	p.Town == "Paris" && 
+	p.AvailableDates.Contains(DateTime.Today.AddDays(7)
+	);
 
 ```
 
-This method has no direct equivalent in the classical SQL databases, and it conveniently replaces some of the uses for the traditional JOIN operator.
+> This method has no direct equivalent in the classical SQL databases,
+> and it conveniently replaces some of the uses for the traditional JOIN
+> operator.
 
 
-# Coffee break
+## Coffee break
 #### Some explanations about what we have done so far
 
 ##### The connector
 
-The first thing to do when connecting to a database is to instantiate a Connector class. The only parameter is a connection string.
+The first thing to do when connecting to a database is to instantiate a **Connector** class. The only parameter is a connection string.
 
 ```csharp
 var connector = new Connector("localhost:48401+localhost:48402");
@@ -297,20 +302,24 @@ The connector contains a connection pool for each node in the cluster. The conne
 -	Detect if the connections are still valid and try to open new ones otherwise
     -	If a node in the cluster restarts, the connections are reestablished graciously
     
-By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding "; capacity, preloaded"  at the end of the connection string.
+By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding "**;** capacity**,** preloaded"  at the end of the connection string.
 
 ```csharp
 var connector = new Connector("SRVPRD1040:48401; 10, 4");
 ```
 
-Instantiating a connector is quite expensive operation. It should be done only once in the application lifecycle. 
-
-Disposing of the connector closes all the connections in the pool.
+> Instantiating a connector is quite expensive operation. It should be
+> done only once in the application lifecycle. 
+> 
+> Disposing of the connector closes all the connections in the pool.
 
 ##### Collections and schemas
 
 Once we have an instance of the connector, we need to declare the collections.
-A name and a CollectionSchema define a collection. A schema contains all the information needed to convert an object from .NET to server representation and index it server-side.
+A **name** and a **CollectionSchema** define a collection. 
+
+> A schema contains all the information needed to convert an object from
+> .NET to server representation and index it server-side.
 
 ```csharp
 connector.DeclareCollection<Home>();
@@ -346,8 +355,10 @@ var schema = SchemaFactory.New("heroes")
 
 Multiple collections (with different names) can share the same schema.
 
-When declaring a collection, if already defined on the server with a different schema, all data will be reindexed. This is a costly operation.
-It is useful when deploying a new version of a client application, but otherwise, all clients should use the same schema.
+> When declaring a collection, if already defined on the server with a
+> different schema, all data will be reindexed. This is a costly
+> operation. It is useful when deploying a new version of a client
+> application, but otherwise, all clients should use the same schema.
 
 #### Data sources
 
@@ -360,7 +371,7 @@ var homes = connector.DataSource<Home>("homes");
 ```
 
 
-# Full-text search
+## Full-text search
 
 A very efficient and customizable full-text indexation is available starting version 1.1.3.
 First, we need to prepare the business objects for full-text indexation. We do it the usual way with a specific tag. Let's index as full text the address, the town, and the comments.
@@ -386,8 +397,7 @@ public class Home
 
 ```
 
-You notice that full-text indexation can be applied to ordinarily indexed 
-properties and to properties that are not available to LINQ queries. 
+You notice that full-text indexation can be applied to ordinarily indexed properties and to properties that are not available to LINQ queries. 
 
 *We can apply it to scalar and collection properties.*
 
@@ -399,20 +409,22 @@ It can be used alone or mixed with common predicates. The result will be the int
 var result = homes.FullTextSearch("Paris close metro").ToList();
 
 // mixed search
-var inParisAvailableTomorrow = homes.Where(
-		p => p.Town == "Paris" 
-		&& p.AvailableDates.Contains(DateTime.Today.AddDays(1))
+var inParisAvailableTomorrow = homes.Where(p => 
+		p.Town == "Paris" && 
+		p.AvailableDates.Contains(DateTime.Today.AddDays(1)		
 	)
 	.FullTextSearch("close metro")
 	.ToList();
 
 ```
-In both cases, the full-text query gives the order (most pertinent items first).
 
-## Fine-tuning the full-text search
+> In both cases, the full-text query gives the order (most pertinent
+> items first).
 
-In any language, some words have no meaning by themselves but are useful to build sentences. For example, in English: "to", "the", "that", "at", "a". They are called "stop words" and are usually the most frequent words in a language. 
-The speed of the full-text search is greatly improved if we do not index them. The configuration file "node_config.json" allows us to specify them. This part should be identical for all nodes in a cluster.
+### Fine-tuning the full-text search
+
+In any language, some words have no meaning by themselves but are useful to build sentences. For example, in English: "to", "the", "that", "at", "a". They are called **"stop words"** and are usually the most frequent words in a language. 
+The speed of the full-text search is greatly improved if we do not index them. The configuration file **node_config.json** allows us to specify them. This part should be identical for all nodes in a cluster.
 
 ```json
 {
@@ -427,18 +439,22 @@ The speed of the full-text search is greatly improved if we do not index them. T
 ```
 
 When a node starts, it generates in the "DataPath" folder a text file containing the 100 most frequent words: **most_frequent_tokens.txt**. 
-These are good candidates to ignore, and you may need to add other words depending on your business case. For example, it is good to avoid indexing "road" or "avenue" if you enable a full-text search on addresses. 
 
-# Computing pivot tables server-side
+> These are good candidates to ignore, and you may need to add other
+> words depending on your business case. For example, it is good to
+> avoid indexing "road" or "avenue" if you enable a full-text search on
+> addresses.
+
+## Computing pivot tables server-side
 
 A pivot table is a hierarchical aggregation of numeric values. A pivot definition consists of:
--	An optional filter to restrict the calculation to a subset of data. 
-o	We can use any query, but operators like DISTINCT, ORDER BY or TAKE, make no sense for a pivot table calculation 
--	An ordered list of axes. 
-o	They are optional, too; if no one is specified, the aggregation is done on the whole collection, and the result contains a single level of aggregation
-o	The axis must be server-side visible (indexed or not)
--	A list of numeric values to aggregate (at least one must be specified)
-o	They must be server-side visible (indexed or not)
+-	An optional **filter** to restrict the calculation to a subset of data. 
+	- We can use any query, but operators like DISTINCT, ORDER BY or TAKE, make no sense for a pivot table calculation 
+-	An ordered list of **axes**. 
+	- They are optional, too; if no one is specified, the aggregation is done on the whole collection, and the result contains a single level of aggregation
+	- The axis must be server-side visible (indexed or not)
+-	A list of **numeric values to aggregate** (at least one must be specified)
+	- They must be server-side visible (indexed or not)
 
 For example, an **Order** class:
 
@@ -469,7 +485,7 @@ public class Order
 ```
 
 
-We can aggregate the whole collection on Amount and Quantity and use Category, ProductId as axes.
+We can aggregate the whole collection on **Amount** and **Quantity** and use **Category**, **ProductId** as axes.
 
 
 ```csharp
@@ -480,10 +496,12 @@ var pivot = dataSource.PreparePivotRequest()
 ```
 
 
-To specify a filter, add a LINQ query as a parameter to the method **PreparePivotRequest**.
+> To specify a filter, add a LINQ query as a parameter to the method
+> **PreparePivotRequest**.
 
+
+Calling **pivot.ToString()** will return:
 ```
-Calling pivot.ToString() will return:
 ColumnName: Amount, Count: 100000, Sum: 1015000.00
 ColumnName: Quantity, Count: 100000, Sum: 200000
     Category = science
@@ -504,14 +522,15 @@ ColumnName: Quantity, Count: 100000, Sum: 200000
         ProductId = 1005
         ColumnName: Amount, Count: 10000, Sum: 101500.00
         ColumnName: Quantity, Count: 10000, Sum: 20000
+     ....
 
 ```
 
-# Other methods of the API
+## Other methods of the API
 
 In addition to querying and putting single items, the DataSource class exposes other essential methods.
 
-## Deleting items from the database
+### Deleting items from the database
 
 ```csharp
 // delete one object
@@ -521,7 +540,7 @@ homes.Delete(home);
 homes.DeleteMany(p => p.Town == "Paris");
 ```
 
-## Inserting or updating many objects
+### Inserting or updating many objects
 
 ```csharp
 dataSource.PutMany(collection);
@@ -531,37 +550,40 @@ This method is very optimized for vast collections of objects
 -	Packets of objects are sent together in the network
 -	For massive groups, the ordered indexes are sorted only after the insertion of the last object. It is like a BULK INSERT in classical SQL databases 
 
-The parameter is an **IEnumerable**. This choice allows to generation of data while inserting it into the database dynamically. The complete collection does not need to be present in the client's memory.
+> The parameter is an **IEnumerable**. This choice allows to generation
+> of data while inserting it into the database dynamically. The complete
+> collection does not need to be present in the client's memory.
 
 
-## Deleting the whole content of the collection
+### Deleting the whole content of the collection
 
 ```csharp
 dataSource.Truncate();
 ```
 
-## Precompiled queries
+### Precompiled queries
 
 In general, the query parsing time is a tiny percentage of the data retrieval time. 
 
-*Surprisingly the SQL parsing is faster than LINQ expression processing.**
+> Surprisingly the SQL parsing is faster than LINQ expression
+> processing.
 
 For the queries that return a small number of items and that are executed often, we can squeeze some more processing speed by precompiling them:
 
 ```csharp
 // you can replace this
 var resultWithLinq = dataSource.Where(
-o => categories.Contains( o.Category)).ToList();
+	o => categories.Contains( o.Category)).ToList();
 
 // by this (if the same query is used many times)
 var query = dataSource.PredicateToQuery(
-o => categories.Contains( o.Category));
+	o => categories.Contains( o.Category));
 
 var resultWithPrecompiled =
-dataSource.WithPrecompiledQuery(query).ToList();
+	dataSource.WithPrecompiledQuery(query).ToList();
 ```
 
-# Compressing object data
+## Compressing object data
 
 The business objects are stored internally in a type-agnostic format.
 
@@ -571,9 +593,10 @@ Server-side properties are stored in a binary format that is an excellent compro
 
 Packing is done client-side; the server only uses the indexes and manipulates the object as row data. It has no dependency on the concrete .NET datatype. 
 
-By default, the JSON data is not compressed, but compression may benefit objects that take more than a few kilobytes. 
-
-For an object that takes 10 KB in JSON, the compression ratio is around 1:10.
+> By default, the JSON data is not compressed, but compression may
+> benefit objects that take more than a few kilobytes. 
+> For an object that takes 10 KB in JSON, the compression ratio is
+> around 1:10.
 
 To enable compression, add a single attribute to the business data type.
 
@@ -585,16 +608,16 @@ public class Home
 
 ```
 
-Using compressed objects is transparent for the client code. 
-However, it has an impact on packing time. When objects are retrieved, they are unpacked (which may imply decompression).
+Using compressed objects is transparent for the client code. However, it has an impact on packing time. 
+When objects are retrieved, they are unpacked (which may imply decompression).
 
 In conclusion, compression may be beneficial, starting with medium-sized objects if you are ready to pay a small price, client-side only, for data insertion and retrieval.
 
-# Storing polymorphic collections in the database
+## Storing polymorphic collections in the database
 
 Polymorphic collections are natively supported. Type information is stored internally in the JSON (as **$type** property), and the client API uses it to deserialize the proper concrete type. 
 
-The base type can be abstract.
+> The base type can be abstract.
 
 To store a polymorphic collection, we must expose all required server-side values on the base type.
 
@@ -611,7 +634,7 @@ var increaseEvents = events.Where(
 ).Cast<IncreaseDecrease>();
 ```
 
-# Conditional operations and "optimistic synchronization."
+## Conditional operations and "optimistic synchronization."
 
 A typical "put" operation adds an object or updates an existent one using the primary key as object identity.
 More advanced use cases may arise:
@@ -623,7 +646,8 @@ If the object was already there, it is not modified, and the return value is fal
 
 The test on the object availability and the insertion are executed as an atomic operation. The object cannot be updated or deleted by another client in-between.
 
-That can be useful for data initialization, creating singleton objects, distributed locks, etc.
+> That can be useful for data initialization, creating singleton
+> objects, distributed locks, etc.
 
 
 The second use case is handy for, but not limited to, the implementation of "optimistic synchronization". 
@@ -649,11 +673,12 @@ item.Timestamp = DateTime.Now;
 data.UpdateIf(item, I => i.Timestamp == oldTimestamp);
 ```
 
+> This feature can be even more helpful when committing multiple object
+> modifications in a transaction. If a condition is not satisfied with
+> one object, roll back the whole transaction.
 
-This feature can be even more helpful when committing multiple object modifications in a transaction. If a condition is not satisfied with one object, roll back the whole transaction. 
 
-
-# Two-Stage Transactions 
+## Two-Stage Transactions 
 
 The most important thing to understand about two-stage transactions is when you need them.
 
@@ -672,12 +697,12 @@ The complete example is included in the release package (**Accounts** applicatio
 
 Imagine lots of money transfers happening in parallel. 
 We would like to:
--	Subtract an amount of money from the source account only if the balance is superior to the amount
+-	Subtract an amount of money from the source account **only if the balance is superior to the amount**
 -	Add the same amount to the target account
 -	Create a money-transfer object to keep track of accounts history
 
 
-*All this should happen (or fail) as an atomic operation.*
+**All this should happen (or fail) as an atomic operation.**
 
 The business object definition:
 
@@ -746,9 +771,10 @@ The operations allowed inside a transaction are:
 -	DeleteMany
 -	UpdateIf
 
-If we use conditional update (UpdateIf) and the condition is not satisfied by one object, the whole transaction rolls back.
+> If we use conditional update (UpdateIf) and the condition is not
+> satisfied by one object, the whole transaction rolls back.
 
-# Consistent read context 
+## Consistent read context 
 
 Consistent read is new functionality available in version 2. 
 It enables multiple queries to be executed in a context that guarantees that data do not change during the execution of all the queries. 
@@ -786,7 +812,7 @@ When using explicit collection names, this version of the method should be used
 void ConsistentRead(Action<ConsistentContext> action, params string[] collections)
 ```
 
-# In-process server
+## In-process server
 
 In some cases, if the quantity of data is bounded and a single node has enough memory to keep all the data, you can instantiate a Cachalot server directly inside your server process. 
 This configuration will give blazing fast responses as there is no more network latency involved.
@@ -797,15 +823,15 @@ var connector = new Connector("");
 ```
 
 This will instantiate a server inside the connector object, and communications will be done by simple in-process calls, not a TCP channel.
-The Connector class implements IDisposable. Disposing of the Connector will graciously stop the server.
+The Connector class implements **IDisposable**. Disposing of the **Connector** will graciously stop the server.
 
 The connector should be instantiated and disposed of only once in the application lifetime. 
  
 
 
-# Using Cachalot as a distributed cache with unique features
+## Using Cachalot as a distributed cache with unique features
 
-## Serving single objects from a cache 
+### Serving single objects from a cache 
 
 The most frequent use-case for a distributed cache is to store objects identified by the primary key. 
 An external database contains the persistent data and, when an object is accessed, we first try to get it from the cache and, if not available, load it from the database. Usually, when we load an object from the database, we also store it into the cache. 
@@ -827,17 +853,18 @@ An eviction policy is an algorithm used to decide which objects to remove.
 -	The most frequently used eviction policy is "Least Recently Used," abbreviated **LRU**. In this case, every time we access an object, its associated timestamp is updated. When eviction is triggered, we remove the items with the oldest timestamp. 
 -	Another supported policy is "Time To Live," abbreviated **TTL**. The objects have a limited lifespan, and ze remove them when too old. 
 
-## Serving complex queries from a cache 
+### Serving complex queries from a cache 
 
 The single-object access mode is helpful in some real-world cases like storing session information for websites, partially filled forms, blog articles, and much more.
 But sometimes, we need to retrieve a collection of objects from a cache with a SQL-like query. 
 
-And we would like the cache to return a result only if it can guarantee that all the data concerned by the query is available.
-The obvious issue here is: 
+> And we would like the cache to return a result only if it can
+> guarantee that all the data concerned by the query is available. The
+> obvious issue here is: 
+> 
+> *How do we know if all data is available in the cache?*
 
-*How do we know if all data is available in the cache?*
-
-### First case: all data in the database is available into the cache
+#### First case: all data in the database is available into the cache
 
 In the simplest case, we can guarantee that all data in the database is also in the cache. It requires that RAM is available for all the data in the database. 
 
@@ -885,16 +912,16 @@ Assert.Throws<CacheException>(() =>
 ```
 
 
-### Second case: a subset of the database is available into the cache
+#### Second case: a subset of the database is available into the cache
 
 For this use case, Cachalot provides an inventive solution:
 -	Describe preloaded data as a query (expressed as LINQ expression)
--	When querying data, the cache will determine if the query is a subset of the preloaded data
+-	When querying data, the cache will determine if the query is a **subset** of the preloaded data
 
-The two methods (of class DataSource) involved in this process are:
+The two methods (of class **DataSource**) involved in this process are:
 
--	The same OnlyIfComplete LINQ extension
--	DeclareLoadedDomain method. Its parameter is a LINQ expression that defines a subdomain of the global data
+-	The same **OnlyIfComplete** LINQ extension
+-	**DeclareLoadedDomain** method. Its parameter is a LINQ expression that defines a subdomain of the global data
 
 
 
@@ -922,19 +949,22 @@ result = homes
 ```
 
 
-*If we omit the call to OnlyIfComplete, it will merely return the elements in the cache that match the query.*
+> If we omit the call to OnlyIfComplete, it will merely return the
+> elements in the cache that match the query.
 
 
 *Domain declaration and eviction policy are, of course, mutually exclusive on a collection. Automatic eviction would make data incomplete.*
 
 
-# What is Cachalot DB good at?
+## What is Cachalot DB good at?
 
 We designed Cachalot DB to be blazing fast and transactional. 
 
 As always, there is a trade-off in terms of what it can not do.
 
-The infamous CAP Theorem proves that a distributed system cannot be at the same time fault-tolerant and transactionally consistent, and we chose transactional consistency.
+> The infamous CAP Theorem proves that a distributed system cannot be at
+> the same time fault-tolerant and transactionally consistent, and we
+> chose transactional consistency.
 
 To achieve high-speed data access, it loads all data in memory.
 
@@ -948,8 +978,6 @@ We can use it as a very efficient cache for big-data applications but not the go
 
 
 
-
-https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf
 
 
 

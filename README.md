@@ -302,7 +302,7 @@ The connector contains a connection pool for each node in the cluster. The conne
 -	Detect if the connections are still valid and try to open new ones otherwise
     -	If a node in the cluster restarts, the connections are reestablished graciously
     
-By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding "**;** capacity**,** preloaded"  at the end of the connection string.
+By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding "**;** capacity **,** preloaded"  at the end of the connection string.
 
 ```csharp
 var connector = new Connector("SRVPRD1040:48401; 10, 4");
@@ -636,10 +636,10 @@ var increaseEvents = events.Where(
 
 ## Conditional operations and "optimistic synchronization."
 
-A typical "put" operation adds an object or updates an existent one using the primary key as object identity.
+A typical "put" operation adds an object or updates an existing one using the primary key as object identity.
 More advanced use cases may arise:
 1)	Add an object only if it is not already there and tell me if it was effectively added
-2)	Update an existent object only if the current version in the database satisfies a condition
+2)	Update an existing object only if the current version in the database satisfies a condition
 
 The first one is available through the **TryAdd** operation on the **DataSource** class. 
 If the object was already there, it is not modified, and the return value is false. 

@@ -103,15 +103,21 @@ namespace AdminConsole.Commands
 
                 if (atoms.Count == 1)
                 {
-                    var dir = atoms[0];
-                    result.Params.Add(dir);
+                    var parts = atoms[0].Split();
 
-                    result.Success = true;
+                    if (parts.Length == 2)
+                    {
+                        result.Params.Add(parts[0]); // collection name
+                        result.Params.Add(parts[1]); // json file
+                        result.Success = true;
+                    }
+
+                    
                 }
                 else
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Import command needs one parameter";
+                    result.ErrorMessage = "Import command needs two parameters";
                 }
 
                 return result;
@@ -215,45 +221,93 @@ namespace AdminConsole.Commands
             {
                 result = new CommandSelect {CmdType = CommandType.Select};
 
-                try
-                {
-                    var sqlParser = new Parser();
-                    var selectNode = sqlParser.ParseSql(command);
-                    var table = selectNode.Children.FirstOrDefault(n => n.Token == "from")?.Children.FirstOrDefault()
-                        ?.Token;
+                ParseSelectOrCount(command, result);
 
-                    if (table == null)
+                return result;
+
+            }
+
+            if (command.Trim().ToLower().StartsWith("count"))
+            {
+                result = new CommandCount {CmdType = CommandType.Count};
+
+                ParseSelectOrCount(command, result);
+
+                return result;
+
+            }
+
+
+            if (command.Trim().ToLower().StartsWith("last")) // shorthand for select most recent from activity table
+            {
+                result = new CommandSelect {CmdType = CommandType.Select};
+
+                int take = 1;
+
+                var parts = command.Split();
+                if (parts.Length > 1) // optional parameter (number of items to display)
+                {
+                    try
                     {
-                        throw new NotSupportedException("Invalid syntax for SELECT. No table name");
-                    
+                        take = int.Parse(parts[1]);
+                       
                     }
+                    catch (Exception e)
+                    {
+                        Logger.WriteEror($"Error in command {e.Message}");
+
+                        result.Success = false;
+                        return result;
+                    }
+                }
+
+            
+                var alias = "select from @ACTIVITY order by TIMESTAMP descending";
+
+                ParseSelectOrCount(alias, result);
 
                 
-                    var schema = GetTypeDescriptionByName(table);
-
-                    if (schema == null)
-                    {
-                        throw new NotSupportedException($"Unknown table {table}");
-                    }
-
-                    var query = selectNode.ToQuery(schema);
-                    result.Query = query;
-
-                    var intoFile = selectNode.Children.FirstOrDefault(n => n.Token == "into")?.Children.FirstOrDefault()
-                        ?.Token;
-
-                    if (intoFile != null)
-                    {
-                        result.Params.Add(intoFile);
-                    }
-
-                    result.Success = true;
-                } 
-                catch (Exception e)
+                if (result.Success) // managed to parse the SQL
                 {
-                    Logger.WriteEror($"Error in command {e.Message}");
+                    result.Query.Take = take;
+                }
 
-                    result.Success = false;
+                return result;
+
+            }
+
+            if (command.Trim().ToLower().StartsWith("longest")) // shorthand for select queries that took longest time to execute server-side
+            {
+                result = new CommandSelect {CmdType = CommandType.Select};
+
+                int take = 1;
+
+                var parts = command.Split();
+                if (parts.Length > 1) // optional parameter (number of items to display)
+                {
+                    try
+                    {
+                        take = int.Parse(parts[1]);
+                       
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.WriteEror($"Error in command {e.Message}");
+
+                        result.Success = false;
+                        return result;
+                    }
+                }
+
+            
+                var alias = "select from @ACTIVITY where type=SELECT order by ExecutionTimeInMicroseconds descending";
+
+                ParseSelectOrCount(alias, result);
+
+                
+                if (result.Success) // managed to parse the SQL
+                {
+                    result.Query.Take = take;
                 }
 
                 return result;
@@ -261,7 +315,7 @@ namespace AdminConsole.Commands
             }
             
             
-            //TODO
+            
             if (Parse(command, "(^SEARCH)\\s+([a-zA-Z0-9\\.]+)\\s+(.+)", atoms))
             {
                 result = new CommandSearch {CmdType = CommandType.Search};
@@ -296,32 +350,17 @@ namespace AdminConsole.Commands
                     }
                 }
             }
-            else if (Parse(command, "(^DELETE\\s+FROM|DELETE)\\s+(.+)\\s+(WHERE)\\s+(.+)", atoms))
+            else if (command.Trim().ToLower().StartsWith("delete"))
             {
                 result = new CommandDelete {CmdType = CommandType.Delete};
 
-                if (atoms.Count != 4)
-                {
-                    Logger.WriteEror("Invalid syntax for DELETE. Type HELP DELETE for more information");
-                }
-                else
-                {
-                    result.Params.Add(atoms[1]); //table
-                    result.Params.Add(atoms[3]); //query
+                // create the correspondent select and use the select parser to parse the WHERE clause
+                var alias = command.Replace("delete", "select", StringComparison.InvariantCultureIgnoreCase); 
 
-                    try
-                    {
-                        var typeDescription = GetTypeDescriptionByName(atoms[1]);
-                        var builder = new QueryBuilder(typeDescription);
-                        result.Query = builder.FromSql(atoms[3]);
-                        result.Success = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.WriteEror("Invalid WHERE clause: {0}. Type HELP DELETE for more information",
-                            ex.Message);
-                    }
-                }
+                ParseSelectOrCount(alias, result);
+
+                
+                return result;
             }
             else if (Parse(command, "^TRUNCATE\\s+(.+)", atoms))
             {
@@ -347,38 +386,7 @@ namespace AdminConsole.Commands
                     }
                 }
             }
-            //COUNT [FROM] table where column1=value1, column2=value2 ...("," means AND)
-            else if (Parse(command, "(^COUNT\\s+FROM|COUNT)\\s+(\\w+)\\s?(WHERE)?\\s?(.*)", atoms))
-            {
-                result = new CommandCount {CmdType = CommandType.Count};
-
-                if (atoms.Count != 4 && atoms.Count != 2)
-                {
-                    Logger.WriteEror("Invalid syntax for COUNT. Type HELP COUNT for more information");
-                }
-                else
-                {
-                    result.Params.Add(atoms[1]); //table
-                    if (atoms.Count == 4) result.Params.Add(atoms[3]); //query
-
-                    try
-                    {
-                        var typeDescription = GetTypeDescriptionByName(atoms[1]);
-                        var builder = new QueryBuilder(typeDescription);
-
-                        if (atoms.Count == 4)
-                            result.Query = builder.FromSql(atoms[3]);
-                        else
-                            result.Query = new OrQuery(typeDescription.CollectionName);
-
-                        result.Success = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.WriteEror("Invalid WHERE clause: {0}. Type HELP COUNT for more information", ex.Message);
-                    }
-                }
-            }
+           
             //DESC table /  DESC (the second form displays information on the server)
             else if (Parse(command, "^DESC\\s*(.*)", atoms))
             {
@@ -407,9 +415,8 @@ namespace AdminConsole.Commands
 
                 if (atoms.Count == 1)
                 {
-                    var parts = atoms[0].Split();
-                    result.Params.Add(parts[0]);
-                    if (parts.Length == 2) result.Params.Add(parts[1]);
+                    
+                    result.Params.Add(atoms[0].Trim());
                 }
 
                 result.Success = true;
@@ -419,6 +426,48 @@ namespace AdminConsole.Commands
                 return result;
 
             return new CommandBase();
+        }
+
+        private void ParseSelectOrCount(string command, CommandBase result)
+        {
+            try
+            {
+                var sqlParser = new Parser();
+                var selectNode = sqlParser.ParseSql(command);
+                var table = selectNode.Children.FirstOrDefault(n => n.Token == "from")?.Children.FirstOrDefault()
+                    ?.Token;
+
+                if (table == null)
+                {
+                    throw new NotSupportedException("Invalid syntax. No table name or missing FROM clause");
+                }
+
+
+                var schema = GetTypeDescriptionByName(table);
+
+                if (schema == null)
+                {
+                    throw new NotSupportedException($"Unknown table {table}");
+                }
+
+                var query = selectNode.ToQuery(schema);
+
+                var into = selectNode.Children.FirstOrDefault(n => n.Token == "into")?.Children.FirstOrDefault();
+                if (into != null)
+                {
+                    result.Params.Add(into.Token);
+                }
+
+                result.Query = query;
+
+                result.Success = true;
+            }
+            catch (Exception e)
+            {
+                Logger.WriteEror($"Error in command {e.Message}");
+
+                result.Success = false;
+            }
         }
 
         /// <summary>

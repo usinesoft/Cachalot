@@ -18,6 +18,7 @@ namespace Client.Core
         public static readonly string Select = "SELECT";
         public static readonly string Delete = "DELETE";
         public static readonly string Put = "PUT";
+        public static readonly string Eval = "COUNT";
         
         #endregion
 

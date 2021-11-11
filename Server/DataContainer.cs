@@ -328,7 +328,7 @@ namespace Server
                         }
                         else if (dataRequest is EvalRequest evalRequest)
                         {
-                            new QueryManager(dataStore).ProcessRequest(evalRequest, client);
+                            new QueryManager(dataStore, _serviceContainer.Log).ProcessRequest(evalRequest, client);
                         }
                         else if (dataRequest is PivotRequest pivotRequest)
                         {
@@ -352,7 +352,7 @@ namespace Server
                         }
                         else if (dataRequest is EvalRequest evalRequest)
                         {
-                            new QueryManager(dataStore).ProcessRequest(evalRequest, client);
+                            new QueryManager(dataStore, _serviceContainer.Log).ProcessRequest(evalRequest, client);
                         }
                         else if (dataRequest is PivotRequest pivotRequest)
                         {

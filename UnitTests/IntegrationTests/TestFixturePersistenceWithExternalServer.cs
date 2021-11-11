@@ -18,7 +18,7 @@ namespace Tests.IntegrationTests
 {
     [TestFixture]
     [Category("Performance")]
-    [Ignore("Starting an external server does not work on git ub actions")]
+    //[Ignore("Starting an external server does not work on git ub actions")]
     public class TestFixturePersistenceWithExternalServer
     {
         private Process _process;

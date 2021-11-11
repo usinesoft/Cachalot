@@ -471,10 +471,18 @@ namespace Client.Interface
                     }
                 }
 
+                var count1 = 0;
+
                 // if ordered merge results by preserving order (either ascending or descending)
                 foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending, clientResults) )
                 {
+                   
                     yield return item;
+
+                    count1++;
+
+                    if (query.Take > 0 && count1 >= query.Take) yield break;
+
                 }
             }
             else
@@ -563,6 +571,10 @@ namespace Client.Interface
 
                 var complete = true;
 
+                if (query.Distinct)
+                {
+                    throw new CacheException("Can not count with distinct clause in multi-node environment. Use select and count the result");
+                }
 
                 Parallel.For(0, CacheClients.Count, i =>
                 {
@@ -857,7 +869,17 @@ namespace Client.Interface
 
         public bool IsDataFullyLoaded(string collectionName)
         {
-            throw new NotImplementedException();
+            bool result = true;
+            try
+            {
+                Parallel.ForEach(CacheClients, client => result &= client.IsDataFullyLoaded(collectionName));
+            }
+            catch (AggregateException e)
+            {
+                if (e.InnerException != null) throw e.InnerException;
+            }
+
+            return result;
         }
 
         public void DeclareDomain(DomainDescription domain)

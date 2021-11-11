@@ -111,7 +111,11 @@ namespace AdminConsole
                             }
                             else
                             {
-                                Logger.WriteEror("invalid command");
+                                if (!string.IsNullOrWhiteSpace(line))
+                                {
+                                    Logger.WriteEror("invalid command");
+                                }
+                                
                             }
 
                             ConsoleExt.SetLine(">>");

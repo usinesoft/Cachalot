@@ -180,29 +180,7 @@ namespace Channel
             return response;
         }
 
-        //TODO investigate async
-        //private async Response SendRequestAsync(Session session, Request request)
-        //{
-        //    if (!(session is TcpSession tcpSession))
-        //        throw new ArgumentException("Invalid session type", nameof(session));
-
-        //    var client = tcpSession.Client;
-
-        //    if (client == null || client.Connected == false)
-        //        throw new CacheException("Not connected to server");
-            
-        //    var stream = client.GetStream();
-
-        //    await stream.WriteAsync(new byte[] {Constants.RequestCookie});
-            
-
-        //    Streamer.ToStream(stream, request);
-
-        //    var response = Streamer.FromStream<Response>(stream);
-
-            
-        //    return response;
-        //}
+        
 
         public Response GetResponse(Session session)
         {

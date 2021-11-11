@@ -327,8 +327,14 @@ namespace Server.Queries
                 executionPlan.End();
                 ExecutionPlan = executionPlan;
 
-                _log?.LogActivity("QUERY", query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
+                if (!query.CollectionName.Equals(LogEntry.Table, StringComparison.InvariantCultureIgnoreCase)) // do not log queries on @ACTIVITY table itself
+                {
+                    var type = query.CountOnly ? LogEntry.Eval : LogEntry.Select;
+                    _log?.LogActivity(type, query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
 
+                }
+
+                
             }
         }
 

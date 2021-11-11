@@ -11,7 +11,6 @@ using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
-using Client.Messages;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server;
@@ -1507,6 +1506,73 @@ namespace Tests.IntegrationTests
              
              Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
 
+
+        }
+
+
+        [Test]
+        public void Update_items_with_put_many()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(10_000);
+
+            dataSource.PutMany(testData);
+
+            var reloaded0 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            reloaded0[0].Category = "vibes";
+
+            dataSource.PutMany(reloaded0.Take(10)); // update less than the bulk insert threshold
+
+            var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
+
+            Assert.AreEqual(1, reloaded1.Count );
+
+            var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            Assert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
+
+            reloaded0[1].Category = "vibes";
+            dataSource.PutMany(reloaded0.Take(600)); // update more than the bulk insert threshold
+
+            var reloaded3 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            Assert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
+
+
+        }
+
+        [Test]
+        public void Update_items_with_put()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(10_000);
+
+            dataSource.PutMany(testData);
+
+            var reloaded0 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            reloaded0[0].Category = "vibes";
+
+            dataSource.Put(reloaded0[0]);
+
+            var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
+
+            Assert.AreEqual(1, reloaded1.Count );
+
+            var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            Assert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
 
 
         }

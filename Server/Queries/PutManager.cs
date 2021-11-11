@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using Client;
 using Client.ChannelInterface;
+using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Server.Persistence;
@@ -42,7 +43,7 @@ namespace Server.Queries
                     int count = ProcessPutRequest(putRequest);
                     watch.Stop();
 
-                    _log?.LogActivity("PUT", putRequest.CollectionName, (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
+                    _log?.LogActivity(LogEntry.Put, putRequest.CollectionName, (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
 
                     client?.SendResponse(new ItemsCountResponse {ItemsCount = count});
                 }

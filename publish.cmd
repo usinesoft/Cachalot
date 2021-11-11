@@ -21,3 +21,6 @@ nuget pack Cachalot.csproj -IncludeReferencedProjects -Prop Configuration=Releas
 move *.nupkg ..\bin\Release
 popd
 copy /Y readme.html bin\Release\netcoreapp3.1\
+rd /q /s "bin\package" 2>nul
+robocopy bin\Release\netcoreapp3.1 bin\package /s /e
+robocopy bin\Release\DemoClients\netcoreapp3.1 bin\package\DemoClients

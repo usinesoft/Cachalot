@@ -19,7 +19,7 @@ namespace Client.Parsing
             if (tokens.FirstOrDefault().Is("count"))
             {
                 var root = new Node {Token = "count"};
-                return ParseQuery(tokens.TrimLeft("select"), root);
+                return ParseQuery(tokens.TrimLeft("count"), root);
             }
 
             if (tokens.FirstOrDefault().Is("explain"))

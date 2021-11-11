@@ -706,6 +706,46 @@ namespace Tests.IntegrationTests
                 }, "homes", "homes1");
         }
 
+        [Test]
+        public void Update_items_with_put_many()
+        {
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_persistent_config.xml");
+
+            using var connector = new Connector(config);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(10_000);
+
+            dataSource.PutMany(testData);
+
+            var reloaded0 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            reloaded0[0].Category = "vibes";
+
+            dataSource.PutMany(reloaded0.Take(10)); // update less than the bulk insert threshold
+
+            var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
+
+            Assert.AreEqual(1, reloaded1.Count );
+
+            var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            Assert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
+
+            reloaded0[1].Category = "vibes";
+            dataSource.PutMany(reloaded0.Take(60)); // update more than the bulk insert threshold
+
+            var reloaded3 = dataSource.Where(o => o.Category == "sf").ToList();
+
+            Assert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
+
+
+        }
+
     }
 
 

@@ -42,7 +42,7 @@ namespace AdminConsole.Commands
             {
                 Profiler.End();
 
-                Logger.Write("Deleted {0} items. The call took {1} miliseconds", deletedItems,
+                Logger.Write("Deleted {0} items. The call took {1} milliseconds", deletedItems,
                     Profiler.TotalTimeMilliseconds);
             }
 

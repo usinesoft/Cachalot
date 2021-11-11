@@ -356,8 +356,13 @@ namespace Server
 
                 if (toUpdate.Count > Constants.BulkThreshold) // bulk optimization for updates
                 {
-                    RemoveMany(toUpdate);
 
+                    var valuesBefore = toUpdate.Select(i => DataByPrimaryKey[i.PrimaryKey]).ToList();
+                    // remove the values as they were before
+                    RemoveMany(valuesBefore);
+
+
+                    // insert the new values
                     InternalPutMany(toUpdate, true); 
                 }
                 else

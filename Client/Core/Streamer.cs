@@ -130,34 +130,7 @@ namespace Client.Core
             writer.Flush();
         }
 
-        //TODO async version
-        //public static void ToStreamAsync<TItem>(Stream stream, TItem item, CollectionSchema collectionSchema = null)
-        //{
-        //    var bufferedStream = new BufferedStream(stream);
-
-
-        //    var useProtocolBuffers =
-        //        collectionSchema == null; // use protocol buffers only for requests not for business objects
-        //    var useCompression = collectionSchema != null && collectionSchema.UseCompression;
-
-        //    var mode = SerializationMode.ProtocolBuffers;
-        //    if (!useProtocolBuffers)
-        //        mode = SerializationMode.Json;
-
-        //    var writer = new BinaryWriter(bufferedStream);
-
-        //    const int itemCount = 1;
-        //    writer.Write(itemCount);
-        //    var data = SerializationHelper.ObjectToBytes(item, mode, useCompression);
-        //    writer.Write(useProtocolBuffers);
-        //    writer.Write(useCompression);
-        //    writer.Write(0D);
-        //    writer.Write(data.Length);
-        //    writer.Write(data);
-        //    writer.Flush();
-
-            
-        //}
+        
 
 
         /// <summary>

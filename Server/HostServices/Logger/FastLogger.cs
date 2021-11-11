@@ -47,7 +47,7 @@ namespace Server.HostServices.Logger
 
             lock (_messageQueue)
             {
-                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(collectionName, executionTimeInMicroseconds, detail, query, plan));
+                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(collectionName, type, executionTimeInMicroseconds, detail, query, plan));
             }
 
         }
@@ -212,12 +212,13 @@ namespace Server.HostServices.Logger
             /// <summary>
             /// Server activity log entry
             /// </summary>
+            /// <param name="collection"></param>
             /// <param name="type"></param>
             /// <param name="executionTimeInMicroseconds"></param>
             /// <param name="detail">sql-like description</param>
             /// <param name="query">query without parameters value</param>
             /// <param name="plan"></param>
-            public Item(string type, int executionTimeInMicroseconds, string detail, string query,  ExecutionPlan plan = null)
+            public Item(string collection, string type, int executionTimeInMicroseconds, string detail, string query,  ExecutionPlan plan = null)
             {
                 Entry = new LogEntry
                 {
@@ -225,6 +226,7 @@ namespace Server.HostServices.Logger
                     ExecutionPlan = plan, 
                     Type = type, 
                     Detail = detail, 
+                    CollectionName = collection.ToLowerInvariant(),
                     ExecutionTimeInMicroseconds = executionTimeInMicroseconds, 
                     Query = query,
                     TimeStamp = DateTimeOffset.Now

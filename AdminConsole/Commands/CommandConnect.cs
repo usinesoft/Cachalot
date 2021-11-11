@@ -21,19 +21,31 @@ namespace AdminConsole.Commands
                 // config.xml               => single node or cluster specified as configuration file
                 // host1:post1+host2:port2  => cluster specified as connection string
 
+                // simplified connection mostly for testing 1=localhost:48401 2=localhost:48401+localhost:48402
+                if (Params[0].Trim() == "1")
+                {
+                    Params[0] = "localhost:48401";
+                }
+
+                if (Params[0].Trim() == "2")
+                {
+                    Params[0] = "localhost:48401+localhost:48402";
+                }
+
+
                 var server = "localhost";
-
-                var singleServerMode = !(Params.Count == 1 && (Params[0].EndsWith(".xml") || Params[0].Contains('+')));
-
-                if (!singleServerMode) server = Params[0];
 
                 var port = Constants.DefaultPort;
 
-                if (Params.Count > 0) server = Params[0];
-                if (Params.Count > 1) port = int.Parse(Params[1]);
+                var isSimple = !Params[0].Contains(":"); // server port not a real connection string
+
+                var parts = Params[0].Split();
+
+                if (parts.Length > 0) server = parts[0];
+                if (parts.Length > 1) port = int.Parse(parts[1]);
 
 
-                if (singleServerMode)
+                if (isSimple)
                 {
                     var newClient = new DataClient();
                     var channel = new TcpClientChannel(new TcpClientPool(1, 1, server, port));
@@ -46,7 +58,7 @@ namespace AdminConsole.Commands
                         return newClient;
                     }
                 }
-                else // the unique  parameter is a cluster configuration file: connect to multiple servers
+                else // the unique  parameter is a cluster configuration file or a connection string
                 {
                     var aggregator = new DataAggregator();
 

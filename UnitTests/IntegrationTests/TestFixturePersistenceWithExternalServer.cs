@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 using Cachalot.Linq;
 using Client.Core;
 using Client.Core.Linq;
@@ -18,7 +17,7 @@ namespace Tests.IntegrationTests
 {
     [TestFixture]
     [Category("Performance")]
-    //[Ignore("Starting an external server does not work on git ub actions")]
+    [Ignore("Starting an external server does not work on git ub actions")]
     public class TestFixturePersistenceWithExternalServer
     {
         private Process _process;

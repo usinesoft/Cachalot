@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 
@@ -58,7 +57,7 @@ These results are for a cluster with two nodes. Most operations are faster as th
 </li>
 <li>
 <p>Running this query on one million objects</p>
-<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">select</span> <span class="token keyword">from</span> home <span class="token keyword">where</span> town<span class="token operator">=</span>Paris <span class="token operator">and</span> AvailableDates <span class="token keyword">contains</span> <span class="token number">10</span><span class="token operator">/</span><span class="token number">19</span><span class="token operator">/</span><span class="token number">2021</span> <span class="token keyword">order</span> <span class="token keyword">by</span> 
+<pre class=" language-sql"><code class="prism  language-sql"><span class="token keyword">select</span> <span class="token keyword">from</span> home <span class="token keyword">where</span> town<span class="token operator">=</span>Paris <span class="token operator">and</span> AvailableDates <span class="token keyword">contains</span> <span class="token number">2021</span><span class="token operator">-</span><span class="token number">10</span><span class="token operator">-</span><span class="token number">19</span> <span class="token keyword">order</span> <span class="token keyword">by</span> 
 PriceInEuros descending take <span class="token number">10</span>
 </code></pre>
 <ul>
@@ -78,6 +77,19 @@ PriceInEuros descending take <span class="token number">10</span>
 </ul>
 </li>
 </ul>
+<h2 id="what-is-cachalot-db-good-at">What is Cachalot DB good at?</h2>
+<p>We designed Cachalot DB to be blazing fast and transactional.</p>
+<p>As always, there is a trade-off in terms of what it can not do.</p>
+<blockquote>
+<p>The infamous CAP Theorem proves that a distributed system cannot be at<br>
+the same time fault-tolerant and transactionally consistent, and we<br>
+chose transactional consistency.</p>
+</blockquote>
+<p>To achieve high-speed data access, it loads all data in memory.</p>
+<p>It means you need enough memory to store all your data.</p>
+<p>Each node loads everything in memory when it starts (Cachalot is a contraction of “Cache a lot” 😊)</p>
+<p>We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.</p>
+<p>We can use it as a very efficient cache for big-data applications but not the golden source.</p>
 <h2 id="show-me-some-code-first">Show me some code first</h2>
 <h4 id="deep-dive-first-details-after">Deep dive first, details after</h4>
 <p>Let’s prepare our business objects for database storage.</p>
@@ -260,7 +272,7 @@ The connector contains a connection pool for each node in the cluster. The conne
 </ul>
 </li>
 </ul>
-<p>By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding “<strong>;</strong> capacity**,** preloaded”  at the end of the connection string.</p>
+<p>By default, the pool has a capacity of 4 connections, and one is preloaded. You can change this by adding “<strong>;</strong> capacity <strong>,</strong> preloaded”  at the end of the connection string.</p>
 <pre class=" language-csharp"><code class="prism  language-csharp"><span class="token keyword">var</span> connector <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Connector</span><span class="token punctuation">(</span><span class="token string">"SRVPRD1040:48401; 10, 4"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <blockquote>
@@ -528,11 +540,11 @@ When objects are retrieved, they are unpacked (which may imply decompression).</
 <span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token generic-method function">Cast<span class="token punctuation">&lt;</span>IncreaseDecrease<span class="token punctuation">&gt;</span></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 </code></pre>
 <h2 id="conditional-operations-and-optimistic-synchronization.">Conditional operations and “optimistic synchronization.”</h2>
-<p>A typical “put” operation adds an object or updates an existent one using the primary key as object identity.<br>
+<p>A typical “put” operation adds an object or updates an existing one using the primary key as object identity.<br>
 More advanced use cases may arise:</p>
 <ol>
 <li>Add an object only if it is not already there and tell me if it was effectively added</li>
-<li>Update an existent object only if the current version in the database satisfies a condition</li>
+<li>Update an existing object only if the current version in the database satisfies a condition</li>
 </ol>
 <p>The first one is available through the <strong>TryAdd</strong> operation on the <strong>DataSource</strong> class.<br>
 If the object was already there, it is not modified, and the return value is false.</p>
@@ -787,22 +799,7 @@ Assert<span class="token punctuation">.</span><span class="token generic-method 
 elements in the cache that match the query.</p>
 </blockquote>
 <p><em>Domain declaration and eviction policy are, of course, mutually exclusive on a collection. Automatic eviction would make data incomplete.</em></p>
-<h2 id="what-is-cachalot-db-good-at">What is Cachalot DB good at?</h2>
-<p>We designed Cachalot DB to be blazing fast and transactional.</p>
-<p>As always, there is a trade-off in terms of what it can not do.</p>
-<blockquote>
-<p>The infamous CAP Theorem proves that a distributed system cannot be at<br>
-the same time fault-tolerant and transactionally consistent, and we<br>
-chose transactional consistency.</p>
-</blockquote>
-<p>To achieve high-speed data access, it loads all data in memory.</p>
-<p>It means you need enough memory to store all your data.</p>
-<p>Each node loads everything in memory when it starts (Cachalot is a contraction of “Cache a lot” 😊)</p>
-<p>We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.</p>
-<p>We can use it as a very efficient cache for big-data applications but not the golden source.</p>
 </div>
 </body>
 
 </html>
-Cachalot-QuickStart
-Displaying Cachalot-QuickStart.

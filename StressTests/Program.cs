@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Cachalot.Linq;
+using StressTests.Model;
+using StressTests.TestData;
 
 namespace StressTests
 {
@@ -10,83 +12,52 @@ namespace StressTests
     {
         private static void Main(string[] args)
         {
-            if (args.Length == 0) PerformReconnectionTests();
+            if (args.Length == 0) FeedDatabase();
         }
 
-        private static IList<AbstractEntity> GenerateRandomEntities(int count)
-        {
-            var result = new List<AbstractEntity>(count);
+       
 
-            var gen = new Random(Environment.TickCount);
-
-            var collectionId = Guid.NewGuid();
-
-            for (var i = 0; i < count; i++)
-            {
-                var entity = new AbstractEntity
-                {
-                    CollectionId = collectionId,
-                    X = gen.Next(10),
-                    Y = gen.Next(20),
-                    Z = gen.Next(30)
-                };
-
-                result.Add(entity);
-            }
-
-
-            return result;
-        }
-
-        private static void PerformReconnectionTests()
+        private static void FeedDatabase()
         {
             
-            using var connector = new Connector("localhost:48401+localhost:48402");
+            //using var connector = new Connector("localhost:48401+localhost:48402");
+            using var connector = new Connector("localhost:48401");
+
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Outlet>("outlets");
+            connector.DeclareCollection<Product>("products");
+            connector.DeclareCollection<Sale>("sales");
+            connector.DeclareCollection<SaleLine>("sales_detail");
+            connector.DeclareCollection<Stock>();
+            
+            try
+            {
+                var outlets = connector.DataSource<Outlet>("outlets");
+                var outlet = DataGenerator.GenerateOutlet();
+                outlets.Put(outlet);
+
+                var products = connector.DataSource<Product>("products");
+                var prods = DataGenerator.GenerateProducts(connector);
+                products.PutMany(prods);
+
+                var sales = connector.DataSource<Sale>("sales");
+                var salesDetails = connector.DataSource<SaleLine>("sales_detail");
+
+                var data = DataGenerator.GenerateSales(100_000, outlet, prods).ToList();
+
+                var sls = data.Select(t => t.Item1).ToList();
+                var sld = data.Select(t => t.Item2).ToList();
+                sales.PutMany(sls);
+                salesDetails.PutMany(sld);
 
 
-            while (true)
-                try
-                {
-                    var entities = connector.DataSource<AbstractEntity>();
 
-                    var data = GenerateRandomEntities(1000);
-                    var collection = data.First().CollectionId;
-
-                    // count with objects 
-                    var count = data.Count(x => x.CollectionId == collection && x.X == 3 && x.Y == 15);
-
-                    var watch = new Stopwatch();
-
-                    watch.Start();
-                    // send data into the cache
-                    entities.PutMany(data);
-
-                    var t1 = watch.ElapsedMilliseconds;
-
-                    // count data into the cache
-
-                    var count1 = entities.Count(x => x.CollectionId == collection && x.X == 3 && x.Y == 15);
-
-                    var t2 = watch.ElapsedMilliseconds;
-
-                    // get data from the cache
-                    var reloaded = entities.Where(x => x.CollectionId == collection && x.X == 3 && x.Y == 15).ToList();
-
-                    var t3 = watch.ElapsedMilliseconds;
-
-                    var count2 = reloaded.Count;
-
-                    watch.Stop();
-
-                    if (count1 == count2 && count == count2)
-                        Console.WriteLine($"{count2} objects found w={t1} c={t2 - t1} r={t3 - t2}");
-                    else
-                        Console.WriteLine($"ERROR {count} {count1} {count2} ");
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
     }
 }

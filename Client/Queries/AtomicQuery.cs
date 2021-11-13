@@ -162,7 +162,7 @@ namespace Client.Queries
                         return false;
                 }
 
-                
+
                 return true;
             }
         }
@@ -605,7 +605,7 @@ namespace Client.Queries
             var v1 = item[Metadata.Order].StringValue;
             var v2 = value.StringValue;
 
-            return v1 != null && v2 != null && v1.StartsWith(v2);
+            return v1 != null && v2 != null && v1.StartsWith(v2, StringComparison.InvariantCultureIgnoreCase);
 
         }
 
@@ -614,7 +614,7 @@ namespace Client.Queries
             var v1 = item[Metadata.Order].StringValue;
             var v2 = value.StringValue;
 
-            return v1 != null && v2 != null && v1.EndsWith(v2);
+            return v1 != null && v2 != null && v1.EndsWith(v2, StringComparison.InvariantCultureIgnoreCase);
 
         }
 
@@ -623,7 +623,7 @@ namespace Client.Queries
             var v1 = item[Metadata.Order].StringValue;
             var v2 = value.StringValue;
 
-            return v1 != null && v2 != null && v1.Contains(v2);
+            return v1 != null && v2 != null && v1.Contains(v2, StringComparison.InvariantCultureIgnoreCase);
 
         }
 

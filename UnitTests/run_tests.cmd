@@ -1,1 +1,1 @@
-dotnet test -c Release .\UnitTests.csproj
+dotnet test -c Release .\UnitTests.csproj -v normal

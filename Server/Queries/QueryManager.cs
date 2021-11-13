@@ -567,6 +567,7 @@ namespace Server.Queries
 
             if (query.Distinct)
             {
+                
                 var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause.Select(s => s.Name)
                     .ToArray());
 

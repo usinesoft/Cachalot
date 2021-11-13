@@ -317,11 +317,11 @@ namespace Client.Parsing
                     // column name
                     result.Children.Add(new Node {Token = column});
 
-                    var tokensLit = tokens.Skip(2).TrimLeft("(").TrimRight(")").Split(",");
+                    var tokensList = tokens.Skip(2).TrimLeft("(").TrimRight(")").Split(",");
 
-                    foreach (var tks in tokensLit)
+                    foreach (var tks in tokensList)
                     {
-                        var value = tks.Join();
+                        var value = string.Join(' ', tks.Select(t=>t.Text));
                         var normalized = TryNormalizeValue(value);
 
                         if (normalized != null)
@@ -346,7 +346,8 @@ namespace Client.Parsing
                     // column name
                     result.Children.Add(new Node {Token = column});
 
-                    var value = tokens.Skip(2).Join();
+                    
+                    var value =  string.Join(' ', tokens.Skip(2).Select(t=>t.Text));
 
                     var normalized = TryNormalizeValue(value);
 
@@ -367,7 +368,7 @@ namespace Client.Parsing
                     // column name
                     result.Children.Add(new Node {Token = column});
 
-                    var value = tokens.Skip(2).Join();
+                    var value =  string.Join(' ', tokens.Skip(2).Select(t=>t.Text));
 
                     var normalized = TryNormalizeValue(value);
 
@@ -391,11 +392,11 @@ namespace Client.Parsing
                         // column name
                         result.Children.Add(new Node {Token = column});
 
-                        var tokensLit = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
+                        var tokensList = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
 
-                        foreach (var tks in tokensLit)
+                        foreach (var tks in tokensList)
                         {
-                            var value = tks.Join();
+                            var value = string.Join(' ', tks.Select(t=>t.Text));
                             var normalized = TryNormalizeValue(value);
 
                             if (normalized != null)
@@ -419,11 +420,11 @@ namespace Client.Parsing
                         // column name
                         result.Children.Add(new Node {Token = column});
 
-                        var tokensLit = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
+                        var tokensList = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
 
-                        foreach (var tks in tokensLit)
+                        foreach (var tks in tokensList)
                         {
-                            var value = tks.Join();
+                            var value = string.Join(' ', tks.Select(t=>t.Text));
                             var normalized = TryNormalizeValue(value);
 
                             if (normalized != null)

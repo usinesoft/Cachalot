@@ -1,6 +1,7 @@
 
 
 
+
 ![cachalot db](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot.svg?raw=true) 
 # Cachalot DB v2
 
@@ -47,7 +48,7 @@ These results are for a cluster with two nodes. Most operations are faster as th
 
 -	Running this query on one million objects 
 	```sql
-	select from home where town=Paris and AvailableDates contains 10/19/2021 order by 
+	select from home where town=Paris and AvailableDates contains 2021-10-19 order by 
 	PriceInEuros descending take 10
 	```
     - 22 milliseconds
@@ -57,6 +58,26 @@ These results are for a cluster with two nodes. Most operations are faster as th
 
 -	Running a transaction with a conditional update 
     - Less than two milliseconds
+
+## What is Cachalot DB good at?
+
+We designed Cachalot DB to be blazing fast and transactional. 
+
+As always, there is a trade-off in terms of what it can not do.
+
+> The infamous CAP Theorem proves that a distributed system cannot be at
+> the same time fault-tolerant and transactionally consistent, and we
+> chose transactional consistency.
+
+To achieve high-speed data access, it loads all data in memory.
+
+It means you need enough memory to store all your data. 
+
+Each node loads everything in memory when it starts (Cachalot is a contraction of "Cache a lot" 😊)
+
+We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.
+
+We can use it as a very efficient cache for big-data applications but not the golden source.
 
 
 ## Show me some code first
@@ -956,25 +977,8 @@ result = homes
 *Domain declaration and eviction policy are, of course, mutually exclusive on a collection. Automatic eviction would make data incomplete.*
 
 
-## What is Cachalot DB good at?
 
-We designed Cachalot DB to be blazing fast and transactional. 
 
-As always, there is a trade-off in terms of what it can not do.
-
-> The infamous CAP Theorem proves that a distributed system cannot be at
-> the same time fault-tolerant and transactionally consistent, and we
-> chose transactional consistency.
-
-To achieve high-speed data access, it loads all data in memory.
-
-It means you need enough memory to store all your data. 
-
-Each node loads everything in memory when it starts (Cachalot is a contraction of "Cache a lot" 😊)
-
-We have tested up to 200 GB of data and one hundred million medium-sized objects per collection. It can scale even more, but it is probably not the right technology to choose if you need to store more than 1 TB of data.
-
-We can use it as a very efficient cache for big-data applications but not the golden source.
 
 
 

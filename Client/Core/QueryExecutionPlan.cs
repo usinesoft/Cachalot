@@ -54,12 +54,16 @@ namespace Client.Core
             _watch.Restart();
         }
 
-        public void EndPlanning()
+        public void EndPlanning(List<string> usedIndexes)
         {
             _watch.Stop();
 
             PlanningTimeInMicroseconds = (int) (_watch.Elapsed.TotalMilliseconds * 1000D);
+
+            UsedIndexes = usedIndexes;
         }
+
+        public List<string> UsedIndexes { get; set; }
 
         public void StartIndexUse()
         {

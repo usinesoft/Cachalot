@@ -356,6 +356,11 @@ namespace Client.Core
                 return _hashCode.CompareTo(other._hashCode);
             }
 
+            if (double.IsNaN(NumericValue) || double.IsNaN(other.NumericValue))
+            {
+                throw new NotSupportedException("Incompatible types for comparison");
+            }
+
             return NumericValue.CompareTo(other.NumericValue);
         }
 

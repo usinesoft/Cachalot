@@ -5,6 +5,14 @@ using Client.Interface;
 
 namespace StressTests.Model
 {
+
+    public enum Channel
+    {
+        Direct,
+        Facebook,
+        Web
+    }
+
     /// <summary>
     /// One product in a sale operation
     /// </summary>
@@ -45,5 +53,25 @@ namespace StressTests.Model
         [ServerSideValue(IndexType.Dictionary)]
         public bool IsDelivered { get; set; }
 
+        [ServerSideValue(IndexType.Dictionary)]
+        public Channel Channel { get; set; }
+
+        protected bool Equals(SaleLine other)
+        {
+            return Id.Equals(other.Id);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((SaleLine) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
     }
 }

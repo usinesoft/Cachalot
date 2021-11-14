@@ -215,7 +215,8 @@ namespace StressTests.TestData
                     IsDelivered = i % 2 == 0,
                     ProductId = products[i%products.Count].ProductId,
                     Quantity = _rand.Next(1, 5),
-                    SaleId = sale.Id
+                    SaleId = sale.Id,
+                    Channel = (Model.Channel) (i % 3),
                 };
 
                 yield return new Tuple<Sale, SaleLine>(sale, saleLine);

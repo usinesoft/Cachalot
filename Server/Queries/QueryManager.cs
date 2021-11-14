@@ -126,7 +126,7 @@ namespace Server.Queries
 
             queryExecutionPlan.StartPlanning();
             var indexesToUse = GetIndexesForQuery(query);
-            queryExecutionPlan.EndPlanning();
+            queryExecutionPlan.EndPlanning(indexesToUse.Select(r=>r.Index.Name).ToList());
 
             // this will contain all queries that have can not be resolved by indexes and need to be checked manually 
             var restOfTheQuery = query.Clone();
@@ -518,7 +518,8 @@ namespace Server.Queries
             
         }
 
-        public IList<PackedObject> ProcessQuery(OrQuery query)
+        public IList<PackedObject> 
+            ProcessQuery(OrQuery query)
         {
             if (query.OnlyIfComplete)
             {

@@ -46,8 +46,8 @@ namespace StressTests
 
         private static void QueryTests()
         {
-            //using var connector = new Connector("localhost:48401+localhost:48402");
-            using var connector = new Connector("localhost:48401");
+            using var connector = new Connector("localhost:48401+localhost:48402");
+            //using var connector = new Connector("localhost:48401");
             
 
             DeclareCollections(connector);
@@ -188,8 +188,10 @@ namespace StressTests
 
             // projection scalar 
             {
+                // this will return of collection of string
                 var withLinq = products.Where(p=>p.Brand == "REVLON").Select(p=>p.Name).ToList();
                 
+                // this will return a collection of Product with only the Name property filled
                 var withSql = products.SqlQuery("select Name from products where brand = REVLON").ToList();
 
             }
@@ -237,16 +239,16 @@ namespace StressTests
             {
                 var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).OrderBy(s=> s.Amount).ToList();
                 
-                var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered = true and amount > 80 order by amount").ToList();
+                var withSql = salesDetails.SqlQuery("select from sales_detail where isDelivered = true and amount > 80 order by AMOUNT").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
             }
 
             // order by descending
             {
-                var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).OrderBy(s=> s.Amount).ToList();
+                var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).OrderByDescending(s=> s.Amount).ToList();
                 
-                var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered = true and amount > 80 order by amount").ToList();
+                var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered = true and amount > 80 order by amount descending").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
             }
@@ -266,8 +268,8 @@ namespace StressTests
         private static void FeedDatabase()
         {
             
-            //using var connector = new Connector("localhost:48401+localhost:48402");
-            using var connector = new Connector("localhost:48401");
+            using var connector = new Connector("localhost:48401+localhost:48402");
+            //using var connector = new Connector("localhost:48401");
 
             connector.AdminInterface().DropDatabase();
 

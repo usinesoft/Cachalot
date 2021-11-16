@@ -471,6 +471,7 @@ namespace Client.Interface
                     }
                 }
 
+
                 var count1 = 0;
 
                 // if ordered merge results by preserving order (either ascending or descending)

@@ -57,9 +57,18 @@ namespace Client.Interface
             var reference = responses[0];
             for (var i = 1; i < CacheClients.Count; i++)
                 foreach (var typeDescription in reference.KnownTypesByFullName)
+                {
+                    if (!responses[i].KnownTypesByFullName.ContainsKey(typeDescription.Key))
+                    {
+                        throw new CacheException(
+                            $"Servers have different schemas. You are probably trying to connect to servers that belong to different clusters");
+                    }
+
                     if (!responses[i].KnownTypesByFullName[typeDescription.Key].Equals(typeDescription.Value))
                         throw new CacheException(
-                            $"servers have different schemas: {responses[0].ServerProcessInfo.Host} <> {responses[i].ServerProcessInfo.Host} ");
+                            $"Servers have different schemas: {responses[0].ServerProcessInfo.Host} <> {responses[i].ServerProcessInfo.Host} ");
+                }
+                    
 
             return new ClusterInformation(responses);
         }

@@ -488,7 +488,7 @@ namespace Server
                 newEnd = mid;
             else
                 newStart = mid;
-
+             
             if (newStart == newEnd) //so also equal to mid
             {
                 if (Compare(midValue, value) < 0)

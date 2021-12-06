@@ -9,17 +9,20 @@ namespace StressTests
 {
     internal class Program
     {
+
+        //static readonly Connector _connector = new Connector("localhost:48401+localhost:48402");
+        static readonly Connector _connector = new Connector("localhost:48401");
         private static void Main(string[] args)
         {
-            if (args.Length == 0)
+            
+            FeedDatabase();
+
+            while (true)
             {
-                FeedDatabase();
-                QueryTests();
+                QueryTests();    
             }
-            else
-            {
-                FeedDatabase();
-            }
+            
+            
         }
 
 
@@ -46,15 +49,13 @@ namespace StressTests
 
         private static void QueryTests()
         {
-            using var connector = new Connector("localhost:48401+localhost:48402");
-            //using var connector = new Connector("localhost:48401");
             
 
-            DeclareCollections(connector);
+            DeclareCollections(_connector);
 
-            var products = connector.DataSource<Product>("products");
+            var products = _connector.DataSource<Product>("products");
             
-            var salesDetails = connector.DataSource<SaleLine>("sales_detail");
+            var salesDetails = _connector.DataSource<SaleLine>("sales_detail");
 
             // = 
 
@@ -268,25 +269,23 @@ namespace StressTests
         private static void FeedDatabase()
         {
             
-            using var connector = new Connector("localhost:48401+localhost:48402");
-            //using var connector = new Connector("localhost:48401");
+            
+            _connector.AdminInterface().DropDatabase();
 
-            connector.AdminInterface().DropDatabase();
-
-            DeclareCollections(connector);
+            DeclareCollections(_connector);
             
             try
             {
-                var outlets = connector.DataSource<Outlet>("outlets");
+                var outlets = _connector.DataSource<Outlet>("outlets");
                 var outlet = DataGenerator.GenerateOutlet();
                 outlets.Put(outlet);
 
-                var products = connector.DataSource<Product>("products");
-                var prods = DataGenerator.GenerateProducts(connector);
+                var products = _connector.DataSource<Product>("products");
+                var prods = DataGenerator.GenerateProducts(_connector);
                 products.PutMany(prods);
 
-                var sales = connector.DataSource<Sale>("sales");
-                var salesDetails = connector.DataSource<SaleLine>("sales_detail");
+                var sales = _connector.DataSource<Sale>("sales");
+                var salesDetails = _connector.DataSource<SaleLine>("sales_detail");
 
                 var data = DataGenerator.GenerateSales(100_000, outlet, prods).ToList();
 

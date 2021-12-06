@@ -677,5 +677,54 @@ namespace Tests.UnitTests
             result1 = idx1.GetMany(MakeIntValue(3, keyType)).OrderBy(o => o.PrimaryKey).ToList();
             Assert.AreEqual(result1.Count, 2);
         }
+
+        [Test]
+        public void IssueWithActivityTable()
+        {
+            var schema = TypedSchemaFactory.FromType<LogEntry>();
+
+            var meta = schema.KeyByName("TimeStamp");
+
+            Assert.IsNotNull(meta);
+
+            var timeStampIndex = new OrderedIndex(meta);
+
+
+            for (int i = 0; i < 1_000_000; i++)
+            {
+                var item = new LogEntry {Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now};
+                
+                var packed = PackedObject.Pack(item, schema);
+                
+                timeStampIndex.Put(packed);
+
+                var item1 = new LogEntry {Id = Guid.NewGuid(), TimeStamp = item.TimeStamp};
+                
+                var packed1 = PackedObject.Pack(item1, schema);
+                
+                timeStampIndex.Put(packed1);
+            }
+        }
+
+
+        [Test]
+        public void AnotherAttemptToReproduceTheIssue()
+        {
+            var schema = TypedSchemaFactory.FromType<LogEntry>();
+            schema.CollectionName = LogEntry.Table;
+            
+            var activityTable = new DataStore(schema, new LruEvictionPolicy(2000, 1000), new FullTextConfig() );
+
+            for (int i = 0; i < 10_000; i++)
+            {
+                var item = new LogEntry {Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now};
+
+                var packed = PackedObject.Pack(item, schema);
+
+                activityTable.InternalPutMany(new List<PackedObject>{packed}, false );
+
+            }
+
+        }
     }
 }

@@ -98,6 +98,11 @@ namespace AdminConsole
                                             {KnownTypes = serverDesc?.Schema.ToList()};
                                         parser = new CommandLineParser(serverDesc);
                                     }
+                                    catch (CacheException ex)
+                                    {
+                                        Logger.WriteEror(
+                                            $"Error while connecting: {ex.Message}");
+                                    }
                                     catch (Exception)
                                     {
                                         Logger.WriteEror(

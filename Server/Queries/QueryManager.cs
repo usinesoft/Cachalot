@@ -75,10 +75,12 @@ namespace Server.Queries
                 
                 var index = _dataStore.TryGetIndex(name);
 
+                if(index == null)
+                    continue;
+
                 if (atomicQuery.Operator == QueryOperator.Eq || atomicQuery.Operator == QueryOperator.In || atomicQuery.Operator == QueryOperator.Contains)
                 {
                     
-
                     // for primary or unique key we do not need more than one index 
                     if (index.IndexType == IndexType.Primary)
                     {
@@ -93,7 +95,7 @@ namespace Server.Queries
                 }
                 else if(atomicQuery.IsComparison) // in this case we can only use ordered indexes
                 {
-                    if (index != null && index.IndexType == IndexType.Ordered)
+                    if (index.IndexType == IndexType.Ordered)
                     {
                         var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
 
@@ -407,6 +409,7 @@ namespace Server.Queries
             {
                 if (atomicQuery.IndexType == IndexType.Primary)
                 {
+                    queryExecutionPlan.UsedIndexes = new List<string>{_dataStore.PrimaryIndex.Name};
                     return _dataStore.PrimaryIndex.GetMany(atomicQuery.Values).ToList();
                 }
 
@@ -424,7 +427,7 @@ namespace Server.Queries
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-
+                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
                         return index.GetMany(atomicQuery.Values).ToList();
                     }
                     finally
@@ -439,7 +442,7 @@ namespace Server.Queries
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-
+                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
                         return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
                     }
                     finally
@@ -454,7 +457,7 @@ namespace Server.Queries
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-
+                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
                         return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
                     }
                     finally

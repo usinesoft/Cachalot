@@ -142,6 +142,8 @@ namespace Tests.IntegrationTests
             {
                 connector.DeclareCollection<Trade>();
 
+                connector.AdminInterface().ReadOnlyMode(true);
+
                 var admin = connector.AdminInterface();
 
                 admin.ImportDump(dumpPath);

@@ -42,7 +42,7 @@ namespace Client.Core
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Include
                 
             };
         }

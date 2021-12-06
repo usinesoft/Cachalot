@@ -30,11 +30,6 @@ namespace Client.Core
         public IList<QueryExecutionPlan> QueryPlans { get; set; } = new List<QueryExecutionPlan>();
 
         /// <summary>
-        /// Tie to sort the result (if order-by clause is present)
-        /// </summary>
-        public int SortTimeInMicroseconds { get;  set; }
-            
-        /// <summary>
         /// Time to execute the distinct clause (if present)
         /// </summary>
         public int DistinctTimeInMicroseconds { get; set; }

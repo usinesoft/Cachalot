@@ -112,7 +112,7 @@ To store a business object in a database, it needs a primary key. As there is no
 ```csharp
 public class Home
 {
-	[PrimaryKey(KeyDataType.IntKey)]
+	[ServerSideValue(IndexType.Primary)]
 	public int Id { get; set; }
 
 	°°°

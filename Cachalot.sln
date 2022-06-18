@@ -32,7 +32,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spike", "Spike\Spike.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestRunner", "TestRunner\TestRunner.csproj", "{EA186E47-9EE6-40D7-B95F-438B218399D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CachalotMonitor", "CachaloServer\CachalotMonitor.csproj", "{0EE92089-1BB8-432A-A19D-9A11AD114BAE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CachalotMonitor", "CachalotMonitor\CachalotMonitor.csproj", "{0C4BF22D-DE31-4D09-8073-33298951B354}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -84,10 +84,10 @@ Global
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C4BF22D-DE31-4D09-8073-33298951B354}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C4BF22D-DE31-4D09-8073-33298951B354}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C4BF22D-DE31-4D09-8073-33298951B354}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C4BF22D-DE31-4D09-8073-33298951B354}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

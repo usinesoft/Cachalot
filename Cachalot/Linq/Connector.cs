@@ -17,25 +17,23 @@ namespace Cachalot.Linq
 {
     public class Connector : IDisposable
     {
-        readonly Dictionary<string, CollectionSchema> _collectionSchema = new Dictionary<string, CollectionSchema>();
+        private readonly Dictionary<string, CollectionSchema> _collectionSchema =
+            new Dictionary<string, CollectionSchema>();
 
 
         /// <summary>
-        /// Declare a collection with explicit schema
+        ///     Declare a collection with explicit schema
         /// </summary>
         /// <param name="collectionName"></param>
         /// <param name="schema"></param>
         public void DeclareCollection(string collectionName, CollectionSchema schema)
         {
-            
             lock (_collectionSchema)
             {
                 if (_collectionSchema.TryGetValue(collectionName, out var oldSchema))
                 {
                     if (!schema.Equals(oldSchema))
-                    {
                         throw new CacheException($"Schema declaration conflict for collection {collectionName}");
-                    }
                 }
                 else
                 {
@@ -50,21 +48,19 @@ namespace Cachalot.Linq
 
         #region consistent read
 
-
         //TODO check if it can work on the aggregator only
-        readonly SemaphoreSlim _consistentReadSync = new SemaphoreSlim(10, 10);
+        private readonly SemaphoreSlim _consistentReadSync = new SemaphoreSlim(10, 10);
 
 
         /// <summary>
-        /// Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple collections, even on a multi-node clusters
-        /// give a consistent result. No write operation (normal or transactional) will be executed while the context is open.
-        /// 
+        ///     Perform read-only operations in a consistent context.It guarantees that multiple operations on multiple
+        ///     collections, even on a multi-node clusters
+        ///     give a consistent result. No write operation (normal or transactional) will be executed while the context is open.
         /// </summary>
-        /// <param name="action">Should contain a list of queries performed on a <see cref="ConsistentContext"/></param>
+        /// <param name="action">Should contain a list of queries performed on a <see cref="ConsistentContext" /></param>
         /// <param name="collections"></param>
         public void ConsistentRead(Action<ConsistentContext> action, [NotNull] params string[] collections)
         {
-            
             if (collections.Length == 0)
                 throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
 
@@ -104,14 +100,11 @@ namespace Cachalot.Linq
                 }
 
                 _consistentReadSync.Release();
-                
             }
-        
-
         }
 
         /// <summary>
-        /// Helper for one collection with default naming
+        ///     Helper for one collection with default naming
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <param name="action"></param>
@@ -119,9 +112,9 @@ namespace Cachalot.Linq
         {
             ConsistentRead(action, typeof(T1).Name);
         }
-       
+
         /// <summary>
-        /// Helper for two collections with default naming
+        ///     Helper for two collections with default naming
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
@@ -133,7 +126,7 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Helper for three collections with default naming
+        ///     Helper for three collections with default naming
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
@@ -145,7 +138,7 @@ namespace Cachalot.Linq
         }
 
         /// <summary>
-        /// Helper for four collections with default naming
+        ///     Helper for four collections with default naming
         /// </summary>
         /// <typeparam name="T1"></typeparam>
         /// <typeparam name="T2"></typeparam>
@@ -161,8 +154,8 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Declare collection with implicit schema (inferred from the type)
-        /// If the collection name is not specified, the name of the type is used
+        ///     Declare collection with implicit schema (inferred from the type)
+        ///     If the collection name is not specified, the name of the type is used
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collectionName"></param>
@@ -171,9 +164,9 @@ namespace Cachalot.Linq
             collectionName ??= typeof(T).Name;
 
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
-            
+
             var schema = description;
-            
+
             Client.DeclareCollection(collectionName, schema);
 
             lock (_collectionSchema)
@@ -196,61 +189,61 @@ namespace Cachalot.Linq
         private Server.Server _server;
 
 
-        public Connector(string connectionString):this(new ClientConfig(connectionString))
+        public Connector(string connectionString) : this(new ClientConfig(connectionString))
         {
         }
 
-        public Connector(ClientConfig config)
+        public Connector([NotNull] ClientConfig config)
         {
-            if (Client == null)
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            if (config.Servers == null || config.Servers.Count == 0)
             {
-                if (config?.Servers == null || config.Servers.Count == 0)
-                {
-                    var channel = new InProcessChannel();
-                    Client = new DataClient{Channel = channel};
+                var channel = new InProcessChannel();
+                Client = new DataClient { Channel = channel };
 
-                    _server = new Server.Server(new NodeConfig
-                        {
-                            IsPersistent = config.IsPersistent,
-                            DataPath = "."
-                        })
-                        {Channel = channel};
-
-                    _server.Start();
-                }
-                else if (config.Servers.Count == 1)
-                {
-                    var serverCfg = config.Servers[0];
-
-                    var channel = new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity, config.PreloadedConnections, serverCfg.Host, serverCfg.Port));
-
-                    Client = new DataClient {Channel = channel};
-                }
-                else // multiple servers
-                {
-                    var aggregator = new DataAggregator();
-
-                    var index = 0;
-                    foreach (var serverConfig in config.Servers)
+                _server = new Server.Server(new NodeConfig
                     {
-                        var channel =
-                            new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity, config.PreloadedConnections, serverConfig.Host, serverConfig.Port));
+                        IsPersistent = config.IsPersistent,
+                        DataPath = "."
+                    })
+                    { Channel = channel };
 
-                        var client = new DataClient
-                        {
-                            Channel = channel,
-                            ShardIndex = index,
-                            ShardsCount = config.Servers.Count
-                        };
-                        aggregator.CacheClients.Add(client);
-                        index++;
-                    }
-
-
-                    Client = aggregator;
-                }
+                _server.Start();
             }
+            else if (config.Servers.Count == 1)
+            {
+                var serverCfg = config.Servers[0];
 
+                var channel = new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity,
+                    config.PreloadedConnections, serverCfg.Host, serverCfg.Port));
+
+                Client = new DataClient { Channel = channel };
+            }
+            else // multiple servers
+            {
+                var aggregator = new DataAggregator();
+
+                var index = 0;
+                foreach (var serverConfig in config.Servers)
+                {
+                    var channel =
+                        new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity,
+                            config.PreloadedConnections, serverConfig.Host, serverConfig.Port));
+
+                    var client = new DataClient
+                    {
+                        Channel = channel,
+                        ShardIndex = index,
+                        ShardsCount = config.Servers.Count
+                    };
+                    aggregator.CacheClients.Add(client);
+                    index++;
+                }
+
+
+                Client = aggregator;
+            }
         }
 
         internal IDataClient Client { get; private set; }
@@ -269,14 +262,13 @@ namespace Cachalot.Linq
         }
 
         /// <summary>
-        /// Initiate a write-only transaction
+        ///     Initiate a write-only transaction
         /// </summary>
         /// <returns></returns>
         public Transaction BeginTransaction()
         {
             return new Transaction(this);
         }
-
 
 
         /// <summary>
@@ -287,10 +279,7 @@ namespace Cachalot.Linq
         /// <param name="quantity">number of unique ids to generate</param>
         public int[] GenerateUniqueIds(string generatorName, int quantity)
         {
-            if (quantity == 0)
-            {
-                throw new CacheException("When generating unique ids quantity must be at least 1");
-            }
+            if (quantity == 0) throw new CacheException("When generating unique ids quantity must be at least 1");
             return Client.GenerateUniqueIds(generatorName, quantity);
         }
 
@@ -301,7 +290,7 @@ namespace Cachalot.Linq
 
 
         /// <summary>
-        /// Special collection containing the server-side activity log
+        ///     Special collection containing the server-side activity log
         /// </summary>
         public IQueryable<LogEntry> ActivityLog
         {
@@ -320,12 +309,11 @@ namespace Cachalot.Linq
             lock (_collectionSchema)
             {
                 if (_collectionSchema.TryGetValue(collectionName, out var schema))
-                {
                     return new DataSource<T>(this, collectionName, schema);
-                } 
             }
 
-            throw new CacheException($"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
+            throw new CacheException(
+                $"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
         }
 
 
@@ -336,12 +324,11 @@ namespace Cachalot.Linq
             lock (_collectionSchema)
             {
                 if (_collectionSchema.TryGetValue(collectionName, out var schema))
-                {
                     return new DataSource<T>(this, collectionName, schema, sessionId);
-                } 
             }
 
-            throw new CacheException($"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
+            throw new CacheException(
+                $"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
         }
 
         public DataAdmin AdminInterface()

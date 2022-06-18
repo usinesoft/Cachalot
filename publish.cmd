@@ -1,28 +1,21 @@
+pushd Cachalot
+dotnet publish -c release -o ..\bin\Release\net6.0\
+popd
 pushd CoreHost
-dotnet publish -c release -o ..\bin\Release\netcoreapp3.1\
+dotnet publish -c release -o ..\bin\Release\net6.0\
 popd
 pushd WindowsService
-dotnet publish -c release -o ..\bin\Release\netcoreapp3.1\
+dotnet publish -c release -o ..\bin\Release\net6.0\
 popd
 pushd AdminConsole
-dotnet publish -c release -f netcoreapp3.1 -o ..\bin\Release\netcoreapp3.1\
+dotnet publish -c release -f net6.0 -o ..\bin\Release\net6.0\
 popd
 pushd StorageAnalyzer
-dotnet publish -c release -f netcoreapp3.1 -o ..\bin\Release\netcoreapp3.1\
+dotnet publish -c release -f net6.0 -o ..\bin\Release\net6.0\
 popd
 pushd DemoClients\AccountsCore
-dotnet publish -c release -f netcoreapp3.1 -o ..\..\bin\Release\DemoClients\netcoreapp3.1\
+dotnet publish -c release -f net6.0 -o ..\..\bin\Release\DemoClients\net6.0\
 popd
 pushd DemoClients\BookingMarketplaceCore
-dotnet publish -c release -f netcoreapp3.1 -o ..\..\bin\Release\DemoClients\netcoreapp3.1\
+dotnet publish -c release -f net6.0 -o ..\..\bin\Release\DemoClients\net6.0\
 popd
-pushd Cachalot
-nuget pack Cachalot.csproj -IncludeReferencedProjects -Prop Configuration=Release -Symbols
-move *.nupkg ..\bin\Release
-popd
-copy /Y readme.html bin\Release\netcoreapp3.1\
-rd /q /s "bin\package" 2>nul
-robocopy bin\Release\netcoreapp3.1 bin\package\Bin /s /e
-robocopy bin\Release\DemoClients\netcoreapp3.1 bin\package\DemoClients
-robocopy Doc bin\package\Doc /s /e
-del bin\package\doc\*.docx

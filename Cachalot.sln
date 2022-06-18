@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29001.49
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "Client\Client.csproj", "{554A2F6B-FD8D-4713-8132-BD78C8E7E57A}"
 EndProject
@@ -17,8 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdminConsole", "AdminConsol
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\UnitTests.csproj", "{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsService", "WindowsService\WindowsService.csproj", "{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{44884EF3-0331-4AD8-B8C2-CECE04A18773}"
 	ProjectSection(SolutionItems) = preProject
 		publish.cmd = publish.cmd
@@ -33,6 +31,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spike", "Spike\Spike.csproj", "{AADA458A-21A5-43F3-B1FD-7F1F0B424FF2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestRunner", "TestRunner\TestRunner.csproj", "{EA186E47-9EE6-40D7-B95F-438B218399D1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CachalotMonitor", "CachaloServer\CachalotMonitor.csproj", "{0EE92089-1BB8-432A-A19D-9A11AD114BAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,10 +68,6 @@ Global
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CBF80D7-9F28-4DBB-A823-85C07CA56F13}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A1ADC8FF-3B88-4B4C-B76B-3156677E1815}.Release|Any CPU.Build.0 = Release|Any CPU
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20DFA135-3809-4FDA-9ADF-BCB368D29449}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -88,6 +84,10 @@ Global
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA186E47-9EE6-40D7-B95F-438B218399D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EE92089-1BB8-432A-A19D-9A11AD114BAE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

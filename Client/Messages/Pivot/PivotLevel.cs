@@ -14,7 +14,7 @@ namespace Client.Messages.Pivot
         /// <summary>
         /// This one is null for root level
         /// </summary>
-        [field: ProtoMember(1)]public KeyValue AxisValue { get; private set; }
+        [field: ProtoMember(1)]public NamedValue AxisValue { get; private set; }
 
         /// <summary>
         /// Aggregate for each value of the first axis
@@ -27,50 +27,97 @@ namespace Client.Messages.Pivot
         /// </summary>
         [field: ProtoMember(3)] public List<AggregatedValue> AggregatedValues { get; } = new List<AggregatedValue>();
 
+        public PivotLevel(CollectionSchema schema, List<int> axisIndexes, List<int> valueIndexes)
+        {
+            _schema = schema;
+            _axisIndexes = axisIndexes;
+            _valueIndexes = valueIndexes;
+
+            _valueNames = _schema.NamesOfScalarFields(valueIndexes.ToArray()).ToList();
+            _axisNames = _schema.NamesOfScalarFields(axisIndexes.ToArray()).ToList();
+        }
+
+
+        /// <summary>
+        /// This one is used for persistence only
+        /// </summary>
+        public PivotLevel()
+        {
+        }
+
+
+
+
+        #region non persistent properties
+
+        private CollectionSchema _schema;
+
         
-        public void AggregateOneObject(PackedObject @object, List<int> axisIndex, List<int> valuesIndex)
+
+        private List<int> _axisIndexes;
+        private List<int> _valueIndexes;
+
+        private List<string> _valueNames;
+        private List<string> _axisNames;
+
+
+
+        #endregion
+
+
+
+
+        public void AggregateOneObject(PackedObject @object)
         {
             if(@object.Values.Length == 0)
                 throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");
 
 
-            var valuesForPivot = new List<KeyValue>();
-            foreach (var i in valuesIndex)
+            var valuesForPivot = new List<NamedValue>();// contains values and their names
+
+            for (int i = 0; i < _valueIndexes.Count; i++)
             {
-                var val = @object.Values[i];
-                if(double.IsNaN(val.NumericValue))
+                var val = @object.Values[_valueIndexes[i]];
+
+                if (double.IsNaN(val.NumericValue))
                     throw new NotSupportedException("Only numeric values can be used for pivot calculations");
 
-                valuesForPivot.Add(val);
+
+                var name = _valueNames[i];
+
+                valuesForPivot.Add(new NamedValue(val, name));
+
             }
 
+            
             foreach (var value in valuesForPivot)
             {
                 // first aggregate the root level
-                var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.KeyName);
+                var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.Name);
                 if (agg == null)
                 {
-                    agg = new AggregatedValue {ColumnName = value.KeyName};
+                    agg = new AggregatedValue {ColumnName = value.Name};
                     AggregatedValues.Add(agg);
                 }
 
                 agg.Count++;
-                agg.Sum += (decimal) value.NumericValue;
+                agg.Sum += (decimal) value.Value.NumericValue;
 
             }
 
-            if (axisIndex.Count > 0)
+            if (_axisIndexes.Count > 0)
             {
                 
-                var kv = @object[axisIndex[0]];
+                var kv = @object[_axisIndexes[0]];
+                var axisName = _axisNames[0];
 
                 if (!Children.TryGetValue(kv, out var child))
                 {
-                    child = new PivotLevel {AxisValue = kv};
+                    child = new PivotLevel(_schema, _axisIndexes.Skip(1).ToList(), _valueIndexes) {AxisValue = new NamedValue(kv, axisName)};
                     Children.Add(kv, child);
                 }
 
-                child.AggregateOneObject(@object, axisIndex.Skip(1).ToList(), valuesIndex);
+                child.AggregateOneObject(@object);
             }
             
         }
@@ -86,11 +133,11 @@ namespace Client.Messages.Pivot
 
         void ToString(StringBuilder builder, int indentLevel)
         {
-            string padding = new string(' ', indentLevel*4); // four spaces tabulation
+            string padding = new string(' ', indentLevel * 4); // four spaces tabulation
             if (!Equals(AxisValue, null))
             {
                 builder.Append(padding);
-                builder.AppendLine($"{AxisValue.KeyName} = {AxisValue.StringValue}");
+                builder.AppendLine($"{AxisValue.Name} = {AxisValue.Value.StringValue}");
             }
 
             foreach (var aggregatedValue in AggregatedValues)

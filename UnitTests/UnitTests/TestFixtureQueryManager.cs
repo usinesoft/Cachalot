@@ -309,7 +309,7 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(objects.Count, result.Count);
@@ -323,7 +323,7 @@ namespace Tests.UnitTests
 
                 q.OrderByIsDescending = true;
 
-                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
                 Assert.AreEqual(objects.Count, result.Count);
 
@@ -345,7 +345,7 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -359,7 +359,7 @@ namespace Tests.UnitTests
 
                 q.OrderByIsDescending = true;
 
-                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
                 Assert.AreEqual(raw.Count, result.Count);
 
@@ -380,7 +380,7 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -393,7 +393,7 @@ namespace Tests.UnitTests
 
                 q.OrderByIsDescending = true;
 
-                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -414,7 +414,7 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
@@ -428,7 +428,7 @@ namespace Tests.UnitTests
 
                 q.OrderByIsDescending = true;
 
-                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
@@ -441,7 +441,7 @@ namespace Tests.UnitTests
 
                 // check that TAKE operator is applied after ORDER BY
                 q.Take = 1;
-                var max = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).Single();
+                var max = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).Single();
 
                 Assert.AreEqual(max.Amount, result[0].Amount);
             }
@@ -476,7 +476,7 @@ namespace Tests.UnitTests
                 var qm = new QueryManager(ds);
 
                
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -497,7 +497,7 @@ namespace Tests.UnitTests
                 var qm = new QueryManager(ds);
 
                 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -518,7 +518,7 @@ namespace Tests.UnitTests
                 var qm = new QueryManager(ds);
 
                 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -539,13 +539,13 @@ namespace Tests.UnitTests
                 var qm = new QueryManager(ds);
 
                 
-                var result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
                 Assert.AreEqual(raw.Count, result.Count);
 
                 q.Take = 3;
-                result = qm.ProcessQuery(q).Select(PackedObject.Unpack<Order>).ToList();
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Assert.AreEqual(3, result.Count);
 
             }

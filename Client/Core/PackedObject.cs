@@ -36,6 +36,7 @@ namespace Client.Core
         /// </summary>
         [field: ProtoMember(1)]
         public string CollectionName { get; private set; }
+        
 
 
         /// <summary>
@@ -44,8 +45,7 @@ namespace Client.Core
         [field: ProtoMember(2)]
         public byte[] ObjectData { get; private set; }
 
-        [field: ProtoMember(3)] public bool UseCompression { get; private set; }
-
+        [field: ProtoMember(3)] public Layout Layout { get; private set; }
         /// <summary>
         ///     Keys that can be used for "Contains" queries
         /// </summary>
@@ -112,7 +112,7 @@ namespace Client.Core
                         }
                     }
 
-                    result.Values[pos++] = new KeyValue(value, metadata);
+                    result.Values[pos++] = new KeyValue(value);
                 }
                 else 
                 {
@@ -123,7 +123,7 @@ namespace Client.Core
                             throw new NotSupportedException($"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
                         }
 
-                        var keyValues = values.Cast<object>().Select(v => new KeyValue(v, metadata));
+                        var keyValues = values.Cast<object>().Select(v => new KeyValue(v));
                         result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
                     }
                     else
@@ -147,25 +147,27 @@ namespace Client.Core
             result.FullText = lines.ToArray();
 
 
-            result.ObjectData =
-                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.UseCompression);
+            // for "flat" objects do not store data. Everything is in the key-values
+            if(typeDescription.StorageLayout != Layout.Flat)
+            {
+                result.ObjectData =
+                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.StorageLayout == Layout.Compressed);
+            }
 
             result.CollectionName = collectionName ?? typeDescription.CollectionName;
 
-            result.UseCompression = typeDescription.UseCompression;
+            result.Layout = typeDescription.StorageLayout;
 
 
             return result;
         }
 
-
-        public string Json
+        public string GetJson(CollectionSchema schema)
         {
-            get
+            if (Layout != Layout.Flat)
             {
-                
                 var stream = new MemoryStream(ObjectData);
-                if (UseCompression)
+                if (Layout == Layout.Compressed)
                 {
                     var zInStream = new GZipInputStream(stream);
                     return new StreamReader(zInStream).ReadToEnd();
@@ -175,6 +177,9 @@ namespace Client.Core
 
                 return new StreamReader(stream).ReadToEnd();
             }
+
+
+            return ToJObjectForFlatLayout(schema).ToString(Formatting.None);
         }
 
         /// <summary>
@@ -186,16 +191,7 @@ namespace Client.Core
         private JObject ToJObject(int[] valuesOrder, [CanBeNull] string[] valueNames)
         {
             
-            // if only one value is specified, serialize it as primitive type
-            //if (valuesOrder.Length == 1)
-            //{
-            //    var kv = Values[0];
-            //    var jp = kv.ToJson();
-
-            //    return jp.Value;
-            //}
-            
-            
+           
             var result = new JObject();
 
             int index = 0;
@@ -204,14 +200,9 @@ namespace Client.Core
                 if (i < Values.Length) // scalar value
                 {
                     var kv = Values[i];
-                    var jp = kv.ToJson();
+                    var jp = kv.ToJson(valueNames[index]);
 
-                    if (valueNames != null)
-                    {
-                        jp = new JProperty(valueNames[index], jp.Value);
-                    }
                     
-
                     result.Add(jp);
                 }
                 else // collections
@@ -223,7 +214,7 @@ namespace Client.Core
                     var array = new JArray();
                     foreach (var keyValue in collection.Values)
                     {
-                        array.Add(keyValue.ToJson().Value);
+                        array.Add(keyValue.ToJson(collection.Name).Value);
                     }
 
                     result.Add(collection.Name, array);
@@ -235,48 +226,70 @@ namespace Client.Core
             return result;
         }
 
+        private JObject ToJObjectForFlatLayout(CollectionSchema schema)
+        {
+
+            var result = new JObject();
+
+            int index = 0;
+            foreach (var kv in Values)
+            {                
+                var jp = kv.ToJson(schema.ServerSide[index].Name);
+
+                result.Add(jp);
+
+                index++;
+            
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Return object data. It may be complete data or a projection if <see cref="valuesOrder"/> contains any element
         /// </summary>
         /// <param name="valuesOrder">indexes of values to be serialized</param>
-        /// <param name="valueNames">optional names to replace the original property name</param>
+        /// <param name="valueNames">names (may be the original names in the schema definition or alias names)</param>
         /// <returns></returns>
-        public byte[] GetData(int[] valuesOrder, string[] valueNames = null)
+        public byte[] GetData(int[] valuesOrder, string[] valueNames)
         {
             if (valuesOrder.Length > 0)
             {
-                return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json, UseCompression);
+                return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json, Layout == Layout.Compressed);
             }
 
             return ObjectData;
         }
 
 
-        public byte[] GetServerSideData()
+        public byte[] GetServerSideData(CollectionSchema schema)
         {
             var result = new JObject();
 
-
-            foreach (var v in Values)
+            foreach (var info in schema.ServerSide)
             {
-                var jp = v.ToJson();
-                result.Add(jp);
-            }
-
-            foreach (var collection in CollectionValues)
-            {
-                var array = new JArray();
-                foreach (var keyValue in collection.Values)
+                if (!info.IsCollection)
                 {
-                    array.Add(keyValue.ToJson().Value);
+                    var jp = Values[info.Order].ToJson(info.Name);
+                    result.Add(jp);
                 }
+                else
+                {
+                    var values = CollectionValues[info.Order];
+                    var array = new JArray();
+                    
+                    foreach (var keyValue in values.Values)
+                    {
+                        array.Add(keyValue.ToJson(info.Name).Value);
+                    }
 
-                result.Add(collection.Name, array);
+                    result.Add(info.Name, array);
+                }
             }
 
-
-            return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, UseCompression);
+            
+            return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, Layout == Layout.Compressed);
 
         }
 
@@ -389,11 +402,15 @@ namespace Client.Core
             result.FullText = lines.ToArray();
 
            
-            result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema.UseCompression);
+            if(collectionSchema.StorageLayout != Layout.Flat)
+            {
+                result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema.StorageLayout == Layout.Compressed);
+            }
+            
 
             result.CollectionName = collectionName ?? collectionSchema.CollectionName;
 
-            result.UseCompression = collectionSchema.UseCompression;
+            result.Layout = collectionSchema.StorageLayout;
 
             
             return result;
@@ -444,10 +461,16 @@ namespace Client.Core
         /// </summary>
         /// <param name="packedObject"> </param>
         /// <returns> </returns>
-        public static T Unpack<T>(PackedObject packedObject)
+        public static T Unpack<T>(PackedObject packedObject, CollectionSchema schema)
         {
+
+            if(packedObject.Layout == Layout.Flat)
+            {
+                return JsonConvert.DeserializeObject<T>(packedObject.GetJson(schema));
+            }
+
             return SerializationHelper.ObjectFromBytes<T>(packedObject.ObjectData, SerializationMode.Json,
-                packedObject.UseCompression);
+                packedObject.Layout == Layout.Compressed);
         }
 
         private bool Equals(PackedObject other)
@@ -484,11 +507,8 @@ namespace Client.Core
         public KeyValue this[int order] => Values[order];
 
         public KeyValues Collection(int order)
-        {
-            // in a collection schema the vector values are positioned after scalar values
-            var pos = order - Values.Length;
-
-            return CollectionValues[pos];
+        {            
+            return CollectionValues[order];
         }
     }
 }

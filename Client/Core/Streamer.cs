@@ -111,7 +111,7 @@ namespace Client.Core
 
             var useProtocolBuffers =
                 collectionSchema == null; // use protocol buffers only for requests not for business objects
-            var useCompression = collectionSchema != null && collectionSchema.UseCompression;
+            var useCompression = collectionSchema != null && collectionSchema.StorageLayout == Layout.Compressed;
 
             var mode = SerializationMode.ProtocolBuffers;
             if (!useProtocolBuffers)
@@ -191,7 +191,7 @@ namespace Client.Core
                 var data = selectedIndexes.Length > 0? item.GetData(selectedIndexes,aliases) :item.ObjectData;
 
                 writer.Write(false);
-                writer.Write(item.UseCompression);
+                writer.Write(item.Layout == Layout.Compressed);
                 writer.Write(item.Rank);
                 writer.Write(data.Length);
                 writer.Write(data);

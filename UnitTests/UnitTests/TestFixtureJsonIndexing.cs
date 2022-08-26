@@ -12,6 +12,7 @@ using Tests.TestData;
 
 namespace Tests.UnitTests
 {
+
     [TestFixture]
     public class TestFixtureJsonIndexing
     {
@@ -123,18 +124,18 @@ namespace Tests.UnitTests
 
             var packed = PackedObject.Pack(testObj, schema);
 
-            var jsonFull = packed.Json;
+            var jsonFull = packed.GetJson(schema);
 
-            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"));
+            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"), new[] {"Amount", "Category"} );
 
             var json1 = new StreamReader(new MemoryStream(data1)).ReadToEnd();
 
-            var partial1 = SerializationHelper.ObjectFromBytes<Order>(data1, SerializationMode.Json, schema.UseCompression);
+            var partial1 = SerializationHelper.ObjectFromBytes<Order>(data1, SerializationMode.Json, schema.StorageLayout == Layout.Compressed);
 
             Assert.AreEqual(testObj.Amount, partial1.Amount);
             Assert.AreEqual(testObj.Category, partial1.Category);
 
-            var data2 = packed.GetServerSideData();
+            var data2 = packed.GetServerSideData(schema);
             var json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
 
             // they are equal except for the $type property which is present only in the full json
@@ -162,9 +163,9 @@ namespace Tests.UnitTests
 
             packed = PackedObject.Pack(testObj1, schema);
 
-            jsonFull = packed.Json;
+            jsonFull = packed.GetJson(schema);
 
-            data2 = packed.GetServerSideData();
+            data2 = packed.GetServerSideData(schema);
             json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
 
             // they are equal except for the $type property which is present only in the full json
@@ -235,8 +236,8 @@ namespace Tests.UnitTests
         [Test]
         public void Null_and_zero_are_equals()
         {
-            var val1 = new KeyValue(null, new KeyInfo{Name = "test"});
-            var val2 = new KeyValue(0, new KeyInfo{Name = "test"});
+            var val1 = new KeyValue(null);
+            var val2 = new KeyValue(0);
 
             // for indexing only null and 0 are considered the same
             Assert.AreEqual(val1, val2);

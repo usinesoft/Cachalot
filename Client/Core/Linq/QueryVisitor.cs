@@ -45,7 +45,7 @@ namespace Client.Core.Linq
             {
                 var atomic = RootExpression.Elements[0].Elements[0];
 
-                if (atomic.Operator == QueryOperator.Eq && atomic.Value.KeyName == _collectionSchema.PrimaryKeyField.Name)
+                if (atomic.Operator == QueryOperator.Eq && atomic.Metadata.Name == _collectionSchema.PrimaryKeyField.Name)
                 {
                     RootExpression.ByPrimaryKey = true;
                 }
@@ -351,7 +351,7 @@ namespace Client.Core.Linq
 
                         foreach (var value in values)
                         {
-                            var keyValue = new KeyValue(value, metadata);
+                            var keyValue = new KeyValue(value);
                             list.Add(keyValue);
                         }
 
@@ -387,7 +387,7 @@ namespace Client.Core.Linq
 
                             var metadata = GetMetadata(expression.Member);
 
-                            var keyValue = new KeyValue(valueExpression.Value, metadata);
+                            var keyValue = new KeyValue(valueExpression.Value);
 
 
                             return new AtomicQuery(metadata, keyValue, oper);
@@ -439,7 +439,7 @@ namespace Client.Core.Linq
         private void VisitMemberExpression(MemberExpression expression, AndQuery parentExpress, bool not)
         {
             var metadata = GetMetadata(expression.Member);
-            var keyValue = new KeyValue(!not, metadata);
+            var keyValue = new KeyValue(!not);
 
             parentExpress.Elements.Add(new AtomicQuery(metadata, keyValue));
         }
@@ -462,27 +462,14 @@ namespace Client.Core.Linq
 
 
                 var metadata = GetMetadata(member.Member);
-                var keyValue = new KeyValue(value, metadata);
-
-                QueryOperator op;
-                switch (methodName)
+                var keyValue = new KeyValue(value);
+                var op = methodName switch
                 {
-                    case "StartsWith":
-                        op = QueryOperator.StrStartsWith;
-                        break;
-
-                    case "EndsWith":
-                        op = QueryOperator.StrEndsWith;
-                        break;
-
-                    case "Contains":
-                        op = QueryOperator.StrContains;
-                        break;
-
-                    default:
-                        throw new NotSupportedException($"Method {methodName} can not be used in a query");
-                }
-
+                    "StartsWith" => QueryOperator.StrStartsWith,
+                    "EndsWith" => QueryOperator.StrEndsWith,
+                    "Contains" => QueryOperator.StrContains,
+                    _ => throw new NotSupportedException($"Method {methodName} can not be used in a query"),
+                };
                 andExpression.Elements.Add(new AtomicQuery(metadata, keyValue, op));
             }
             else
@@ -652,7 +639,7 @@ namespace Client.Core.Linq
                 if (binaryExpression.Left is MemberExpression left)
                 {
                     var metadata = GetMetadata(left.Member);
-                    var keyValue = new KeyValue(right.Value, metadata);
+                    var keyValue = new KeyValue(right.Value);
 
                     var oper = ConvertOperator(binaryExpression);
 
@@ -663,7 +650,7 @@ namespace Client.Core.Linq
                     if (unary.Operand is MemberExpression member)
                     {
                         var metadata = GetMetadata(member.Member);
-                        var keyValue = new KeyValue(right.Value, metadata);
+                        var keyValue = new KeyValue(right.Value);
 
                         var oper = ConvertOperator(binaryExpression);
 
@@ -680,7 +667,7 @@ namespace Client.Core.Linq
                 if (left != null && right != null)
                 {
                     var metadata = GetMetadata(left.Member);
-                    var keyValue = new KeyValue(right.Value, metadata);
+                    var keyValue = new KeyValue(right.Value);
 
                     var oper = QueryOperator.Eq;
 

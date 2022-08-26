@@ -36,10 +36,10 @@ namespace Server
         /// <returns></returns>
         public IReadOnlyIndex TryGetIndex(string name)
         {
-            if (String.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
                 return new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
 
-            return _dataByIndexKey.FirstOrDefault(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ;
+            return _dataByIndexKey.FirstOrDefault(p => string.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ;
         }
 
         #endregion
@@ -417,7 +417,7 @@ namespace Server
 
         private IEnumerable<string> InternalEnumerateAsJson()
         {
-            foreach (var cachedObject in DataByPrimaryKey) yield return cachedObject.Value.Json;
+            foreach (var cachedObject in DataByPrimaryKey) yield return cachedObject.Value.GetJson(CollectionSchema);
         }
 
 

@@ -556,7 +556,7 @@ namespace Server
                         AvailableData =
                             store.DomainDescription ??
                             new DomainDescription(null),
-                        DataCompression = store.CollectionSchema.UseCompression,
+                        StorageLayout = store.CollectionSchema.StorageLayout,
 
                         HitCount = store.HitCount,
                         ReadCount = store.ReadCount

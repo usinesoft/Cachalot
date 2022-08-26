@@ -83,7 +83,7 @@ namespace Tests.UnitTests
             var desc = TypedSchemaFactory.FromType<CacheableTypeOk>();
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc.UseCompression);
+            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc.StorageLayout == Layout.Compressed);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, false);
             Assert.IsNotNull(item1Reloaded);
@@ -318,7 +318,7 @@ namespace Tests.UnitTests
                 TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
             put.Items.Add(PackedObject.Pack(item, schema));
 
-            var remove = new RemoveRequest(typeof(CacheableTypeOk), new KeyValue(1, schema.PrimaryKeyField));
+            var remove = new RemoveRequest(typeof(CacheableTypeOk), new KeyValue(1));
 
             var register = new RegisterTypeRequest(typeDescription);
 
@@ -376,7 +376,7 @@ namespace Tests.UnitTests
             stream.Seek(0, SeekOrigin.Begin);
 
             var reloaded = Streamer.FromStream<PackedObject>(stream);
-            var original = PackedObject.Unpack<CacheableTypeOk>(reloaded);
+            var original = PackedObject.Unpack<CacheableTypeOk>(reloaded, schema);
 
 
             Assert.IsTrue(original is CacheableTypeOk);
@@ -388,8 +388,7 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(TradeLike));
 
-            var builder = new QueryBuilder(typeof(TradeLike));
-            var kval = new KeyValue(10, schema.KeyByName("Nominal"));
+            var kval = new KeyValue(10);
             var stream = new MemoryStream();
             Serializer.Serialize(stream, kval);
             stream.Seek(0, SeekOrigin.Begin);

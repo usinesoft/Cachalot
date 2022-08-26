@@ -61,29 +61,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(cached.PrimaryKey, 11);
 
             
-            
-            foreach (var key in cached.Values)
-            {
-                if (key.KeyName == "IndexKeyDate")
-                {
-                    Assert.AreEqual(key, new DateTime(2009, 10, 25).Ticks);
-                    Assert.AreEqual(key.Type, KeyValue.OriginalType.Date);
-                }
-
-                if (key.KeyName == "IndexKeyValue")
-                {
-                    Assert.AreEqual(key, 15);
-                    Assert.AreEqual(key.Type, KeyValue.OriginalType.SomeInteger);
-                }
-
-                if (key.Type == KeyValue.OriginalType.String)
-                {
-                    Assert.AreEqual(key, "FOL");
-                    Assert.AreEqual(key.KeyName, "IndexKeyFolder");
-                }
-            }
-
-            var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached);
+            var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached, description);
             Assert.AreEqual(object1, fromCache);
         }
 
@@ -95,15 +73,13 @@ namespace Tests.UnitTests
 
             var packed = PackedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
 
-            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.UseCompression);
+            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.StorageLayout == Layout.Compressed);
 
             var reloaded = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
            
             Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
-            Assert.AreEqual("Dan", reloaded.Values.First(k=>k.KeyName == "First").StringValue);
-
-
+            
         }
 
 
@@ -210,11 +186,11 @@ namespace Tests.UnitTests
             var packed1 = PackedObject.Pack(order1, description);
             var packed2 = PackedObject.Pack(order2, description);
 
-            var pivot = new PivotLevel();
+            var pivot = new PivotLevel(description, new List<int>(), new List<int> { 1, 2 });
 
             // Amount and Quantity to be aggregated (index 1 and 2) in the schema
-            pivot.AggregateOneObject(packed1, new List<int>(), new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>(), new List<int>{1,2} );
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
 
 
             // Amount and Quantity should be aggregated
@@ -261,11 +237,11 @@ namespace Tests.UnitTests
 
 
             // first test with one single axis (Category index = 3)
-            var pivot = new PivotLevel();
+            var pivot = new PivotLevel(schema, new List<int> { 3 }, new List<int> { 1, 2 }); ;
 
-            pivot.AggregateOneObject(packed1, new List<int>{3},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>{3},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed3, new List<int>{3},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
+            pivot.AggregateOneObject(packed3);
 
 
             // Amount and Quantity should be aggregated
@@ -276,24 +252,24 @@ namespace Tests.UnitTests
             Assert.AreEqual(3, agg.Count);
             Assert.AreEqual(order1.Amount + order2.Amount + order3.Amount, agg.Sum);
 
-            Assert.IsTrue(pivot.Children.Keys.All(k=>k.KeyName == "Category"));
-            Assert.IsTrue(pivot.Children.Values.All(v=>v.AxisValue.KeyName == "Category"));
+            
+            Assert.IsTrue(pivot.Children.Values.All(v=>v.AxisValue.Name == "Category"));
 
-            var geek = pivot.Children.Values.First(p => p.AxisValue.StringValue == "geek");
+            var geek = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
             Assert.AreEqual(2, geek.AggregatedValues.Count);
 
             // then with two axis
 
-            pivot = new PivotLevel();
+            pivot = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
+            pivot.AggregateOneObject(packed3);
             
             Console.WriteLine(pivot.ToString());
 
-            var geek1 = pivot.Children.Values.First(p => p.AxisValue.StringValue == "geek");
+            var geek1 = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
             Assert.AreEqual(2, geek1.AggregatedValues.Count);
             Assert.AreEqual(2, geek1.Children.Count);
@@ -311,17 +287,17 @@ namespace Tests.UnitTests
 
             var packed4 = PackedObject.Pack(order4, schema);
 
-            var pivot1 = new PivotLevel();
+            var pivot1 = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot1.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot1.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
-            pivot1.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
+            pivot1.AggregateOneObject(packed1 );
+            pivot1.AggregateOneObject(packed2);
+            pivot1.AggregateOneObject(packed3);
 
-            var pivot2 = new PivotLevel();
+            var pivot2 = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot2.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot2.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
-            pivot2.AggregateOneObject(packed4, new List<int>{3, 4},new List<int>{1,2} );
+            pivot2.AggregateOneObject(packed1);
+            pivot2.AggregateOneObject(packed3);
+            pivot2.AggregateOneObject(packed4);
 
             pivot1.MergeWith(pivot2);
 

@@ -142,8 +142,8 @@ namespace Tests.UnitTests
                 // warm up
 
                 var unused = PackedObject.Pack(home, desc);
-                var json = unused.AsJson();
-                var reloaded = PackedObject.Unpack<Home>(unused);
+                var json = unused.AsJson(desc);
+                var reloaded = PackedObject.Unpack<Home>(unused, desc);
 
 
                 var watch = new Stopwatch();
@@ -153,7 +153,7 @@ namespace Tests.UnitTests
                 for (var i = 0; i < objects; i++)
                 {
                     var packed = PackedObject.Pack(home, desc);
-                    reloaded = PackedObject.Unpack<Home>(unused);
+                    reloaded = PackedObject.Unpack<Home>(unused, desc);
                 }
 
                 watch.Stop();
@@ -166,10 +166,10 @@ namespace Tests.UnitTests
             {
                 // warm up
 
-                desc.UseCompression = true;
+                desc.StorageLayout = Layout.Compressed;
 
                 var unused = PackedObject.Pack(home, desc);
-                var reloaded = PackedObject.Unpack<Home>(unused);
+                var reloaded = PackedObject.Unpack<Home>(unused, desc );
 
                 var watch = new Stopwatch();
 
@@ -178,7 +178,7 @@ namespace Tests.UnitTests
                 for (var i = 0; i < objects; i++)
                 {
                     var packed = PackedObject.Pack(home, desc);
-                    reloaded = PackedObject.Unpack<Home>(unused);
+                    reloaded = PackedObject.Unpack<Home>(unused, desc);
                 }
 
                 watch.Stop();

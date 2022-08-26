@@ -45,7 +45,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(object value)
         {
-            var keyValue = value as KeyValue ?? new KeyValue(value, _collectionSchema.PrimaryKeyField);
+            var keyValue = value as KeyValue ?? new KeyValue(value);
 
             var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();

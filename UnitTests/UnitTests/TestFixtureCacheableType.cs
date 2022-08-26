@@ -17,11 +17,11 @@ namespace Tests.UnitTests
         [Test]
         public void HashCodesOfKeysAreAlwaysPositive()
         {
-            var hash = new KeyValue("66666", new KeyInfo("test", 0, IndexType.Primary)).GetHashCode();
+            var hash = new KeyValue("66666").GetHashCode();
 
             Assert.IsTrue(hash > 0, "hash > 0");
 
-            hash = new KeyValue(999999999999999, new KeyInfo("test", 0, IndexType.Primary))
+            hash = new KeyValue(999999999999999)
                 .GetHashCode();
 
             Assert.IsTrue(hash > 0, "hash > 0");

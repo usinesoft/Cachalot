@@ -43,9 +43,7 @@ namespace Client.Queries
             if(oper == QueryOperator.In || oper == QueryOperator.NotIn || oper.IsRangeOperator())
                 throw new ArgumentException("invalid operator");
 
-            if(value.KeyName != metadata.Name)
-                throw new ArgumentException("Mismatch between value and metadata");
-
+           
             Metadata = metadata;
             Value = value;
             Operator = oper;
@@ -69,8 +67,7 @@ namespace Client.Queries
             if(oper != QueryOperator.In && oper != QueryOperator.NotIn)
                 throw new ArgumentException("invalid operator");
 
-            if(values.Any(v=>v.KeyName != metadata.Name))
-                throw new ArgumentException("Mismatch between value and metadata");
+           
 
             Metadata = metadata;
             _inValues = new HashSet<KeyValue>(values);
@@ -94,11 +91,7 @@ namespace Client.Queries
             if(!oper.IsRangeOperator())
                 throw new ArgumentException("Only range operators can be used with two values");
 
-            if(value.KeyName != metadata.Name)
-                throw new ArgumentException("Mismatch between value and metadata");
-
-            if(value2.KeyName != metadata.Name)
-                throw new ArgumentException("Mismatch between value and metadata");
+            
 
             Operator = oper; //the one and only binary operator
         }
@@ -127,9 +120,7 @@ namespace Client.Queries
                     if (Value2 < Value)
                         return false;
 
-                    // the two values must belong to the same collection
-                    if (Value.KeyName != Value2.KeyName)
-                        return false;
+                   
                 }
 
 
@@ -154,13 +145,7 @@ namespace Client.Queries
                 if (Operator != QueryOperator.In && Operator != QueryOperator.NotIn && ReferenceEquals(Value, null))
                     return false;
 
-                // all values should belong to the same collection
-                if (Operator == QueryOperator.In ||Operator == QueryOperator.NotIn)
-                {
-                    var name = PropertyName;
-                    if (InValues.Any(v => v.KeyName != name))
-                        return false;
-                }
+               
 
 
                 return true;

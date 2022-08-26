@@ -124,7 +124,9 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(1, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var schema = TypedSchemaFactory.FromType(typeof(Trade));
+
+            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -139,7 +141,7 @@ namespace Tests.UnitTests
         public void Persistence_of_simple_put_transaction_with_one_object()
         {
             var transaction1 = MakeTransaction(new Trade(1, 5465, "TATA", DateTime.Now.Date, 150));
-
+            var schema = TypedSchemaFactory.FromType(typeof(Trade));
             var engine = new PersistenceEngine();
             engine.Start();
 
@@ -159,7 +161,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(1, processor.LoadedObjects.Count);
 
-            var reloaded = PackedObject.Unpack<Trade>(processor.LoadedObjects[0]);
+            var reloaded = PackedObject.Unpack<Trade>(processor.LoadedObjects[0], schema);
 
             Assert.AreEqual("TATA", reloaded.Folder);
         }
@@ -175,6 +177,7 @@ namespace Tests.UnitTests
             var transaction2 = MakeTransaction(
                 new Trade(2, 5467, "TOTO", DateTime.Now.Date, 190)
             );
+            var schema= TypedSchemaFactory.FromType(typeof(Trade));
 
             var log = new TransactionLog();
             log.NewTransaction(
@@ -201,7 +204,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -223,6 +226,8 @@ namespace Tests.UnitTests
             var transaction2 = MakeTransaction(
                 new Trade(2, 5467, "TOTO", DateTime.Now.Date, 190)
             );
+
+            var schema = TypedSchemaFactory.FromType(typeof(Trade));
 
             var log = new TransactionLog();
             log.NewTransaction(
@@ -248,7 +253,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(PackedObject.Unpack<Trade>).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 

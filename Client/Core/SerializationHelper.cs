@@ -42,8 +42,11 @@ namespace Client.Core
                 TypeNameHandling = TypeNameHandling.Objects,
                 Formatting = Formatting.None,
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Include
-                
+                DefaultValueHandling = DefaultValueHandling.Include,
+                //DateParseHandling = DateParseHandling.DateTimeOffset,
+                DateFormatHandling = DateFormatHandling.IsoDateFormat,
+                //DateTimeZoneHandling = DateTimeZoneHandling.Utc
+
             };
         }
 
@@ -71,9 +74,9 @@ namespace Client.Core
         }
 
 
-        public static string AsJson(this PackedObject obj)
+        public static string AsJson(this PackedObject obj, CollectionSchema schema)
         {
-            if (obj.UseCompression)
+            if (obj.Layout == Layout.Compressed)
             {
                 var stream = new MemoryStream(obj.ObjectData);
                 using var zInStream = new GZipInputStream(stream);
@@ -86,11 +89,14 @@ namespace Client.Core
                 return JToken.Parse(json).ToString(Formatting.Indented);
             }
 
+            if (obj.Layout == Layout.Default)
             {
                 var json = Encoding.UTF8.GetString(obj.ObjectData);
 
                 return JToken.Parse(json).ToString(Formatting.Indented);
             }
+
+            return obj.GetJson(schema);
         }
 
         public static TItem ObjectFromBytes<TItem>(byte[] bytes, SerializationMode mode, bool compress)

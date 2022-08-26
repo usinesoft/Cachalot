@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Client.Core;
 using NUnit.Framework;
@@ -24,13 +25,12 @@ namespace Tests.UnitTests
             // order is preserved for collections 
             Assert.Less(schema.OrderOf("Tags"), schema.OrderOf("Languages"));
 
-            // collections come after all scalar properties
-            Assert.Less(schema.OrderOf("Again"), schema.OrderOf("Languages"));
 
-            // check that orders are a continuous range
-            for (int i = 1; i < schema.ServerSide.Count; i++)
+            var scalars = schema.ServerSide.Where(x => x.IsCollection = false).ToList();
+            // check that orders are a continuous range (for scalar properties)
+            for (int i = 1; i < scalars.Count; i++)
             {
-                Assert.IsTrue(schema.ServerSide[i].Order - schema.ServerSide[i-1].Order == 1);
+                Assert.IsTrue(scalars[i].Order - scalars[i-1].Order == 1);
             }
 
         }
@@ -49,9 +49,7 @@ namespace Tests.UnitTests
             // order is preserved for scalars
             Assert.Less(schema.OrderOf("name"), schema.OrderOf("age"));
 
-            // collections come after all scalar properties
-            Assert.Less(schema.OrderOf("age"), schema.OrderOf("tags"));
-
+            
         }
     }
 }

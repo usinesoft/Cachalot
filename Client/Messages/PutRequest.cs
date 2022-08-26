@@ -97,7 +97,7 @@ namespace Client.Messages
             foreach (var item in Items)
             {
                 request.Items.Add(item);
-                size += item.ObjectData.Length;
+                size += 100;//TODO item.ObjectData.Length;
                 if (size >= 1_000_000_000)
                 {
                     request = new PutRequest(CollectionName)

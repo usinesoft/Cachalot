@@ -15,17 +15,17 @@ namespace Tests.UnitTests
 
         AtomicQuery MakeQuery(CollectionSchema schema,  string name, QueryOperator op, object value)
         {
-            return new AtomicQuery(schema.KeyByName(name), new KeyValue(value, new KeyInfo(name, 0)), op);
+            return new AtomicQuery(schema.KeyByName(name), new KeyValue(value), op);
         }
 
         AtomicQuery MakeInQuery(CollectionSchema schema,string name, params object[] values)
         {
-            return new AtomicQuery(schema.KeyByName(name), values.Select(v=>new KeyValue(v, new KeyInfo(name, 0))).ToList());
+            return new AtomicQuery(schema.KeyByName(name), values.Select(v=>new KeyValue(v)).ToList());
         }
 
         AtomicQuery MakeNinQuery(CollectionSchema schema, string name, params object[] values)
         {
-            return new AtomicQuery(schema.KeyByName(name), values.Select(v=>new KeyValue(v, new KeyInfo(name, 0))).ToList(), QueryOperator.NotIn);
+            return new AtomicQuery(schema.KeyByName(name), values.Select(v=>new KeyValue(v)).ToList(), QueryOperator.NotIn);
         }
 
         [Test]

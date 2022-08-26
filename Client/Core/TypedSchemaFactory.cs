@@ -30,11 +30,7 @@ namespace Client.Core
             return FromType(typeof(T));
         }
 
-        /// <summary>
-        /// internally used to move the collection properties at the end of the schema
-        /// </summary>
-        private const int CollectionOrderOffset = 100_000;
-
+        
         /// <summary>
         /// Convert <see cref="PropertyInfo"/> to a serializable and language neutral format
         /// </summary>
@@ -69,9 +65,7 @@ namespace Client.Core
                 bool isCollection = typeof(IEnumerable).IsAssignableFrom(propertyInfo.PropertyType) &&
                                     propertyInfo.PropertyType != typeof(string);
 
-                if (isCollection)
-                    order += CollectionOrderOffset;
-
+              
                 return new KeyInfo(name, order , attribute.IndexType, jsonName, isCollection);
             }
 
@@ -96,17 +90,17 @@ namespace Client.Core
                 throw new ArgumentNullException(nameof(type));
 
 
-            var useCompression = false;
+            var layout = Layout.Default;
             var storage = type.GetCustomAttributes(typeof(StorageAttribute), false).FirstOrDefault();
             if (storage != null)
             {
                 var storageParams = (StorageAttribute) storage;
-                useCompression = storageParams.UseCompression;
+                layout = storageParams.StorageLayout;
             }
 
             var result = new CollectionSchema
             {
-                UseCompression = useCompression,
+                StorageLayout = layout,
                 CollectionName = type.Name
             };
 
@@ -131,25 +125,28 @@ namespace Client.Core
             }
 
 
-            // Adjust order. Line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0 and the collections at the end
-            var lineNumbers = new HashSet<int>();
-            foreach (var keyInfo in result.ServerSide)
-            {
-                lineNumbers.Add(keyInfo.Order);
-            }
 
+            // Adjust order. Line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0 
             
-            var lineNumberByPosition = lineNumbers.OrderBy(x => x).ToList();
-
-            foreach (var keyInfo in result.ServerSide)
+            result.ServerSide = result.ServerSide.OrderBy(x => x.Order).ToList();
+            int scalarIndex = 0;
+            int collectionIndex = 0;
+            foreach (var item in result.ServerSide)
             {
-                var adjustedOrder = lineNumberByPosition.FindIndex(l => l == keyInfo.Order);
-                keyInfo.Order = adjustedOrder;
+                if (item.IsCollection)
+                {
+                    if(result.StorageLayout == Layout.Flat)
+                    {
+                        throw new NotSupportedException("A flat storage does not support indexed collections");
+                    }
+                    item.Order = collectionIndex++;
+                }
+                else // scalar property
+                {
+                    item.Order = scalarIndex++;
+                }
             }
-
-
-            result.ServerSide = result.ServerSide.OrderBy(k => k.Order).ToList();
-
+            
             
 
             //check if the newly registered type is valid

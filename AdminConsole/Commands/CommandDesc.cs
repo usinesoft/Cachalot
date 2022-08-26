@@ -64,7 +64,7 @@ namespace AdminConsole.Commands
                     
 
                     var header =
-                        $"| {"Name",35} | {"Zip",5} |";
+                        $"| {"Name",35} | {"Layout",10} |";
                     
                     var  line = new string('-', header.Length);
                     
@@ -74,10 +74,10 @@ namespace AdminConsole.Commands
 
                     foreach (var typeDescription in serverInfo.Schema)
                     {
-                        var compression = typeDescription.UseCompression.ToString();
+                        var compression = typeDescription.StorageLayout.ToString();
 
 
-                        Logger.Write("| {0,35} | {1,5} |",
+                        Logger.Write("| {0,35} | {1,10} |",
                             typeDescription.CollectionName,
                             compression
                         );

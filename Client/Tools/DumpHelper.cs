@@ -103,7 +103,7 @@ namespace Client.Tools
 
             foreach (var cachedObject in objects)
             {
-                var json = cachedObject.AsJson();
+                var json = cachedObject.AsJson(collectionSchema);
 
 
                 sb.Append(json);

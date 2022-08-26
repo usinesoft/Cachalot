@@ -48,9 +48,7 @@ namespace Server
             {
                 _keyIndex = KeyInfo.Order;
 
-                if (KeyInfo.IsCollection) _keyIndex -= item.Values.Length;
             }
-
 
             if (!KeyInfo.IsCollection)
             {

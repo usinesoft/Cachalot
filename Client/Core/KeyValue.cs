@@ -1,10 +1,10 @@
 #region
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Client.Messages;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
@@ -38,12 +38,6 @@ namespace Client.Core
 
         [ProtoMember(2)]
         private byte[] _data;
-
-        /// <summary>
-        ///     name of the key
-        /// </summary>
-        [field: ProtoMember(3)]
-        public string KeyName { get; }
 
         
         public OriginalType Type => (OriginalType) _data[0];
@@ -82,34 +76,34 @@ namespace Client.Core
 
         }
 
-        public  JProperty ToJson()
+        public  JProperty ToJson(string name)
         {
             var type = (OriginalType) _data[0];
 
             switch (type)
             {
                 case OriginalType.SomeInteger:
-                    return new JProperty(KeyName, _hashCode);
+                    return new JProperty(name, _hashCode);
 
                 case OriginalType.SomeFloat:
-                    return new JProperty(KeyName, NumericValue);
+                    return new JProperty(name, NumericValue);
                     
                 case OriginalType.Boolean:
-                    return new JProperty(KeyName, _hashCode != 0);
+                    return new JProperty(name, _hashCode != 0);
                     
                 case OriginalType.Date:
                     if(_data.Length == 1)//no offset
-                        return new JProperty(KeyName, new DateTime(_hashCode));
+                        return new JProperty(name, new DateTime(_hashCode));
                     
                     var offset = BitConverter.ToInt64(_data, 1);
                     
-                    return new JProperty(KeyName, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
+                    return new JProperty(name, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
 
                 case OriginalType.String:
-                    return new JProperty(KeyName, StringValue);
+                    return new JProperty(name, StringValue);
 
                 case OriginalType.Null:
-                    return null;
+                    return new JProperty(name, null);
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -227,11 +221,11 @@ namespace Client.Core
         }
 
        
-        public KeyValue(object value, KeyInfo info)
+        public KeyValue(object value)
         {
             _data = new byte[1];
 
-            KeyName = info.Name;
+            //KeyName = info.Name;
             
             if (value == null)
             {
@@ -520,5 +514,31 @@ namespace Client.Core
        
     }
 
+    /// <summary>
+    /// KeyValue with name (to minimize memory usage the name is not stored any more in the KeyValue)
+    /// </summary>
+    public class NamedValue
+    {
+        public NamedValue(KeyValue value, string name)
+        {
+            Value = value;
+            Name = name;
+        }
 
+        [field: ProtoMember(1)] public KeyValue Value { get; }
+        [field: ProtoMember(2)] public string Name { get; }
+
+        public override bool Equals(object obj)
+        {
+            return obj is NamedValue value &&
+                   EqualityComparer<KeyValue>.Default.Equals(Value, value.Value) &&
+                   Name == value.Name;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Value, Name);
+        }
+    }
+    
 }

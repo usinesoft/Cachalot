@@ -19,7 +19,7 @@ namespace Tests.UnitTests
     {
         private static IList<KeyValue> MakeIntValue(int value, KeyInfo type)
         {
-            return new List<KeyValue> {new KeyValue(value, type)};
+            return new List<KeyValue> {new KeyValue(value)};
         }
 
         private static void CheckLe(IndexBase indexByValue)
@@ -180,13 +180,13 @@ namespace Tests.UnitTests
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(3, keyType), new KeyValue(3, keyType)},
+                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(3), new KeyValue(3)},
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(3, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(3, keyType), new KeyValue(3, keyType)},
+                    idx1.GetMany(new List<KeyValue> {new KeyValue(3), new KeyValue(3)},
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(3, items.Count);
@@ -194,26 +194,26 @@ namespace Tests.UnitTests
 
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(8, keyType), new KeyValue(9, keyType)},
+                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(8), new KeyValue(9)},
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(0, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(8, keyType), new KeyValue(9, keyType)},
+                    idx1.GetMany(new List<KeyValue> {new KeyValue(8), new KeyValue(9)},
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(0, items.Count);
             }
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(1, keyType), new KeyValue(3, keyType)},
+                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(1), new KeyValue(3)},
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(5, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(1, keyType), new KeyValue(3, keyType)},
+                    idx1.GetMany(new List<KeyValue> {new KeyValue(1), new KeyValue(3)},
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(5, items.Count);

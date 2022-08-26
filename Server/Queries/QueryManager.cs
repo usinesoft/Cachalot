@@ -501,13 +501,27 @@ namespace Server.Queries
 
                 var aliases = query.SelectClause.Select(s => s.Alias).ToArray();
 
+                
+
                 if (query.SelectClause.Count > 0)
                 {
                     client.SendMany(result, indexOfSelectedProperties, aliases);
                 }
                 else
                 {
-                    client.SendMany(result, new int[0], null);
+                    // for flat layout we have to generate dynamically the JSON
+                    if (result.Count > 0 && result[0].Layout == Layout.Flat)
+                    {
+                        var names = _dataStore.CollectionSchema.ServerSide.Select(x => x.Name).ToArray();
+                        var indexes = Enumerable.Range(0, names.Length).ToArray();
+
+                        client.SendMany(result, indexes, names);
+                    }
+                    else
+                    {
+                        client.SendMany(result, new int[0], null);
+                    }
+                    
                 }
             }
             catch (Exception e)
@@ -633,11 +647,11 @@ namespace Server.Queries
                 Parallel.ForEach(groupBy, new ParallelOptions { MaxDegreeOfParallelism = 10 },
                     objects =>
                     {
-                        var pivot = new PivotLevel();
+                        var pivot = new PivotLevel(_dataStore.CollectionSchema, pivotRequest.AxisList, pivotRequest.ValuesList);
 
                         foreach (var o in objects)
                         {
-                            pivot.AggregateOneObject(o, pivotRequest.AxisList, pivotRequest.ValuesList);    
+                            pivot.AggregateOneObject(o);    
                         }
 
                         lock (pr)

@@ -18,6 +18,7 @@ using ProtoBuf;
 
 namespace Client.Core
 {
+
     /// <summary>
     ///     Contains all information needed to create a collection on the server:
     ///         All indexed properties (simple, unique, primary key) with indexing parameters
@@ -51,7 +52,7 @@ namespace Client.Core
         public string CollectionName { get; set; }
 
 
-        [ProtoMember(4)] public bool UseCompression { get; set; }
+        [ProtoMember(4)] public Layout StorageLayout { get; set; }
 
         /// <summary>
         ///     Fields that will be indexed for full text search
@@ -84,6 +85,14 @@ namespace Client.Core
 
             return names.Select(n=>byName[n.ToLower()]).ToArray();
         }
+
+        public string[] NamesOfScalarFields(params int[] indexes)
+        {            
+            var byIndex = ServerSide.Where(x => !x.IsCollection).ToDictionary(x => x.Order, x => x.Name);
+
+            return indexes.Select(x=> byIndex[x]).ToArray();
+        }
+
         /// <summary>
         /// </summary>
         /// <param name="collectionSchema"> </param>
@@ -100,7 +109,7 @@ namespace Client.Core
                 return false;
 
             
-            if (!Equals(UseCompression, collectionSchema.UseCompression))
+            if (!Equals(StorageLayout, collectionSchema.StorageLayout))
                 return false;
 
             //check all the fields

@@ -143,7 +143,7 @@ namespace Client.Parsing
                             foreach (var val in operands.Skip(1))
                             {
                                 object value = JExtensions.SmartParse(val) ;
-                                values.Add(new KeyValue(value, metadata));
+                                values.Add(new KeyValue(value));
                             }
                             
 
@@ -162,7 +162,7 @@ namespace Client.Parsing
 
                         object value = JExtensions.SmartParse(operands[1]) ;
 
-                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
 
                     }
                     else if (op == QueryOperator.StrStartsWith || op == QueryOperator.StrEndsWith || op == QueryOperator.StrContains) // for string operators the property should be at the left side
@@ -171,7 +171,7 @@ namespace Client.Parsing
 
                         object value = operands[1].Trim('%');
 
-                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+                        andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
 
                     }
                     else if (operands.Count == 2)// binary operators
@@ -183,7 +183,7 @@ namespace Client.Parsing
                         {
                             object value = JExtensions.SmartParse(operands[1]) ;
 
-                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), op));
+                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
                         }
                         else // try value first
                         {
@@ -197,7 +197,7 @@ namespace Client.Parsing
 
                             object value = JExtensions.SmartParse(operands[0]) ;;
                             
-                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value, metadata), Reverse(op)));
+                            andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), Reverse(op)));
 
                         }
 
@@ -212,7 +212,7 @@ namespace Client.Parsing
             {
                 var atomic = query.Elements[0].Elements[0];
 
-                if (atomic.Operator == QueryOperator.Eq && atomic.Value.KeyName == schema.PrimaryKeyField.Name)
+                if (atomic.Operator == QueryOperator.Eq && atomic.Metadata.Name == schema.PrimaryKeyField.Name)
                 {
                     query.ByPrimaryKey = true;
                 }

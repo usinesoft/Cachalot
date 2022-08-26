@@ -324,10 +324,10 @@ namespace Cachalot.Linq
             var oldTimestamp = prop.GetValue(newValue);
 
 
-            var kv = new KeyValue(oldTimestamp,
-                new KeyInfo("Timestamp", 0, IndexType.Dictionary));
+            var kv = new KeyValue(oldTimestamp);
 
-            var q = new AtomicQuery(_collectionSchema.KeyByName(kv.KeyName), kv);
+            
+            var q = new AtomicQuery(_collectionSchema.KeyByName("Timestamp"), kv);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(q);
             var orq = new OrQuery(_collectionName);

@@ -1,6 +1,6 @@
-using System;
 using Client.Core;
 using ProtoBuf;
+using System;
 
 namespace Client.Messages
 {

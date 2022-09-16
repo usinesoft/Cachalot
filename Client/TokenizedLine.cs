@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using ProtoBuf;
+using System.Collections.Generic;
 using System.Text;
-using ProtoBuf;
 
 namespace Client
 {

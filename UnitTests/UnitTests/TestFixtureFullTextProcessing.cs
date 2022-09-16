@@ -1,11 +1,11 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using Client;
+﻿using Client;
 using Client.Core;
 using Client.Tools;
 using NUnit.Framework;
 using Server.FullTextSearch;
+using System;
+using System.Diagnostics;
+using System.Linq;
 using Tests.TestData;
 
 // ReSharper disable NotAccessedVariable
@@ -18,7 +18,7 @@ namespace Tests.UnitTests
 
         static TokenizedLine Tokenize(string line)
         {
-            return Tokenizer.Tokenize(new[] {line})[0];
+            return Tokenizer.Tokenize(new[] { line })[0];
         }
 
         [Test]
@@ -63,13 +63,17 @@ namespace Tests.UnitTests
             Assert.AreEqual(5, description.FullText.Count);
             var home = new Home
             {
-                Address = "14 rue du chien qui fume", Bathrooms = 2, Rooms = 4, PriceInEuros = 200, CountryCode = "FR",
+                Address = "14 rue du chien qui fume",
+                Bathrooms = 2,
+                Rooms = 4,
+                PriceInEuros = 200,
+                CountryCode = "FR",
                 Comments =
                 {
                     new Comment {Text = "Wonderful place", User = "foo"},
                     new Comment {Text = "Very nice apartment"}
                 },
-                Contacts = {"mail", "phone"}
+                Contacts = { "mail", "phone" }
             };
 
             var packed = PackedObject.Pack(home, description);
@@ -89,7 +93,7 @@ namespace Tests.UnitTests
         [Test]
         public void Symbols_processing()
         {
-            
+
 
             var tokens = Tokenizer.TokenizeOneLine("on-line course").PostProcessSymbols();
 
@@ -169,7 +173,7 @@ namespace Tests.UnitTests
                 desc.StorageLayout = Layout.Compressed;
 
                 var unused = PackedObject.Pack(home, desc);
-                var reloaded = PackedObject.Unpack<Home>(unused, desc );
+                var reloaded = PackedObject.Unpack<Home>(unused, desc);
 
                 var watch = new Stopwatch();
 
@@ -208,7 +212,7 @@ namespace Tests.UnitTests
 
 
             var desc = TypedSchemaFactory.FromType<Home>();
-            
+
             //// warm up
             //var unused = PackedObject.Pack(home, desc);
             //var v1 = unused.ToString();
@@ -229,7 +233,7 @@ namespace Tests.UnitTests
         [Test]
         public void Tokenize_if_casing_changed_inside_a_word()
         {
-            
+
 
             var tokens = Tokenizer.TokenizeOneLine("camelCase");
 
@@ -251,7 +255,7 @@ namespace Tests.UnitTests
         [Test]
         public void Tokenize_simple_text()
         {
-            
+
             var tokens = Tokenizer.TokenizeOneLine("a simple test");
 
             Assert.AreEqual(3, tokens.Count);

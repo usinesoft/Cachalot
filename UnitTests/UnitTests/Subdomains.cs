@@ -1,6 +1,6 @@
-﻿using System;
-using Client.Queries;
+﻿using Client.Queries;
 using NUnit.Framework;
+using System;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -11,7 +11,7 @@ namespace Tests.UnitTests
         [Test]
         public void Test_subset_on_queries()
         {
-            
+
 
             {
                 var q1 = UtExtensions.PredicateToQuery<TradeLike>(t => t.ValueDate == DateTime.Today);

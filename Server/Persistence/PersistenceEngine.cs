@@ -1,10 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using Client;
+﻿using Client;
 using Client.Core;
 using Client.Interface;
 using Server.FullTextSearch;
+using System;
+using System.IO;
+using System.Threading;
 
 namespace Server.Persistence
 {
@@ -125,7 +125,7 @@ namespace Server.Persistence
         /// </summary>
         public void LightStart(bool resetStorage = false)
         {
-            
+
             if (resetStorage)
             {
                 _storage = new ReliableStorage(new NullObjectProcessor(), WorkingDirectory);
@@ -134,8 +134,8 @@ namespace Server.Persistence
             {
                 _storage.LightRestart();
             }
-            
-            
+
+
             TransactionLog = new TransactionLog(WorkingDirectory);
 
             StartProcessingTransactions();
@@ -151,7 +151,7 @@ namespace Server.Persistence
         /// <returns></returns>
         PackedObject GetItemWithTokenizedFullText(PackedObject item)
         {
-            
+
             if (item.FullText != null && item.FullText.Length > 0)
             {
                 var dataStore = Container.TryGetByName(item.CollectionName);
@@ -168,13 +168,13 @@ namespace Server.Persistence
                             if (found.TokenizedFullText != null && found.TokenizedFullText.Count > 0
                             ) // tokenized full-text available
                             {
-                               
+
                                 result = found;
                             }
                         }
 
                     }, dataStore.CollectionSchema.CollectionName);
-                
+
                     return result;
                 }
 
@@ -224,13 +224,13 @@ namespace Server.Persistence
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
                                     _storage.StoreBlock(itemData, item.GlobalKey,
-                                        unchecked((int) persistentTransaction.Id));
+                                        unchecked((int)persistentTransaction.Id));
                                 }
 
                                 foreach (var item in mixedTransaction.ItemsToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int) persistentTransaction.Id));
+                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int)persistentTransaction.Id));
                                 }
                             }
 
@@ -246,14 +246,14 @@ namespace Server.Persistence
                                     Dbg.Trace(
                                         $"storing persistent block for object {item} transaction={persistentTransaction.Id}");
                                     _storage.StoreBlock(itemData, item.GlobalKey,
-                                        unchecked((int) persistentTransaction.Id));
+                                        unchecked((int)persistentTransaction.Id));
                                 }
 
                             if (transaction is DeleteDurableTransaction deleteTransaction)
                                 foreach (var item in deleteTransaction.ItemsToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int) persistentTransaction.Id));
+                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int)persistentTransaction.Id));
                                 }
 
                             TransactionLog.EndProcessing(persistentTransaction);
@@ -293,7 +293,7 @@ namespace Server.Persistence
         public void Stop()
         {
             _shouldContinue = false;
-            
+
 
             _singleConsumer.Join(500);
 

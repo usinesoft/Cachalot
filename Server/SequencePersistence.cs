@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Server.Persistence;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace Server
 {
@@ -15,7 +15,7 @@ namespace Server
         private readonly JsonSerializerSettings _schemaSerializerSettings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented
-          
+
         };
 
         private readonly object _syncRoot = new object();
@@ -42,8 +42,8 @@ namespace Server
 
                     path = Path.Combine(path, Constants.SequenceFileName);
                 }
-                
-                
+
+
                 if (!File.Exists(path)) return null;
 
                 var json = File.ReadAllText(path);
@@ -71,18 +71,18 @@ namespace Server
                 {
                     path = Path.GetDirectoryName(fullPath);
                 }
-                
+
 
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
-                } 
+                }
 
                 var sb = new StringBuilder();
 
                 _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), lastValueByName);
 
-                var json =  sb.ToString();
+                var json = sb.ToString();
 
                 File.WriteAllText(filePath, json);
             }

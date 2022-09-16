@@ -1,8 +1,8 @@
-using System;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Queries;
 using ProtoBuf;
+using System;
 
 namespace Client.Messages
 {
@@ -27,6 +27,6 @@ namespace Client.Messages
 
         [field: ProtoMember(1)] public OrQuery Query { get; }
 
-        
+
     }
 }

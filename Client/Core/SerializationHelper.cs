@@ -1,12 +1,12 @@
 #region
 
-using System.IO;
-using System.Text;
 using ICSharpCode.SharpZipLib.GZip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
+using System.IO;
+using System.Text;
 
 #endregion
 
@@ -64,7 +64,7 @@ namespace Client.Core
                 var zInStream = new GZipInputStream(stream);
                 reader = new JsonTextReader(new StreamReader(zInStream));
 
-                
+
                 return Serializer.Deserialize<TItem>(reader);
             }
 
@@ -115,7 +115,7 @@ namespace Client.Core
             {
                 if (compress)
                 {
-                    using var outZStream = new GZipOutputStream(stream) {IsStreamOwner = false};
+                    using var outZStream = new GZipOutputStream(stream) { IsStreamOwner = false };
 
                     var writer = new JsonTextWriter(new StreamWriter(outZStream));
                     Serializer.Serialize(writer, obj);

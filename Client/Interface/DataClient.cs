@@ -1,13 +1,13 @@
 //#define  DEBUG_VERBOSE
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
 using Client.Tools;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Client.Interface
 {
@@ -58,7 +58,7 @@ namespace Client.Interface
 
             Dbg.CheckThat(concreteResponse != null);
 
-            return new ClusterInformation(new[] {concreteResponse});
+            return new ClusterInformation(new[] { concreteResponse });
         }
 
         public ServerLog GetLog(int lastLines)
@@ -70,7 +70,7 @@ namespace Client.Interface
             if (response is ExceptionResponse exResponse)
                 throw new CacheException("Error while retrieving server log", exResponse.Message, exResponse.CallStack);
 
-            return new ServerLog(new[] {response as LogResponse});
+            return new ServerLog(new[] { response as LogResponse });
         }
 
         public void SetReadonlyMode(bool rw = false)
@@ -105,7 +105,7 @@ namespace Client.Interface
                 throw new CacheException("Error while generating unique id(s)", exResponse.Message,
                     exResponse.CallStack);
 
-            var r = (GenerateUniqueIdsResponse) response;
+            var r = (GenerateUniqueIdsResponse)response;
 
             return r.Ids;
         }
@@ -116,10 +116,10 @@ namespace Client.Interface
                 throw new ArgumentNullException(nameof(item));
 
 
-            var request = new PutRequest(collectionName) {ExcludeFromEviction = excludeFromEviction};
+            var request = new PutRequest(collectionName) { ExcludeFromEviction = excludeFromEviction };
 
             // by default this property is set to the schema name
-            
+
             request.Items.Add(item);
 
             var response = Channel.SendRequest(request);
@@ -174,10 +174,10 @@ namespace Client.Interface
                     foreach (var cachedObject in packet)
                         if (cachedObject != null)
                         {
-                            
+
                             request.Items.Add(cachedObject);
                         }
-                            
+
 
 
                     var split = request.SplitWithMaxSize();
@@ -270,8 +270,8 @@ namespace Client.Interface
             schema = schema.Clone();
 
             schema.CollectionName = collectionName;
-            
-            var request = new RegisterTypeRequest(schema, shard == -1 ? ShardIndex:shard, ShardsCount);
+
+            var request = new RegisterTypeRequest(schema, shard == -1 ? ShardIndex : shard, ShardsCount);
 
             var response = Channel.SendRequest(request);
 
@@ -290,13 +290,13 @@ namespace Client.Interface
                 throw new CacheException("Error while getting server information", exResponse.Message,
                     exResponse.CallStack);
 
-            var concreteResponse = (EvalResponse) response;
+            var concreteResponse = (EvalResponse)response;
             return new Tuple<bool, int>(concreteResponse.Complete, concreteResponse.Items);
         }
 
         public void Dump(string path)
         {
-            var request = new DumpRequest {Path = path, ShardIndex = ShardIndex};
+            var request = new DumpRequest { Path = path, ShardIndex = ShardIndex };
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)
@@ -310,7 +310,7 @@ namespace Client.Interface
         /// <param name="path"></param>
         internal void ImportDumpStage0(string path)
         {
-            var request = new ImportDumpRequest {Path = path, ShardIndex = ShardIndex, Stage = 0};
+            var request = new ImportDumpRequest { Path = path, ShardIndex = ShardIndex, Stage = 0 };
 
             var response = Channel.SendRequest(request);
 
@@ -325,7 +325,7 @@ namespace Client.Interface
         /// <param name="path"></param>
         internal void ImportDumpStage1(string path)
         {
-            var request = new ImportDumpRequest {Path = path, Stage = 1, ShardIndex = ShardIndex};
+            var request = new ImportDumpRequest { Path = path, Stage = 1, ShardIndex = ShardIndex };
 
             var response = Channel.SendRequest(request);
 
@@ -340,7 +340,7 @@ namespace Client.Interface
         /// <param name="path"></param>
         internal void ImportDumpStage2(string path)
         {
-            var request = new ImportDumpRequest {Path = path, Stage = 2, ShardIndex = ShardIndex};
+            var request = new ImportDumpRequest { Path = path, Stage = 2, ShardIndex = ShardIndex };
 
             var response = Channel.SendRequest(request);
 
@@ -357,7 +357,7 @@ namespace Client.Interface
         /// <param name="path"></param>
         internal void ImportDumpStage3(string path)
         {
-            var request = new ImportDumpRequest {Path = path, Stage = 3, ShardIndex = ShardIndex};
+            var request = new ImportDumpRequest { Path = path, Stage = 3, ShardIndex = ShardIndex };
 
             var response = Channel.SendRequest(request);
 
@@ -456,24 +456,24 @@ namespace Client.Interface
 
         public void ExecuteTransaction(IList<DataRequest> requests)
         {
-            
-                var request = new TransactionRequest(requests)
-                    {IsSingleStage = true, TransactionId = Guid.NewGuid()};
 
-                TransactionStatistics.ExecutedAsSingleStage();
+            var request = new TransactionRequest(requests)
+            { IsSingleStage = true, TransactionId = Guid.NewGuid() };
 
-
-                var response = Channel.SendRequest(request);
-
-                if (response is NullResponse)
-                    return;
-
-                if (response is ExceptionResponse exResponse)
-                    if (exResponse.ExceptionType != ExceptionType.FailedToAcquireLock)
-                        throw new CacheException(exResponse.Message, exResponse.ExceptionType);
+            TransactionStatistics.ExecutedAsSingleStage();
 
 
-                TransactionStatistics.NewTransactionCompleted();
+            var response = Channel.SendRequest(request);
+
+            if (response is NullResponse)
+                return;
+
+            if (response is ExceptionResponse exResponse)
+                if (exResponse.ExceptionType != ExceptionType.FailedToAcquireLock)
+                    throw new CacheException(exResponse.Message, exResponse.ExceptionType);
+
+
+            TransactionStatistics.NewTransactionCompleted();
         }
 
         public void Import(string collectionName, string jsonFile)
@@ -489,7 +489,7 @@ namespace Client.Interface
                 throw new ArgumentNullException(nameof(item));
 
 
-            var request = new PutRequest(collectionName) {ExcludeFromEviction = true, OnlyIfNew = true};
+            var request = new PutRequest(collectionName) { ExcludeFromEviction = true, OnlyIfNew = true };
 
             request.Items.Add(item);
 
@@ -510,7 +510,7 @@ namespace Client.Interface
                 throw new ArgumentNullException(nameof(newValue));
 
 
-            var request = new PutRequest(testAsQuery.CollectionName) {ExcludeFromEviction = true, Predicate = testAsQuery};
+            var request = new PutRequest(testAsQuery.CollectionName) { ExcludeFromEviction = true, Predicate = testAsQuery };
 
             request.Items.Add(newValue);
 
@@ -542,7 +542,7 @@ namespace Client.Interface
             return sessionId;
         }
 
-        internal bool TryAcquireLock(Guid sessionId,  bool writeAccess, params string[] collections)
+        internal bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
         {
             if (collections.Length == 0)
                 throw new ArgumentException("Value cannot be an empty collection.", nameof(collections));
@@ -563,42 +563,42 @@ namespace Client.Interface
             {
                 return lockResponse.Success;
             }
-            
+
             if (response is ExceptionResponse exResponse)
                 throw new CacheException("Error while trying to acquire lock", exResponse.Message,
                     exResponse.CallStack);
 
             throw new CacheException("Unexpected response type for AcquireLock");
-            
+
         }
 
         public void ReleaseLock(Guid sessionId)
         {
-            
+
             Dbg.Trace($"one client release lock for session {sessionId}");
 
-                if(sessionId == default)
-                    throw new ArgumentException("Invalid sessionId in ReleaseLock");
+            if (sessionId == default)
+                throw new ArgumentException("Invalid sessionId in ReleaseLock");
 
-                var request = new LockRequest
-                {
-                    SessionId = sessionId,
-                    Unlock = true,
-                
-                };
+            var request = new LockRequest
+            {
+                SessionId = sessionId,
+                Unlock = true,
 
-                var response = Channel.SendRequest(request);
+            };
 
-                if (response is LockResponse)
-                {
-                    return;
-                }
-            
-                if (response is ExceptionResponse exResponse)
-                    throw new CacheException("Error while writing an object to the cache", exResponse.Message,
-                        exResponse.CallStack);
+            var response = Channel.SendRequest(request);
 
-                throw new CacheException("Unexpected response type for AcquireLock");
+            if (response is LockResponse)
+            {
+                return;
+            }
+
+            if (response is ExceptionResponse exResponse)
+                throw new CacheException("Error while writing an object to the cache", exResponse.Message,
+                    exResponse.CallStack);
+
+            throw new CacheException("Unexpected response type for AcquireLock");
         }
 
         public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)

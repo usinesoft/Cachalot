@@ -1,7 +1,7 @@
+using Client;
 using System;
 using System.Diagnostics;
 using System.Threading;
-using Client;
 
 namespace Server
 {
@@ -125,7 +125,7 @@ namespace Server
                 Dbg.Trace($"lock = {_id} exit read readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
             }
 
-                
+
         }
 
         public void ExitWrite()
@@ -147,7 +147,7 @@ namespace Server
                 Dbg.Trace($"lock = {_id} exit write readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
             }
 
-                
+
         }
 
         /// <summary>

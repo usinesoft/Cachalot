@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Messages;
 using JetBrains.Annotations;
+using System;
 
 namespace Client.Core
 {
@@ -83,7 +81,7 @@ namespace Client.Core
                 if (Product.PrimaryKeyField == null)
                     throw new NotSupportedException("The primary key is mandatory when defining a collection schema");
 
-               
+
                 return Product;
             }
         }

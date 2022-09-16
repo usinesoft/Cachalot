@@ -1,11 +1,11 @@
 #region
 
+using Client.Core;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Xml;
-using Client.Core;
 
 #endregion
 
@@ -49,7 +49,7 @@ namespace Client.Interface
         /// Read from a connection string in the form host1:port1+host2:port2;max_connections_in_pool, preloaded_connections_in_pool
         /// </summary>
         /// <param name="connectionString"></param>
-        public  ClientConfig(string connectionString)
+        public ClientConfig(string connectionString)
         {
 
             // if none is specified create an empty ClientConfig that is used to instantiate an in-process server
@@ -85,15 +85,15 @@ namespace Client.Interface
                 if (!server.Contains(":"))
                 {
                     throw new FormatException("A server should be specified as hostname:port");
-                    
+
                 }
 
-                var parts = server.Split(':').Select(p=>p.Trim()).ToList();
+                var parts = server.Split(':').Select(p => p.Trim()).ToList();
 
                 var host = parts[0].Trim();
                 var port = int.Parse(parts[1].Trim());
 
-                Servers.Add(new ServerConfig{Host = host, Port = port});
+                Servers.Add(new ServerConfig { Host = host, Port = port });
             }
         }
 
@@ -158,11 +158,11 @@ namespace Client.Interface
                     var host = StringFromXpath(node, "host");
                     cfg.Host = host;
 
-                    
+
                     Servers.Add(cfg);
                 }
 
-            
+
         }
 
         private static string StringFromXpath(XmlNode element, string xpath)

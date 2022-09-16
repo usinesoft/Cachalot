@@ -1,10 +1,10 @@
 #region
 
+using Client.Core;
+using ProtoBuf;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using ProtoBuf;
 
 #endregion
 
@@ -24,7 +24,7 @@ namespace Client.Queries
             Elements = new List<AtomicQuery>();
         }
 
-        
+
         public override bool IsValid
         {
             get { return Elements.All(atomicQuery => atomicQuery.IsValid); }
@@ -38,7 +38,7 @@ namespace Client.Queries
 
         public AndQuery Clone()
         {
-            return new AndQuery {Elements = new List<AtomicQuery>(Elements.Select(e => e.Clone()))};
+            return new AndQuery { Elements = new List<AtomicQuery>(Elements.Select(e => e.Clone())) };
         }
 
 

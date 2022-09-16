@@ -1,6 +1,6 @@
+using Channel;
 using System;
 using System.Threading;
-using Channel;
 
 namespace Tests.UnitTests
 {
@@ -18,7 +18,7 @@ namespace Tests.UnitTests
         }
 
 
-       
+
         public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);
 
         protected override ExpiryResource GetShinyNewResource()

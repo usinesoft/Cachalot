@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Client;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
-using Client;
 
 namespace Server.Persistence
 {
@@ -152,7 +152,7 @@ namespace Server.Persistence
 
                             var transaction = new TransactionData
                             {
-                                TransactionStatus = (TransactionStatus) status,
+                                TransactionStatus = (TransactionStatus)status,
                                 TimeStamp = time,
                                 Data = data,
                                 Offset = offset,
@@ -194,7 +194,7 @@ namespace Server.Persistence
                 if (_disposed) throw new ObjectDisposedException("The object was disposed");
 
                 // that can happen in conditional updates when the condition is not satisfied
-                if(_transactionQueue.Count == 0) return;
+                if (_transactionQueue.Count == 0) return;
 
                 Dbg.Trace("begin canceling transaction");
                 var data = _transactionQueue.Dequeue();
@@ -234,7 +234,7 @@ namespace Server.Persistence
 
                 var writer = new BinaryWriter(_transactionLog);
 
-                writer.Write((int) transaction.TransactionStatus);
+                writer.Write((int)transaction.TransactionStatus);
                 writer.Write(transaction.TimeStamp.Ticks);
                 writer.Write(transaction.Data.Length);
                 writer.Write(transaction.Data);
@@ -244,7 +244,7 @@ namespace Server.Persistence
                 writer.Write(EndMarker);
 
 
-                var newPosition =  _transactionLog.Position;
+                var newPosition = _transactionLog.Position;
 
                 writer.Seek(0, SeekOrigin.Begin);
 
@@ -291,7 +291,7 @@ namespace Server.Persistence
                 Dbg.Trace("processing delayed transaction");
 
                 var millisecondsToWait =
-                    data.DelayInMilliseconds - (int) (DateTime.Now - data.TimeStamp).TotalMilliseconds;
+                    data.DelayInMilliseconds - (int)(DateTime.Now - data.TimeStamp).TotalMilliseconds;
                 if (millisecondsToWait > 0 && data.TransactionStatus != TransactionStatus.Canceled)
                 {
                     Dbg.Trace($"waiting {millisecondsToWait} ms for delayed transaction to become active");
@@ -383,7 +383,7 @@ namespace Server.Persistence
             public long Id { get; set; }
             public bool EndMarkerOk { get; set; }
 
-            
+
             public override string ToString()
             {
                 var status = "UNKNOWN";
@@ -403,7 +403,7 @@ namespace Server.Persistence
                     case TransactionStatus.Canceled:
                         status = "CANCELED  ";
                         break;
-                    
+
                 }
 
 
@@ -435,14 +435,14 @@ namespace Server.Persistence
             var delay = reader.ReadInt32();
             var endMarker = reader.ReadInt64();
 
-            
-            
+
+
             var time = new DateTime(timestamp);
 
 
             var transaction = new TransactionData
             {
-                TransactionStatus = (TransactionStatus) status,
+                TransactionStatus = (TransactionStatus)status,
                 TimeStamp = time,
                 Data = data,
                 Offset = offset,
@@ -462,23 +462,23 @@ namespace Server.Persistence
 
             _lastOffset = reader.ReadInt64();
 
-            
+
 
             try
             {
                 while (true)
                 {
-                    
-                    
+
+
 
                     var transaction = ReadTransaction(reader);
 
-                    
+
                     if (!transaction.EndMarkerOk)
                         throw new FormatException(
                             "Inconsistent transaction log. End marker not found at the end of a transaction");
 
-                    
+
                     if (transaction.TransactionStatus != TransactionStatus.Processed &&
                         transaction.TransactionStatus != TransactionStatus.Canceled)
                         _transactionQueue.Enqueue(transaction);
@@ -516,15 +516,15 @@ namespace Server.Persistence
 
                 _transactionLog.Position = transaction.Offset;
                 var writer = new BinaryWriter(_transactionLog);
-                
-                writer.Write((int) transaction.TransactionStatus);
+
+                writer.Write((int)transaction.TransactionStatus);
 
                 writer.Flush();
 
                 // move back at the end
                 _transactionLog.Position = _lastOffset;
 
-                
+
             }
         }
 

@@ -1,6 +1,6 @@
-using System;
 using Client.Interface;
 using ProtoBuf;
+using System;
 
 namespace Client.Core
 {
@@ -11,7 +11,7 @@ namespace Client.Core
     [Serializable]
     public class DataStoreInfo
     {
-        [NonSerialized] [ProtoMember(7)] private DomainDescription _availableData;
+        [NonSerialized][ProtoMember(7)] private DomainDescription _availableData;
 
         /// <summary>
         ///     Number of items in the datastore
@@ -46,7 +46,7 @@ namespace Client.Core
             set => _fullTypeName = value;
         }
 
-        
+
 
         /// <summary>
         ///     Number of items in the datastore
@@ -75,7 +75,7 @@ namespace Client.Core
             set => _evictionPolicyDescription = value;
         }
 
-        
+
 
         /// <summary>
         ///     Description of the loaded data <seealso cref="DomainDescription" />

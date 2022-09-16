@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Client.Core;
+using Client.Queries;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Client.Core;
-using Client.Queries;
 
 namespace Client.Parsing
 {
@@ -13,7 +13,7 @@ namespace Client.Parsing
 
             OrQuery result = null;
 
-            if (node.Token == "select" || node.Token == "count") 
+            if (node.Token == "select" || node.Token == "count")
             {
                 result = SelectToQuery(node, schema);
             }
@@ -63,16 +63,16 @@ namespace Client.Parsing
                             }
 
                             var alias = column.Children.FirstOrDefault()?.Token ?? name;
-                            query.SelectClause.Add(new SelectItem{Name = name, Alias = alias});    
+                            query.SelectClause.Add(new SelectItem { Name = name, Alias = alias });
                         }
-                        
+
                     }
-                    
+
                 }
 
 
             // where
-            var where = node.Children.FirstOrDefault(c=>c.Token== "where");
+            var where = node.Children.FirstOrDefault(c => c.Token == "where");
 
             if (where != null)
             {
@@ -81,11 +81,11 @@ namespace Client.Parsing
 
 
             // order by
-            var order = node.Children.FirstOrDefault(c=>c.Token== "order");
+            var order = node.Children.FirstOrDefault(c => c.Token == "order");
 
             if (order != null)
             {
-                if(order.ErrorMessage != null)
+                if (order.ErrorMessage != null)
                     throw new NotSupportedException(order.ErrorMessage);
 
                 query.OrderByProperty = order.Children.FirstOrDefault()?.Token;
@@ -96,7 +96,7 @@ namespace Client.Parsing
             }
 
             // take
-            var take = node.Children.FirstOrDefault(c=>c.Token== "take");
+            var take = node.Children.FirstOrDefault(c => c.Token == "take");
 
             if (take != null)
             {
@@ -123,7 +123,7 @@ namespace Client.Parsing
 
             foreach (var andNode in andNodes)
             {
-                var andQuery = new  AndQuery();
+                var andQuery = new AndQuery();
 
                 foreach (var node in andNode.Children)
                 {
@@ -132,7 +132,7 @@ namespace Client.Parsing
 
                     var op = ParseOperator(node.Token, operands.LastOrDefault());
 
-                    
+
                     if (op == QueryOperator.In || op == QueryOperator.NotIn)
                     {
                         var metadata = schema.KeyByName(operands[0]);
@@ -142,10 +142,10 @@ namespace Client.Parsing
 
                             foreach (var val in operands.Skip(1))
                             {
-                                object value = JExtensions.SmartParse(val) ;
+                                object value = JExtensions.SmartParse(val);
                                 values.Add(new KeyValue(value));
                             }
-                            
+
 
                             andQuery.Elements.Add(new AtomicQuery(metadata, values, op));
                         }
@@ -160,7 +160,7 @@ namespace Client.Parsing
                     {
                         var metadata = schema.KeyByName(operands[0]);
 
-                        object value = JExtensions.SmartParse(operands[1]) ;
+                        object value = JExtensions.SmartParse(operands[1]);
 
                         andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
 
@@ -176,12 +176,12 @@ namespace Client.Parsing
                     }
                     else if (operands.Count == 2)// binary operators
                     {
-                        
+
                         var metadata = schema.KeyByName(operands[0]);
                         // by default property name first
                         if (metadata != null)
                         {
-                            object value = JExtensions.SmartParse(operands[1]) ;
+                            object value = JExtensions.SmartParse(operands[1]);
 
                             andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
                         }
@@ -195,8 +195,8 @@ namespace Client.Parsing
                             }
 
 
-                            object value = JExtensions.SmartParse(operands[0]) ;;
-                            
+                            object value = JExtensions.SmartParse(operands[0]); ;
+
                             andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), Reverse(op)));
 
                         }
@@ -216,7 +216,7 @@ namespace Client.Parsing
                 {
                     query.ByPrimaryKey = true;
                 }
-                
+
             }
 
 
@@ -325,7 +325,7 @@ namespace Client.Parsing
             return result;
         }
 
-        
+
 
     }
 }

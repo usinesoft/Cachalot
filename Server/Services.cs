@@ -26,12 +26,12 @@ namespace Server
         /// <summary>
         /// Singleton
         /// </summary>
-        public IFeedSessionManager FeedSessionManager {get;} = new FeedSessionManager();
+        public IFeedSessionManager FeedSessionManager { get; } = new FeedSessionManager();
 
         public PersistenceEngine PersistenceEngine { get; } = new PersistenceEngine();
 
-        public ISchemaPersistence SchemaPersistence { get; } 
-        public ISequencePersistence SequencePersistence { get; } 
+        public ISchemaPersistence SchemaPersistence { get; }
+        public ISequencePersistence SequencePersistence { get; }
 
     }
 }

@@ -1,6 +1,6 @@
-using System;
 using Client.Queries;
 using ProtoBuf;
+using System;
 
 namespace Client.Core
 {

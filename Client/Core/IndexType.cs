@@ -10,7 +10,7 @@ namespace Client.Core
         /// The one and unique primary key
         /// </summary>
         Primary,
-        
+
         /// <summary>
         /// Dictionary index (fast search but the comparison operators are not indexed)
         /// </summary>

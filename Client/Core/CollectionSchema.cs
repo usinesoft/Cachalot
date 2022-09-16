@@ -1,11 +1,11 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Messages;
 using Newtonsoft.Json;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 // ReSharper disable UnusedMember.Global
@@ -44,7 +44,7 @@ namespace Client.Core
 
         [ProtoMember(1)] public List<KeyInfo> ServerSide { get; set; } = new List<KeyInfo>();
 
-        
+
         /// <summary>
         ///     Default name of the collection that uses the schema. Multiple collections can use it (with different names)
         /// </summary>
@@ -60,14 +60,14 @@ namespace Client.Core
         [field: ProtoMember(5)] public ISet<string> FullText { get; } = new HashSet<string>();
 
 
-        
+
         /// <summary>
         ///     The index fields
         /// </summary>
-        [JsonIgnore] public IList<KeyInfo> IndexFields => ServerSide.Where(v=>v.IndexType ==  IndexType.Dictionary || v.IndexType == IndexType.Ordered).ToList();
+        [JsonIgnore] public IList<KeyInfo> IndexFields => ServerSide.Where(v => v.IndexType == IndexType.Dictionary || v.IndexType == IndexType.Ordered).ToList();
 
-        
-        [JsonIgnore] public KeyInfo PrimaryKeyField => ServerSide.Count > 0? ServerSide[0]:null;
+
+        [JsonIgnore] public KeyInfo PrimaryKeyField => ServerSide.Count > 0 ? ServerSide[0] : null;
 
 
         public int OrderOf(string name)
@@ -83,14 +83,14 @@ namespace Client.Core
         {
             var byName = ServerSide.ToDictionary(v => v.Name.ToLower(), v => v.Order);
 
-            return names.Select(n=>byName[n.ToLower()]).ToArray();
+            return names.Select(n => byName[n.ToLower()]).ToArray();
         }
 
         public string[] NamesOfScalarFields(params int[] indexes)
-        {            
+        {
             var byIndex = ServerSide.Where(x => !x.IsCollection).ToDictionary(x => x.Order, x => x.Name);
 
-            return indexes.Select(x=> byIndex[x]).ToArray();
+            return indexes.Select(x => byIndex[x]).ToArray();
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace Client.Core
             if (!Equals(CollectionName, collectionSchema.CollectionName))
                 return false;
 
-            
+
             if (!Equals(StorageLayout, collectionSchema.StorageLayout))
                 return false;
 
@@ -121,7 +121,7 @@ namespace Client.Core
                 if (ServerSide[i] != collectionSchema.ServerSide[i])
                     return false;
             }
-            
+
 
             return true;
         }
@@ -134,7 +134,7 @@ namespace Client.Core
         }
 
 
-       
+
         /// <summary>
         /// </summary>
         /// <param name="obj"> </param>

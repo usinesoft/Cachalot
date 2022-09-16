@@ -78,17 +78,17 @@ namespace Client.Queries
         /// <summary>
         /// StartsWith string method
         /// </summary>
-        StrStartsWith, 
+        StrStartsWith,
 
         /// <summary>
         /// EndsWith string method
         /// </summary>
-        StrEndsWith, 
+        StrEndsWith,
 
         /// <summary>
         /// EndsWith string method
         /// </summary>
-        StrContains, 
+        StrContains,
     }
 
     public static class OperatorExtensions
@@ -103,5 +103,5 @@ namespace Client.Queries
             return false;
         }
     }
-    
+
 }

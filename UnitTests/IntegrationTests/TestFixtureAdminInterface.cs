@@ -1,12 +1,12 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client;
 using Client.Interface;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
+using System;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests
@@ -49,7 +49,7 @@ namespace Tests.IntegrationTests
 
 
             using var connector = new Connector(config);
-            
+
             connector.DeclareCollection<Trade>("trades");
 
             var dataSource = connector.DataSource<Trade>("trades");
@@ -76,7 +76,7 @@ namespace Tests.IntegrationTests
 
             connector.Client.Import("trades", path);
 
-            var count= dataSource.Count();
+            var count = dataSource.Count();
             Assert.AreEqual(1010, count);
 
         }
@@ -159,7 +159,7 @@ namespace Tests.IntegrationTests
 
 
                 var dataSource = connector.DataSource<Trade>();
-                var folders = new[] {"TATA", "TOTO"};
+                var folders = new[] { "TATA", "TOTO" };
 
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
@@ -203,7 +203,7 @@ namespace Tests.IntegrationTests
 
                 var dataSource = connector.DataSource<Trade>();
 
-                var folders = new[] {"TATA", "TOTO"};
+                var folders = new[] { "TATA", "TOTO" };
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -226,9 +226,9 @@ namespace Tests.IntegrationTests
                 admin.ImportDump(dumpPath);
 
 
-                
 
-                var folders = new[] {"TATA", "TOTO"};
+
+                var folders = new[] { "TATA", "TOTO" };
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -236,7 +236,7 @@ namespace Tests.IntegrationTests
 
                 var list1 = dataSource.Where(t => t.Folder == "TATA").ToList();
 
-                 Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
+                Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
 
             // reinitialize from dump
@@ -253,7 +253,7 @@ namespace Tests.IntegrationTests
 
                 var dataSource = connector.DataSource<Trade>();
 
-                var folders = new[] {"TATA", "TOTO"};
+                var folders = new[] { "TATA", "TOTO" };
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -316,7 +316,7 @@ namespace Tests.IntegrationTests
 
 
                 var dataSource = connector.DataSource<Trade>();
-                var folders = new[] {"TATA", "TOTO"};
+                var folders = new[] { "TATA", "TOTO" };
 
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();

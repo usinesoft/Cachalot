@@ -1,16 +1,16 @@
 ﻿#region
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Channel;
 using Client.Core;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Tests.TestData;
 
 #endregion
@@ -28,7 +28,7 @@ namespace Tests.IntegrationTests
             _client.Channel = channel;
 
 
-            _server = new Server.Server(new NodeConfig()) {Channel = channel};
+            _server = new Server.Server(new NodeConfig()) { Channel = channel };
             _server.Start();
 
             _client.DeclareCollection<CacheableTypeOk>();
@@ -99,7 +99,7 @@ namespace Tests.IntegrationTests
 
             //get both of them using an In query
 
-            var folders = new[] {"aaa", "bbb"};
+            var folders = new[] { "aaa", "bbb" };
             allItems = _client.GetMany<CacheableTypeOk>(i => folders.Contains(i.IndexKeyFolder)).ToList();
             Assert.AreEqual(allItems.Count, 2);
 
@@ -176,10 +176,10 @@ namespace Tests.IntegrationTests
         public void SearchByIndexedList()
         {
             //add two new items
-            var trade1 = new Trade(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500) {Accounts = {1, 101, 10001, 7}};
+            var trade1 = new Trade(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500) { Accounts = { 1, 101, 10001, 7 } };
             _client.PutOne(trade1);
 
-            var trade2 = new Trade(2, 1002, "bbbb", new DateTime(2010, 10, 10), 1600) {Accounts = {2, 102, 10002, 7}};
+            var trade2 = new Trade(2, 1002, "bbbb", new DateTime(2010, 10, 10), 1600) { Accounts = { 2, 102, 10002, 7 } };
             _client.PutOne(trade2);
 
 

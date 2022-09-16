@@ -1,5 +1,5 @@
-﻿using System;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
+using System;
 using Tests.TestData.Events;
 using Tests.TestData.Instruments;
 
@@ -69,7 +69,7 @@ namespace Tests.TestData
             newVersion.Id = tid[0];
 
             newVersion.Timestamp = DateTime.Now;
-            var option = (EquityOption) newVersion.Product;
+            var option = (EquityOption)newVersion.Product;
             option.Quantity += deltaQuantity;
 
             trade.IsLastVersion = false;

@@ -1,6 +1,6 @@
+using Client.Core;
 using System;
 using System.Collections.Generic;
-using Client.Core;
 
 namespace Server
 {

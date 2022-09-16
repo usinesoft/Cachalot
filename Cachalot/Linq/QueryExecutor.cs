@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client;
 using Client.Core;
 using Client.Core.Linq;
@@ -8,6 +5,9 @@ using Client.Interface;
 using Client.Queries;
 using Newtonsoft.Json.Linq;
 using Remotion.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Cachalot.Linq
 {
@@ -32,7 +32,7 @@ namespace Cachalot.Linq
         // Executes a query with a scalar result, i.e. a query that ends with a result operator such as Count, Sum, or Average.
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            var visitor = new QueryVisitor( _collectionName, _collectionSchema);
+            var visitor = new QueryVisitor(_collectionName, _collectionSchema);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -42,7 +42,7 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            if (expression.CountOnly) return (T) (object) _client.EvalQuery(expression).Item2;
+            if (expression.CountOnly) return (T)(object)_client.EvalQuery(expression).Item2;
 
             throw new NotSupportedException("Only Count scalar method is implemented");
         }
@@ -68,13 +68,13 @@ namespace Cachalot.Linq
 
             Dbg.Trace($"linq provider produced expression {expression}");
 
-            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri=>FromJObject<T>(ri.Item));
+            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri => FromJObject<T>(ri.Item));
         }
 
         public static T FromJObject<T>(JObject jObject)
         {
             var t = typeof(T);
-            bool isPrimitiveType = t.IsPrimitive || t.IsValueType || (t == typeof(string)||t == typeof(DateTime))||t == typeof(DateTimeOffset)||t == typeof(decimal);
+            bool isPrimitiveType = t.IsPrimitive || t.IsValueType || (t == typeof(string) || t == typeof(DateTime)) || t == typeof(DateTimeOffset) || t == typeof(decimal);
 
             if (jObject.Count == 1 && isPrimitiveType)
             {

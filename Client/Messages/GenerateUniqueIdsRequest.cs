@@ -12,7 +12,7 @@ namespace Client.Messages
 
         public GenerateUniqueIdsRequest(int count, string name, int shardIndex, int shardCount)
         {
-           
+
             Count = count;
             Name = name;
             ShardIndex = shardIndex;

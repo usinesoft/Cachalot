@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Server.HostServices.Logger;
+using System;
 using System.Collections.Generic;
-using Server.HostServices.Logger;
 
 namespace Server.HostServices
 {
@@ -24,7 +24,7 @@ namespace Server.HostServices
             if (_started) throw new NotSupportedException("Can start only once");
 
 
-            ((FastLogger) Log).Start(dataPath);
+            ((FastLogger)Log).Start(dataPath);
 
 
             _started = true;
@@ -33,12 +33,12 @@ namespace Server.HostServices
 
         public static void Stop()
         {
-            ((FastLogger) Log).Stop();
+            ((FastLogger)Log).Stop();
         }
 
         public static IList<string> GetLog()
         {
-            return ((FastLogger) Log).GetCachedLog();
+            return ((FastLogger)Log).GetCachedLog();
         }
     }
 }

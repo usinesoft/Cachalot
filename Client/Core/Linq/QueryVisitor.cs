@@ -1,9 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
@@ -12,6 +6,12 @@ using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Client.Core.Linq
 {
@@ -49,7 +49,7 @@ namespace Client.Core.Linq
                 {
                     RootExpression.ByPrimaryKey = true;
                 }
-                
+
             }
         }
 
@@ -80,7 +80,7 @@ namespace Client.Core.Linq
         {
             if (whereClause.Predicate.NodeType == ExpressionType.Not)
             {
-                var unary = (UnaryExpression) whereClause.Predicate;
+                var unary = (UnaryExpression)whereClause.Predicate;
                 InternalVisitWhereClause(unary.Operand, true);
             }
             else
@@ -130,9 +130,9 @@ namespace Client.Core.Linq
 
             if (expression is MemberExpression member)
             {
-                RootExpression.SelectClause.Add(new SelectItem{Name = member.Member.Name, Alias = member.Member.Name});
+                RootExpression.SelectClause.Add(new SelectItem { Name = member.Member.Name, Alias = member.Member.Name });
             }
-                
+
             else if (expression is NewExpression @new)
             {
                 for (int i = 0; i < @new.Arguments.Count; i++)
@@ -143,14 +143,14 @@ namespace Client.Core.Linq
 
                     if (arg is MemberExpression argMemberExpression)
                     {
-                        RootExpression.SelectClause.Add(new SelectItem{Name = argMemberExpression.Member.Name, Alias = targetMember.Name});
+                        RootExpression.SelectClause.Add(new SelectItem { Name = argMemberExpression.Member.Name, Alias = targetMember.Name });
                     }
 
                 }
-                
-                    
+
+
             }
-                
+
 
             base.VisitSelectClause(selectClause, queryModel);
         }
@@ -210,7 +210,7 @@ namespace Client.Core.Linq
                 var exp = takeResultOperator.Count;
 
                 if (exp.NodeType == ExpressionType.Constant)
-                    RootExpression.Take = (int) ((ConstantExpression) exp).Value;
+                    RootExpression.Take = (int)((ConstantExpression)exp).Value;
                 else
                     throw new NotSupportedException(
                         "Currently not supporting methods or variables in the Skip or Take clause.");
@@ -223,7 +223,7 @@ namespace Client.Core.Linq
                 var exp = @operator.Count;
 
                 if (exp.NodeType == ExpressionType.Constant)
-                    RootExpression.Skip = (int) ((ConstantExpression) exp).Value;
+                    RootExpression.Skip = (int)((ConstantExpression)exp).Value;
                 else
                     throw new NotSupportedException(
                         "Currently not supporting methods or variables in the Skip or Take clause.");
@@ -234,7 +234,7 @@ namespace Client.Core.Linq
 
             if (resultOperator is FullTextSearchResultOperator fullTextSearchResultOperator)
                 if (fullTextSearchResultOperator.Parameter is ConstantExpression param)
-                    RootExpression.FullTextSearch = (string) param.Value;
+                    RootExpression.FullTextSearch = (string)param.Value;
 
             if (resultOperator is OnlyIfAvailableResultOperator) RootExpression.OnlyIfComplete = true;
 
@@ -245,15 +245,15 @@ namespace Client.Core.Linq
         {
             if (IsLeafExpression(binaryExpression.Left))
             {
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Left));
+                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
             {
-                VisitMemberExpression((MemberExpression) binaryExpression.Left, andExpression, false);
+                VisitMemberExpression((MemberExpression)binaryExpression.Left, andExpression, false);
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
             {
-                VisitAndExpression((BinaryExpression) binaryExpression.Left, andExpression);
+                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
             {
@@ -265,7 +265,7 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.Not)
             {
-                var unary = (UnaryExpression) binaryExpression.Left;
+                var unary = (UnaryExpression)binaryExpression.Left;
 
                 if (unary.Operand is SubQueryExpression subQuery)
                 {
@@ -288,11 +288,11 @@ namespace Client.Core.Linq
 
             if (IsLeafExpression(binaryExpression.Right))
             {
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Right));
+                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
             {
-                VisitMemberExpression((MemberExpression) binaryExpression.Right, andExpression, false);
+                VisitMemberExpression((MemberExpression)binaryExpression.Right, andExpression, false);
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
             {
@@ -304,7 +304,7 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.Not)
             {
-                var unary = (UnaryExpression) binaryExpression.Right;
+                var unary = (UnaryExpression)binaryExpression.Right;
 
                 if (unary.Operand is SubQueryExpression subQuery)
                 {
@@ -492,17 +492,17 @@ namespace Client.Core.Linq
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
 
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Left));
+                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
             {
-                VisitMemberExpression((MemberExpression) binaryExpression.Left, rootExpression, false);
+                VisitMemberExpression((MemberExpression)binaryExpression.Left, rootExpression, false);
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
             {
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression) binaryExpression.Left, andExpression);
+                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
             {
@@ -516,7 +516,7 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.Not)
             {
-                var unary = (UnaryExpression) binaryExpression.Left;
+                var unary = (UnaryExpression)binaryExpression.Left;
 
                 if (unary.Operand is SubQueryExpression subQuery)
                 {
@@ -532,13 +532,13 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.OrElse)
             {
-                VisitOrExpression((BinaryExpression) binaryExpression.Left, rootExpression);
+                VisitOrExpression((BinaryExpression)binaryExpression.Left, rootExpression);
             }
             else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
             {
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression) binaryExpression.Left, andExpression);
+                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
             }
             else if (binaryExpression.Left is MethodCallExpression call)
             {
@@ -557,11 +557,11 @@ namespace Client.Core.Linq
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
 
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression) binaryExpression.Right));
+                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
             {
-                VisitMemberExpression((MemberExpression) binaryExpression.Right, rootExpression, false);
+                VisitMemberExpression((MemberExpression)binaryExpression.Right, rootExpression, false);
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
             {
@@ -575,7 +575,7 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.Not)
             {
-                var unary = (UnaryExpression) binaryExpression.Right;
+                var unary = (UnaryExpression)binaryExpression.Right;
 
                 if (unary.Operand is SubQueryExpression subQuery)
                 {
@@ -591,13 +591,13 @@ namespace Client.Core.Linq
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.OrElse)
             {
-                VisitOrExpression((BinaryExpression) binaryExpression.Right, rootExpression);
+                VisitOrExpression((BinaryExpression)binaryExpression.Right, rootExpression);
             }
             else if (binaryExpression.Right.NodeType == ExpressionType.AndAlso)
             {
                 var andExpression = new AndQuery();
                 rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression) binaryExpression.Right, andExpression);
+                VisitAndExpression((BinaryExpression)binaryExpression.Right, andExpression);
             }
             else if (binaryExpression.Right is MethodCallExpression call)
             {

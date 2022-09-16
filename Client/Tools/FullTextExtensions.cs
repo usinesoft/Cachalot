@@ -11,7 +11,7 @@ namespace Client.Tools
 
         public static IList<Token> PostProcessSymbols(this IList<Token> tokens)
         {
-            var usefulSymbols = new HashSet<char> {'+', '<', '>', '=', '#'};
+            var usefulSymbols = new HashSet<char> { '+', '<', '>', '=', '#' };
 
             var result = new List<Token>(tokens.Count);
 

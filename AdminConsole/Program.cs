@@ -1,12 +1,12 @@
-using System;
-using System.Linq;
-using System.Runtime.InteropServices;
 using AdminConsole.AutoCompleteUtils;
 using AdminConsole.Commands;
 using AdminConsole.ConsoleUtils;
 using Channel;
 using Client.Core;
 using Client.Interface;
+using System;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace AdminConsole
 {
@@ -28,7 +28,7 @@ namespace AdminConsole
 
 
             var channel = new TcpClientChannel(new TcpClientPool(1, 1, server, port));
-            IDataClient client = new DataClient {Channel = channel};
+            IDataClient client = new DataClient { Channel = channel };
 
 
             Logger.CommandLogger = new ConsoleLogger();
@@ -53,13 +53,13 @@ namespace AdminConsole
                 var parser = new CommandLineParser(serverDesc);
                 Logger.Write("Type HELP for command list. Advanced auto-completion is also available ...");
 
-                
-                
+
+
                 ConsoleExt.SetLine(">>");
-                
+
 
                 var running = true;
-                var cyclingAutoComplete = new CyclingAutoComplete {KnownTypes = serverDesc?.Schema.ToList()};
+                var cyclingAutoComplete = new CyclingAutoComplete { KnownTypes = serverDesc?.Schema.ToList() };
                 while (running)
                 {
                     var result = ConsoleExt.ReadKey();
@@ -95,7 +95,7 @@ namespace AdminConsole
                                         serverDesc = client.GetClusterInformation();
                                         // if the connection changed reinitialize the autocomplete with the new schema
                                         cyclingAutoComplete = new CyclingAutoComplete
-                                            {KnownTypes = serverDesc?.Schema.ToList()};
+                                        { KnownTypes = serverDesc?.Schema.ToList() };
                                         parser = new CommandLineParser(serverDesc);
                                     }
                                     catch (CacheException ex)
@@ -120,7 +120,7 @@ namespace AdminConsole
                                 {
                                     Logger.WriteEror("invalid command");
                                 }
-                                
+
                             }
 
                             ConsoleExt.SetLine(">>");
@@ -130,7 +130,7 @@ namespace AdminConsole
                             var shiftPressed = (result.Modifiers & ConsoleModifiers.Shift) != 0;
                             var cyclingDirection =
                                 shiftPressed ? CyclingDirections.Backward : CyclingDirections.Forward;
-                            
+
                             var lineBefore = result.LineBeforeKeyPress.LineBeforeCursor.TrimStart('>');
                             var lineAfter = result.LineBeforeKeyPress.LineAfterCursor;
 

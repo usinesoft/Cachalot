@@ -1,10 +1,10 @@
+using Client.Core;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using ProtoBuf;
 
 namespace Client.Messages.Pivot
 {
@@ -14,7 +14,7 @@ namespace Client.Messages.Pivot
         /// <summary>
         /// This one is null for root level
         /// </summary>
-        [field: ProtoMember(1)]public NamedValue AxisValue { get; private set; }
+        [field: ProtoMember(1)] public NamedValue AxisValue { get; private set; }
 
         /// <summary>
         /// Aggregate for each value of the first axis
@@ -52,7 +52,7 @@ namespace Client.Messages.Pivot
 
         private CollectionSchema _schema;
 
-        
+
 
         private List<int> _axisIndexes;
         private List<int> _valueIndexes;
@@ -69,7 +69,7 @@ namespace Client.Messages.Pivot
 
         public void AggregateOneObject(PackedObject @object)
         {
-            if(@object.Values.Length == 0)
+            if (@object.Values.Length == 0)
                 throw new NotSupportedException($"At least one property of type {@object.CollectionName} must be declared as [ServerSideVisible]");
 
 
@@ -89,37 +89,37 @@ namespace Client.Messages.Pivot
 
             }
 
-            
+
             foreach (var value in valuesForPivot)
             {
                 // first aggregate the root level
                 var agg = AggregatedValues.FirstOrDefault(v => v.ColumnName == value.Name);
                 if (agg == null)
                 {
-                    agg = new AggregatedValue {ColumnName = value.Name};
+                    agg = new AggregatedValue { ColumnName = value.Name };
                     AggregatedValues.Add(agg);
                 }
 
                 agg.Count++;
-                agg.Sum += (decimal) value.Value.NumericValue;
+                agg.Sum += (decimal)value.Value.NumericValue;
 
             }
 
             if (_axisIndexes.Count > 0)
             {
-                
+
                 var kv = @object[_axisIndexes[0]];
                 var axisName = _axisNames[0];
 
                 if (!Children.TryGetValue(kv, out var child))
                 {
-                    child = new PivotLevel(_schema, _axisIndexes.Skip(1).ToList(), _valueIndexes) {AxisValue = new NamedValue(kv, axisName)};
+                    child = new PivotLevel(_schema, _axisIndexes.Skip(1).ToList(), _valueIndexes) { AxisValue = new NamedValue(kv, axisName) };
                     Children.Add(kv, child);
                 }
 
                 child.AggregateOneObject(@object);
             }
-            
+
         }
 
         public override string ToString()
@@ -150,7 +150,7 @@ namespace Client.Messages.Pivot
             {
                 child.Value.ToString(builder, indentLevel + 1);
             }
-            
+
         }
 
 
@@ -212,10 +212,10 @@ namespace Client.Messages.Pivot
                 var childrenCount = Children.Sum(c =>
                     c.Value.AggregatedValues.First(v => v.ColumnName == value.ColumnName).Count);
 
-                if(mySum != childrenSum)
+                if (mySum != childrenSum)
                     throw new InvalidDataException($"incoherent sum vor column {value.ColumnName}");
 
-                if(myCount != childrenCount)
+                if (myCount != childrenCount)
                     throw new InvalidDataException($"incoherent count vor column {value.ColumnName}");
 
                 // recursively check each level

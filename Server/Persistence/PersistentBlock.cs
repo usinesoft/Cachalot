@@ -69,11 +69,11 @@ namespace Server.Persistence
             return new PersistentBlock
             {
                 PrimaryKey = "#",
-                RawData = new[] {(byte) 0},
+                RawData = new[] { (byte)0 },
                 UsedDataSize = 1,
                 LastTransactionId = 0,
                 BlockStatus = BlockStatus.Dirty,
-                ReservedDataSize = (int) (size - MinSize + 1)
+                ReservedDataSize = (int)(size - MinSize + 1)
             };
         }
 
@@ -91,16 +91,16 @@ namespace Server.Persistence
                 BeginMarker = reader.ReadInt32();
 
                 if (BeginMarker != BeginMarkerValue && !silent)
-                    throw new InvalidBlockException(offset) {BeginMarkerKo = true};
+                    throw new InvalidBlockException(offset) { BeginMarkerKo = true };
 
                 insideBlock = true;
 
                 PrimaryKey = reader.ReadString();
 
-               
+
                 LastTransactionId = reader.ReadInt32();
 
-                BlockStatus = (BlockStatus) reader.ReadInt32();
+                BlockStatus = (BlockStatus)reader.ReadInt32();
 
                 LastTransactionId = reader.ReadInt32();
                 UsedDataSize = reader.ReadInt32();
@@ -114,7 +114,7 @@ namespace Server.Persistence
                     if (silent)
                         return true;
 
-                    throw new InvalidBlockException(offset) {CorruptedBlock = true};
+                    throw new InvalidBlockException(offset) { CorruptedBlock = true };
 
                 }
 
@@ -127,19 +127,19 @@ namespace Server.Persistence
                 if (Hash != FastHash(_rawData))
                 {
                     HashOk = false;
-                    if (!silent) throw new InvalidBlockException(offset) {HashKo = true};
+                    if (!silent) throw new InvalidBlockException(offset) { HashKo = true };
                 }
 
 
                 if (EndMarker != EndMarkerValue && !silent)
-                    throw new InvalidBlockException(offset) {EndMarkerKo = true};
+                    throw new InvalidBlockException(offset) { EndMarkerKo = true };
 
 
                 return true;
             }
             catch (EndOfStreamException)
             {
-                if (insideBlock) throw new InvalidBlockException(offset) {IncompleteBlock = true};
+                if (insideBlock) throw new InvalidBlockException(offset) { IncompleteBlock = true };
 
                 // ignore otherwise: end of stream
                 return false;
@@ -160,7 +160,7 @@ namespace Server.Persistence
             writer.Write(PrimaryKey);
             writer.Write(LastTransactionId);
 
-            writer.Write((int) BlockStatus);
+            writer.Write((int)BlockStatus);
 
             writer.Write(LastTransactionId);
 

@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Tests.TestData
 {
@@ -34,7 +34,7 @@ namespace Tests.TestData
 
         [ServerSideValue(IndexType.Dictionary)]
         public int Month => Date.Month;
-        
+
         [ServerSideValue(IndexType.Dictionary)]
         public int Year => Date.Year;
 
@@ -45,7 +45,7 @@ namespace Tests.TestData
         {
             var result = new List<Order>();
 
-            var categories = new[] {"geek", "camping", "sf", "food", "games"};
+            var categories = new[] { "geek", "camping", "sf", "food", "games" };
 
             var rg = new Random(Environment.TickCount);
 

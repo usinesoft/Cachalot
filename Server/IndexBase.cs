@@ -1,11 +1,11 @@
 #region
 
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using JetBrains.Annotations;
+using System;
+using System.Collections.Generic;
 
 #endregion
 
@@ -16,7 +16,7 @@ namespace Server
     ///     Al support Put, Remove and GetMany
     ///     Only ordered indices support operators others than == (Eq or In)
     /// </summary>
-    public abstract class IndexBase:IReadOnlyIndex
+    public abstract class IndexBase : IReadOnlyIndex
     {
         protected IndexBase(KeyInfo keyInfo)
         {
@@ -94,7 +94,7 @@ namespace Server
     internal class UniqueIndex : IReadOnlyIndex
     {
         private readonly IDictionary<KeyValue, PackedObject> _dictionary;
-        
+
         public UniqueIndex(string name, IDictionary<KeyValue, PackedObject> dictionary)
         {
             _dictionary = dictionary;
@@ -109,13 +109,13 @@ namespace Server
         {
             if (values == null) throw new ArgumentNullException(nameof(values));
             if (values.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(values));
-            
+
             if (op != QueryOperator.Eq)
                 throw new ArgumentException("Only equality operator can be applied on a unique index");
 
             HashSet<PackedObject> result = new HashSet<PackedObject>();
 
-            
+
             foreach (var keyValue in values)
             {
                 if (_dictionary.TryGetValue(keyValue, out var value))
@@ -124,7 +124,7 @@ namespace Server
                 }
             }
 
-            
+
             return result;
         }
 

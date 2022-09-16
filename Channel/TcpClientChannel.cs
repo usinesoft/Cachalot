@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Sockets;
-using Client.ChannelInterface;
+﻿using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Net.Sockets;
 
 namespace Channel
 {
@@ -19,7 +19,7 @@ namespace Channel
 
         public void ReserveConnection(Guid sessionId)
         {
-            
+
             var connection = _connectionPool.Get();
             if (connection == null)
             {
@@ -120,7 +120,7 @@ namespace Channel
                 {
                     _connectionPool.Put(connection);
                 }
-                
+
             }
         }
 
@@ -138,7 +138,7 @@ namespace Channel
             if (!(session is TcpSession tcpSession))
                 throw new ArgumentException("Invalid session type", nameof(session));
 
-            
+
             _connectionPool.Put(tcpSession.Client);
         }
 
@@ -167,7 +167,7 @@ namespace Channel
 
             if (client == null || client.Connected == false)
                 throw new CacheException("Not connected to server");
-            
+
             var stream = client.GetStream();
 
             stream.WriteByte(Constants.RequestCookie);
@@ -176,11 +176,11 @@ namespace Channel
 
             var response = Streamer.FromStream<Response>(stream);
 
-            
+
             return response;
         }
 
-        
+
 
         public Response GetResponse(Session session)
         {
@@ -202,7 +202,7 @@ namespace Channel
 
         public bool Continue(Session session, bool shouldContinue)
         {
-            var response = SendRequest(session, new ContinueRequest {Rollback = !shouldContinue});
+            var response = SendRequest(session, new ContinueRequest { Rollback = !shouldContinue });
 
 
             return response is ReadyResponse;
@@ -218,7 +218,7 @@ namespace Channel
         {
             TcpClient connection = null;
 
-            
+
             lock (_connectionBySession)
             {
                 _connectionBySession.TryGetValue(sessionId, out connection);
@@ -244,7 +244,7 @@ namespace Channel
             }
 
             var connection = InternalGetConnection(sessionId);
-            
+
             try
             {
                 if (connection == null || connection.Connected == false)
@@ -272,7 +272,7 @@ namespace Channel
                 {
                     _connectionPool.Put(connection);
                 }
-                
+
             }
         }
 

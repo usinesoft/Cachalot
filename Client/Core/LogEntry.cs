@@ -1,5 +1,5 @@
-﻿using System;
-using Client.Interface;
+﻿using Client.Interface;
+using System;
 
 namespace Client.Core
 {
@@ -19,7 +19,7 @@ namespace Client.Core
         public static readonly string Delete = "DELETE";
         public static readonly string Put = "PUT";
         public static readonly string Eval = "COUNT";
-        
+
         #endregion
 
         [ServerSideValue(IndexType.Primary)]

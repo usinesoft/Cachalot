@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Core;
 using Client.Queries;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
 
 namespace Client.Messages
 {
@@ -27,7 +26,7 @@ namespace Client.Messages
 
         [ProtoMember(1)] private List<PackedObject> _items = new List<PackedObject>();
 
-       
+
         /// <summary>
         ///     For serialization only
         /// </summary>
@@ -89,7 +88,9 @@ namespace Client.Messages
 
             var request = new PutRequest(CollectionName)
             {
-                EndOfSession = false, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+                EndOfSession = false,
+                ExcludeFromEviction = ExcludeFromEviction,
+                SessionId = SessionId
             };
 
             result.Add(request);
@@ -102,7 +103,9 @@ namespace Client.Messages
                 {
                     request = new PutRequest(CollectionName)
                     {
-                        EndOfSession = false, ExcludeFromEviction = ExcludeFromEviction, SessionId = SessionId
+                        EndOfSession = false,
+                        ExcludeFromEviction = ExcludeFromEviction,
+                        SessionId = SessionId
                     };
 
                     result.Add(request);
@@ -113,21 +116,21 @@ namespace Client.Messages
 
             if (EndOfSession) // add an empty request to trigger updating sorted indexes server side
             {
-                result.Add(new PutRequest(CollectionName){EndOfSession = EndOfSession,SessionId = SessionId});
+                result.Add(new PutRequest(CollectionName) { EndOfSession = EndOfSession, SessionId = SessionId });
             }
-            
+
 
 
             return result;
         }
 
-        public IDictionary<int, PutRequest> SplitByServer([NotNull] Func<KeyValue, int> serverSelector )
+        public IDictionary<int, PutRequest> SplitByServer([NotNull] Func<KeyValue, int> serverSelector)
         {
             if (serverSelector == null) throw new ArgumentNullException(nameof(serverSelector));
-            
+
             var result = new Dictionary<int, PutRequest>();
 
-            
+
             foreach (var item in Items)
             {
                 int serverIndex = serverSelector(item.PrimaryKey);

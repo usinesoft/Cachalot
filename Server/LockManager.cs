@@ -1,11 +1,11 @@
 //#define DEBUG_VERBOSE
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client;
 using Client.Tools;
 using JetBrains.Annotations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Server
 {
@@ -15,7 +15,7 @@ namespace Server
         ///     Like ReadWriteLock (much simpler in fact) but not by-thread (as a session can be open by a thread and closed by
         ///     another)
         /// </summary>
-        
+
 
 
         private class Session
@@ -116,13 +116,13 @@ namespace Server
 
             if (result)
             {
-                Dbg.Trace($"read lock success for {string.Join(' ',resourceNames)} session {sessionId}");
+                Dbg.Trace($"read lock success for {string.Join(' ', resourceNames)} session {sessionId}");
             }
             else
             {
-                Dbg.Trace($"read lock failed for {string.Join(' ',resourceNames)} session {sessionId}");
+                Dbg.Trace($"read lock failed for {string.Join(' ', resourceNames)} session {sessionId}");
             }
-            
+
 
             return result;
         }
@@ -155,7 +155,7 @@ namespace Server
             {
                 var session = _activeSessions.TryGetValue(sessionId);
                 if (session == null)
-                    _activeSessions.Add(sessionId, new Session(resourceNames) {IsWriteLock = true});
+                    _activeSessions.Add(sessionId, new Session(resourceNames) { IsWriteLock = true });
                 else
                     throw new NotSupportedException("The lock session has already been open");
             }
@@ -164,11 +164,11 @@ namespace Server
 
             if (result)
             {
-                Dbg.Trace($"write lock success for {string.Join(' ',resourceNames)} session {sessionId}");
+                Dbg.Trace($"write lock success for {string.Join(' ', resourceNames)} session {sessionId}");
             }
             else
             {
-                Dbg.Trace($"write lock failed for {string.Join(' ',resourceNames)} session {sessionId}" );
+                Dbg.Trace($"write lock failed for {string.Join(' ', resourceNames)} session {sessionId}");
             }
 
             return result;
@@ -195,7 +195,7 @@ namespace Server
                     if (@lock.ReadCount == 0) _locksCurrentlyTaken.Remove(@lock);
                 }
 
-                Dbg.Trace($"removed read lock for {string.Join(' ',resourceNames)}");
+                Dbg.Trace($"removed read lock for {string.Join(' ', resourceNames)}");
             }
         }
 
@@ -212,7 +212,7 @@ namespace Server
                     _locksCurrentlyTaken.Remove(@lock);
                 }
 
-                Dbg.Trace($"removed write lock for {string.Join(' ',resourceNames)}");
+                Dbg.Trace($"removed write lock for {string.Join(' ', resourceNames)}");
             }
         }
 
@@ -249,7 +249,7 @@ namespace Server
 
             if (session.IsWriteLock != writeAccess) return false;
 
-            var result =  resourceNames.All(c => session.LockedResources.Contains(c));
+            var result = resourceNames.All(c => session.LockedResources.Contains(c));
 
             Dbg.Trace($"Check lock result = {result} for session {sessionId}");
 

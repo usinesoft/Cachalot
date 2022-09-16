@@ -1,18 +1,18 @@
+using Client.Core;
+using Client.Interface;
+using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using Client.Interface;
-using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
 
 namespace Client.Tools
 {
     public static class DumpHelper
     {
-        
+
         internal static IEnumerable<PackedObject> LoadObjects(IDataClient @this, string jsonPath, [NotNull] string collectionName)
         {
             if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));
@@ -25,7 +25,7 @@ namespace Client.Tools
 
             var schemaByName = info.Schema.ToDictionary(td => td.CollectionName.ToLower());
 
-            if(!schemaByName.ContainsKey(collectionName.ToLower()))
+            if (!schemaByName.ContainsKey(collectionName.ToLower()))
                 throw new CacheException($"Collection {collectionName} not found");
 
             CollectionSchema collectionSchema = schemaByName[collectionName];
@@ -58,7 +58,7 @@ namespace Client.Tools
             {
                 var content = File.ReadAllText(file);
 
-                var parts = content.Split(new[] {"\\-"}, StringSplitOptions.RemoveEmptyEntries)
+                var parts = content.Split(new[] { "\\-" }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(txt => txt.Trim()).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
 
                 foreach (var part in parts)

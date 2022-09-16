@@ -1,9 +1,9 @@
-using System;
-using System.Linq;
-using System.Threading;
 using Client.Core;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Linq;
+using System.Threading;
 using Tests.TestData;
 
 // ReSharper disable ObjectCreationAsStatement
@@ -31,14 +31,14 @@ namespace Tests.UnitTests
             }
 
             Assert.IsTrue(policy.IsEvictionRequired);
-            var toRemove =  policy.DoEviction();
+            var toRemove = policy.DoEviction();
             Assert.AreEqual(92, toRemove.Count);
 
             var item93 = new CacheableTypeOk(93, 93 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed93 = PackedObject.Pack(item93, schema);
 
             // check that the 93rd item was not removed
-            Assert.IsFalse(toRemove.Any(i=>i == packed93));
+            Assert.IsFalse(toRemove.Any(i => i == packed93));
             policy.Touch(packed93);
 
             var item100 = new CacheableTypeOk(100, 100 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -56,7 +56,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(2, toRemove.Count);
 
             // item 93 was not removed because it was recently used (the call to Touch)
-            Assert.IsFalse(toRemove.Any(i=>i == packed93));
+            Assert.IsFalse(toRemove.Any(i => i == packed93));
 
 
         }
@@ -77,7 +77,7 @@ namespace Tests.UnitTests
             }
 
             Assert.IsFalse(policy.IsEvictionRequired);
-            var toRemove =  policy.DoEviction();
+            var toRemove = policy.DoEviction();
             Assert.AreEqual(0, toRemove.Count);
 
             var item1 = new CacheableTypeOk(1, 1 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -85,15 +85,15 @@ namespace Tests.UnitTests
 
             policy.TryRemove(packed1);
 
-            
+
             var item10 = new CacheableTypeOk(10, 10 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed10 = PackedObject.Pack(item10, schema);
 
             policy.AddItem(packed10);
 
-            
+
             // as one item was removed explicitly the eviction should not be triggered yet
-            toRemove =  policy.DoEviction();
+            toRemove = policy.DoEviction();
             Assert.AreEqual(0, toRemove.Count);
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -101,11 +101,11 @@ namespace Tests.UnitTests
 
             policy.AddItem(packed11);
             // now the eviction should be triggered
-            toRemove =  policy.DoEviction();
+            toRemove = policy.DoEviction();
             Assert.AreEqual(2, toRemove.Count);
 
             // the explicitly removed item should not be in the list
-            Assert.IsFalse(toRemove.Any(i=>i == packed1));
+            Assert.IsFalse(toRemove.Any(i => i == packed1));
         }
 
 
@@ -131,7 +131,8 @@ namespace Tests.UnitTests
 
         [Test]
         public void TimeToLive()
-        { var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
+        {
+            var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
             var policy = new TtlEvictionPolicy(TimeSpan.FromSeconds(1));
             for (var i = 0; i < 10; i++)
@@ -145,7 +146,7 @@ namespace Tests.UnitTests
             Assert.IsFalse(policy.IsEvictionRequired);
 
             Thread.Sleep(1010);
-            
+
             var toRemove = policy.DoEviction();
             Assert.AreEqual(10, toRemove.Count);
 
@@ -157,7 +158,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(0, toRemove.Count);
 
             Thread.Sleep(1010);
-            
+
             toRemove = policy.DoEviction();
             Assert.AreEqual(1, toRemove.Count);
 
@@ -181,7 +182,7 @@ namespace Tests.UnitTests
 
             policy.TryRemove(packed11);
             Thread.Sleep(1010);
-            
+
             var toRemove = policy.DoEviction();
             Assert.AreEqual(1, toRemove.Count);
             Assert.AreEqual(packed12, toRemove.Single());

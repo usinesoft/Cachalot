@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 using Tests.TestData.Events;
 using Trade = Tests.TestData.Instruments.Trade;
@@ -17,7 +17,7 @@ namespace Tests.IntegrationTests
 {
     [TestFixture]
     [Category("Performance")]
-    [Ignore("Starting an external server does not work on git ub actions")]
+    //[Ignore("Starting an external server does not work on git ub actions")]
     public class TestFixturePersistenceWithExternalServer
     {
         private Process _process;
@@ -26,9 +26,9 @@ namespace Tests.IntegrationTests
         public void StartServer()
         {
 #if DEBUG
-            var path = "../../../../bin/Debug/Server/netcoreapp3.1";
+            var path = "../../../../bin/Debug/Server/net6.0";
 #else
-                var path = "../../../../bin/Release/Server/netcoreapp3.1";
+                var path = "../../../../bin/Release/Server/net6.0";
 #endif
 
             var fullPath = Path.Combine(path, "server.dll");
@@ -65,7 +65,7 @@ namespace Tests.IntegrationTests
             }
         };
 
-        
+
 
 
         [Test]
@@ -146,7 +146,7 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_config))
             {
-                
+
                 connector.AdminInterface().DropDatabase();
 
                 connector.DeclareCollection<Event>();
@@ -195,7 +195,7 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_config))
             {
-                
+
                 connector.AdminInterface().DropDatabase();
 
                 connector.DeclareCollection<Home>();
@@ -252,7 +252,7 @@ namespace Tests.IntegrationTests
                 var homes = connector.DataSource<Home>();
                 homes.PutMany(list);
 
-               
+
                 // manually add some items for full-text search testing
                 var h1 = new Home
                 {
@@ -336,15 +336,15 @@ namespace Tests.IntegrationTests
                     {
                         case 0:
                             events.Add(new FixingEvent(ids[i], "AXA", 150, "EQ-256")
-                                {EventDate = eventDate, ValueDate = eventDate.AddDays(2)});
+                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                         case 1:
                             events.Add(new FixingEvent(ids[i], "TOTAL", 180, "IRD-400")
-                                {EventDate = eventDate, ValueDate = eventDate.AddDays(2)});
+                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                         case 2:
                             events.Add(new Increase(ids[i], 180, "EQ-256")
-                                {EventDate = eventDate, ValueDate = eventDate.AddDays(2)});
+                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                     }
 
@@ -378,13 +378,13 @@ namespace Tests.IntegrationTests
                 // generate orders for three categories
                 for (int i = 0; i < items; i++)
                 {
-                    var order = new Order{Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i+10, Date = DateTimeOffset.Now, Category = "geek", ProductId = 1000 + i%10, Quantity = 2};
+                    var order = new Order { Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now, Category = "geek", ProductId = 1000 + i % 10, Quantity = 2 };
 
                     if (i % 5 == 0)
                     {
                         order.Category = "sf";
                     }
-                    else if(i % 5 == 1)
+                    else if (i % 5 == 1)
                     {
                         order.Category = "science";
                     }
@@ -392,24 +392,24 @@ namespace Tests.IntegrationTests
                     orders.Add(order);
                 }
 
-                
+
 
                 dataSource.PutMany(orders);
 
 
                 var watch = new Stopwatch();
                 watch.Start();
-                
+
                 var pivot = dataSource.PreparePivotRequest()
                     .OnAxis(o => o.Category, o => o.ProductId)
-                    .AggregateValues(o=>o.Amount, o=>o.Quantity)
+                    .AggregateValues(o => o.Amount, o => o.Quantity)
                     .Execute();
 
                 watch.Stop();
 
                 Console.WriteLine($"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
-                
-                Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned"); 
+
+                Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
 
                 pivot.CheckPivot();
 
@@ -420,7 +420,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Order_by_with_single_server()
         {
-            
+
             using var connector = new Connector(_config);
 
             connector.AdminInterface().DropDatabase();
@@ -431,13 +431,13 @@ namespace Tests.IntegrationTests
 
             List<Order> orders = Order.GenerateTestData(10_000);
 
-            
+
             dataSource.PutMany(orders);
 
             // warm up
             var _ = dataSource.Where(o => o.Category == "geek").ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
             var watch = new Stopwatch();
             watch.Start();
@@ -448,37 +448,37 @@ namespace Tests.IntegrationTests
 
             watch.Restart();
 
-            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
 
             Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
-                
-            Assert.AreEqual(noOrder.Count, ascending.Count); 
+
+            Assert.AreEqual(noOrder.Count, ascending.Count);
 
             watch.Restart();
 
-            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
             Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
-                
-            Assert.AreEqual(noOrder.Count, descending.Count); 
+
+            Assert.AreEqual(noOrder.Count, descending.Count);
 
             // check that they are ordered
-            
+
             // check sorted ascending
             for (int i = 0; i < ascending.Count - 1; i++)
             {
-                Assert.LessOrEqual((int)ascending[i].Amount*10000, (int)ascending[i+1].Amount *10000);
+                Assert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
             }
 
             // check sorted descending
             for (int i = 0; i < descending.Count - 1; i++)
             {
-                Assert.GreaterOrEqual((int)descending[i].Amount*10000, (int)descending[i+1].Amount *10000);
+                Assert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
             }
 
             watch.Stop();
 
-            
+
         }
 
     }

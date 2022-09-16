@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Client.Core;
+using System.Collections.Generic;
 
 namespace Client.ChannelInterface
 {
@@ -23,7 +23,7 @@ namespace Client.ChannelInterface
         /// <param name="aliases">names of the properties sent to the client</param>
         void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases);
 
-        
+
         /// <summary>
         ///     Wait for client confirmation (used in two-stage transactions).
         ///     If null has been returned the client did not answer in the limited amount of time

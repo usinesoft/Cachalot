@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Client.Core
 {
@@ -11,7 +11,7 @@ namespace Client.Core
     [ProtoContract]
     public class KeyValues
     {
-        
+
 
         /// <summary>
         /// For serialization only

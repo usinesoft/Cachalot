@@ -1,9 +1,9 @@
 #region
 
-using System;
 using Client.Core;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -57,9 +57,9 @@ namespace Client.Messages
 
         [field: ProtoMember(3)] public string JsonName { get; set; }
 
-        [field: ProtoMember(4)] public int Order { get;  set; }
+        [field: ProtoMember(4)] public int Order { get; set; }
 
-        [field: ProtoMember(5)] public bool IsCollection { get;  set; }
+        [field: ProtoMember(5)] public bool IsCollection { get; set; }
 
         public bool Equals(KeyInfo keyInfo)
         {

@@ -14,7 +14,7 @@ namespace Server
         /// </summary>
         /// <param name="action">action to be executed inside lock</param>
         /// <param name="resourceNames">resources to be locked</param>
-        void DoWithReadLock(Action action,  params string[] resourceNames);
+        void DoWithReadLock(Action action, params string[] resourceNames);
 
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace Server
         /// </summary>
         /// <param name="action">action to be executed inside lock</param>
         /// <param name="resourceNames">resources to be locked</param>
-        void DoWithWriteLock(Action action,  params string[] resourceNames);
+        void DoWithWriteLock(Action action, params string[] resourceNames);
 
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Server
         /// </summary>
         /// <param name="sessionId"></param>
         void CloseSession(Guid sessionId);
-       
+
 
         /// <summary>
         /// Forcibly remove all locks that are currently hold for more than the specified timespan

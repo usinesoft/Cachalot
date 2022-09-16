@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
-using Client.Core;
+﻿using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
 using Server.Queries;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -16,22 +16,22 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureQueryManager
     {
-        
+
 
         private static List<AllKindsOfProperties> GenerateAllKinds(int count)
         {
             var result = new List<AllKindsOfProperties>();
 
-            var tags1 = new[] {"geek", "camping", "sf", "food", "games"};
-            var tags2 = new[] {"space", "electronics", "sf"};
-            var instruments = new[] {"flute", "piano", "guitar"};
+            var tags1 = new[] { "geek", "camping", "sf", "food", "games" };
+            var tags2 = new[] { "space", "electronics", "sf" };
+            var instruments = new[] { "flute", "piano", "guitar" };
 
 
             for (var i = 0; i < count; i++)
                 result.Add(new AllKindsOfProperties
                 {
                     Id = i + 1,
-                    AreYouSure = (AllKindsOfProperties.Fuzzy) (i % 3),
+                    AreYouSure = (AllKindsOfProperties.Fuzzy)(i % 3),
                     Quantity = i % 10,
                     InstrumentName = instruments[i % 3],
                     Tags = new List<string>(i % 2 == 0 ? tags1 : tags2)
@@ -53,7 +53,7 @@ namespace Tests.UnitTests
 
             yield return o => o.Id == Guid.Empty;
 
-            var list = new[] {"sf", "games"};
+            var list = new[] { "sf", "games" };
 
             yield return o => o.Quantity >= 4;
 
@@ -66,7 +66,7 @@ namespace Tests.UnitTests
             yield return o => o.Quantity != 4 && list.Contains(o.Category);
 
             yield return o => o.Quantity != 4 && o.Category.StartsWith("g");
-            
+
             yield return o => o.Quantity != 4 || o.Category.StartsWith("g");
         }
 
@@ -234,7 +234,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(100_000, result.Count);
             Assert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count, "this query should have been decomposed in two queries");
             Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
-            
+
 
             // empty query. Should return everything
             result = qm.ProcessQuery(OrQuery.Empty<AllKindsOfProperties>());
@@ -302,14 +302,14 @@ namespace Tests.UnitTests
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
             ds.InternalPutMany(packed, true);
 
-           
+
             // empty query
             {
-                var q = new OrQuery(schema.CollectionName) {OrderByProperty = "Amount"};
+                var q = new OrQuery(schema.CollectionName) { OrderByProperty = "Amount" };
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(objects.Count, result.Count);
@@ -317,7 +317,7 @@ namespace Tests.UnitTests
                 // check sorted ascending
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
 
 
@@ -330,7 +330,7 @@ namespace Tests.UnitTests
                 // check sorted descending
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
             }
 
@@ -345,7 +345,7 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
@@ -353,7 +353,7 @@ namespace Tests.UnitTests
                 // check sorted ascending
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
 
 
@@ -366,7 +366,7 @@ namespace Tests.UnitTests
                 // check sorted descending
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
             }
 
@@ -380,27 +380,27 @@ namespace Tests.UnitTests
 
                 var qm = new QueryManager(ds);
 
-                var result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
 
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
 
 
                 q.OrderByIsDescending = true;
 
-                result = qm.ProcessQuery(q).Select(x=> PackedObject.Unpack<Order>(x, schema)).ToList();
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
                 Assert.AreEqual(raw.Count, result.Count);
 
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
             }
 
@@ -422,7 +422,7 @@ namespace Tests.UnitTests
 
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.LessOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
 
 
@@ -436,7 +436,7 @@ namespace Tests.UnitTests
 
                 for (int i = 0; i < result.Count - 1; i++)
                 {
-                    Assert.GreaterOrEqual((int)result[i].Amount*10000, (int)result[i+1].Amount *10000);
+                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
                 }
 
                 // check that TAKE operator is applied after ORDER BY
@@ -465,17 +465,17 @@ namespace Tests.UnitTests
 
             // empty query
             {
-                
-                // result from linq2object to be compared with query
-                var raw = objects.Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
 
-                var q = new OrQuery(schema.CollectionName) {Distinct = true};
-                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
-                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+                // result from linq2object to be compared with query
+                var raw = objects.Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+
+                var q = new OrQuery(schema.CollectionName) { Distinct = true };
+                q.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
+                q.SelectClause.Add(new SelectItem { Name = "ClientId", Alias = "ClientId" });
 
                 var qm = new QueryManager(ds);
 
-               
+
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
@@ -485,18 +485,18 @@ namespace Tests.UnitTests
 
             // atomic query
             {
-                
+
                 // result from linq2object to be compared with query
-                var raw = objects.Where(o=>o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+                var raw = objects.Where(o => o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
 
                 var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered);
                 q.Distinct = true;
-                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
-                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+                q.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
+                q.SelectClause.Add(new SelectItem { Name = "ClientId", Alias = "ClientId" });
 
                 var qm = new QueryManager(ds);
 
-                
+
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
@@ -506,18 +506,18 @@ namespace Tests.UnitTests
 
             // simple and query
             {
-                
+
                 // result from linq2object to be compared with query
-                var raw = objects.Where(o=>o.IsDelivered && o.Amount < 100).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+                var raw = objects.Where(o => o.IsDelivered && o.Amount < 100).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
 
                 var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 100);
                 q.Distinct = true;
-                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
-                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+                q.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
+                q.SelectClause.Add(new SelectItem { Name = "ClientId", Alias = "ClientId" });
 
                 var qm = new QueryManager(ds);
 
-                
+
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
@@ -527,18 +527,18 @@ namespace Tests.UnitTests
 
             // complex or query
             {
-                
-                // result from linq2object to be compared with query
-                var raw = objects.Where(o=>o.IsDelivered && o.Amount < 100 || o.Category =="sf" && o.Quantity >1).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
 
-                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o=> o.IsDelivered && o.Amount < 100 || o.Category =="sf" && o.Quantity >1);
+                // result from linq2object to be compared with query
+                var raw = objects.Where(o => o.IsDelivered && o.Amount < 100 || o.Category == "sf" && o.Quantity > 1).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 100 || o.Category == "sf" && o.Quantity > 1);
                 q.Distinct = true;
-                q.SelectClause.Add(new SelectItem{Name = "Category", Alias = "Category"});
-                q.SelectClause.Add(new SelectItem{Name = "ClientId", Alias = "ClientId"});
+                q.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
+                q.SelectClause.Add(new SelectItem { Name = "ClientId", Alias = "ClientId" });
 
                 var qm = new QueryManager(ds);
 
-                
+
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 

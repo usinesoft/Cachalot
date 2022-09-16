@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CsvImport": {
+      "commandName": "Project",
+      "commandLineArgs": "localhost:48401 C:\\git\\Cachalot\\UnitTests\\TestData\\csv\\20klines.csv 20k"
+    }
+  }
+}

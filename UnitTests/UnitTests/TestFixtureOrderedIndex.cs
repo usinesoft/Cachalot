@@ -1,13 +1,13 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Tests.TestData;
 
 #endregion
@@ -19,7 +19,7 @@ namespace Tests.UnitTests
     {
         private static IList<KeyValue> MakeIntValue(int value, KeyInfo type)
         {
-            return new List<KeyValue> {new KeyValue(value)};
+            return new List<KeyValue> { new KeyValue(value) };
         }
 
         private static void CheckLe(IndexBase indexByValue)
@@ -80,7 +80,7 @@ namespace Tests.UnitTests
 
         private static void CheckLs(IndexBase indexByValue)
         {
-            
+
 
             var keyType = new KeyInfo("IndexKeyValue", 0, IndexType.Ordered);
 
@@ -180,13 +180,13 @@ namespace Tests.UnitTests
             var idx1 = Populate(1, 2, 3, 3, 3, 4, 5);
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(3), new KeyValue(3)},
+                var count = idx1.GetCount(new List<KeyValue> { new KeyValue(3), new KeyValue(3) },
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(3, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(3), new KeyValue(3)},
+                    idx1.GetMany(new List<KeyValue> { new KeyValue(3), new KeyValue(3) },
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(3, items.Count);
@@ -194,26 +194,26 @@ namespace Tests.UnitTests
 
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(8), new KeyValue(9)},
+                var count = idx1.GetCount(new List<KeyValue> { new KeyValue(8), new KeyValue(9) },
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(0, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(8), new KeyValue(9)},
+                    idx1.GetMany(new List<KeyValue> { new KeyValue(8), new KeyValue(9) },
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(0, items.Count);
             }
 
             {
-                var count = idx1.GetCount(new List<KeyValue> {new KeyValue(1), new KeyValue(3)},
+                var count = idx1.GetCount(new List<KeyValue> { new KeyValue(1), new KeyValue(3) },
                     QueryOperator.GeLe);
 
                 Assert.AreEqual(5, count);
 
                 var items =
-                    idx1.GetMany(new List<KeyValue> {new KeyValue(1), new KeyValue(3)},
+                    idx1.GetMany(new List<KeyValue> { new KeyValue(1), new KeyValue(3) },
                         QueryOperator.GeLe);
 
                 Assert.AreEqual(5, items.Count);
@@ -692,16 +692,16 @@ namespace Tests.UnitTests
 
             for (int i = 0; i < 1_000_000; i++)
             {
-                var item = new LogEntry {Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now};
-                
+                var item = new LogEntry { Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now };
+
                 var packed = PackedObject.Pack(item, schema);
-                
+
                 timeStampIndex.Put(packed);
 
-                var item1 = new LogEntry {Id = Guid.NewGuid(), TimeStamp = item.TimeStamp};
-                
+                var item1 = new LogEntry { Id = Guid.NewGuid(), TimeStamp = item.TimeStamp };
+
                 var packed1 = PackedObject.Pack(item1, schema);
-                
+
                 timeStampIndex.Put(packed1);
             }
         }
@@ -712,16 +712,16 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType<LogEntry>();
             schema.CollectionName = LogEntry.Table;
-            
-            var activityTable = new DataStore(schema, new LruEvictionPolicy(2000, 1000), new FullTextConfig() );
+
+            var activityTable = new DataStore(schema, new LruEvictionPolicy(2000, 1000), new FullTextConfig());
 
             for (int i = 0; i < 10_000; i++)
             {
-                var item = new LogEntry {Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now};
+                var item = new LogEntry { Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now };
 
                 var packed = PackedObject.Pack(item, schema);
 
-                activityTable.InternalPutMany(new List<PackedObject>{packed}, false );
+                activityTable.InternalPutMany(new List<PackedObject> { packed }, false);
 
             }
 

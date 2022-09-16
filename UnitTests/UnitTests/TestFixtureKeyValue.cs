@@ -1,5 +1,4 @@
 ﻿using Client.Core;
-using Client.Messages;
 using NUnit.Framework;
 
 namespace Tests.UnitTests
@@ -83,6 +82,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(kv2, kv2);
             }
         }
-        
+
     }
 }

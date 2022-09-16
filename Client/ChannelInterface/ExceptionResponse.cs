@@ -1,6 +1,6 @@
-using System;
 using Client.Interface;
 using ProtoBuf;
+using System;
 
 namespace Client.ChannelInterface
 {

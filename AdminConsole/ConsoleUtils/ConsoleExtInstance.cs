@@ -1,5 +1,5 @@
-﻿using System;
-using AdminConsole.ConsoleUtils.ConsoleActions;
+﻿using AdminConsole.ConsoleUtils.ConsoleActions;
+using System;
 
 namespace AdminConsole.ConsoleUtils
 {

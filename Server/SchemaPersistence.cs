@@ -1,8 +1,8 @@
-using System.IO;
-using System.Text;
 using Client.Core;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.IO;
+using System.Text;
 using Constants = Server.Persistence.Constants;
 
 namespace Server
@@ -14,7 +14,7 @@ namespace Server
         private readonly JsonSerializerSettings _schemaSerializerSettings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented
-          
+
         };
 
         private readonly JsonSerializer _jsonSerializer;
@@ -34,7 +34,7 @@ namespace Server
                 path = Path.Combine(_config.DataPath, Constants.DataPath);
             }
 
-            
+
             if (!File.Exists(path)) return null;
 
             var json = File.ReadAllText(path);
@@ -46,25 +46,25 @@ namespace Server
         public void SaveSchema(Schema schema, string schemaDirectory = null)
         {
 
-             var sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
 
-            var json =  sb.ToString();
+            var json = sb.ToString();
 
-            
+
 
             string path = schemaDirectory;
             if (schemaDirectory == null)
             {
                 path = Path.Combine(_config.DataPath, Constants.DataPath);
             }
-            
+
 
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
-            } 
+            }
 
             File.WriteAllText(Path.Combine(path, Constants.SchemaFileName), json);
         }

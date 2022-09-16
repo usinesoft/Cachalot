@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Tests.TestData.MoneyTransfer;
 
 namespace Tests.IntegrationTests
@@ -79,10 +79,10 @@ namespace Tests.IntegrationTests
 
             for (var i = 0; i < serverCount; i++)
             {
-                var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = $"server{i:D2}"};
+                var serverInfo = new ServerInfo { Channel = new TcpServerChannel() };
+                var nodeConfig = new NodeConfig { IsPersistent = true, DataPath = $"server{i:D2}" };
                 serverInfo.Server =
-                    new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
+                    new Server.Server(nodeConfig) { Channel = serverInfo.Channel };
                 serverInfo.Port = serverInfo.Channel.Init();
                 serverInfo.Channel.Start();
                 serverInfo.Server.Start();
@@ -90,7 +90,7 @@ namespace Tests.IntegrationTests
                 _servers.Add(serverInfo);
 
                 _clientConfig.Servers.Add(
-                    new ServerConfig {Host = "localhost", Port = serverInfo.Port});
+                    new ServerConfig { Host = "localhost", Port = serverInfo.Port });
             }
 
 
@@ -104,8 +104,8 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
@@ -113,8 +113,8 @@ namespace Tests.IntegrationTests
 
                 var tIds = connector.GenerateUniqueIds("transfer_ids", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
                 // first transaction should succeed
@@ -123,10 +123,10 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 334;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
                         Id = tIds[0],
@@ -158,10 +158,10 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 1001;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
                         Id = tIds[0],
@@ -206,8 +206,8 @@ namespace Tests.IntegrationTests
             // check that everything is persisted ok
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];
@@ -229,15 +229,15 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
                 var all = accounts.ToList();
                 Assert.AreEqual(2, all.Count);
@@ -292,8 +292,8 @@ namespace Tests.IntegrationTests
             StartServers();
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var myAccounts = accounts.ToList();
@@ -316,15 +316,15 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                var srcAccount = new Account {Id = accountIds[0], Balance = 1000};
-                var dstAccount = new Account {Id = accountIds[1], Balance = 0};
+                var srcAccount = new Account { Id = accountIds[0], Balance = 1000 };
+                var dstAccount = new Account { Id = accountIds[1], Balance = 0 };
 
                 accounts.Put(srcAccount);
                 accounts.Put(dstAccount);
@@ -343,7 +343,9 @@ namespace Tests.IntegrationTests
 
                 var transfer = new MoneyTransfer
                 {
-                    Amount = 10, Date = DateTime.Today, SourceAccount = myAccounts[0].Id,
+                    Amount = 10,
+                    Date = DateTime.Today,
+                    SourceAccount = myAccounts[0].Id,
                     DestinationAccount = myAccounts[1].Id
                 };
 

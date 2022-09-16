@@ -60,7 +60,7 @@
 //                var serverDescription = client.GetClusterInformation();
 //                Assert.IsNotNull(serverDescription);
 
-                
+
 //                Assert.AreEqual(2, serverDescription.Schema.Length);
 //                Assert.AreEqual(tradeDescription.AsCollectionSchema.IndexFields.Count, 3);
 //                Assert.AreEqual(tradeDescription.AsCollectionSchema.ListFields.Count, 2);

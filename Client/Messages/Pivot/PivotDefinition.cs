@@ -1,26 +1,26 @@
+using Client.Core;
+using Client.Interface;
+using Client.Queries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using Client.Core;
-using Client.Interface;
-using Client.Queries;
 
 namespace Client.Messages.Pivot
 {
-    
+
     /// <summary>
     /// A pivot definition has three components. A filter expressed as a query, an ordered list of aggregation axis, a list of properties to aggregate
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class PivotDefinition<T> 
+    public class PivotDefinition<T>
     {
         private readonly IDataClient _client;
-        
+
         private readonly CollectionSchema _schema;
 
 
-        internal  PivotDefinition(OrQuery query, IDataClient client, CollectionSchema schema)
+        internal PivotDefinition(OrQuery query, IDataClient client, CollectionSchema schema)
         {
             _client = client;
             _schema = schema;
@@ -29,10 +29,10 @@ namespace Client.Messages.Pivot
 
 
         OrQuery Query { get; }
-        
-        List<int> AxisList { get; }= new List<int>();
 
-        List<int> ValuesList { get; }= new List<int>();
+        List<int> AxisList { get; } = new List<int>();
+
+        List<int> ValuesList { get; } = new List<int>();
 
 
         /// <summary>
@@ -89,11 +89,11 @@ namespace Client.Messages.Pivot
 
         public PivotLevel Execute()
         {
-            if(ValuesList.Count == 0)
+            if (ValuesList.Count == 0)
                 throw new NotSupportedException("At least an aggregation value must be specified");
-            
+
             return _client.ComputePivot(Query, AxisList, ValuesList);
         }
-        
+
     }
 }

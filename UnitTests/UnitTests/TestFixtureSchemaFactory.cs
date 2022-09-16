@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Client.Core;
+﻿using Client.Core;
 using NUnit.Framework;
+using System.Linq;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -30,7 +27,7 @@ namespace Tests.UnitTests
             // check that orders are a continuous range (for scalar properties)
             for (int i = 1; i < scalars.Count; i++)
             {
-                Assert.IsTrue(scalars[i].Order - scalars[i-1].Order == 1);
+                Assert.IsTrue(scalars[i].Order - scalars[i - 1].Order == 1);
             }
 
         }
@@ -49,7 +46,7 @@ namespace Tests.UnitTests
             // order is preserved for scalars
             Assert.Less(schema.OrderOf("name"), schema.OrderOf("age"));
 
-            
+
         }
     }
 }

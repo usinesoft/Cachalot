@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -50,7 +50,7 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(TradeLike));
 
-            var queue = new EvictionQueue {Capacity = 1000, EvictionCount = 100};
+            var queue = new EvictionQueue { Capacity = 1000, EvictionCount = 100 };
             var item = new TradeLike(0, 1000, "aaa", DateTime.Now, 456);
             var packedItem = PackedObject.Pack(item, schema);
             queue.AddNew(packedItem);
@@ -64,7 +64,7 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(TradeLike));
 
-            var queue = new EvictionQueue {Capacity = 9, EvictionCount = 2};
+            var queue = new EvictionQueue { Capacity = 9, EvictionCount = 2 };
 
             var allItems = new List<PackedObject>();
 
@@ -109,7 +109,7 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(TradeLike));
 
-            var queue = new EvictionQueue {Capacity = 7, EvictionCount = 2};
+            var queue = new EvictionQueue { Capacity = 7, EvictionCount = 2 };
 
             var allItems = new List<PackedObject>();
 

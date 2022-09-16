@@ -1,8 +1,8 @@
-using System;
-using System.Linq.Expressions;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Clauses.StreamedData;
+using System;
+using System.Linq.Expressions;
 
 namespace Client.Core.Linq
 {

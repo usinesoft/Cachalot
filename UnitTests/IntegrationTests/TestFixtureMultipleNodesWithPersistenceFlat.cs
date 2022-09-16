@@ -1,4 +1,5 @@
-﻿using Cachalot.Linq;
+﻿using Cachalot.Extensions;
+using Cachalot.Linq;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
@@ -6,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tests.TestData;
-using Tests.TestData.Events;
 
 namespace Tests.IntegrationTests
 {
@@ -145,7 +145,7 @@ namespace Tests.IntegrationTests
 
                 var dataSource = connector.DataSource<FlatWithAllKindsOfProperties>();
 
-                var request = dataSource.PreparePivotRequest().OnAxis(x=>x.InstrumentName, x => x.ValueDate).AggregateValues(x=>x.Quantity, x=>x.Nominal);
+                var request = dataSource.PreparePivotRequest().OnAxis(x => x.InstrumentName, x => x.ValueDate).AggregateValues(x => x.Quantity, x => x.Nominal);
 
                 var pivot = request.Execute();
 
@@ -168,11 +168,12 @@ namespace Tests.IntegrationTests
                 dataSource.PutMany(GenerateTestDataForPivot(100));
 
 
-                Assert.Throws<CacheException>(() => {
+                Assert.Throws<CacheException>(() =>
+                {
                     var _ = dataSource.OrderBy(x => x.Nominal).ToList();
 
                 });
-                
+
 
             }
 
@@ -191,7 +192,40 @@ namespace Tests.IntegrationTests
                 var allOrdered = dataSource.OrderBy(x => x.Nominal).ToList();
 
                 Assert.AreEqual(100, allOrdered.Count);
+
+
+            }
+        }
+
+        [Test]
+        public void Import_csv_file_with_automatic_schema()
+        {
+            using (var connector = new Connector(_clientConfig))
+            {
+                connector.FeedCsvWithAutomaticSchema("TestData/csv/20klines.csv", "20k");
+
+                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
+
+                Assert.AreEqual(12, result.Count);
+            }
+
+            // check they are found after reload
+            using (var connector = new Connector(_clientConfig))
+            {
                 
+                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
+
+                Assert.AreEqual(12, result.Count);
+
+                //MonthBucket
+                result = connector.SqlQueryAsJson("select  distinct ClientName from 20k").ToList();
+                Assert.AreEqual(61, result.Count);
+
+                var count  = connector.SqlQueryAsJson("count from 20k where dealid=25958469").ToList();
+
+                // should return a single object with the count property
+                Assert.AreEqual(1, count.Count);
+                Assert.AreEqual(12, count[0].Value<int>("count"));
 
             }
         }

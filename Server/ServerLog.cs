@@ -1,8 +1,8 @@
 #region
 
-using System.Collections.Generic;
 using Client;
 using Client.Messages;
+using System.Collections.Generic;
 
 #endregion
 

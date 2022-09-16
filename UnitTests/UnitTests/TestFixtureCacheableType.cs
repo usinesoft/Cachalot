@@ -1,10 +1,9 @@
 ﻿#region
 
+using Client.Core;
+using NUnit.Framework;
 using System;
 using System.IO;
-using Client.Core;
-using Client.Messages;
-using NUnit.Framework;
 using Tests.TestData;
 
 #endregion
@@ -63,7 +62,7 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
             Assert.IsNotNull(schema.PrimaryKeyField);
             Assert.AreEqual(schema.CollectionName, nameof(CacheableTypeOk));
-           
+
 
             Assert.AreEqual(schema.IndexFields.Count, 5);
             Assert.AreEqual(schema.FullText.Count, 2);

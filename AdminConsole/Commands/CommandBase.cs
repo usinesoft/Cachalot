@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Client.Interface;
 using Client.Queries;
+using System.Collections.Generic;
 
 namespace AdminConsole.Commands
 {
@@ -49,7 +49,7 @@ namespace AdminConsole.Commands
         /// </summary>
         public bool CanExecute => CmdType != CommandType.Unknown && Success;
 
-        
+
 
         /// <summary>
         ///     To be overridden in the derived classes

@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Client.ChannelInterface;
 using ProtoBuf;
+using System.Collections.Generic;
 
 namespace Client.Messages
 {

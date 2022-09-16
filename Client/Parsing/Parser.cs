@@ -12,35 +12,35 @@ namespace Client.Parsing
 
             if (tokens.FirstOrDefault().Is("select"))
             {
-                var root = new Node {Token = "select"};
+                var root = new Node { Token = "select" };
                 return ParseQuery(tokens.TrimLeft("select"), root);
             }
 
             if (tokens.FirstOrDefault().Is("count"))
             {
-                var root = new Node {Token = "count"};
+                var root = new Node { Token = "count" };
                 return ParseQuery(tokens.TrimLeft("count"), root);
             }
 
             if (tokens.FirstOrDefault().Is("explain"))
             {
-                var root = new Node {Token = "count"};
+                var root = new Node { Token = "count" };
                 return ParseQuery(tokens.TrimLeft("select"), root);
             }
 
-            return new Node {ErrorMessage = "first keyword should be SELECT, COUNT or EXPLAIN"};
+            return new Node { ErrorMessage = "first keyword should be SELECT, COUNT or EXPLAIN" };
         }
 
         private Node ParseQuery(IList<Token> tokens, Node result)
         {
             // a complete result will have the following children in this order: distinct, projection, table, where, order, take
-            
+
 
             var partsBySeparator = tokens.Split("from", "where", "take", "order by", "into");
 
 
             // parse the projection (can be nothing or * (the same result), ~ = all the server-side values, or an explicit list of properties with optional aliases
-            var projectionNode = new Node{Token = "projection"};
+            var projectionNode = new Node { Token = "projection" };
             result.Children.Add(projectionNode);
 
             if (partsBySeparator.TryGetValue("", out var beforeFrom))
@@ -48,19 +48,19 @@ namespace Client.Parsing
                 // * is optional
                 if (beforeFrom.Count == 0)
                 {
-                    projectionNode.Children.Add(new Node{Token = "*"});
+                    projectionNode.Children.Add(new Node { Token = "*" });
                 }
                 else if (beforeFrom.Count == 1) // can be *, ~ or property name
                 {
                     var value = beforeFrom[0];
-                    projectionNode.Children.Add(new Node{Token = value.NormalizedText});
+                    projectionNode.Children.Add(new Node { Token = value.NormalizedText });
 
                 }
                 else // multiple elements like property1 alias1, property2 alias 2
                 {
                     if (beforeFrom.First().NormalizedText == "distinct")
                     {
-                        projectionNode.Children.Add(new Node{Token = "distinct"});
+                        projectionNode.Children.Add(new Node { Token = "distinct" });
                         beforeFrom = beforeFrom.Skip(1);
                     }
 
@@ -70,15 +70,15 @@ namespace Client.Parsing
                     {
                         var name = part[0];
 
-                        var node = new Node {Token = name.NormalizedText};
+                        var node = new Node { Token = name.NormalizedText };
 
                         if (part.Count == 2)
                         {
                             var alias = part[1].NormalizedText;
-                            node.Children.Add(new Node{Token = alias});
+                            node.Children.Add(new Node { Token = alias });
                         }
 
-                        
+
                         projectionNode.Children.Add(node);
                     }
                 }
@@ -93,7 +93,7 @@ namespace Client.Parsing
                 }
                 else
                 {
-                    result.Children.Add(new Node{Token = "from", Children = { new Node{Token = afterFrom[0].NormalizedText}}});
+                    result.Children.Add(new Node { Token = "from", Children = { new Node { Token = afterFrom[0].NormalizedText } } });
                 }
             }
 
@@ -108,21 +108,21 @@ namespace Client.Parsing
                 {
                     result.Children.Add(ParseWhere(afterWhere));
                 }
-                
+
             }
 
             // parse the "take" clause
             if (partsBySeparator.TryGetValue("take", out var afterTake)) // a take clause is present
             {
-                
+
                 if (afterTake.Count == 1) // only one number can be preset after tha take clause
                 {
-                    
+
                     var takeCount = afterTake[0].NormalizedText;
                     if (int.TryParse(takeCount, out var _))
                     {
-                        var takeNode = new Node{Token = "take"};
-                        takeNode.Children.Add(new Node{Token = takeCount });
+                        var takeNode = new Node { Token = "take" };
+                        takeNode.Children.Add(new Node { Token = takeCount });
                         result.Children.Add(takeNode);
                     }
                     else
@@ -151,8 +151,8 @@ namespace Client.Parsing
                         fileName.Append(token.Text);
                     }
 
-                    var intoNode = new Node{Token = "into"};
-                    intoNode.Children.Add(new Node{Token = fileName.ToString() });
+                    var intoNode = new Node { Token = "into" };
+                    intoNode.Children.Add(new Node { Token = fileName.ToString() });
                     result.Children.Add(intoNode);
 
 
@@ -166,14 +166,14 @@ namespace Client.Parsing
             // parse the order clause
             if (partsBySeparator.TryGetValue("order by", out var afterOrder)) // a take clause is present
             {
-                
-                if (afterOrder.Count >=1 && afterOrder.Count <= 2 ) // after "order by", property name is mandatory; "descending" is optional in the last position
+
+                if (afterOrder.Count >= 1 && afterOrder.Count <= 2) // after "order by", property name is mandatory; "descending" is optional in the last position
                 {
-                    
+
                     var propertyName = afterOrder[0].NormalizedText;
 
-                    var orderNode = new Node{Token = "order"};
-                    orderNode.Children.Add(new Node{Token = propertyName });
+                    var orderNode = new Node { Token = "order" };
+                    orderNode.Children.Add(new Node { Token = propertyName });
 
 
                     if (afterOrder.Count > 1)
@@ -185,16 +185,16 @@ namespace Client.Parsing
                         }
                         else
                         {
-                            orderNode.Children.Add(new Node{Token = "descending" });
+                            orderNode.Children.Add(new Node { Token = "descending" });
                         }
 
                     }
 
 
                     result.Children.Add(orderNode);
-                    
-   
-                } 
+
+
+                }
                 else
                 {
                     result.ErrorMessage = "error in order clause";
@@ -207,11 +207,11 @@ namespace Client.Parsing
 
         private Node ParseWhere(IList<Token> tokens)
         {
-            var result = new Node {Token = "where"};
+            var result = new Node { Token = "where" };
 
             var parts = tokens.Split("or");
 
-            var orNode = new Node {Token = "or"};
+            var orNode = new Node { Token = "or" };
 
             result.Children.Add(orNode);
 
@@ -222,7 +222,7 @@ namespace Client.Parsing
 
         private Node ParseAnd(IList<Token> tokens)
         {
-            var result = new Node {Token = "and"};
+            var result = new Node { Token = "and" };
 
             var parts = tokens.Split("and");
 
@@ -277,9 +277,9 @@ namespace Client.Parsing
 
         private Node ParseExpression(IList<Token> tokens)
         {
-            if (tokens.Count > 2 )
+            if (tokens.Count > 2)
             {
-                
+
                 var column = tokens[0].NormalizedText;
 
                 // simple expression like column operator value
@@ -287,13 +287,13 @@ namespace Client.Parsing
                 {
                     var symbol = TryNormalizeSymbol(tokens[1].NormalizedText);
 
-                    
+
                     if (symbol != null)
                     {
-                        var result = new Node {Token = symbol};
+                        var result = new Node { Token = symbol };
 
                         // column name
-                        result.Children.Add(new Node {Token = column});
+                        result.Children.Add(new Node { Token = column });
 
                         // value
                         var value = tokens.Join(2);
@@ -301,7 +301,7 @@ namespace Client.Parsing
                         var normalized = TryNormalizeValue(value);
 
                         if (normalized != null)
-                            result.Children.Add(new Node {Token = normalized});
+                            result.Children.Add(new Node { Token = normalized });
                         else
                             result.ErrorMessage = $"can not parse value {value}";
 
@@ -309,24 +309,24 @@ namespace Client.Parsing
                         return result;
                     }
                 }
-                
+
                 // in (value1, value2)
-                if(tokens[1].Is("in")) 
+                if (tokens[1].Is("in"))
                 {
-                    var result = new Node {Token = "in"};
+                    var result = new Node { Token = "in" };
                     // column name
-                    result.Children.Add(new Node {Token = column});
+                    result.Children.Add(new Node { Token = column });
 
                     var tokensList = tokens.Skip(2).TrimLeft("(").TrimRight(")").Split(",");
 
                     foreach (var tks in tokensList)
                     {
-                        var value = string.Join(' ', tks.Select(t=>t.Text));
+                        var value = string.Join(' ', tks.Select(t => t.Text));
                         var normalized = TryNormalizeValue(value);
 
                         if (normalized != null)
                         {
-                            result.Children.Add(new Node {Token = normalized});
+                            result.Children.Add(new Node { Token = normalized });
                         }
 
                         else result.ErrorMessage = $"can ot parse value {value} in IN clause";
@@ -342,18 +342,18 @@ namespace Client.Parsing
                 // tags contains 'geek'
                 if (tokens[1].Is("contains"))
                 {
-                    var result = new Node {Token = "contains"};
+                    var result = new Node { Token = "contains" };
                     // column name
-                    result.Children.Add(new Node {Token = column});
+                    result.Children.Add(new Node { Token = column });
 
-                    
-                    var value =  string.Join(' ', tokens.Skip(2).Select(t=>t.Text));
+
+                    var value = string.Join(' ', tokens.Skip(2).Select(t => t.Text));
 
                     var normalized = TryNormalizeValue(value);
 
                     if (normalized != null)
                     {
-                        result.Children.Add(new Node {Token = normalized});
+                        result.Children.Add(new Node { Token = normalized });
                     }
 
                     else result.ErrorMessage = $"can not parse value {value} in CONTAINS clause";
@@ -364,17 +364,17 @@ namespace Client.Parsing
                 // name like 'john%'
                 if (tokens[1].Is("like"))
                 {
-                    var result = new Node {Token = "like"};
+                    var result = new Node { Token = "like" };
                     // column name
-                    result.Children.Add(new Node {Token = column});
+                    result.Children.Add(new Node { Token = column });
 
-                    var value =  string.Join(' ', tokens.Skip(2).Select(t=>t.Text));
+                    var value = string.Join(' ', tokens.Skip(2).Select(t => t.Text));
 
                     var normalized = TryNormalizeValue(value);
 
                     if (normalized != null)
                     {
-                        result.Children.Add(new Node {Token = normalized});
+                        result.Children.Add(new Node { Token = normalized });
                     }
 
                     else result.ErrorMessage = $"can not parse value {value} in CONTAINS clause";
@@ -388,20 +388,20 @@ namespace Client.Parsing
                     // not in (value1, value2)
                     if (tokens[1].Is("not") && tokens[2].Is("in"))
                     {
-                        var result = new Node {Token = "not in"};
+                        var result = new Node { Token = "not in" };
                         // column name
-                        result.Children.Add(new Node {Token = column});
+                        result.Children.Add(new Node { Token = column });
 
                         var tokensList = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
 
                         foreach (var tks in tokensList)
                         {
-                            var value = string.Join(' ', tks.Select(t=>t.Text));
+                            var value = string.Join(' ', tks.Select(t => t.Text));
                             var normalized = TryNormalizeValue(value);
 
                             if (normalized != null)
                             {
-                                result.Children.Add(new Node {Token = normalized});
+                                result.Children.Add(new Node { Token = normalized });
                             }
 
                             else result.ErrorMessage = $"can ot parse value {value} in IN clause";
@@ -416,20 +416,20 @@ namespace Client.Parsing
                     // not contains (value1, value2)
                     if (tokens[1].Is("not") && tokens[2].Is("contains"))
                     {
-                        var result = new Node {Token = "not contains"};
+                        var result = new Node { Token = "not contains" };
                         // column name
-                        result.Children.Add(new Node {Token = column});
+                        result.Children.Add(new Node { Token = column });
 
                         var tokensList = tokens.Skip(3).TrimLeft("(").TrimRight(")").Split(",");
 
                         foreach (var tks in tokensList)
                         {
-                            var value = string.Join(' ', tks.Select(t=>t.Text));
+                            var value = string.Join(' ', tks.Select(t => t.Text));
                             var normalized = TryNormalizeValue(value);
 
                             if (normalized != null)
                             {
-                                result.Children.Add(new Node {Token = normalized});
+                                result.Children.Add(new Node { Token = normalized });
                             }
 
                             else result.ErrorMessage = $"can ot parse value {value} in IN clause";
@@ -442,10 +442,10 @@ namespace Client.Parsing
                     }
                 }
 
-                return new Node {ErrorMessage = $"Can not parse symbol {tokens[1].NormalizedText}"};
+                return new Node { ErrorMessage = $"Can not parse symbol {tokens[1].NormalizedText}" };
             }
 
-            return new Node {Token = tokens[0].NormalizedText};
+            return new Node { Token = tokens[0].NormalizedText };
         }
     }
 }

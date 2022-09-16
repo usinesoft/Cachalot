@@ -1,6 +1,6 @@
-﻿using System;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
 
 namespace Tests.TestData
 {

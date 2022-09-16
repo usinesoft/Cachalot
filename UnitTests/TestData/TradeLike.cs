@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Tests.TestData
 {
     [Serializable]
-    public class TradeLike 
+    public class TradeLike
     {
         private List<KeyValuePair<DateTime, DateTime>> _ech;
         private DateTime _indexKeyDate;

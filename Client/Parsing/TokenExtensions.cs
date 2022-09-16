@@ -44,7 +44,7 @@ namespace Client.Parsing
             return (original as IEnumerable<Token>).Skip(toSkip).ToList();
         }
 
-        
+
         public static IList<IList<Token>> Split(this IList<Token> original, string separator)
         {
             var result = new List<IList<Token>>();
@@ -81,12 +81,12 @@ namespace Client.Parsing
         /// <returns></returns>
         static IEnumerable<Token> JoinIfKeyword(this IList<Token> original, params string[] separator)
         {
-            for (int i = 0; i < original.Count -1; i++)
+            for (int i = 0; i < original.Count - 1; i++)
             {
-                var joined = original[i].NormalizedText + " " + original[i+1].NormalizedText;
+                var joined = original[i].NormalizedText + " " + original[i + 1].NormalizedText;
                 if (separator.Contains(joined))
                 {
-                    yield return new Token{NormalizedText = joined, Text = joined, TokenType = CharClass.LetterOrDigit};
+                    yield return new Token { NormalizedText = joined, Text = joined, TokenType = CharClass.LetterOrDigit };
                     i++;
                 }
                 else
@@ -116,10 +116,10 @@ namespace Client.Parsing
 
                 if (sep != null)
                 {
-                    
+
                     result.Add(lastSeparator, one);
                     one = new List<Token>();
-                
+
                     lastSeparator = sep;
                 }
                 else
@@ -128,9 +128,9 @@ namespace Client.Parsing
                 }
             }
 
-            
+
             result.Add(lastSeparator, one);
-            
+
 
             return result;
         }

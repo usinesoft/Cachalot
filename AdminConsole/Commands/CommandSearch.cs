@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client;
 using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AdminConsole.Commands
 {
@@ -26,9 +26,9 @@ namespace AdminConsole.Commands
                 Profiler.IsActive = true;
                 Profiler.Start("SEARCH");
 
-                listResult = client.GetMany(Query).Select(r=>r.Item).Cast<JObject>().ToList();
+                listResult = client.GetMany(Query).Select(r => r.Item).Cast<JObject>().ToList();
 
-                
+
 
                 Logger.Write("[");
                 for (var i = 0; i < listResult.Count; i++)

@@ -1,7 +1,7 @@
-using System;
 using Channel;
 using Client.Core;
 using Client.Interface;
+using System;
 
 namespace AdminConsole.Commands
 {
@@ -73,7 +73,7 @@ namespace AdminConsole.Commands
                     {
                         config = new ClientConfig(Params[0]);
                     }
-                    
+
 
                     var index = 0;
                     foreach (var serverConfig in config.Servers)

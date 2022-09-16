@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Server.Persistence;
+using System.Collections.Generic;
 using System.Text;
-using Server.Persistence;
 
 namespace StorageAnalyzer
 {
@@ -19,7 +19,7 @@ namespace StorageAnalyzer
         public long ToProcessCount { get; set; }
 
         public long ProcessedCount { get; set; }
-        
+
 
 
         public List<TransactionLog.TransactionData> ProcessingTransactions { get; } = new List<TransactionLog.TransactionData>();
@@ -43,12 +43,12 @@ namespace StorageAnalyzer
 
             if (ProcessingTransactions.Count > 0)
             {
-             
+
                 result.AppendLine("transactions not fully committed:");
 
                 foreach (var transactionsWithIssue in ProcessingTransactions)
                 {
-                    result.AppendLine("  "+transactionsWithIssue);
+                    result.AppendLine("  " + transactionsWithIssue);
                 }
 
                 result.AppendLine();
@@ -61,14 +61,14 @@ namespace StorageAnalyzer
         {
             var result = new StringBuilder();
 
-            
-            result.AppendLine( $"last offset       : {LastOffset:N0}");
-            result.AppendLine( $"last offset found : {LastOffsetFound:N0}");
-            result.AppendLine( $"total transactions: {TransactionCount:N0}");
-            result.AppendLine( $"processing        : {ProcessingCount:N0}");
-            result.AppendLine( $"canceled          : {CanceledCount:N0}");
-            result.AppendLine( $"to be processed   : {ToProcessCount:N0}");
-            result.AppendLine( $"already processed : {ProcessedCount:N0}");
+
+            result.AppendLine($"last offset       : {LastOffset:N0}");
+            result.AppendLine($"last offset found : {LastOffsetFound:N0}");
+            result.AppendLine($"total transactions: {TransactionCount:N0}");
+            result.AppendLine($"processing        : {ProcessingCount:N0}");
+            result.AppendLine($"canceled          : {CanceledCount:N0}");
+            result.AppendLine($"to be processed   : {ToProcessCount:N0}");
+            result.AppendLine($"already processed : {ProcessedCount:N0}");
 
             return result.ToString();
         }

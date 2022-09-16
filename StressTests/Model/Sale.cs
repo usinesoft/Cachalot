@@ -1,6 +1,6 @@
-﻿using System;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
 
 namespace StressTests.Model
 {
@@ -32,7 +32,7 @@ namespace StressTests.Model
 
         [ServerSideValue(IndexType.Dictionary)]
         public int Month => Date.Month;
-        
+
         [ServerSideValue(IndexType.Dictionary)]
         public int Year => Date.Year;
     }

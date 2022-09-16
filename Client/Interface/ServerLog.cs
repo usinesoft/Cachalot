@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Client.Messages;
+using System.Collections.Generic;
 
 namespace Client.Interface
 {

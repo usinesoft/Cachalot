@@ -1,13 +1,8 @@
 #region
 
-using System;
-using System.Dynamic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Client.Core;
-using Client.Interface;
-using Client.Messages;
 using Client.Parsing;
+using System;
 
 #endregion
 
@@ -68,6 +63,6 @@ namespace Client.Queries
             return new Parser().ParseSql(sql).ToQuery(_collectionSchema);
         }
 
-        
+
     }
 }

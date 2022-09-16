@@ -1,6 +1,6 @@
-﻿using System;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
 
 // ReSharper disable NonReadonlyMemberInGetHashCode
 
@@ -33,7 +33,7 @@ namespace Tests.TestData.Events
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((Event) obj);
+            return Equals((Event)obj);
         }
 
         public override int GetHashCode()

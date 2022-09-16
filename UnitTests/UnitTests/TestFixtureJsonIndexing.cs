@@ -1,11 +1,10 @@
+using Client.Core;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using Client.Messages;
-using Newtonsoft.Json.Linq;
-using NUnit.Framework;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -16,7 +15,7 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureJsonIndexing
     {
-       
+
         [Test]
         public void Packing_a_binary_object_and_its_json_should_give_identical_results()
         {
@@ -36,11 +35,11 @@ namespace Tests.UnitTests
                 AnotherDate = now,
                 AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
-                Tags = {"news", "science", "space", "διξ"},
-                Languages = {"en", "de", "fr"}
+                Tags = { "news", "science", "space", "διξ" },
+                Languages = { "en", "de", "fr" }
             };
 
-            
+
             var packed1 = PackedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
@@ -59,11 +58,11 @@ namespace Tests.UnitTests
 
             for (int i = 0; i < packed2.CollectionValues.Length; i++)
             {
-                CollectionAssert.AreEqual(packed1.CollectionValues[i].Values, packed2.CollectionValues[i].Values);    
+                CollectionAssert.AreEqual(packed1.CollectionValues[i].Values, packed2.CollectionValues[i].Values);
             }
-            
-            
-            
+
+
+
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
         }
 
@@ -113,7 +112,11 @@ namespace Tests.UnitTests
 
             var testObj = new Order
             {
-                Amount = 66.5, Date = date, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5,
+                Date = date,
+                Category = "student",
+                ClientId = 101,
+                ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1,
                 IsDelivered = true
@@ -126,7 +129,7 @@ namespace Tests.UnitTests
 
             var jsonFull = packed.GetJson(schema);
 
-            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"), new[] {"Amount", "Category"} );
+            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"), new[] { "Amount", "Category" });
 
             var json1 = new StreamReader(new MemoryStream(data1)).ReadToEnd();
 
@@ -157,8 +160,8 @@ namespace Tests.UnitTests
                 AnotherDate = now,
                 AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
-                Tags = {"news", "science", "space", "διξ"},
-                Languages = {"en", "de", "fr"}
+                Tags = { "news", "science", "space", "διξ" },
+                Languages = { "en", "de", "fr" }
             };
 
             packed = PackedObject.Pack(testObj1, schema);
@@ -181,7 +184,11 @@ namespace Tests.UnitTests
 
             var testObj = new Order
             {
-                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5,
+                Date = DateTimeOffset.Now,
+                Category = "student",
+                ClientId = 101,
+                ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1,
                 IsDelivered = true
@@ -206,7 +213,7 @@ namespace Tests.UnitTests
 
             CollectionAssert.AreEqual(packed1.Values, packed2.Values);
             CollectionAssert.AreEqual(packed1.CollectionValues, packed2.CollectionValues);
-            
+
 
             var json1 = Encoding.UTF8.GetString(packed1.ObjectData);
             var json2 = Encoding.UTF8.GetString(packed2.ObjectData);
@@ -214,8 +221,8 @@ namespace Tests.UnitTests
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
         }
 
-        
-        
+
+
 
         [Test]
         public void Pack_json_with_missing_properties()
@@ -270,7 +277,7 @@ namespace Tests.UnitTests
             //Assert.AreEqual(2, packed.IndexKeys.Length);
 
             //json = packed.Json;
-                    
+
             //var repacked = PackedObject.PackJson(json, description);
 
             //// check than repacking the object gives tha same result (except for the auto generated primary key)

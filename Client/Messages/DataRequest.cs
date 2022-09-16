@@ -1,8 +1,8 @@
-using System;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages.Pivot;
 using ProtoBuf;
+using System;
 
 namespace Client.Messages
 {

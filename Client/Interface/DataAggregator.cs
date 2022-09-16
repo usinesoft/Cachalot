@@ -1,5 +1,11 @@
 //#define DEBUG_VERBOSE
 
+using Client.ChannelInterface;
+using Client.Core;
+using Client.Messages;
+using Client.Messages.Pivot;
+using Client.Queries;
+using Client.Tools;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,17 +13,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Client.ChannelInterface;
-using Client.Core;
-using Client.Messages;
-using Client.Messages.Pivot;
-using Client.Queries;
-using Client.Tools;
 
 namespace Client.Interface
 {
-    public partial class 
-        
+    public partial class
+
         DataAggregator : IDataClient
     {
 
@@ -68,7 +68,7 @@ namespace Client.Interface
                         throw new CacheException(
                             $"Servers have different schemas: {responses[0].ServerProcessInfo.Host} <> {responses[i].ServerProcessInfo.Host} ");
                 }
-                    
+
 
             return new ClusterInformation(responses);
         }
@@ -188,7 +188,7 @@ namespace Client.Interface
 
         private int WhichNode(KeyValue primaryKey)
         {
-           
+
             return primaryKey.GetHashCode() % CacheClients.Count;
         }
 
@@ -197,11 +197,11 @@ namespace Client.Interface
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
 
-            
-            var request = new PutRequest(collectionName) {ExcludeFromEviction = excludeFromEviction};
+
+            var request = new PutRequest(collectionName) { ExcludeFromEviction = excludeFromEviction };
 
 
-            
+
             request.Items.Add(item);
 
 
@@ -222,7 +222,7 @@ namespace Client.Interface
 
             var sessionId = Guid.NewGuid();
 
-            
+
             // initialize one request per node
             var requests = new PutRequest[CacheClients.Count];
 
@@ -250,7 +250,7 @@ namespace Client.Interface
                 {
                     var task = Task.Factory.StartNew(re =>
                     {
-                        var put = (PutRequest) re;
+                        var put = (PutRequest)re;
                         Interlocked.Add(ref total, put.Items.Count);
 
                         var split = put.SplitWithMaxSize();
@@ -265,9 +265,9 @@ namespace Client.Interface
                             if (response is ExceptionResponse exResponse)
                                 throw new CacheException(
                                     "Error while writing an object to the cache",
-                                    exResponse.Message, exResponse.CallStack);    
+                                    exResponse.Message, exResponse.CallStack);
                         }
-                        
+
                     }, request);
 
 
@@ -305,10 +305,10 @@ namespace Client.Interface
                     var n = node;
                     var task = Task.Factory.StartNew(re =>
                     {
-                        var put = (PutRequest) re;
+                        var put = (PutRequest)re;
                         Interlocked.Add(ref total, put.Items.Count);
                         var split = put.SplitWithMaxSize();
-                        
+
 
                         foreach (var putRequest in split)
                         {
@@ -320,7 +320,7 @@ namespace Client.Interface
                             if (response is ExceptionResponse exResponse)
                                 throw new CacheException(
                                     "Error while writing an object to the cache",
-                                    exResponse.Message, exResponse.CallStack);    
+                                    exResponse.Message, exResponse.CallStack);
                         }
                     }, request);
 
@@ -411,7 +411,7 @@ namespace Client.Interface
 
                 var node = WhichNode(primaryKey);
 
-                var one =  CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
+                var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
                 if (one != null)
                 {
                     yield return one;
@@ -484,9 +484,9 @@ namespace Client.Interface
                 var count1 = 0;
 
                 // if ordered merge results by preserving order (either ascending or descending)
-                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending, clientResults) )
+                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending, clientResults))
                 {
-                   
+
                     yield return item;
 
                     count1++;
@@ -525,7 +525,7 @@ namespace Client.Interface
 
         public void ReleaseLock(Guid sessionId)
         {
-            
+
             try
             {
                 Dbg.Trace($"Aggregator release lock for session {sessionId}");
@@ -533,10 +533,10 @@ namespace Client.Interface
                 Parallel.ForEach(CacheClients, client =>
                 {
                     client.ReleaseLock(sessionId);
-                    
+
                 });
 
-                
+
             }
             catch (AggregateException e)
             {
@@ -569,7 +569,7 @@ namespace Client.Interface
         {
             Parallel.ForEach(CacheClients, client =>
             {
-               client.DeclareCollection(collectionName, schema, shard);
+                client.DeclareCollection(collectionName, schema, shard);
             });
         }
 
@@ -711,12 +711,12 @@ namespace Client.Interface
             }
         }
 
-       
+
 
 
         public void ExecuteTransaction(IList<DataRequest> requests)
         {
-            
+
             // the same connector will not execute transactions in parallel
             lock (_transactionSync)
             {
@@ -727,7 +727,7 @@ namespace Client.Interface
                 status.Initialize(requests, CacheClients);
 
                 status.CheckStatus(TransactionState.Status.Initialized);
-                
+
                 status.TryExecuteAsSingleStage();
 
                 if (status.CurrentStatus == TransactionState.Status.Completed)
@@ -736,10 +736,10 @@ namespace Client.Interface
 
                     return;
                 }
-                
+
 
                 // stage zero : send the transaction request to the servers and wait for them to acquire write locks
-                status.AcquireLock(); 
+                status.AcquireLock();
 
                 status.CheckStatus(TransactionState.Status.LocksAcquired);
 
@@ -769,12 +769,12 @@ namespace Client.Interface
                 else
                 {
                     status.Rollback();
-                    
+
                     throw new CacheException(
-                        $"Error in two stage transaction. The transaction was successfully rolled back: {status.ExceptionType}",status.ExceptionType);
+                        $"Error in two stage transaction. The transaction was successfully rolled back: {status.ExceptionType}", status.ExceptionType);
                 }
-                
-                
+
+
             }
         }
 
@@ -787,7 +787,7 @@ namespace Client.Interface
 
         public bool TryAdd(string collectionName, PackedObject item)
         {
-            
+
             var node = WhichNode(item);
 
             return CacheClients[node].TryAdd(collectionName, item);
@@ -800,19 +800,19 @@ namespace Client.Interface
             CacheClients[node].UpdateIf(newValue, testAsQuery);
         }
 
-        
+
         public Guid AcquireLock(bool writeAccess, params string[] collections)
         {
-            
+
 
             Guid sessionId = Guid.NewGuid();
 
-            LockPolicy.SmartRetry(()=> TryAcquireLock(sessionId, writeAccess, collections));
+            LockPolicy.SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
 
             return sessionId;
-    
-        
-            
+
+
+
         }
 
         private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
@@ -838,7 +838,7 @@ namespace Client.Interface
                 // otherwise release the successful locks to avoid deadlocks
                 Parallel.For(0, CacheClients.Count, i =>
                 {
-                    if(resultByClient[i])
+                    if (resultByClient[i])
                         CacheClients[i].ReleaseLock(sessionId);
                 });
 
@@ -855,11 +855,11 @@ namespace Client.Interface
             {
                 Parallel.For(0, CacheClients.Count, i =>
                 {
-                    if(resultByClient[i])
+                    if (resultByClient[i])
                         CacheClients[i].ReleaseLock(sessionId);
                 });
 
-                
+
                 throw e.InnerException ?? e;
 
             }

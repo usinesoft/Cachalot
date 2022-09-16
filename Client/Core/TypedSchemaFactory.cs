@@ -1,13 +1,12 @@
 #region
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Client.Interface;
 using Client.Messages;
 using Newtonsoft.Json;
+using System;
+using System.Collections;
+using System.Linq;
+using System.Reflection;
 
 #endregion
 
@@ -18,7 +17,7 @@ namespace Client.Core
     /// </summary>
     public static class TypedSchemaFactory
     {
-        
+
         /// <summary>
         ///     Not only a generic version. It also prepares the protobuf serializers which prevents race condition issues during
         ///     the lazy initialization of the serializer
@@ -30,7 +29,7 @@ namespace Client.Core
             return FromType(typeof(T));
         }
 
-        
+
         /// <summary>
         /// Convert <see cref="PropertyInfo"/> to a serializable and language neutral format
         /// </summary>
@@ -38,11 +37,11 @@ namespace Client.Core
         /// <returns></returns>
         private static KeyInfo BuildPropertyMetadata(PropertyInfo propertyInfo)
         {
-            
+
             var name = propertyInfo.Name;
-            
+
             string jsonName = null;
-            
+
             // the name can be altered by a [JsonProperty] attribute
             var jsonAttribute = propertyInfo.GetCustomAttributes(typeof(JsonPropertyAttribute), true)
                 .Cast<JsonPropertyAttribute>().FirstOrDefault();
@@ -52,10 +51,10 @@ namespace Client.Core
                 jsonName = jsonAttribute.PropertyName;
             }
 
-        
+
             //check if it is visible server-side
             var attribute = propertyInfo.GetCustomAttributes(typeof(ServerSideValueAttribute), true)
-                .Cast<ServerSideValueAttribute>().FirstOrDefault();;
+                .Cast<ServerSideValueAttribute>().FirstOrDefault(); ;
             if (attribute != null)
             {
                 // force order of the primary key to 0
@@ -65,8 +64,8 @@ namespace Client.Core
                 bool isCollection = typeof(IEnumerable).IsAssignableFrom(propertyInfo.PropertyType) &&
                                     propertyInfo.PropertyType != typeof(string);
 
-              
-                return new KeyInfo(name, order , attribute.IndexType, jsonName, isCollection);
+
+                return new KeyInfo(name, order, attribute.IndexType, jsonName, isCollection);
             }
 
 
@@ -94,7 +93,7 @@ namespace Client.Core
             var storage = type.GetCustomAttributes(typeof(StorageAttribute), false).FirstOrDefault();
             if (storage != null)
             {
-                var storageParams = (StorageAttribute) storage;
+                var storageParams = (StorageAttribute)storage;
                 layout = storageParams.StorageLayout;
             }
 
@@ -127,7 +126,7 @@ namespace Client.Core
 
 
             // Adjust order. Line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0 
-            
+
             result.ServerSide = result.ServerSide.OrderBy(x => x.Order).ToList();
             int scalarIndex = 0;
             int collectionIndex = 0;
@@ -135,7 +134,7 @@ namespace Client.Core
             {
                 if (item.IsCollection)
                 {
-                    if(result.StorageLayout == Layout.Flat)
+                    if (result.StorageLayout == Layout.Flat)
                     {
                         throw new NotSupportedException("A flat storage does not support indexed collections");
                     }
@@ -146,13 +145,13 @@ namespace Client.Core
                     item.Order = scalarIndex++;
                 }
             }
-            
-            
+
+
 
             //check if the newly registered type is valid
             if (result.PrimaryKeyField == null)
                 throw new NotSupportedException($"No primary key defined for type {type}");
-            
+
 
             return result;
         }

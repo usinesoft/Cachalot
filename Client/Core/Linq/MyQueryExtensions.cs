@@ -14,7 +14,7 @@ namespace Client.Core.Linq
         {
             return source.Provider.CreateQuery<T>(
                 Expression.Call(
-                    ((MethodInfo) MethodBase.GetCurrentMethod())
+                    ((MethodInfo)MethodBase.GetCurrentMethod())
                     .MakeGenericMethod(typeof(T)),
                     source.Expression,
                     Expression.Constant(query)));
@@ -27,7 +27,7 @@ namespace Client.Core.Linq
         {
             return source.Provider.CreateQuery<T>(
                 Expression.Call(
-                    ((MethodInfo) MethodBase.GetCurrentMethod())
+                    ((MethodInfo)MethodBase.GetCurrentMethod())
                     .MakeGenericMethod(typeof(T)),
                     source.Expression));
         }

@@ -1,5 +1,5 @@
-using System;
 using ProtoBuf;
+using System;
 
 namespace Client.Messages
 {
@@ -8,7 +8,7 @@ namespace Client.Messages
     /// </summary>
     [ProtoContract]
     [Serializable]
-    public class   ServerInfo
+    public class ServerInfo
     {
         /// <summary>
         ///     32 or 64 bits server process

@@ -1,5 +1,5 @@
-using System.Linq;
 using Client.Interface;
+using System.Linq;
 
 namespace Client.Queries
 {
@@ -11,7 +11,7 @@ namespace Client.Queries
 
             foreach (var andQuery in rootExpression.Elements)
             {
-                var multipleTests = andQuery.Elements.Where(q=>q.IsComparison).GroupBy(q => q.PropertyName).Where(g => g.Count() > 1).ToList();
+                var multipleTests = andQuery.Elements.Where(q => q.IsComparison).GroupBy(q => q.PropertyName).Where(g => g.Count() > 1).ToList();
 
                 if (multipleTests.Count > 0)
                 {
@@ -67,11 +67,11 @@ namespace Client.Queries
 
                                     if (oper.IsRangeOperator())
                                     {
-                                        var between = new AtomicQuery(q1.Metadata,  q1.Value, q2.Value, oper);
+                                        var between = new AtomicQuery(q1.Metadata, q1.Value, q2.Value, oper);
                                         atomicQueries.Add(between);
                                         optimized = true;
                                     }
-                                    
+
                                 }
                                 else if (q1.Value > q2.Value)
                                 {
@@ -111,9 +111,9 @@ namespace Client.Queries
                                 atomicQueries.Add(q2);
                             }
                         }
-                            
 
-                        
+
+
                     }
 
                     andQuery.Elements.Clear();

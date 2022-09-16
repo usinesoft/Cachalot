@@ -1,7 +1,6 @@
-﻿using System;
-using System.IO;
-using Client.Core;
+﻿using Client.Core;
 using NUnit.Framework;
+using System;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -32,7 +31,7 @@ namespace Tests.UnitTests
                 AnotherDate = now,
                 AreYouSure = FlatWithAllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
-                
+
             };
 
             var packed1 = PackedObject.Pack(testObj1, schema1);

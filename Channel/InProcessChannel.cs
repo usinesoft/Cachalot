@@ -1,11 +1,11 @@
 #region
 
+using Client.ChannelInterface;
+using Client.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Client.ChannelInterface;
-using Client.Core;
 
 #endregion
 
@@ -47,14 +47,14 @@ namespace Channel
 
         private class ClientData : IClient
         {
-            
+
             private readonly ManualResetEvent _dataReceived;
             private readonly MemoryStream _stream;
 
             public ClientData()
             {
                 _dataReceived = new ManualResetEvent(false);
-            
+
                 _stream = new MemoryStream();
             }
 
@@ -74,7 +74,7 @@ namespace Channel
             }
 
 
-            
+
             public bool? ShouldContinue()
             {
                 throw new NotImplementedException("Should never be called for this class");
@@ -148,13 +148,13 @@ namespace Channel
             throw new NotImplementedException("Should never be called for this class");
         }
 
-        
+
         public Response GetResponse(Session session)
         {
             throw new NotImplementedException("Should never be called for thi class");
         }
 
-        
+
 
         public bool Continue(Session session, bool ok)
         {

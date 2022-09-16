@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 using Constants = Server.Persistence.Constants;
 
@@ -44,7 +44,7 @@ namespace Tests.UnitTests
         }
 
         private readonly string _backupPath = Path.Combine("backup", ReliableStorage.StorageFileName);
-        
+
         private CollectionSchema _schema;
 
         [OneTimeSetUp]
@@ -126,7 +126,7 @@ namespace Tests.UnitTests
 
             var schema = TypedSchemaFactory.FromType(typeof(Trade));
 
-            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -177,7 +177,7 @@ namespace Tests.UnitTests
             var transaction2 = MakeTransaction(
                 new Trade(2, 5467, "TOTO", DateTime.Now.Date, 190)
             );
-            var schema= TypedSchemaFactory.FromType(typeof(Trade));
+            var schema = TypedSchemaFactory.FromType(typeof(Trade));
 
             var log = new TransactionLog();
             log.NewTransaction(
@@ -204,7 +204,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -253,7 +253,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(x=> PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 

@@ -34,6 +34,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestRunner", "TestRunner\Te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CachalotMonitor", "CachalotMonitor\CachalotMonitor.csproj", "{0C4BF22D-DE31-4D09-8073-33298951B354}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsvImport", "CsvImport\CsvImport.csproj", "{7D4272C0-FF4A-4B50-907B-9F406D0B38BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +90,10 @@ Global
 		{0C4BF22D-DE31-4D09-8073-33298951B354}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C4BF22D-DE31-4D09-8073-33298951B354}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C4BF22D-DE31-4D09-8073-33298951B354}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D4272C0-FF4A-4B50-907B-9F406D0B38BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D4272C0-FF4A-4B50-907B-9F406D0B38BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D4272C0-FF4A-4B50-907B-9F406D0B38BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D4272C0-FF4A-4B50-907B-9F406D0B38BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

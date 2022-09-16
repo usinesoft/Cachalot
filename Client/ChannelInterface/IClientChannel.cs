@@ -1,6 +1,6 @@
+using Client.Core;
 using System;
 using System.Collections.Generic;
-using Client.Core;
 
 namespace Client.ChannelInterface
 {
@@ -28,7 +28,7 @@ namespace Client.ChannelInterface
         /// </summary>
         void ReleaseConnection(Guid sessionId);
 
-       
+
         IEnumerable<RankedItem> SendStreamRequest(Request request);
 
         //Start a complex communication session
@@ -60,6 +60,6 @@ namespace Client.ChannelInterface
         /// <param name="shouldContinue"></param>
         bool Continue(Session session, bool shouldContinue);
 
-    
+
     }
 }

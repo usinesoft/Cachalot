@@ -1,4 +1,8 @@
 ﻿//#define DEBUG_VERBOSE
+using Client;
+using Client.ChannelInterface;
+using Client.Core;
+using Client.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,10 +11,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Client;
-using Client.ChannelInterface;
-using Client.Core;
-using Client.Messages;
 
 namespace Channel
 {
@@ -34,7 +34,7 @@ namespace Channel
             _listener.Server.DualMode = true;
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             _listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
-            
+
 
             _listener.Start();
 
@@ -61,9 +61,9 @@ namespace Channel
                 Dbg.Trace("before _listener.Server.Disconnect();");
                 _listener.Server.Disconnect(false);
                 Dbg.Trace("after _listener.Server.Disconnect();");
-                
-                
-                
+
+
+
                 //_listener.Stop();
             }
             catch (Exception)
@@ -80,7 +80,7 @@ namespace Channel
 
         private void WaitForClients()
         {
-            
+
             while (true)
                 try
                 {
@@ -114,7 +114,7 @@ namespace Channel
 
         private async Task ClientLoop(object state)
         {
-            var client = (TcpClient) state;
+            var client = (TcpClient)state;
 
             Stream clientStream = client.GetStream();
 
@@ -125,7 +125,7 @@ namespace Channel
                 while (client.Connected)
                 {
                     var buffer = new byte[1];
-                    var bytesCount = await clientStream.ReadAsync(buffer, 0,1);
+                    var bytesCount = await clientStream.ReadAsync(buffer, 0, 1);
 
                     if (bytesCount == -1) // connection closed
                         break;
@@ -134,7 +134,7 @@ namespace Channel
 
                     Dbg.Trace($"input type {inputType}");
 
-                    
+
                     // if its a simple ping do not expect a request
                     if (inputType == Constants.PingCookie)
                     {
@@ -161,7 +161,7 @@ namespace Channel
                             // ReSharper disable once RedundantAssignment
                             var ackOkay = Streamer.ReadAck(clientStream);
                             Debug.Assert(ackOkay);
-                            
+
                         }
                     }
                 }
@@ -170,9 +170,9 @@ namespace Channel
             {
                 //client disconnected (nothing to do)
             }
-// ReSharper disable EmptyGeneralCatchClause
+            // ReSharper disable EmptyGeneralCatchClause
             catch (Exception)
-// ReSharper restore EmptyGeneralCatchClause
+            // ReSharper restore EmptyGeneralCatchClause
             {
                 //ignore 
             }
@@ -207,10 +207,10 @@ namespace Channel
                 {
                     SendResponse(new ReadyResponse());
 
-                    
-//#if !DEBUG
-//                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
-//#endif
+
+                    //#if !DEBUG
+                    //                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
+                    //#endif
 
                     Stream stream = _tcpClient.GetStream();
 
@@ -243,9 +243,9 @@ namespace Channel
 
                     Streamer.ToStream(stream, response);
                 }
-// ReSharper disable EmptyGeneralCatchClause
+                // ReSharper disable EmptyGeneralCatchClause
                 catch (Exception)
-// ReSharper restore EmptyGeneralCatchClause
+                // ReSharper restore EmptyGeneralCatchClause
                 {
                 }
 
@@ -264,12 +264,12 @@ namespace Channel
                     {
                         var memStream = new MemoryStream();
                         Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);
-                        ThreadPool.QueueUserWorkItem(delegate(object state)
+                        ThreadPool.QueueUserWorkItem(delegate (object state)
                         {
-                            var networkStream = (Stream) state;
+                            var networkStream = (Stream)state;
                             memStream.Seek(0, SeekOrigin.Begin);
                             networkStream.Write(memStream.GetBuffer(), 0,
-                                (int) memStream.Length);
+                                (int)memStream.Length);
                         }, stream);
                     }
                     else
@@ -277,9 +277,9 @@ namespace Channel
                         Streamer.ToStreamMany(stream, items, selectedIndexes, aliases);
                     }
                 }
-// ReSharper disable EmptyGeneralCatchClause
+                // ReSharper disable EmptyGeneralCatchClause
                 catch (Exception)
-// ReSharper restore EmptyGeneralCatchClause
+                // ReSharper restore EmptyGeneralCatchClause
                 {
                 }
             }

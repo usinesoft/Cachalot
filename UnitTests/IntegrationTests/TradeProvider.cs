@@ -52,7 +52,7 @@ namespace Tests.IntegrationTests
 
         private Trade GetTradeFromDatabase(int id)
         {
-            return new Trade {Id = id, ContractId = $"TRD-{id}"};
+            return new Trade { Id = id, ContractId = $"TRD-{id}" };
         }
     }
 }

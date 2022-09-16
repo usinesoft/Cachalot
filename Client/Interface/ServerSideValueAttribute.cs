@@ -1,6 +1,6 @@
+using Client.Core;
 using System;
 using System.Runtime.CompilerServices;
-using Client.Core;
 
 namespace Client.Interface
 {
@@ -19,7 +19,7 @@ namespace Client.Interface
         }
 
         public IndexType IndexType { get; }
-        
+
         public int LineNumber { get; }
     }
 }

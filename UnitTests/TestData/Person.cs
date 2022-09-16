@@ -3,7 +3,7 @@ using Client.Interface;
 
 namespace Tests.TestData
 {
-    
+
     public class Person
     {
         public Person(int id, string first, string last)

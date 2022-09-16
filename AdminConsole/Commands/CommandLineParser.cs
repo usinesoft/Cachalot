@@ -1,14 +1,14 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Client;
 using Client.Core;
 using Client.Interface;
 using Client.Parsing;
 using Client.Queries;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 #endregion
 
@@ -57,7 +57,7 @@ namespace AdminConsole.Commands
             //DUMP target directory
             if (Parse(command, "^DUMP\\s*(.*)", atoms))
             {
-                result = new CommandDump {CmdType = CommandType.Dump};
+                result = new CommandDump { CmdType = CommandType.Dump };
 
                 if (atoms.Count == 1)
                 {
@@ -78,7 +78,7 @@ namespace AdminConsole.Commands
             //RESTORE source_directory
             if (Parse(command, "^RESTORE\\s*(.*)", atoms))
             {
-                result = new CommandRestore {CmdType = CommandType.Restore};
+                result = new CommandRestore { CmdType = CommandType.Restore };
 
                 if (atoms.Count == 1)
                 {
@@ -99,7 +99,7 @@ namespace AdminConsole.Commands
             //IMPORT source_directory
             if (Parse(command, "^IMPORT\\s*(.*)", atoms))
             {
-                result = new CommandImport {CmdType = CommandType.Import};
+                result = new CommandImport { CmdType = CommandType.Import };
 
                 if (atoms.Count == 1)
                 {
@@ -112,7 +112,7 @@ namespace AdminConsole.Commands
                         result.Success = true;
                     }
 
-                    
+
                 }
                 else
                 {
@@ -126,7 +126,7 @@ namespace AdminConsole.Commands
             //RECREATE source directory
             if (Parse(command, "^RECREATE\\s*(.*)", atoms))
             {
-                result = new CommandRecreate {CmdType = CommandType.Recreate};
+                result = new CommandRecreate { CmdType = CommandType.Recreate };
 
                 if (atoms.Count == 1)
                 {
@@ -147,7 +147,7 @@ namespace AdminConsole.Commands
             //HELP command/HELP
             if (Parse(command, "^HELP\\s*(.*)", atoms))
             {
-                result = new CommandHelp {CmdType = CommandType.Help};
+                result = new CommandHelp { CmdType = CommandType.Help };
 
                 if (atoms.Count <= 1)
                 {
@@ -167,12 +167,12 @@ namespace AdminConsole.Commands
 
                 return result;
             }
-            
+
 
             //EXIT
             if (Parse(command, "^EXIT", atoms))
             {
-                result = new CommandBase {CmdType = CommandType.Exit, Success = true};
+                result = new CommandBase { CmdType = CommandType.Exit, Success = true };
                 result.Success = true;
                 return result;
             }
@@ -186,7 +186,7 @@ namespace AdminConsole.Commands
                     Success = true
                 };
 
-                
+
             }
 
             //STOP
@@ -219,7 +219,7 @@ namespace AdminConsole.Commands
 
             if (command.Trim().ToLower().StartsWith("select"))
             {
-                result = new CommandSelect {CmdType = CommandType.Select};
+                result = new CommandSelect { CmdType = CommandType.Select };
 
                 ParseSelectOrCount(command, result);
 
@@ -229,7 +229,7 @@ namespace AdminConsole.Commands
 
             if (command.Trim().ToLower().StartsWith("count"))
             {
-                result = new CommandCount {CmdType = CommandType.Count};
+                result = new CommandCount { CmdType = CommandType.Count };
 
                 ParseSelectOrCount(command, result);
 
@@ -240,7 +240,7 @@ namespace AdminConsole.Commands
 
             if (command.Trim().ToLower().StartsWith("last")) // shorthand for select most recent from activity table
             {
-                result = new CommandSelect {CmdType = CommandType.Select};
+                result = new CommandSelect { CmdType = CommandType.Select };
 
                 int take = 1;
 
@@ -250,7 +250,7 @@ namespace AdminConsole.Commands
                     try
                     {
                         take = int.Parse(parts[1]);
-                       
+
                     }
                     catch (Exception e)
                     {
@@ -261,12 +261,12 @@ namespace AdminConsole.Commands
                     }
                 }
 
-            
+
                 var alias = "select from @ACTIVITY order by TIMESTAMP descending";
 
                 ParseSelectOrCount(alias, result);
 
-                
+
                 if (result.Success) // managed to parse the SQL
                 {
                     result.Query.Take = take;
@@ -278,7 +278,7 @@ namespace AdminConsole.Commands
 
             if (command.Trim().ToLower().StartsWith("longest")) // shorthand for select queries that took longest time to execute server-side
             {
-                result = new CommandSelect {CmdType = CommandType.Select};
+                result = new CommandSelect { CmdType = CommandType.Select };
 
                 int take = 1;
 
@@ -288,7 +288,7 @@ namespace AdminConsole.Commands
                     try
                     {
                         take = int.Parse(parts[1]);
-                       
+
                     }
                     catch (Exception e)
                     {
@@ -299,12 +299,12 @@ namespace AdminConsole.Commands
                     }
                 }
 
-            
+
                 var alias = "select from @ACTIVITY where type=SELECT order by ExecutionTimeInMicroseconds descending";
 
                 ParseSelectOrCount(alias, result);
 
-                
+
                 if (result.Success) // managed to parse the SQL
                 {
                     result.Query.Take = take;
@@ -313,12 +313,12 @@ namespace AdminConsole.Commands
                 return result;
 
             }
-            
-            
-            
+
+
+
             if (Parse(command, "(^SEARCH)\\s+([a-zA-Z0-9\\.]+)\\s+(.+)", atoms))
             {
-                result = new CommandSearch {CmdType = CommandType.Search};
+                result = new CommandSearch { CmdType = CommandType.Search };
 
                 if (atoms.Count != 3)
                 {
@@ -332,13 +332,14 @@ namespace AdminConsole.Commands
                     try
                     {
                         var typeDescription = GetTypeDescriptionByName(atoms[1]);
-                        
+
 
                         var ftQuery = atoms[2];
 
                         result.Query = new OrQuery(typeDescription.CollectionName)
                         {
-                            FullTextSearch = ftQuery, Take = 10
+                            FullTextSearch = ftQuery,
+                            Take = 10
                         };
                         // limit the number of results when searching in admin console
                         result.Success = true;
@@ -352,19 +353,19 @@ namespace AdminConsole.Commands
             }
             else if (command.Trim().ToLower().StartsWith("delete"))
             {
-                result = new CommandDelete {CmdType = CommandType.Delete};
+                result = new CommandDelete { CmdType = CommandType.Delete };
 
                 // create the correspondent select and use the select parser to parse the WHERE clause
-                var alias = command.Replace("delete", "select", StringComparison.InvariantCultureIgnoreCase); 
+                var alias = command.Replace("delete", "select", StringComparison.InvariantCultureIgnoreCase);
 
                 ParseSelectOrCount(alias, result);
 
-                
+
                 return result;
             }
             else if (Parse(command, "^TRUNCATE\\s+(.+)", atoms))
             {
-                result = new CommandDelete {CmdType = CommandType.Delete};
+                result = new CommandDelete { CmdType = CommandType.Delete };
 
                 if (atoms.Count != 1)
                 {
@@ -386,11 +387,11 @@ namespace AdminConsole.Commands
                     }
                 }
             }
-           
+
             //DESC table /  DESC (the second form displays information on the server)
             else if (Parse(command, "^DESC\\s*(.*)", atoms))
             {
-                result = new CommandDesc {CmdType = CommandType.Desc};
+                result = new CommandDesc { CmdType = CommandType.Desc };
 
                 if (atoms.Count <= 1)
                 {
@@ -411,11 +412,11 @@ namespace AdminConsole.Commands
             //CONNECT server port or CONNECT config.xml
             else if (Parse(command, "^CONNECT\\s*(.*)", atoms))
             {
-                result = new CommandConnect {CmdType = CommandType.Connect};
+                result = new CommandConnect { CmdType = CommandType.Connect };
 
                 if (atoms.Count == 1)
                 {
-                    
+
                     result.Params.Add(atoms[0].Trim());
                 }
 

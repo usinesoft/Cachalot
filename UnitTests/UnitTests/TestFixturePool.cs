@@ -1,5 +1,5 @@
-using System.Threading;
 using NUnit.Framework;
+using System.Threading;
 
 namespace Tests.UnitTests
 {
@@ -26,7 +26,7 @@ namespace Tests.UnitTests
             var res3 = pool.Get();
             Assert.AreEqual(pool.NewResourceClaims, 2);
 
-           
+
         }
 
         [Test]

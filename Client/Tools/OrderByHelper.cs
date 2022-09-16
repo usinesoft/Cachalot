@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Client.Core;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Client.Core;
-using Newtonsoft.Json.Linq;
 
 namespace Client.Tools
 {
@@ -17,8 +17,8 @@ namespace Client.Tools
         /// <returns></returns>
         public static IEnumerable<RankedItem> MixOrderedEnumerators(string orderedPropertyName, bool descending = false, params IEnumerator<RankedItem>[] sources)
         {
-            return descending? MergePreserveOrderDescending(sources, ri => (JValue) ri.Item.GetValue(orderedPropertyName,StringComparison.InvariantCultureIgnoreCase)):
-                MergePreserveOrderAscending(sources, ri => (JValue) ri.Item.GetValue(orderedPropertyName,StringComparison.InvariantCultureIgnoreCase));
+            return descending ? MergePreserveOrderDescending(sources, ri => (JValue)ri.Item.GetValue(orderedPropertyName, StringComparison.InvariantCultureIgnoreCase)) :
+                MergePreserveOrderAscending(sources, ri => (JValue)ri.Item.GetValue(orderedPropertyName, StringComparison.InvariantCultureIgnoreCase));
 
         }
 
@@ -52,7 +52,7 @@ namespace Client.Tools
 
                     if (ii == items.Count) items.Add(Tuple.Create(value, next.Item2));
                 }
-                else next.Item2.Dispose(); 
+                else next.Item2.Dispose();
             }
         }
 
@@ -85,7 +85,7 @@ namespace Client.Tools
 
                     if (ii == items.Count) items.Add(Tuple.Create(value, next.Item2));
                 }
-                else next.Item2.Dispose(); 
+                else next.Item2.Dispose();
             }
         }
     }

@@ -1,12 +1,5 @@
 ﻿//#define DEBUG_VERBOSE
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Cachalot.Linq;
 using Channel;
 using Client;
@@ -14,6 +7,13 @@ using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Tests.TestData;
 using Tests.TestData.MoneyTransfer;
 // ReSharper disable AccessToDisposedClosure
@@ -75,7 +75,7 @@ namespace Tests.IntegrationTests
             }
         }
 
-        
+
 
         private ClientConfig _clientConfig;
 
@@ -88,11 +88,11 @@ namespace Tests.IntegrationTests
 
             for (var i = 0; i < serverCount; i++)
             {
-                var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = $"server{i:D2}"};
+                var serverInfo = new ServerInfo { Channel = new TcpServerChannel() };
+                var nodeConfig = new NodeConfig { IsPersistent = true, DataPath = $"server{i:D2}" };
 
                 serverInfo.Server =
-                    new Server.Server(nodeConfig) {Channel = serverInfo.Channel};
+                    new Server.Server(nodeConfig) { Channel = serverInfo.Channel };
 
                 serverInfo.Port = serverInfo.Channel.Init();
                 serverInfo.Channel.Start();
@@ -101,7 +101,7 @@ namespace Tests.IntegrationTests
                 _servers.Add(serverInfo);
 
                 _clientConfig.Servers.Add(
-                    new ServerConfig {Host = "localhost", Port = serverInfo.Port});
+                    new ServerConfig { Host = "localhost", Port = serverInfo.Port });
             }
 
             _clientConfig.ConnectionPoolCapacity = 10;
@@ -118,8 +118,8 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
@@ -127,8 +127,8 @@ namespace Tests.IntegrationTests
 
                 var tIds = connector.GenerateUniqueIds("transfer_ids", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
                 // first transaction should succeed
@@ -137,13 +137,15 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 334;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
-                        Id = tIds[0], Amount = transferredMoney, SourceAccount = accountIds[0],
+                        Id = tIds[0],
+                        Amount = transferredMoney,
+                        SourceAccount = accountIds[0],
                         DestinationAccount = accountIds[1]
                     });
                     transaction.Commit();
@@ -170,10 +172,10 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 1001;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
                         Id = tIds[0],
@@ -218,8 +220,8 @@ namespace Tests.IntegrationTests
             // check that everything is persisted ok
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];
@@ -244,8 +246,8 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
@@ -253,8 +255,8 @@ namespace Tests.IntegrationTests
 
                 var tIds = connector.GenerateUniqueIds("transfer_ids", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
                 // make a many transfers between two accounts
@@ -263,10 +265,10 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 334;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
                         Id = tIds[0],
@@ -300,8 +302,8 @@ namespace Tests.IntegrationTests
 
                     var transaction = connector.BeginTransaction();
 
-                    transaction.Put(new Account {Id = accountIds[0], Balance = 1000});
-                    transaction.Put(new Account {Id = accountIds[1], Balance = 0});
+                    transaction.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                    transaction.Put(new Account { Id = accountIds[1], Balance = 0 });
                     transaction.Delete(transfer);
 
                     transaction.Commit();
@@ -324,8 +326,8 @@ namespace Tests.IntegrationTests
             // check that everything is persisted ok
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];
@@ -345,12 +347,12 @@ namespace Tests.IntegrationTests
         public void Delete_many_in_transaction()
         {
             using var connector = new Connector(_clientConfig);
-            
+
             connector.DeclareCollection<Account>("delete_test");
 
             const int count = 2000;
             const int classes = 10;
-            
+
             var accountIds = connector.GenerateUniqueIds("account_id", count);
 
             var accounts = connector.DataSource<Account>("delete_test");
@@ -359,15 +361,15 @@ namespace Tests.IntegrationTests
 
             for (int i = 0; i < count; i++)
             {
-                var acc = new Account {Id = accountIds[i], Balance = i % classes};
+                var acc = new Account { Id = accountIds[i], Balance = i % classes };
                 all.Add(acc);
             }
 
             accounts.PutMany(all);
 
             Assert.AreEqual(count, accounts.Count());
-            
-            Assert.AreEqual(count / classes, accounts.Count(acc=>acc.Balance == 3));
+
+            Assert.AreEqual(count / classes, accounts.Count(acc => acc.Balance == 3));
 
             var random = new Random(Environment.TickCount);
 
@@ -378,7 +380,7 @@ namespace Tests.IntegrationTests
                 for (int i = 0; i < classes; i++)
                 {
                     var transaction = connector.BeginTransaction();
-                    transaction.DeleteMany<Account>(acc=> acc.Balance == i, "delete_test");
+                    transaction.DeleteMany<Account>(acc => acc.Balance == i, "delete_test");
                     transaction.Commit();
                     Thread.Sleep(random.Next(200));
                 }
@@ -395,7 +397,7 @@ namespace Tests.IntegrationTests
 
                             var chunkSize = count / classes;
 
-                            
+
 
                             Assert.AreEqual(0, notDeleted % chunkSize, "only complete chunks are deleted");
 
@@ -405,8 +407,8 @@ namespace Tests.IntegrationTests
 
                         Thread.Sleep(random.Next(200));
                     }
-                        
-                   
+
+
                 });
         }
 
@@ -423,8 +425,8 @@ namespace Tests.IntegrationTests
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
                 myAccounts = accounts.ToList();
 
@@ -434,8 +436,8 @@ namespace Tests.IntegrationTests
                 () =>
                 {
                     using var connector1 = new Connector(_clientConfig);
-                    connector1.DeclareCollection<Account>();  
-                    connector1.DeclareCollection<MoneyTransfer>();  
+                    connector1.DeclareCollection<Account>();
+                    connector1.DeclareCollection<MoneyTransfer>();
                     for (var i = 0; i < 100; i++)
                     {
                         var transfer = new MoneyTransfer
@@ -459,8 +461,8 @@ namespace Tests.IntegrationTests
                 () =>
                 {
                     using var connector2 = new Connector(_clientConfig);
-                    connector2.DeclareCollection<Account>();  
-                    connector2.DeclareCollection<MoneyTransfer>();  
+                    connector2.DeclareCollection<Account>();
+                    connector2.DeclareCollection<MoneyTransfer>();
                     for (var i = 0; i < 100; i++)
                     {
                         var transfer = new MoneyTransfer
@@ -534,8 +536,8 @@ namespace Tests.IntegrationTests
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
                 var myAccounts = accounts.ToList();
 
@@ -575,19 +577,19 @@ namespace Tests.IntegrationTests
             using (var connector = new Connector(_clientConfig))
             {
 
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
                 // run in parallel a sequence of transactions and non transactional read requests 
-                
+
                 try
                 {
                     Parallel.Invoke(
@@ -600,7 +602,7 @@ namespace Tests.IntegrationTests
                                 Assert.AreEqual(2, myAccounts.Count);
 
                                 var transfers = connector.DataSource<MoneyTransfer>();
-                                
+
                                 // this is also a non transactional request
                                 var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
@@ -610,7 +612,7 @@ namespace Tests.IntegrationTests
                         {
                             List<Account> myAccounts = accounts.ToList();
 
-                            
+
                             for (var i = 0; i < Threads; i++)
                             {
                                 var transfer = new MoneyTransfer
@@ -644,8 +646,8 @@ namespace Tests.IntegrationTests
             StartServers();
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var myAccounts = accounts.ToList();
@@ -667,16 +669,16 @@ namespace Tests.IntegrationTests
         public void Consistent_reads_in_parallel()
         {
             using var connector = new Connector(_clientConfig);
-            
-            connector.DeclareCollection<Account>();  
-            connector.DeclareCollection<MoneyTransfer>();  
+
+            connector.DeclareCollection<Account>();
+            connector.DeclareCollection<MoneyTransfer>();
 
             var accounts = connector.DataSource<Account>();
 
             var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-            accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-            accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+            accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+            accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
             Parallel.For(0, 20, i =>
             {
@@ -684,16 +686,16 @@ namespace Tests.IntegrationTests
                 // ReSharper disable once AccessToDisposedClosure
                 connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
                 {
-                                    
+
                     var myAccounts = ctx.Collection<Account>().ToList();
                     Assert.AreEqual(2, myAccounts.Count);
 
                     // with consistent reed we do not see the updates during a transaction. The sum of the accounts balance should always be 1000
-                    Assert.AreEqual(1000, myAccounts.Sum(acc=>acc.Balance));
+                    Assert.AreEqual(1000, myAccounts.Sum(acc => acc.Balance));
 
                     var transfers = ctx.Collection<MoneyTransfer>();
-                                
-                                    
+
+
                     var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
                 });
@@ -707,31 +709,31 @@ namespace Tests.IntegrationTests
         public void Sequential_consistent_reads_and_transactions()
         {
             using var connector = new Connector(_clientConfig);
-            
-            connector.DeclareCollection<Account>();  
-            connector.DeclareCollection<MoneyTransfer>();  
+
+            connector.DeclareCollection<Account>();
+            connector.DeclareCollection<MoneyTransfer>();
 
             var accounts = connector.DataSource<Account>();
 
             var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-            accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-            accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+            accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+            accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
-           
+
             // ReSharper disable once AccessToDisposedClosure
             connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
             {
-                                
+
                 var myAccounts = ctx.Collection<Account>().ToList();
                 Assert.AreEqual(2, myAccounts.Count);
 
                 // with consistent reed we do not see the updates during a transaction. The sum of the accounts balance should always be 1000
-                Assert.AreEqual(1000, myAccounts.Sum(acc=>acc.Balance));
+                Assert.AreEqual(1000, myAccounts.Sum(acc => acc.Balance));
 
                 var transfers = ctx.Collection<MoneyTransfer>();
-                            
-                                
+
+
                 var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
             });
@@ -756,26 +758,26 @@ namespace Tests.IntegrationTests
             transaction.Put(transfer);
             transaction.Commit();
 
-           
+
 
         }
 
-        
+
 
         [Test]
         public void Move_data_from_one_collection_to_another_with_transactions()
         {
             using var connector = new Connector(_clientConfig);
-            
-            connector.DeclareCollection<Order>("new_orders");  
+
+            connector.DeclareCollection<Order>("new_orders");
             connector.DeclareCollection<Order>("processed_orders");
 
-            const int count = 100; 
+            const int count = 100;
 
             var all = new List<Order>();
             for (int i = 0; i < count; i++)
             {
-                all.Add(new Order{Id = Guid.NewGuid(), Amount = 50, Category = "geek"});
+                all.Add(new Order { Id = Guid.NewGuid(), Amount = 50, Category = "geek" });
             }
 
             var newOrders = connector.DataSource<Order>("new_orders");
@@ -785,40 +787,40 @@ namespace Tests.IntegrationTests
 
             // using transactions move orders from one collection to another
             // and consistent read to check that at any time data is consistent
-            
-                Parallel.Invoke(() =>
+
+            Parallel.Invoke(() =>
+            {
+                foreach (var order in newOrders.ToList())
                 {
-                    foreach (var order in newOrders.ToList())
-                    {
-                        var transaction = connector.BeginTransaction();
-                        order.IsDelivered = true;
-                        transaction.Put(order, "processed_orders");
-                        transaction.Delete(order, "new_orders");
-                        transaction.Commit();
+                    var transaction = connector.BeginTransaction();
+                    order.IsDelivered = true;
+                    transaction.Put(order, "processed_orders");
+                    transaction.Delete(order, "new_orders");
+                    transaction.Commit();
 
-                        Thread.SpinWait(10000);
-                    }
-                },
-                    () =>
+                    Thread.SpinWait(10000);
+                }
+            },
+                () =>
+                {
+                    for (int i = 0; i < count; i++)
                     {
-                        for (int i = 0; i < count; i++)
+                        connector.ConsistentRead(ctx =>
                         {
-                            connector.ConsistentRead(ctx =>
-                            {
-                                var @new = ctx.Collection<Order>("new_orders").ToList();
-                                var processed = ctx.Collection<Order>("processed_orders").ToList();
+                            var @new = ctx.Collection<Order>("new_orders").ToList();
+                            var processed = ctx.Collection<Order>("processed_orders").ToList();
 
-                                Assert.AreEqual(count, processed.Count + @new.Count);
-                                Assert.IsTrue(processed.All(o=>o.IsDelivered = true));
+                            Assert.AreEqual(count, processed.Count + @new.Count);
+                            Assert.IsTrue(processed.All(o => o.IsDelivered = true));
 
-                                Console.WriteLine($"{@new.Count} - {processed.Count}");
+                            Console.WriteLine($"{@new.Count} - {processed.Count}");
 
-                            }, "new_orders", "processed_orders");
-                        }
-                    });
+                        }, "new_orders", "processed_orders");
+                    }
+                });
 
-                
-            
+
+
 
 
         }
@@ -828,23 +830,23 @@ namespace Tests.IntegrationTests
         {
             using var connector = new Connector(_clientConfig);
 
-            connector.DeclareCollection<Account>();  
-            connector.DeclareCollection<MoneyTransfer>();  
+            connector.DeclareCollection<Account>();
+            connector.DeclareCollection<MoneyTransfer>();
 
             var accounts = connector.DataSource<Account>();
 
-                
+
             var accountIds = connector.GenerateUniqueIds("account_id", 2);
             var transferIds = connector.GenerateUniqueIds("transfer_id", Threads);
 
-            accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-            accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+            accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+            accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
             var watch = new Stopwatch();
             watch.Start();
 
-                
+
 
             //run in parallel a sequence of transactions and consistent read-only operation
             List<Account> all = accounts.ToList();
@@ -853,7 +855,7 @@ namespace Tests.IntegrationTests
                 Parallel.Invoke(
                     () =>
                     {
-                        Parallel.For(0, Threads,new ParallelOptions{MaxDegreeOfParallelism = 10},   i =>
+                        Parallel.For(0, Threads, new ParallelOptions { MaxDegreeOfParallelism = 10 }, i =>
                         {
 
                             // ReSharper disable once AccessToDisposedClosure
@@ -874,7 +876,7 @@ namespace Tests.IntegrationTests
 
                                 var tr = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
 
-                                Dbg.Trace($"Done step 2 for iteration {i}");    
+                                Dbg.Trace($"Done step 2 for iteration {i}");
 
                                 //check consistency between transfer and balance
 
@@ -890,7 +892,7 @@ namespace Tests.IntegrationTests
 
 
 
-                        }); 
+                        });
                     },
                     () =>
                     {
@@ -960,15 +962,15 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);
 
-                var srcAccount = new Account {Id = accountIds[0], Balance = 1000};
-                var dstAccount = new Account {Id = accountIds[1], Balance = 0};
+                var srcAccount = new Account { Id = accountIds[0], Balance = 1000 };
+                var dstAccount = new Account { Id = accountIds[1], Balance = 0 };
 
                 accounts.Put(srcAccount);
                 accounts.Put(dstAccount);
@@ -987,7 +989,9 @@ namespace Tests.IntegrationTests
 
                 var transfer = new MoneyTransfer
                 {
-                    Amount = 10, Date = DateTime.Today, SourceAccount = myAccounts[0].Id,
+                    Amount = 10,
+                    Date = DateTime.Today,
+                    SourceAccount = myAccounts[0].Id,
                     DestinationAccount = myAccounts[1].Id
                 };
 

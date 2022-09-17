@@ -26,6 +26,85 @@ namespace Tests.UnitTests
             Assert.IsTrue(hash > 0, "hash > 0");
         }
 
+
+        [Test]
+        public void DifferentTypesAsKeyValue()
+        {
+            {
+                byte bt = 12;
+                var kv = new KeyValue(bt);
+
+                Assert.AreEqual(bt, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+            }
+
+            {
+                byte? bt = 12;
+                var kv = new KeyValue(bt);
+
+                Assert.AreEqual(bt, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+            }
+
+            {
+                byte? bt = null;
+                var kv = new KeyValue(bt);
+
+                Assert.AreEqual(0, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
+            }
+
+            {
+                DateTime dt = DateTime.Now;
+                var kv = new KeyValue(dt);
+
+                Assert.AreEqual(dt.Ticks, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+            }
+
+            {
+                DateTime? dt = DateTime.Now;
+                var kv = new KeyValue(dt);
+
+                Assert.AreEqual(dt.Value.Ticks, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+            }
+
+            {
+                DateTime? dt = null;
+                var kv = new KeyValue(dt);
+
+                Assert.AreEqual(0, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
+            }
+
+            {
+                DayOfWeek dow = DayOfWeek.Friday;
+                var kv = new KeyValue(dow);
+
+                Assert.AreEqual(5, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+            }
+
+            {
+                DayOfWeek? dow = DayOfWeek.Friday;
+                var kv = new KeyValue(dow);
+
+                Assert.AreEqual(5, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+            }
+
+            {
+                bool tf = true;
+                var kv = new KeyValue(tf);
+
+                Assert.AreEqual(1, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Boolean, kv.Type);
+            }
+
+
+        }
+
         [Test]
         public void TestKoNoPrimaryKey()
         {

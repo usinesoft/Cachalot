@@ -420,9 +420,6 @@ namespace Client.Core
         /// <summary>
         /// Pack a csv line. Assume the flat layout in this case. All fields are scalars and are server-side visible
         /// </summary>
-        /// <param name="jObject"></param>
-        /// <param name="collectionSchema"></param>
-        /// <param name="collectionName"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
         public static PackedObject PackCsv(int primaryKey, string line, string collectionName, char separator = ',')
@@ -445,10 +442,8 @@ namespace Client.Core
             int pos = 1;
             foreach (var value in values)
             {
-                var kv = CsvHelper.GetTypedValue(value);
-
-
-
+                var kv = KeyValueParsingPool.FromString(value);//CsvHelper.GetTypedValue(value);
+                
                 result.Values[pos] = kv;
 
                 pos++;

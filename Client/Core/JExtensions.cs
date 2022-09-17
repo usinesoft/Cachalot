@@ -98,14 +98,15 @@ namespace Client.Core
 
             if (type == KeyValue.OriginalType.Date)
             {
-                if (DateTimeOffset.TryParse(valueAsString, out var dv))
-                {
-                    return dv;
-                }
-
+                
                 if (DateTime.TryParse(valueAsString, out var dt))
                 {
                     return dt;
+                }
+
+                if (DateTimeOffset.TryParse(valueAsString, out var dv))
+                {
+                    return dv;
                 }
 
                 return valueAsString;

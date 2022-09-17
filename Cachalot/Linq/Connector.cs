@@ -193,6 +193,14 @@ namespace Cachalot.Linq
         private Server.Server _server;
 
 
+        /// <summary>
+        /// No parameters => we will create an internal, non persistent server
+        /// </summary>
+        public Connector():this(new ClientConfig(){IsPersistent = false})
+        {
+
+        }
+
         public Connector(string connectionString) : this(new ClientConfig(connectionString))
         {
         }

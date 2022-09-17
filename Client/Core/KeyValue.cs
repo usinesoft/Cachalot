@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -41,323 +42,7 @@ namespace Client.Core
 
 
         public OriginalType Type => (OriginalType)_data[0];
-
-        public override string ToString()
-        {
-            var type = (OriginalType)_data[0];
-
-            switch (type)
-            {
-                case OriginalType.SomeInteger:
-                    return _hashCode.ToString();
-
-                case OriginalType.SomeFloat:
-                    return NumericValue.ToString(CultureInfo.InvariantCulture);
-
-                case OriginalType.Boolean:
-                    return (_hashCode != 0).ToString();
-
-                case OriginalType.Date:
-                    if (_data.Length == 1)//no offset
-                        return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
-
-                    var offset = BitConverter.ToInt64(_data, 1);
-                    return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
-
-                case OriginalType.String:
-                    return StringValue;
-
-                case OriginalType.Null:
-                    return "null";
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-        }
-
-        public JProperty ToJson(string name)
-        {
-            var type = (OriginalType)_data[0];
-
-            switch (type)
-            {
-                case OriginalType.SomeInteger:
-                    return new JProperty(name, _hashCode);
-
-                case OriginalType.SomeFloat:
-                    return new JProperty(name, NumericValue);
-
-                case OriginalType.Boolean:
-                    return new JProperty(name, _hashCode != 0);
-
-                case OriginalType.Date:
-                    if (_data.Length == 1)//no offset
-                        return new JProperty(name, new DateTime(_hashCode));
-
-                    var offset = BitConverter.ToInt64(_data, 1);
-
-                    return new JProperty(name, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
-
-                case OriginalType.String:
-                    return new JProperty(name, StringValue);
-
-                case OriginalType.Null:
-                    return new JProperty(name, null);
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-        }
-
-        void StableHashForString(string value)
-        {
-            unchecked
-            {
-
-                long hash = 1;
-                long multiplier = 29;
-                foreach (var c in value)
-                {
-                    hash += c * multiplier;
-                    multiplier *= multiplier;
-                }
-
-                _hashCode = Math.Abs(hash);
-            }
-
-        }
-
-        void FromLong(long longValue, OriginalType type)
-        {
-            _hashCode = longValue;
-            _data[0] = (byte)type;
-        }
-
-        void FromFloatingPoint(double floatValue, OriginalType type)
-        {
-            _hashCode = (long)(floatValue * FloatingPrecision);
-
-            _data[0] = (byte)type;
-
-            // If no precision was lost, no need to keep the original value otherwise store it
-            // If possible, storing it as an int mai handle the precision better than the double (1.7 for example 
-            if (_hashCode % 10 != 0)
-            {
-                var original = BitConverter.GetBytes(floatValue);
-
-                var data = new byte[1 + original.Length];
-                data[0] = _data[0];
-
-                Buffer.BlockCopy(original, 0, data, 1, original.Length);
-
-                _data = data;
-            }
-
-        }
-
-        void FromString(string stringValue)
-        {
-
-            StableHashForString(stringValue);
-
-            _data[0] = (byte)OriginalType.String;
-
-            var original = Encoding.UTF8.GetBytes(stringValue);
-
-            var data = new byte[1 + original.Length];
-            data[0] = _data[0];
-
-            Buffer.BlockCopy(original, 0, data, 1, original.Length);
-
-            _data = data;
-
-        }
-
-        void FromNull()
-        {
-            _hashCode = 0;
-
-            _data[0] = (byte)OriginalType.Null;
-        }
-
         public bool IsNull => _data[0] == (int)OriginalType.Null;
-
-        /// <summary>
-        /// This kind of date needs to be serialized to two longs to be reconstructed identically
-        /// </summary>
-        /// <param name="value"></param>
-        private void FromDateTimeWithTimeZone(DateTimeOffset value)
-        {
-            _hashCode = value.Ticks;
-
-
-            var offset = value.Offset.Ticks;
-
-            if (offset == 0)
-            {
-                _data[0] = (byte)OriginalType.Date;
-                return;
-            }
-
-            var offsetBytes = BitConverter.GetBytes(offset);
-
-            _data = new byte[1 + offsetBytes.Length];
-            _data[0] = (byte)OriginalType.Date;
-
-            Buffer.BlockCopy(offsetBytes, 0, _data, 1, offsetBytes.Length);
-
-        }
-
-
-
-        /// <summary>
-        /// For serialization only
-        /// </summary>
-        [UsedImplicitly]
-        public KeyValue()
-        {
-        }
-
-
-        public KeyValue(object value)
-        {
-            _data = new byte[1];
-
-            //KeyName = info.Name;
-
-            if (value == null)
-            {
-                FromNull();
-                return;
-            }
-
-            var propertyType = value.GetType();
-
-
-            //integer types
-            if (propertyType == typeof(int) || propertyType == typeof(short) || propertyType == typeof(long) ||
-                propertyType == typeof(byte) || propertyType == typeof(char))
-
-            {
-                var longVal = Convert.ToInt64(value);
-                FromLong(longVal, OriginalType.SomeInteger);
-                return;
-            }
-
-            if (propertyType == typeof(bool))
-            {
-                var longVal = Convert.ToInt64(value);
-                FromLong(longVal, OriginalType.Boolean);
-                return;
-            }
-
-            if (propertyType.IsEnum)
-            {
-                var longVal = Convert.ToInt64(value);
-                FromLong(longVal, OriginalType.SomeInteger);
-                return;
-            }
-
-
-            if (propertyType == typeof(float) || propertyType == typeof(double) || propertyType == typeof(decimal))
-            {
-                FromFloatingPoint(Convert.ToDouble(value), OriginalType.SomeFloat);
-                return;
-            }
-
-            if (propertyType == typeof(DateTime))
-            {
-                // the default DateTime can not be directly converted to DateTimeOffset
-                var date = (DateTime)value;
-                if (date == default)
-                {
-                    FromDateTimeWithTimeZone(default);
-                    return;
-                }
-
-
-                FromDateTimeWithTimeZone(new DateTimeOffset(date));
-
-                return;
-            }
-
-            if (propertyType == typeof(DateTimeOffset))
-            {
-                FromDateTimeWithTimeZone((DateTimeOffset)value);
-                return;
-            }
-
-            // ReSharper disable once PossibleNullReferenceException
-            if (!propertyType.Namespace.StartsWith("System"))
-            {
-                throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
-            }
-
-            FromString(value.ToString());
-
-
-        }
-
-        private bool Equals(KeyValue other)
-        {
-            if (_hashCode != other._hashCode)
-                return false;
-
-            if (_hashCode == 0 && other._hashCode == 0)
-            {
-                // consider zero and null the same for indexing
-                return true;
-            }
-
-            return _data.SequenceEqual(other._data);
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-
-            if (obj is int i) return _hashCode == i;
-
-            if (obj is long l) return _hashCode == l;
-
-            if (obj is string s) return StringValue == s;
-
-
-            return Equals((KeyValue)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            // ReSharper disable once NonReadonlyMemberInGetHashCode
-            return (int)(_hashCode % int.MaxValue);
-        }
-
-        public int CompareTo(KeyValue other)
-        {
-            if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
-
-            if ((OriginalType)_data[0] == OriginalType.String)
-            {
-                return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
-            }
-
-            if (Type == other.Type)
-            {
-                return _hashCode.CompareTo(other._hashCode);
-            }
-
-            if (double.IsNaN(NumericValue) || double.IsNaN(other.NumericValue))
-            {
-                throw new NotSupportedException("Incompatible types for comparison");
-            }
-
-            return NumericValue.CompareTo(other.NumericValue);
-        }
-
 
         public double NumericValue
         {
@@ -456,6 +141,355 @@ namespace Client.Core
             }
         }
 
+        public override string ToString()
+        {
+            var type = (OriginalType)_data[0];
+
+            switch (type)
+            {
+                case OriginalType.SomeInteger:
+                    return _hashCode.ToString();
+
+                case OriginalType.SomeFloat:
+                    return NumericValue.ToString(CultureInfo.InvariantCulture);
+
+                case OriginalType.Boolean:
+                    return (_hashCode != 0).ToString();
+
+                case OriginalType.Date:
+                    if (_data.Length == 1)//no offset
+                        return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
+
+                    var offset = BitConverter.ToInt64(_data, 1);
+                    return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
+
+                case OriginalType.String:
+                    return StringValue;
+
+                case OriginalType.Null:
+                    return "null";
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+
+            if (obj is int i) return _hashCode == i;
+
+            if (obj is long l) return _hashCode == l;
+
+            if (obj is string s) return StringValue == s;
+
+
+            return Equals((KeyValue)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return (int)(_hashCode % int.MaxValue);
+        }
+
+        public int CompareTo(KeyValue other)
+        {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+
+            if ((OriginalType)_data[0] == OriginalType.String)
+            {
+                return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
+            }
+
+            if (Type == other.Type)
+            {
+                return _hashCode.CompareTo(other._hashCode);
+            }
+
+            if (double.IsNaN(NumericValue) || double.IsNaN(other.NumericValue))
+            {
+                throw new NotSupportedException("Incompatible types for comparison");
+            }
+
+            return NumericValue.CompareTo(other.NumericValue);
+        }
+
+        public JProperty ToJson(string name)
+        {
+            var type = (OriginalType)_data[0];
+
+            switch (type)
+            {
+                case OriginalType.SomeInteger:
+                    return new JProperty(name, _hashCode);
+
+                case OriginalType.SomeFloat:
+                    return new JProperty(name, NumericValue);
+
+                case OriginalType.Boolean:
+                    return new JProperty(name, _hashCode != 0);
+
+                case OriginalType.Date:
+                    if (_data.Length == 1)//no offset
+                        return new JProperty(name, new DateTime(_hashCode));
+
+                    var offset = BitConverter.ToInt64(_data, 1);
+
+                    return new JProperty(name, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
+
+                case OriginalType.String:
+                    return new JProperty(name, StringValue);
+
+                case OriginalType.Null:
+                    return new JProperty(name, null);
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+        }
+
+        void StableHashForString(string value)
+        {
+            unchecked
+            {
+
+                long hash = 1;
+                long multiplier = 29;
+                foreach (var c in value)
+                {
+                    hash += c * multiplier;
+                    multiplier *= multiplier;
+                }
+
+                _hashCode = Math.Abs(hash);
+            }
+
+        }
+
+        void FromLong(long longValue, OriginalType type)
+        {
+            _hashCode = longValue;
+            _data[0] = (byte)type;
+        }
+
+        void FromFloatingPoint(double floatValue, OriginalType type)
+        {
+            _hashCode = (long)(floatValue * FloatingPrecision);
+
+            _data[0] = (byte)type;
+
+            // If no precision was lost, no need to keep the original value otherwise store it
+            // If possible, storing it as an int mai handle the precision better than the double (1.7 for example )
+            if (_hashCode % 10 != 0)
+            {
+                var original = BitConverter.GetBytes(floatValue);
+
+                var data = new byte[1 + original.Length];
+                data[0] = _data[0];
+
+                Buffer.BlockCopy(original, 0, data, 1, original.Length);
+
+                _data = data;
+            }
+
+        }
+
+        void FromString(string stringValue)
+        {
+
+            StableHashForString(stringValue);
+
+            //_hashCode = stringValue.GetHashCode();
+
+            
+            int estimatedSize = Encoding.UTF8.GetByteCount(stringValue);
+
+            _data = new byte[estimatedSize + 1];
+
+            _data[0] = (byte)OriginalType.String;
+
+            Encoding.UTF8.GetBytes(stringValue, new Span<byte>(_data, 1, estimatedSize));
+
+            
+        }
+
+        void FromNull()
+        {
+            _hashCode = 0;
+
+            _data[0] = (byte)OriginalType.Null;
+        }
+
+        /// <summary>
+        /// This kind of date needs to be serialized to two longs to be reconstructed identically
+        /// </summary>
+        /// <param name="value"></param>
+        private void FromDateTimeWithTimeZone(DateTimeOffset value)
+        {
+            _hashCode = value.Ticks;
+
+
+            var offset = value.Offset.Ticks;
+
+            if (offset == 0)
+            {
+                _data[0] = (byte)OriginalType.Date;
+                return;
+            }
+
+            var offsetBytes = BitConverter.GetBytes(offset);
+
+            _data = new byte[1 + offsetBytes.Length];
+            _data[0] = (byte)OriginalType.Date;
+
+            Buffer.BlockCopy(offsetBytes, 0, _data, 1, offsetBytes.Length);
+
+        }
+
+
+
+        /// <summary>
+        /// For serialization only
+        /// </summary>
+        [UsedImplicitly]
+        public KeyValue()
+        {
+        }
+
+
+        public KeyValue(object value)
+        {
+            _data = new byte[1];
+
+            
+            if (value is null)
+            {
+                FromNull();
+                return;
+            }
+
+            
+            if (value is Enum e)
+            {
+                var longVal = Convert.ToInt64(e);
+                FromLong(longVal, OriginalType.SomeInteger);
+                return;
+            }
+
+            if (value is bool b)
+            {
+                var longVal = b?1:0;
+                FromLong(longVal, OriginalType.Boolean);
+                return;
+            }
+
+            //integer types
+            if(value is long l)
+            {
+                //var longVal = Convert.ToInt64(value);
+                FromLong(l, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is int i)
+            {
+                FromLong(i, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is short s)
+            {
+                FromLong(s, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is char c)
+            {
+                
+                FromLong(c, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is byte bt)
+            {
+                
+                FromLong(bt, OriginalType.SomeInteger);
+                return;
+            }
+
+            
+            if (value is double d)
+            {
+                FromFloatingPoint(d, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is float f)
+            {
+                FromFloatingPoint(f, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is decimal de)
+            {
+                FromFloatingPoint((double)de, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is DateTime dt)
+            {
+                // the default DateTime can not be directly converted to DateTimeOffset
+                
+                if (dt == default)
+                {
+                    FromDateTimeWithTimeZone(default);
+                    return;
+                }
+
+
+                FromDateTimeWithTimeZone(new DateTimeOffset(dt));
+
+                return;
+            }
+
+            if (value is DateTimeOffset dto)
+            {
+                FromDateTimeWithTimeZone(dto);
+                return;
+            }
+
+            // ReSharper disable once PossibleNullReferenceException
+            //if (!propertyType.Namespace.StartsWith("System"))
+            //{
+            //    throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
+            //}
+
+            FromString(value.ToString());
+
+
+        }
+
+        private bool Equals(KeyValue other)
+        {
+            if (_hashCode != other._hashCode)
+                return false;
+
+            if (_hashCode == 0 && other._hashCode == 0)
+            {
+                // consider zero and null the same for indexing
+                return true;
+            }
+
+            return _data.SequenceEqual(other._data);
+        }
+
+
         public static bool operator ==(KeyValue left, KeyValue right)
         {
             return Equals(left, right);
@@ -540,5 +574,4 @@ namespace Client.Core
             return HashCode.Combine(Value, Name);
         }
     }
-
 }

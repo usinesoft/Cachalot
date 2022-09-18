@@ -37,6 +37,14 @@ public class KeyValuePool
             po.Values[i] = Pool(po.Values[i]);
         }
     }
+
+    public static void ProcessPackedObjects(IEnumerable<PackedObject> objects)
+    {
+        foreach (var o in objects)
+        {
+            ProcessPackedObject(o);
+        }
+    }
 }
 
 public static class KeyValueParsingPool

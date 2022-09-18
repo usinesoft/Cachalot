@@ -77,12 +77,10 @@ namespace Server.Queries
             // a feed session may contain multiple requests
             if (putRequest.SessionId != default)
             {
-                foreach (var o in putRequest.Items)
-                {
-                    KeyValuePool.ProcessPackedObject(o);    
-                }
-                
 
+                KeyValuePool.ProcessPackedObjects(putRequest.Items);
+
+                
                 SessionManager.AddToSession(putRequest.SessionId, putRequest.Items);
 
                 if (putRequest.EndOfSession)

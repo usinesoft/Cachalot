@@ -154,11 +154,11 @@ namespace Tests.UnitTests
 
             var vd = JExtensions.SmartParse("2012-05-01");
 
-            Assert.IsTrue(vd is DateTimeOffset);
+            Assert.IsTrue(vd is DateTime);
 
             vd = JExtensions.SmartParse("01/05/2012");
 
-            Assert.IsTrue(vd is DateTimeOffset);
+            Assert.IsTrue(vd is DateTime);
 
             // looks like a data but it is not correct so it will be parsed like a string
             vd = JExtensions.SmartParse("45/15/2012");

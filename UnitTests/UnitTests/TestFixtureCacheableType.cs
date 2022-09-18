@@ -79,6 +79,14 @@ namespace Tests.UnitTests
             }
 
             {
+                DateTime dt = default;
+                var kv = new KeyValue(dt);
+
+                Assert.AreEqual(0, kv.IntValue);
+                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+            }
+
+            {
                 DayOfWeek dow = DayOfWeek.Friday;
                 var kv = new KeyValue(dow);
 

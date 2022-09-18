@@ -31,14 +31,14 @@ namespace AdminConsole.Commands
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private CollectionSchema GetTypeDescriptionByName(string name)
+        private CollectionSchema GetSchemaByName(string name)
         {
             foreach (var keyValuePair in _knownTypes)
                 if (keyValuePair.Value.CollectionName.ToUpper() == name.ToUpper())
                     return keyValuePair.Value;
 
 
-            throw new NotSupportedException($"can not find type description for type {name}");
+            throw new NotSupportedException($"Can not find collection {name}");
         }
 
         /// <summary>
@@ -331,7 +331,7 @@ namespace AdminConsole.Commands
 
                     try
                     {
-                        var typeDescription = GetTypeDescriptionByName(atoms[1]);
+                        var typeDescription = GetSchemaByName(atoms[1]);
 
 
                         var ftQuery = atoms[2];
@@ -377,7 +377,7 @@ namespace AdminConsole.Commands
 
                     try
                     {
-                        var typeDescription = GetTypeDescriptionByName(atoms[0]);
+                        var typeDescription = GetSchemaByName(atoms[0]);
                         result.Query = new OrQuery(typeDescription.CollectionName);
                         result.Success = true;
                     }
@@ -444,7 +444,7 @@ namespace AdminConsole.Commands
                 }
 
 
-                var schema = GetTypeDescriptionByName(table);
+                var schema = GetSchemaByName(table);
 
                 if (schema == null)
                 {

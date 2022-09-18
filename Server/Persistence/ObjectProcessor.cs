@@ -47,6 +47,9 @@ namespace Server.Persistence
             {
                 var store = _dataContainer.TryGetByName(pair.Key);
 
+                // optimize in memory storage of identical values
+                KeyValuePool.ProcessPackedObjects(pair.Value);
+
                 store.InternalPutMany(pair.Value, true);
 
                 frequentTokens.UnionWith(store.GetMostFrequentTokens(100));

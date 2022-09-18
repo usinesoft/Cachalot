@@ -17,7 +17,7 @@ namespace Tests.IntegrationTests
 {
     [TestFixture]
     [Category("Performance")]
-    //[Ignore("Starting an external server does not work on git ub actions")]
+    [Ignore("Starting an external server does not work on git ub actions")]
     public class TestFixturePersistenceWithExternalServer
     {
         private Process _process;
@@ -28,7 +28,7 @@ namespace Tests.IntegrationTests
 #if DEBUG
             var path = "../../../../bin/Debug/Server/net6.0";
 #else
-                var path = "../../../../bin/Release/Server/net6.0";
+            var path = "../../../../bin/Release/Server/net6.0";
 #endif
 
             var fullPath = Path.Combine(path, "server.dll");
@@ -40,7 +40,10 @@ namespace Tests.IntegrationTests
                 StartInfo = { FileName = "dotnet", Arguments = $"{fullPath}", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal }
             };
 
-            _process.Start();
+            var started = _process.Start();
+
+            Assert.IsTrue(started, "failed to run external server");
+
         }
 
 

@@ -235,12 +235,16 @@ namespace Server.Persistence
                             }
 
                             if (transaction is PutDurableTransaction putTransaction)
+                            {
+
+                                Dbg.Trace($"START storing put transaction containing {putTransaction.Items.Count} items");
                                 foreach (var item in putTransaction.Items)
                                 {
                                     var itemFromMemory = GetItemWithTokenizedFullText(item);
 
                                     var itemData =
-                                        SerializationHelper.ObjectToBytes(itemFromMemory, SerializationMode.ProtocolBuffers,
+                                        SerializationHelper.ObjectToBytes(itemFromMemory,
+                                            SerializationMode.ProtocolBuffers,
                                             false);
 
                                     Dbg.Trace(
@@ -248,6 +252,8 @@ namespace Server.Persistence
                                     _storage.StoreBlock(itemData, item.GlobalKey,
                                         unchecked((int)persistentTransaction.Id));
                                 }
+                                Dbg.Trace($"END storing put transaction containing {putTransaction.Items.Count} items");
+                            }
 
                             if (transaction is DeleteDurableTransaction deleteTransaction)
                                 foreach (var item in deleteTransaction.ItemsToDelete)
@@ -257,6 +263,8 @@ namespace Server.Persistence
                                 }
 
                             TransactionLog.EndProcessing(persistentTransaction);
+                            persistentTransaction = null;
+                            GC.Collect();
                         }
                         else
                         {

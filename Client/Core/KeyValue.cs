@@ -9,6 +9,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Client.Interface;
 
 #endregion
 
@@ -201,22 +202,44 @@ namespace Client.Core
             if (ReferenceEquals(this, other)) return 0;
             if (ReferenceEquals(null, other)) return 1;
 
-            if ((OriginalType)_data[0] == OriginalType.String)
+
+            // null is smaller than any other value
+            if (Type == OriginalType.Null)
+            {
+                if (other.Type == OriginalType.Null)
+                {
+                    return 0;
+                }
+
+                return -1;
+            }
+
+            if (other.Type == OriginalType.Null)
+            {
+                return 1;
+            }
+
+            // the only different types that can be compared are float and integer
+            if (Type == OriginalType.SomeInteger && other.Type == OriginalType.SomeFloat ||
+                Type == OriginalType.SomeFloat && other.Type == OriginalType.SomeInteger)
+            {
+                return NumericValue.CompareTo(other.NumericValue);
+            }
+
+            if (Type != other.Type)
+            {
+                throw new CacheException($"Incompatible types for comparison:{Type} and {other.Type}");
+            }
+
+            if (Type == OriginalType.String )
             {
                 return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
             }
 
-            if (Type == other.Type)
-            {
-                return _hashCode.CompareTo(other._hashCode);
-            }
-
-            if (double.IsNaN(NumericValue) || double.IsNaN(other.NumericValue))
-            {
-                throw new NotSupportedException("Incompatible types for comparison");
-            }
-
-            return NumericValue.CompareTo(other.NumericValue);
+            // works for booleans, integers and dates
+            return _hashCode.CompareTo(other._hashCode);
+            
+            
         }
 
         public JProperty ToJson(string name)
@@ -479,6 +502,11 @@ namespace Client.Core
         {
             if (_hashCode != other._hashCode)
                 return false;
+
+            if (this.Type != other.Type)
+            {
+                return false;
+            }
 
             if (_hashCode == 0 && other._hashCode == 0)
             {

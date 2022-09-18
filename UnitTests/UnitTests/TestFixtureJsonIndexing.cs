@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Client.Interface;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -241,16 +242,19 @@ namespace Tests.UnitTests
         }
 
         [Test]
-        public void Null_and_zero_are_equals()
+        public void Null_comparison_and_equality()
         {
             var val1 = new KeyValue(null);
             var val2 = new KeyValue(0);
 
-            // for indexing only null and 0 are considered the same
-            Assert.AreEqual(val1, val2);
-            Assert.AreEqual(val1.IntValue, val2.IntValue);
-            Assert.AreEqual(val1.StringValue, val2.StringValue);
 
+            // null is equal only to null
+            Assert.IsFalse(val1 == val2 );
+        
+            // and is less than any other value
+            Assert.IsTrue(val1.CompareTo(val2) < 0);
+            Assert.IsTrue(val2.CompareTo(val1) > 0);
+            
         }
 
         [Test]

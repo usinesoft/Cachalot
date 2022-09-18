@@ -97,6 +97,8 @@ namespace Server.Persistence
                 {
                     LoadAll(useObjectProcessor);
 
+                    GC.Collect();
+
                     success = true;
                 }
                 catch (InvalidBlockException e)

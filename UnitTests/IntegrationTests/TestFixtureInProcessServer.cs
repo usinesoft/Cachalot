@@ -1,9 +1,9 @@
-﻿using System.IO;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests

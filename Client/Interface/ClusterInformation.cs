@@ -1,6 +1,6 @@
-using System.Linq;
 using Client.Core;
 using Client.Messages;
+using System.Linq;
 
 namespace Client.Interface
 {

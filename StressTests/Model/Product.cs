@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System.Collections.Generic;
 
 namespace StressTests.Model
 {
@@ -18,7 +18,7 @@ namespace StressTests.Model
         [ServerSideValue(IndexType.Dictionary)]
         public string Brand { get; set; }
 
-        [FullTextIndexation] 
+        [FullTextIndexation]
         public string Summary { get; set; }
 
         [FullTextIndexation]
@@ -30,15 +30,15 @@ namespace StressTests.Model
         [ServerSideValue]
         public string ImageId { get; set; }
 
-        [FullTextIndexation] 
+        [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
         public IList<string> Categories { get; set; } = new List<string>();
 
-        [FullTextIndexation] 
+        [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
         public IList<string> Tags { get; set; } = new List<string>();
 
-        [FullTextIndexation] 
+        [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
         public IList<string> Ingredients { get; set; } = new List<string>();
 
@@ -55,7 +55,7 @@ namespace StressTests.Model
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((Product) obj);
+            return Equals((Product)obj);
         }
 
         public override int GetHashCode()

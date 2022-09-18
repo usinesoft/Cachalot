@@ -1,7 +1,7 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Diagnostics;
 using System.Threading;
-using JetBrains.Annotations;
 
 
 // ReSharper disable once CheckNamespace

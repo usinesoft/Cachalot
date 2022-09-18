@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Server
 {
@@ -14,13 +14,13 @@ namespace Server
 
         public LruEvictionPolicy(int limit, int evictionCount)
         {
-            if(limit <= 0)
+            if (limit <= 0)
                 throw new ArgumentException($"the {nameof(limit)} should be strictly positive", nameof(limit));
 
-            if(evictionCount <= 0)
+            if (evictionCount <= 0)
                 throw new ArgumentException($"the {nameof(evictionCount)} should be strictly positive", nameof(evictionCount));
 
-            if(limit <= evictionCount)
+            if (limit <= evictionCount)
                 throw new ArgumentException($"the {nameof(limit)} should be strictly superior to {nameof(evictionCount)}");
 
 

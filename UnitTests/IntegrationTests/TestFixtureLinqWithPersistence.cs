@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 using Tests.TestData.Events;
 
@@ -53,7 +52,7 @@ namespace Tests.IntegrationTests
 
                 Assert.IsFalse(wasAdded);
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
                 Assert.AreEqual(150, reloaded.Value);
@@ -66,7 +65,7 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
                 Assert.AreEqual(150, reloaded.Value);
@@ -85,11 +84,11 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
+                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") { Timestamp = DateTime.Now });
 
                 Assert.IsTrue(wasAdded);
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
                 var oldTimestamp = reloaded.Timestamp;
 
                 reloaded.Value = 160;
@@ -113,7 +112,7 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the updated value is persistent
                 Assert.AreEqual(160, reloaded.Value);
@@ -149,7 +148,7 @@ namespace Tests.IntegrationTests
                 var dataSource = connector.DataSource<Trade>();
 
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
@@ -176,7 +175,7 @@ namespace Tests.IntegrationTests
             var max = 0;
             using (var connector = new Connector(config))
             {
-                
+
 
                 var ids = connector.GenerateUniqueIds("test", 12);
 
@@ -380,7 +379,7 @@ namespace Tests.IntegrationTests
 
 
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -394,7 +393,7 @@ namespace Tests.IntegrationTests
                 dataSource.Put(new Trade(4, 5468, "TOTO", DateTime.Now.Date.AddDays(+1), 150));
 
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -413,7 +412,7 @@ namespace Tests.IntegrationTests
                 var dataSource = connector.DataSource<Trade>();
 
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
@@ -446,7 +445,7 @@ namespace Tests.IntegrationTests
                     new Increase(3, 180, "EQ-256")
                 });
 
-                var newOne = (FixingEvent) dataSource[2];
+                var newOne = (FixingEvent)dataSource[2];
 
                 Assert.AreEqual(180, newOne.Value);
 
@@ -457,7 +456,7 @@ namespace Tests.IntegrationTests
                 });
 
 
-                var updated = (FixingEvent) dataSource[2];
+                var updated = (FixingEvent)dataSource[2];
 
                 Assert.AreEqual(190, updated.Value);
             }
@@ -528,7 +527,7 @@ namespace Tests.IntegrationTests
             }
         }
 
-         [Test]
+        [Test]
         public void Full_text_search()
         {
 
@@ -562,7 +561,7 @@ namespace Tests.IntegrationTests
                 var homes = connector.DataSource<Home>();
                 homes.PutMany(list);
 
-               
+
                 // manually add some items for full-text search testing
                 var h1 = new Home
                 {
@@ -628,12 +627,12 @@ namespace Tests.IntegrationTests
         [Test]
         public void Multiple_collections_for_same_type()
         {
-            
+
             var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
             using var connector = new Connector(config);
-                
+
             connector.AdminInterface().DropDatabase();
 
             connector.DeclareCollection<Home>("homes");
@@ -643,15 +642,15 @@ namespace Tests.IntegrationTests
             var homes = connector.DataSource<Home>("homes");
             var homes1 = connector.DataSource<Home>("homes1");
 
-            homes.Put(new Home{Id = 15, CountryCode = "FR"});
-            homes1.Put(new Home{Id = 15, CountryCode = "US"});
-            homes1.Put(new Home{Id = 16, CountryCode = "US"});
+            homes.Put(new Home { Id = 15, CountryCode = "FR" });
+            homes1.Put(new Home { Id = 15, CountryCode = "US" });
+            homes1.Put(new Home { Id = 16, CountryCode = "US" });
 
 
             var all = homes.ToList();
-            
+
             var all1 = homes1.ToList();
-            
+
             Assert.AreEqual(1, all.Count);
             Assert.AreEqual(2, all1.Count);
 
@@ -660,50 +659,50 @@ namespace Tests.IntegrationTests
         [Test]
         public void Consistent_read()
         {
-            
-                var config = new ClientConfig();
-                config.LoadFromFile("inprocess_persistent_config.xml");
 
-                using var connector = new Connector(config);
-                
-                connector.AdminInterface().DropDatabase();
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_persistent_config.xml");
 
-                connector.DeclareCollection<Home>("homes");
-                connector.DeclareCollection<Home>("homes1");
+            using var connector = new Connector(config);
 
+            connector.AdminInterface().DropDatabase();
 
-                var homes = connector.DataSource<Home>("homes");
-                var homes1 = connector.DataSource<Home>("homes1");
-
-                homes.Put(new Home{Id = 15, CountryCode = "FR"});
-                homes1.Put(new Home{Id = 15, CountryCode = "US"});
-                homes1.Put(new Home{Id = 16, CountryCode = "US"});
+            connector.DeclareCollection<Home>("homes");
+            connector.DeclareCollection<Home>("homes1");
 
 
-                connector.ConsistentRead(ctx =>
+            var homes = connector.DataSource<Home>("homes");
+            var homes1 = connector.DataSource<Home>("homes1");
+
+            homes.Put(new Home { Id = 15, CountryCode = "FR" });
+            homes1.Put(new Home { Id = 15, CountryCode = "US" });
+            homes1.Put(new Home { Id = 16, CountryCode = "US" });
+
+
+            connector.ConsistentRead(ctx =>
+            {
+                var all = ctx.Collection<Home>("homes").ToList();
+                Assert.AreEqual(1, all.Count);
+
+                // should throw an exception because "homes1" is not available in this context
+                Assert.Throws<NotSupportedException>(() =>
                 {
-                    var all = ctx.Collection<Home>("homes").ToList();
-                    Assert.AreEqual(1, all.Count);
-
-                    // should throw an exception because "homes1" is not available in this context
-                    Assert.Throws<NotSupportedException>(()=>
-                    {
-                        all = ctx.Collection<Home>("homes1").ToList();
-                    });
-                    
-
-                }, "homes");
-
-                connector.ConsistentRead(ctx =>
-                {
-                    var all = ctx.Collection<Home>("homes").ToList();
-                    Assert.AreEqual(1, all.Count);
-
-                    
                     all = ctx.Collection<Home>("homes1").ToList();
-                    Assert.AreEqual(2, all.Count);
-                    
-                }, "homes", "homes1");
+                });
+
+
+            }, "homes");
+
+            connector.ConsistentRead(ctx =>
+            {
+                var all = ctx.Collection<Home>("homes").ToList();
+                Assert.AreEqual(1, all.Count);
+
+
+                all = ctx.Collection<Home>("homes1").ToList();
+                Assert.AreEqual(2, all.Count);
+
+            }, "homes", "homes1");
         }
 
         [Test]
@@ -730,7 +729,7 @@ namespace Tests.IntegrationTests
 
             var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
 
-            Assert.AreEqual(1, reloaded1.Count );
+            Assert.AreEqual(1, reloaded1.Count);
 
             var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
 

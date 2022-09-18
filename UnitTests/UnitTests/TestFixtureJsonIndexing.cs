@@ -1,21 +1,22 @@
+using Client.Core;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using Client.Messages;
-using Newtonsoft.Json.Linq;
-using NUnit.Framework;
+using Client.Interface;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 
 namespace Tests.UnitTests
 {
+
     [TestFixture]
     public class TestFixtureJsonIndexing
     {
-       
+
         [Test]
         public void Packing_a_binary_object_and_its_json_should_give_identical_results()
         {
@@ -35,11 +36,11 @@ namespace Tests.UnitTests
                 AnotherDate = now,
                 AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
-                Tags = {"news", "science", "space", "διξ"},
-                Languages = {"en", "de", "fr"}
+                Tags = { "news", "science", "space", "διξ" },
+                Languages = { "en", "de", "fr" }
             };
 
-            
+
             var packed1 = PackedObject.Pack(testObj, schema);
 
             var json = SerializationHelper.ObjectToJson(testObj);
@@ -58,11 +59,11 @@ namespace Tests.UnitTests
 
             for (int i = 0; i < packed2.CollectionValues.Length; i++)
             {
-                CollectionAssert.AreEqual(packed1.CollectionValues[i].Values, packed2.CollectionValues[i].Values);    
+                CollectionAssert.AreEqual(packed1.CollectionValues[i].Values, packed2.CollectionValues[i].Values);
             }
-            
-            
-            
+
+
+
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
         }
 
@@ -112,7 +113,11 @@ namespace Tests.UnitTests
 
             var testObj = new Order
             {
-                Amount = 66.5, Date = date, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5,
+                Date = date,
+                Category = "student",
+                ClientId = 101,
+                ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1,
                 IsDelivered = true
@@ -123,18 +128,18 @@ namespace Tests.UnitTests
 
             var packed = PackedObject.Pack(testObj, schema);
 
-            var jsonFull = packed.Json;
+            var jsonFull = packed.GetJson(schema);
 
-            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"));
+            var data1 = packed.GetData(schema.IndexesOfNames("Amount", "Category"), new[] { "Amount", "Category" });
 
             var json1 = new StreamReader(new MemoryStream(data1)).ReadToEnd();
 
-            var partial1 = SerializationHelper.ObjectFromBytes<Order>(data1, SerializationMode.Json, schema.UseCompression);
+            var partial1 = SerializationHelper.ObjectFromBytes<Order>(data1, SerializationMode.Json, schema.StorageLayout == Layout.Compressed);
 
             Assert.AreEqual(testObj.Amount, partial1.Amount);
             Assert.AreEqual(testObj.Category, partial1.Category);
 
-            var data2 = packed.GetServerSideData();
+            var data2 = packed.GetServerSideData(schema);
             var json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
 
             // they are equal except for the $type property which is present only in the full json
@@ -156,15 +161,15 @@ namespace Tests.UnitTests
                 AnotherDate = now,
                 AreYouSure = AllKindsOfProperties.Fuzzy.Maybe,
                 IsDeleted = true,
-                Tags = {"news", "science", "space", "διξ"},
-                Languages = {"en", "de", "fr"}
+                Tags = { "news", "science", "space", "διξ" },
+                Languages = { "en", "de", "fr" }
             };
 
             packed = PackedObject.Pack(testObj1, schema);
 
-            jsonFull = packed.Json;
+            jsonFull = packed.GetJson(schema);
 
-            data2 = packed.GetServerSideData();
+            data2 = packed.GetServerSideData(schema);
             json = new StreamReader(new MemoryStream(data2)).ReadToEnd();
 
             // they are equal except for the $type property which is present only in the full json
@@ -180,7 +185,11 @@ namespace Tests.UnitTests
 
             var testObj = new Order
             {
-                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5,
+                Date = DateTimeOffset.Now,
+                Category = "student",
+                ClientId = 101,
+                ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1,
                 IsDelivered = true
@@ -205,7 +214,7 @@ namespace Tests.UnitTests
 
             CollectionAssert.AreEqual(packed1.Values, packed2.Values);
             CollectionAssert.AreEqual(packed1.CollectionValues, packed2.CollectionValues);
-            
+
 
             var json1 = Encoding.UTF8.GetString(packed1.ObjectData);
             var json2 = Encoding.UTF8.GetString(packed2.ObjectData);
@@ -213,8 +222,8 @@ namespace Tests.UnitTests
             CollectionAssert.AreEqual(packed1.ObjectData, packed2.ObjectData);
         }
 
-        
-        
+
+
 
         [Test]
         public void Pack_json_with_missing_properties()
@@ -233,16 +242,19 @@ namespace Tests.UnitTests
         }
 
         [Test]
-        public void Null_and_zero_are_equals()
+        public void Null_comparison_and_equality()
         {
-            var val1 = new KeyValue(null, new KeyInfo{Name = "test"});
-            var val2 = new KeyValue(0, new KeyInfo{Name = "test"});
+            var val1 = new KeyValue(null);
+            var val2 = new KeyValue(0);
 
-            // for indexing only null and 0 are considered the same
-            Assert.AreEqual(val1, val2);
-            Assert.AreEqual(val1.IntValue, val2.IntValue);
-            Assert.AreEqual(val1.StringValue, val2.StringValue);
 
+            // null is equal only to null
+            Assert.IsFalse(val1 == val2 );
+        
+            // and is less than any other value
+            Assert.IsTrue(val1.CompareTo(val2) < 0);
+            Assert.IsTrue(val2.CompareTo(val1) > 0);
+            
         }
 
         [Test]
@@ -269,7 +281,7 @@ namespace Tests.UnitTests
             //Assert.AreEqual(2, packed.IndexKeys.Length);
 
             //json = packed.Json;
-                    
+
             //var repacked = PackedObject.PackJson(json, description);
 
             //// check than repacking the object gives tha same result (except for the auto generated primary key)

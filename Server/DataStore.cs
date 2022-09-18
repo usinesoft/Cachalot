@@ -1,16 +1,16 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Client;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Tools;
 using Server.FullTextSearch;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Constants = Server.Persistence.Constants;
 
 #endregion
@@ -28,7 +28,7 @@ namespace Server
         public IReadOnlyIndex PrimaryIndex => new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
 
 
-        
+
         /// <summary>
         /// Find index by unique ase insensitive name
         /// </summary>
@@ -36,10 +36,10 @@ namespace Server
         /// <returns></returns>
         public IReadOnlyIndex TryGetIndex(string name)
         {
-            if (String.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(CollectionSchema.PrimaryKeyField.Name, name, StringComparison.CurrentCultureIgnoreCase))
                 return new UniqueIndex(CollectionSchema.PrimaryKeyField.Name, DataByPrimaryKey);
 
-            return _dataByIndexKey.FirstOrDefault(p => String.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value ;
+            return _dataByIndexKey.FirstOrDefault(p => string.Equals(p.Key, name, StringComparison.CurrentCultureIgnoreCase)).Value;
         }
 
         #endregion
@@ -59,7 +59,7 @@ namespace Server
         /// </summary>
         private readonly Dictionary<string, IndexBase> _dataByIndexKey;
 
-       
+
         private readonly FullTextIndex _fullTextIndex;
 
 
@@ -158,7 +158,7 @@ namespace Server
         }
 
 
-        
+
         private void InternalAddNew(PackedObject packedObject)
         {
             if (packedObject.PrimaryKey.IsNull)
@@ -177,7 +177,7 @@ namespace Server
 
             DataByPrimaryKey.Add(primaryKey, packedObject);
 
-           
+
 
             foreach (var index in _dataByIndexKey)
                 index.Value.Put(packedObject);
@@ -217,7 +217,7 @@ namespace Server
 
             foreach (var metadata in CollectionSchema.ServerSide)
             {
-               
+
                 if (metadata.IndexType == IndexType.Ordered || metadata.IndexType == IndexType.Dictionary)
                     _dataByIndexKey[metadata.Name].RemoveOne(toRemove);
             }
@@ -234,7 +234,7 @@ namespace Server
             EvictionPolicy.Clear();
             DataByPrimaryKey.Clear();
 
-            
+
             foreach (var index in _dataByIndexKey)
                 index.Value.Clear();
 
@@ -287,7 +287,7 @@ namespace Server
 
             foreach (var item in items)
             {
-                
+
                 // if present remove it from the full-text index
                 _fullTextIndex?.DeleteDocument(item.PrimaryKey);
 
@@ -339,7 +339,7 @@ namespace Server
             {
                 Dbg.Trace($"begin InternalPutMany with {items.Count} object");
 
-                
+
                 InternalBeginBulkInsert(isBulkOperation);
 
                 foreach (var item in items)
@@ -363,7 +363,7 @@ namespace Server
 
 
                     // insert the new values
-                    InternalPutMany(toUpdate, true); 
+                    InternalPutMany(toUpdate, true);
                 }
                 else
                 {
@@ -403,7 +403,7 @@ namespace Server
                 {
                     RemoveMany(toUpdate);
 
-                    InternalPutMany(toUpdate, true); 
+                    InternalPutMany(toUpdate, true);
                 }
                 else
                 {
@@ -417,7 +417,7 @@ namespace Server
 
         private IEnumerable<string> InternalEnumerateAsJson()
         {
-            foreach (var cachedObject in DataByPrimaryKey) yield return cachedObject.Value.Json;
+            foreach (var cachedObject in DataByPrimaryKey) yield return cachedObject.Value.GetJson(CollectionSchema);
         }
 
 
@@ -443,7 +443,7 @@ namespace Server
         public static DataStore Reindex(DataStore old, CollectionSchema newDescription)
         {
             var result = new DataStore(newDescription, old.EvictionPolicy, old._fullTextConfig);
-                
+
 
             result.InternalReindex(old.InternalEnumerateAsJson()
                 .Select(json => PackedObject.PackJson(json, newDescription)));
@@ -458,7 +458,13 @@ namespace Server
             if (!transactional)
                 return;
 
-            Parallel.ForEach(_dataByIndexKey.Where(p => p.Value is OrderedIndex), pair => { pair.Value.EndFill(); });
+            var ordered = _dataByIndexKey.Where(p => p.Value is OrderedIndex).ToList();
+
+            if (ordered.Any())
+            {
+                Parallel.ForEach(ordered, pair => { pair.Value.EndFill(); });
+            }
+            
         }
 
         private void InternalBeginBulkInsert(bool bulkInsertMode)

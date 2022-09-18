@@ -1,7 +1,7 @@
-using System;
-using System.Globalization;
 using Client.Messages;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Globalization;
 
 namespace Client.Core
 {
@@ -11,33 +11,33 @@ namespace Client.Core
         {
             // as we ignore default values on json serialization 
             // the value can be absent because it is an int value 0
-             
-            if(jToken == null) return info.IndexType == IndexType.Primary?  new KeyValue(0, info): new KeyValue(null, info);
+
+            if (jToken == null) return info.IndexType == IndexType.Primary ? new KeyValue(0) : new KeyValue(null);
 
             var valueToken = jToken.HasValues ? jToken.First : jToken;
 
             if (valueToken?.Type == JTokenType.Integer)
             {
-                return new KeyValue((long)valueToken, info);
+                return new KeyValue((long)valueToken);
             }
 
             if (valueToken?.Type == JTokenType.Float)
             {
-                return new KeyValue((double)valueToken, info);
+                return new KeyValue((double)valueToken);
             }
 
 
             if (valueToken?.Type == JTokenType.Boolean)
             {
-                return new KeyValue((bool)valueToken, info);
+                return new KeyValue((bool)valueToken);
             }
 
             if (valueToken?.Type == JTokenType.Date)
             {
-                return new KeyValue((DateTime)valueToken, info);
+                return new KeyValue((DateTime)valueToken);
             }
 
-            return new KeyValue((string)valueToken, info);
+            return new KeyValue((string)valueToken);
 
         }
 
@@ -46,26 +46,29 @@ namespace Client.Core
 
             KeyValue.OriginalType type = KeyValue.OriginalType.SomeInteger;
 
+            bool firstPosition = true;
             // try an educated guess to avoid useless TryParse
             foreach (char c in valueAsString)
             {
-                if(char.IsLetter(c))
+                if (char.IsLetter(c))
                 {
                     type = KeyValue.OriginalType.String;
                     break;
                 }
 
-                if(c=='-' || c == '/')
+                if (!firstPosition && (c == '-' || c == '/'))
                 {
                     type = KeyValue.OriginalType.Date;
                     break;
                 }
 
-                if(c=='.' || c == ',')
+                if (c == '.' || c == ',')
                 {
                     type = KeyValue.OriginalType.SomeFloat;
                     break;
                 }
+
+                firstPosition = false;
             }
 
             if (type == KeyValue.OriginalType.String)
@@ -85,7 +88,7 @@ namespace Client.Core
 
             if (type == KeyValue.OriginalType.SomeFloat)
             {
-                if(double.TryParse(valueAsString, NumberStyles.Any, CultureInfo.InvariantCulture, out var fv))
+                if (double.TryParse(valueAsString, NumberStyles.Any, CultureInfo.InvariantCulture, out var fv))
                 {
                     return fv;
                 }
@@ -95,6 +98,12 @@ namespace Client.Core
 
             if (type == KeyValue.OriginalType.Date)
             {
+                
+                if (DateTime.TryParse(valueAsString, out var dt))
+                {
+                    return dt;
+                }
+
                 if (DateTimeOffset.TryParse(valueAsString, out var dv))
                 {
                     return dv;

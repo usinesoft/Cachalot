@@ -20,7 +20,7 @@ namespace Client.Tools
 
                 iteration++;
 
-                
+
                 if (maxRetry > 0 && iteration >= maxRetry)
                     break;
 
@@ -30,11 +30,11 @@ namespace Client.Tools
 
                 //wait.Wait(delay);
                 Thread.Sleep(delay);
-                
+
                 Dbg.Trace($"Thread {Thread.CurrentThread.ManagedThreadId} smart retry delay {delay} for iteration {iteration}");
             }
 
-            
+
             Dbg.Trace($"Thread {Thread.CurrentThread.ManagedThreadId} Smart retry finished in {iteration} iterations");
 
             return iteration;

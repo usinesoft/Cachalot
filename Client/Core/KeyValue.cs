@@ -1,13 +1,15 @@
 #region
 
-using System;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using Client.Messages;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using Client.Interface;
 
 #endregion
 
@@ -20,8 +22,8 @@ namespace Client.Core
     [ProtoContract]
     public sealed class KeyValue : IComparable<KeyValue>
     {
-        
-        public enum OriginalType:byte
+
+        public enum OriginalType : byte
         {
             SomeInteger = 0,
             SomeFloat = 1,
@@ -39,18 +41,110 @@ namespace Client.Core
         [ProtoMember(2)]
         private byte[] _data;
 
-        /// <summary>
-        ///     name of the key
-        /// </summary>
-        [field: ProtoMember(3)]
-        public string KeyName { get; }
 
-        
-        public OriginalType Type => (OriginalType) _data[0];
+        public OriginalType Type => (OriginalType)_data[0];
+        public bool IsNull => _data[0] == (int)OriginalType.Null;
+
+        public double NumericValue
+        {
+            get
+            {
+                var type = (OriginalType)_data[0];
+
+                if (type == OriginalType.SomeInteger)
+                {
+                    return _hashCode;
+                }
+
+                if (type == OriginalType.SomeFloat)
+                {
+                    if (_hashCode % 10 == 0)
+                    {
+                        return _hashCode / FloatingPrecision;
+                    }
+
+                    return BitConverter.ToDouble(_data, 1);
+                }
+
+                return double.NaN;
+            }
+        }
+
+        public string StringValue
+        {
+            get
+            {
+                var type = (OriginalType)_data[0];
+                if (type != OriginalType.String)
+                {
+                    return null;
+                }
+
+                return Encoding.UTF8.GetString(_data, 1, _data.Length - 1);
+            }
+        }
+
+        public long IntValue => _hashCode;
+
+        public DateTimeOffset? DateValue
+        {
+            get
+            {
+                if (Type != OriginalType.Date)
+                {
+                    return null;
+                }
+
+                if (_data.Length == 1)//no offset
+                    return new DateTimeOffset(new DateTime(_hashCode));
+
+                var offset = BitConverter.ToInt64(_data, 1);
+                return new DateTimeOffset(_hashCode, new TimeSpan(offset));
+
+            }
+        }
+
+        JValue JsonValue
+        {
+            get
+            {
+                var type = (OriginalType)_data[0];
+
+                switch (type)
+                {
+                    case OriginalType.SomeInteger:
+                        return new JValue(_hashCode);
+
+                    case OriginalType.SomeFloat:
+                        return new JValue(NumericValue);
+
+                    case OriginalType.Boolean:
+                        return new JValue(_hashCode != 0);
+
+                    case OriginalType.Date:
+                        if (_data.Length == 1)//no offset
+                            return new JValue(new DateTime(_hashCode));
+
+                        var offset = BitConverter.ToInt64(_data, 1);
+                        return new JValue(new DateTimeOffset(_hashCode, new TimeSpan(offset)));
+
+                    case OriginalType.String:
+                        return new JValue(StringValue);
+
+                    case OriginalType.Null:
+                        return JValue.CreateNull();
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+
+            }
+        }
 
         public override string ToString()
         {
-            var type = (OriginalType) _data[0];
+            var type = (OriginalType)_data[0];
 
             switch (type)
             {
@@ -64,9 +158,9 @@ namespace Client.Core
                     return (_hashCode != 0).ToString();
 
                 case OriginalType.Date:
-                    if(_data.Length == 1)//no offset
+                    if (_data.Length == 1)//no offset
                         return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
-                    
+
                     var offset = BitConverter.ToInt64(_data, 1);
                     return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
 
@@ -82,34 +176,100 @@ namespace Client.Core
 
         }
 
-        public  JProperty ToJson()
+        public override bool Equals(object obj)
         {
-            var type = (OriginalType) _data[0];
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+
+            if (obj is int i) return _hashCode == i;
+
+            if (obj is long l) return _hashCode == l;
+
+            if (obj is string s) return StringValue == s;
+
+
+            return Equals((KeyValue)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return (int)(_hashCode % int.MaxValue);
+        }
+
+        public int CompareTo(KeyValue other)
+        {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+
+
+            // null is smaller than any other value
+            if (Type == OriginalType.Null)
+            {
+                if (other.Type == OriginalType.Null)
+                {
+                    return 0;
+                }
+
+                return -1;
+            }
+
+            if (other.Type == OriginalType.Null)
+            {
+                return 1;
+            }
+
+            // the only different types that can be compared are float and integer
+            if (Type == OriginalType.SomeInteger && other.Type == OriginalType.SomeFloat ||
+                Type == OriginalType.SomeFloat && other.Type == OriginalType.SomeInteger)
+            {
+                return NumericValue.CompareTo(other.NumericValue);
+            }
+
+            if (Type != other.Type)
+            {
+                throw new CacheException($"Incompatible types for comparison:{Type} and {other.Type}");
+            }
+
+            if (Type == OriginalType.String )
+            {
+                return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
+            }
+
+            // works for booleans, integers and dates
+            return _hashCode.CompareTo(other._hashCode);
+            
+            
+        }
+
+        public JProperty ToJson(string name)
+        {
+            var type = (OriginalType)_data[0];
 
             switch (type)
             {
                 case OriginalType.SomeInteger:
-                    return new JProperty(KeyName, _hashCode);
+                    return new JProperty(name, _hashCode);
 
                 case OriginalType.SomeFloat:
-                    return new JProperty(KeyName, NumericValue);
-                    
+                    return new JProperty(name, NumericValue);
+
                 case OriginalType.Boolean:
-                    return new JProperty(KeyName, _hashCode != 0);
-                    
+                    return new JProperty(name, _hashCode != 0);
+
                 case OriginalType.Date:
-                    if(_data.Length == 1)//no offset
-                        return new JProperty(KeyName, new DateTime(_hashCode));
-                    
+                    if (_data.Length == 1)//no offset
+                        return new JProperty(name, new DateTime(_hashCode));
+
                     var offset = BitConverter.ToInt64(_data, 1);
-                    
-                    return new JProperty(KeyName, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
+
+                    return new JProperty(name, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
 
                 case OriginalType.String:
-                    return new JProperty(KeyName, StringValue);
+                    return new JProperty(name, StringValue);
 
                 case OriginalType.Null:
-                    return null;
+                    return new JProperty(name, null);
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -138,17 +298,17 @@ namespace Client.Core
         void FromLong(long longValue, OriginalType type)
         {
             _hashCode = longValue;
-            _data[0] = (byte) type;
+            _data[0] = (byte)type;
         }
 
         void FromFloatingPoint(double floatValue, OriginalType type)
         {
-            _hashCode = (long) (floatValue * FloatingPrecision);
+            _hashCode = (long)(floatValue * FloatingPrecision);
 
-            _data[0] = (byte) type;
+            _data[0] = (byte)type;
 
             // If no precision was lost, no need to keep the original value otherwise store it
-            // If possible, storing it as an int mai handle the precision better than the double (1.7 for example 
+            // If possible, storing it as an int mai handle the precision better than the double (1.7 for example )
             if (_hashCode % 10 != 0)
             {
                 var original = BitConverter.GetBytes(floatValue);
@@ -165,30 +325,29 @@ namespace Client.Core
 
         void FromString(string stringValue)
         {
-            
+
             StableHashForString(stringValue);
 
-            _data[0] = (byte) OriginalType.String;
+            //_hashCode = stringValue.GetHashCode();
 
-            var original = Encoding.UTF8.GetBytes(stringValue);
+            
+            int estimatedSize = Encoding.UTF8.GetByteCount(stringValue);
 
-            var data = new byte[1 + original.Length];
-            data[0] = _data[0];
+            _data = new byte[estimatedSize + 1];
 
-            Buffer.BlockCopy(original, 0, data, 1, original.Length);
+            _data[0] = (byte)OriginalType.String;
 
-            _data = data;
+            Encoding.UTF8.GetBytes(stringValue, new Span<byte>(_data, 1, estimatedSize));
 
+            
         }
 
         void FromNull()
         {
             _hashCode = 0;
 
-            _data[0] = (byte) OriginalType.Null;
+            _data[0] = (byte)OriginalType.Null;
         }
-
-        public bool IsNull => _data[0] == (int) OriginalType.Null;
 
         /// <summary>
         /// This kind of date needs to be serialized to two longs to be reconstructed identically
@@ -198,25 +357,25 @@ namespace Client.Core
         {
             _hashCode = value.Ticks;
 
-            
+
             var offset = value.Offset.Ticks;
 
             if (offset == 0)
             {
-                _data[0] = (byte) OriginalType.Date;
+                _data[0] = (byte)OriginalType.Date;
                 return;
             }
 
             var offsetBytes = BitConverter.GetBytes(offset);
 
             _data = new byte[1 + offsetBytes.Length];
-            _data[0] = (byte) OriginalType.Date;
+            _data[0] = (byte)OriginalType.Date;
 
             Buffer.BlockCopy(offsetBytes, 0, _data, 1, offsetBytes.Length);
 
         }
 
-        
+
 
         /// <summary>
         /// For serialization only
@@ -226,84 +385,117 @@ namespace Client.Core
         {
         }
 
-       
-        public KeyValue(object value, KeyInfo info)
+
+        public KeyValue(object value)
         {
             _data = new byte[1];
 
-            KeyName = info.Name;
             
-            if (value == null)
+            if (value is null)
             {
                 FromNull();
                 return;
             }
 
-            var propertyType = value.GetType();
             
-
-            //integer types
-            if (propertyType == typeof(int) || propertyType == typeof(short) || propertyType == typeof(long) ||
-                propertyType == typeof(byte) || propertyType == typeof(char) )
-                
+            if (value is Enum e)
             {
-                var longVal = Convert.ToInt64(value);
+                var longVal = Convert.ToInt64(e);
                 FromLong(longVal, OriginalType.SomeInteger);
                 return;
             }
 
-            if (propertyType == typeof(bool))
+            if (value is bool b)
             {
-                var longVal = Convert.ToInt64(value);
+                var longVal = b?1:0;
                 FromLong(longVal, OriginalType.Boolean);
                 return;
             }
 
-            if (propertyType.IsEnum)
+            //integer types
+            if(value is long l)
             {
-                var longVal = Convert.ToInt64(value);
-                FromLong(longVal, OriginalType.SomeInteger);
+                //var longVal = Convert.ToInt64(value);
+                FromLong(l, OriginalType.SomeInteger);
                 return;
             }
 
-
-            if (propertyType == typeof(float) || propertyType == typeof(double) || propertyType == typeof(decimal))
+            if(value is int i)
             {
-                FromFloatingPoint(Convert.ToDouble(value), OriginalType.SomeFloat);
+                FromLong(i, OriginalType.SomeInteger);
                 return;
             }
 
-            if (propertyType == typeof(DateTime))
+            if(value is short s)
+            {
+                FromLong(s, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is char c)
+            {
+                
+                FromLong(c, OriginalType.SomeInteger);
+                return;
+            }
+
+            if(value is byte bt)
+            {
+                
+                FromLong(bt, OriginalType.SomeInteger);
+                return;
+            }
+
+            
+            if (value is double d)
+            {
+                FromFloatingPoint(d, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is float f)
+            {
+                FromFloatingPoint(f, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is decimal de)
+            {
+                FromFloatingPoint((double)de, OriginalType.SomeFloat);
+                return;
+            }
+
+            if (value is DateTime dt)
             {
                 // the default DateTime can not be directly converted to DateTimeOffset
-                var date = (DateTime) value;
-                if (date == default)
+                
+                if (dt == default)
                 {
                     FromDateTimeWithTimeZone(default);
                     return;
                 }
-                    
 
-                FromDateTimeWithTimeZone(new DateTimeOffset(date));
+
+                FromDateTimeWithTimeZone(new DateTimeOffset(dt));
 
                 return;
             }
 
-            if (propertyType == typeof(DateTimeOffset))
+            if (value is DateTimeOffset dto)
             {
-                FromDateTimeWithTimeZone((DateTimeOffset) value);
+                FromDateTimeWithTimeZone(dto);
                 return;
             }
 
             // ReSharper disable once PossibleNullReferenceException
-            if (!propertyType.Namespace.StartsWith("System"))
-            {
-                throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
-            }
-            
+            //if (!propertyType.Namespace.StartsWith("System"))
+            //{
+            //    throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
+            //}
+
             FromString(value.ToString());
-            
-            
+
+
         }
 
         private bool Equals(KeyValue other)
@@ -311,156 +503,20 @@ namespace Client.Core
             if (_hashCode != other._hashCode)
                 return false;
 
+            if (this.Type != other.Type)
+            {
+                return false;
+            }
+
             if (_hashCode == 0 && other._hashCode == 0)
             {
                 // consider zero and null the same for indexing
                 return true;
             }
-            
+
             return _data.SequenceEqual(other._data);
         }
 
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            
-            if (obj is int i) return _hashCode == i;
-
-            if (obj is long l) return _hashCode == l;
-
-            if (obj is string s) return StringValue == s;
-
-         
-            return Equals((KeyValue) obj);
-        }
-
-        public override int GetHashCode()
-        {
-            // ReSharper disable once NonReadonlyMemberInGetHashCode
-            return (int) (_hashCode % int.MaxValue);
-        }
-
-        public int CompareTo(KeyValue other)
-        {
-            if (ReferenceEquals(this, other)) return 0;
-            if (ReferenceEquals(null, other)) return 1;
-
-            if ((OriginalType) _data[0] == OriginalType.String)
-            {
-                return string.Compare(StringValue, other.StringValue, StringComparison.Ordinal);
-            }
-
-            if (Type == other.Type)
-            {
-                return _hashCode.CompareTo(other._hashCode);
-            }
-
-            if (double.IsNaN(NumericValue) || double.IsNaN(other.NumericValue))
-            {
-                throw new NotSupportedException("Incompatible types for comparison");
-            }
-
-            return NumericValue.CompareTo(other.NumericValue);
-        }
-
-
-        public double NumericValue
-        {
-            get
-            {
-                var type = (OriginalType) _data[0];
-
-                if (type == OriginalType.SomeInteger)
-                {
-                    return _hashCode;
-                }
-
-                if (type == OriginalType.SomeFloat)
-                {
-                    if (_hashCode % 10 == 0)
-                    {
-                        return _hashCode / FloatingPrecision;
-                    }
-
-                    return BitConverter.ToDouble(_data, 1);
-                }
-
-                return double.NaN;
-            }
-        }
-
-        public string StringValue
-        {
-            get
-            {
-                var type = (OriginalType) _data[0];
-                if (type != OriginalType.String)
-                {
-                    return null;
-                }
-
-                return Encoding.UTF8.GetString(_data, 1, _data.Length -1);
-            }
-        }
-
-        public long IntValue => _hashCode;
-
-        public DateTimeOffset? DateValue
-        {
-            get
-            {
-                if (Type != OriginalType.Date)
-                {
-                    return null;
-                }
-
-                if(_data.Length == 1)//no offset
-                    return new DateTimeOffset(new DateTime(_hashCode));
-                    
-                var offset = BitConverter.ToInt64(_data, 1);
-                return new DateTimeOffset(_hashCode, new TimeSpan(offset));
-
-            }
-        } 
-
-        JValue JsonValue
-        {
-            get
-            {
-                var type = (OriginalType) _data[0];
-
-                switch (type)
-                {
-                    case OriginalType.SomeInteger:
-                        return new JValue(_hashCode);
-
-                    case OriginalType.SomeFloat:
-                        return new JValue(NumericValue);
-
-                    case OriginalType.Boolean:
-                        return new JValue(_hashCode != 0);
-
-                    case OriginalType.Date:
-                        if(_data.Length == 1)//no offset
-                            return new JValue(new DateTime(_hashCode));
-                    
-                        var offset = BitConverter.ToInt64(_data, 1);
-                        return new JValue(new DateTimeOffset(_hashCode, new TimeSpan(offset)));
-
-                    case OriginalType.String:
-                        return new JValue(StringValue);
-
-                    case OriginalType.Null:
-                        return JValue.CreateNull();
-
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-
-            }
-        }
 
         public static bool operator ==(KeyValue left, KeyValue right)
         {
@@ -517,8 +573,33 @@ namespace Client.Core
             return left.CompareTo(right) > 0;
         }
 
-       
+
     }
 
+    /// <summary>
+    /// KeyValue with name (to minimize memory usage the name is not stored any more in the KeyValue)
+    /// </summary>
+    public class NamedValue
+    {
+        public NamedValue(KeyValue value, string name)
+        {
+            Value = value;
+            Name = name;
+        }
 
+        [field: ProtoMember(1)] public KeyValue Value { get; }
+        [field: ProtoMember(2)] public string Name { get; }
+
+        public override bool Equals(object obj)
+        {
+            return obj is NamedValue value &&
+                   EqualityComparer<KeyValue>.Default.Equals(Value, value.Value) &&
+                   Name == value.Name;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Value, Name);
+        }
+    }
 }

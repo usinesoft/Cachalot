@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Tests.TestData
 {
@@ -17,7 +17,7 @@ namespace Tests.TestData
         [ServerSideValue(IndexType.Primary)] public int Id { get; set; }
 
 
-        [ServerSideValue(IndexType.Dictionary)]public DateTime ValueDate { get; set; }
+        [ServerSideValue(IndexType.Dictionary)] public DateTime ValueDate { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)] public DateTimeOffset AnotherDate { get; set; }
 

@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Client.ChannelInterface;
 using Client.Core;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
 
 namespace Client.Messages
 {
@@ -10,10 +10,12 @@ namespace Client.Messages
     [Serializable]
     public class ServerDescriptionResponse : Response
     {
-        [ProtoMember(3)] private readonly Dictionary<string, DataStoreInfo> _dataStoreInfoByFullName =
+        [ProtoMember(3)]
+        private readonly Dictionary<string, DataStoreInfo> _dataStoreInfoByFullName =
             new Dictionary<string, DataStoreInfo>();
 
-        [ProtoMember(2)] private readonly Dictionary<string, CollectionSchema> _knownTypesByFullName =
+        [ProtoMember(2)]
+        private readonly Dictionary<string, CollectionSchema> _knownTypesByFullName =
             new Dictionary<string, CollectionSchema>();
 
         [ProtoMember(1)] private ServerInfo _serverProcessInfo;

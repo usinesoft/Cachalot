@@ -1,4 +1,3 @@
-using System;
 using Client.ChannelInterface;
 using ProtoBuf;
 

@@ -1,12 +1,12 @@
-﻿using System;
+﻿using FakeItEasy;
+using NUnit.Framework;
+using Server;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FakeItEasy;
-using NUnit.Framework;
-using Server;
 
 namespace Tests.UnitTests
 {
@@ -64,8 +64,8 @@ namespace Tests.UnitTests
             watch.Start();
 
             var iterations = 10_000;
-            
-            Parallel.For(0, iterations, new ParallelOptions{MaxDegreeOfParallelism = 10}, i =>
+
+            Parallel.For(0, iterations, new ParallelOptions { MaxDegreeOfParallelism = 10 }, i =>
             {
                 Parallel.Invoke(
                     () => mgr.DoWithReadLock(ReadAbc, "a", "b", "c"),

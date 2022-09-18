@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Client.Tools
 {
- 
+
     /// <summary>
     /// Thread safe dictionary. I know there is <see cref="ConcurrentDictionary{TKey,TValue}"/> but it is slower>
     /// </summary>
@@ -21,7 +21,7 @@ namespace Client.Tools
         }
 
         private readonly Dictionary<TKey, TValue> _innerDictionary = new Dictionary<TKey, TValue>();
-        
+
 
         public void Clear()
         {
@@ -31,7 +31,7 @@ namespace Client.Tools
             }
         }
 
-       
+
         public int Count
         {
             get
@@ -92,7 +92,7 @@ namespace Client.Tools
                 {
                     return value;
                 }
-                
+
                 return default;
             }
         }
@@ -117,9 +117,9 @@ namespace Client.Tools
 
         public TValue GetOrCreate(TKey key)
         {
-            if(_factory == null)
+            if (_factory == null)
                 throw new NotSupportedException("Get or create called on a SafeDictionary instance that does not have a factory defined");
-            
+
             lock (_innerDictionary)
             {
                 if (!_innerDictionary.TryGetValue(key, out var value))
@@ -153,7 +153,7 @@ namespace Client.Tools
             }
         }
 
-        
+
         public IList<KeyValuePair<TKey, TValue>> Pairs
         {
             get
@@ -165,7 +165,7 @@ namespace Client.Tools
             }
         }
 
-       
+
 
     }
 }

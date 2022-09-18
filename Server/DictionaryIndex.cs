@@ -1,11 +1,11 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 #endregion
 
@@ -48,9 +48,7 @@ namespace Server
             {
                 _keyIndex = KeyInfo.Order;
 
-                if (KeyInfo.IsCollection) _keyIndex -= item.Values.Length;
             }
-
 
             if (!KeyInfo.IsCollection)
             {
@@ -90,7 +88,7 @@ namespace Server
             {
                 if (_data.TryGetValue(values[0], out var valuesByPrimaryKey))
                     return new HashSet<PackedObject>(valuesByPrimaryKey);
-                
+
                 return new HashSet<PackedObject>();
             }
 

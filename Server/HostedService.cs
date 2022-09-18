@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Channel;
+using Client.Core;
+using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Channel;
-using Client.Core;
-using Newtonsoft.Json;
 
 
 namespace Server
@@ -39,7 +39,7 @@ namespace Server
                 }
 
 
-                var nodeConfig = new NodeConfig {TcpPort = Constants.DefaultPort, IsPersistent = true};
+                var nodeConfig = new NodeConfig { TcpPort = Constants.DefaultPort, IsPersistent = true };
 
                 if (File.Exists(configFile))
                 {
@@ -72,7 +72,7 @@ namespace Server
                 _listener = new TcpServerChannel();
                 _cacheServer.Channel = _listener;
                 _listener.Init(nodeConfig.TcpPort);
-                
+
 
                 var fullDataPath = Path.GetFullPath(nodeConfig.DataPath ?? Persistence.Constants.DataPath);
 
@@ -82,7 +82,7 @@ namespace Server
                 {
                     Console.Title = $"Cachalot Core on port {nodeConfig.TcpPort} persistent = {persistentDescription}";
                 }
-                catch (Exception )
+                catch (Exception)
                 {
                     //ignore this may throw an exception when run in service mode
                 }
@@ -92,7 +92,7 @@ namespace Server
 
                 _cacheServer.StopRequired += (sender, args) =>
                 {
-                    
+
                     Stop();
 
                     _stopEvent.Set();

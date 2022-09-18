@@ -1,11 +1,11 @@
 #region
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Client.Core;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 #endregion
 
@@ -24,7 +24,7 @@ namespace Client.Queries
         /// or it is a pure full-text query (if <see cref="FullTextSearch"/> is not empty)
         /// </summary>
         [field: ProtoMember(1)] public List<AndQuery> Elements { get; } = new List<AndQuery>();
-        
+
 
         /// <summary>
         /// Any query applies to exactly one collection
@@ -34,49 +34,49 @@ namespace Client.Queries
         /// <summary>
         /// Skip operator (ignore the first elements)
         /// </summary>
-        [field: ProtoMember(3)]public int Skip { get; set; }
+        [field: ProtoMember(3)] public int Skip { get; set; }
 
         /// <summary>
         /// Take operator (only take the first elements)
         /// </summary>
-        [field:ProtoMember(4)] public int Take { get; set; }
+        [field: ProtoMember(4)] public int Take { get; set; }
 
         /// <summary>
         /// Full text query (optional)
         /// </summary>
-        [field:ProtoMember(5)] public string FullTextSearch { get; set; }
+        [field: ProtoMember(5)] public string FullTextSearch { get; set; }
 
         /// <summary>
         /// Distinct operator. Can be applied only with Select clause
         /// </summary>
-        [field:ProtoMember(6)] public bool Distinct { get; set; }
-        
+        [field: ProtoMember(6)] public bool Distinct { get; set; }
+
         /// <summary>
         /// Properties in the Select clause. If empty, the complete object is returned
         /// </summary>
-        [field:ProtoMember(7)] public IList<SelectItem>  SelectClause{ get; } = new List<SelectItem>();
+        [field: ProtoMember(7)] public IList<SelectItem> SelectClause { get; } = new List<SelectItem>();
 
         /// <summary>
         /// Specific operator for cache-only mode; returns a result only if the query is a subset of the domain loaded into the cache
         /// </summary>
-        [field:ProtoMember(8)] public bool OnlyIfComplete { get; set; }
+        [field: ProtoMember(8)] public bool OnlyIfComplete { get; set; }
 
         /// <summary>
         /// Optional order-by clause. Only one accepted in this version
         /// </summary>
-        [field:ProtoMember(9)] public string OrderByProperty { get; set; }
-        
+        [field: ProtoMember(9)] public string OrderByProperty { get; set; }
+
         /// <summary>
         /// True for descending order (only applies if <see cref="OrderByProperty"/> is present
         /// </summary>
-        [field:ProtoMember(10)] public bool OrderByIsDescending { get; set; }
+        [field: ProtoMember(10)] public bool OrderByIsDescending { get; set; }
 
         /// <summary>
         /// Simple query. Search one element by primary key
         /// </summary>
-        [field:ProtoMember(11)] public bool ByPrimaryKey { get; set; }
+        [field: ProtoMember(11)] public bool ByPrimaryKey { get; set; }
 
-       
+
         #endregion
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace Client.Queries
             return Elements.Count == 0;
         }
 
-        
+
 
 
         public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
@@ -198,7 +198,7 @@ namespace Client.Queries
         [UsedImplicitly]
         public OrQuery()
         {
-            
+
         }
 
         public static OrQuery Empty<T>()

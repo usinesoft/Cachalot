@@ -1,12 +1,12 @@
-﻿using System;
-using System.Diagnostics;
-using System.Linq;
-using Client;
+﻿using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Server.Persistence;
+using System;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Server.Queries
 {
@@ -15,12 +15,12 @@ namespace Server.Queries
     /// </summary>
     class PutManager : IRequestManager
     {
-        
+
         private readonly DataStore _dataStore;
         private readonly ILog _log;
         private readonly ITransactionLog _transactionLog;
 
-        public PutManager(ITransactionLog transactionLog, IFeedSessionManager sessionManager,  DataStore dataStore, ILog log)
+        public PutManager(ITransactionLog transactionLog, IFeedSessionManager sessionManager, DataStore dataStore, ILog log)
         {
             _transactionLog = transactionLog;
             SessionManager = sessionManager;
@@ -43,14 +43,14 @@ namespace Server.Queries
                     int count = ProcessPutRequest(putRequest);
                     watch.Stop();
 
-                    _log?.LogActivity(LogEntry.Put, putRequest.CollectionName, (int) (watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
+                    _log?.LogActivity(LogEntry.Put, putRequest.CollectionName, (int)(watch.Elapsed.TotalMilliseconds * 1000), $"{putRequest.Items.Count} items");
 
-                    client?.SendResponse(new ItemsCountResponse {ItemsCount = count});
+                    client?.SendResponse(new ItemsCountResponse { ItemsCount = count });
                 }
                 catch (Exception e)
                 {
                     client?.SendResponse(new ExceptionResponse(e));
-                    
+
                     // if client is null we are inside a transaction. The exception will be processed at a higher level
                     if (client == null)
                     {
@@ -66,7 +66,7 @@ namespace Server.Queries
             }
 
             throw new ArgumentException($"Request type not supported:{request.GetType()} ");
-            
+
         }
 
         private int ProcessPutRequest(PutRequest putRequest)
@@ -77,21 +77,27 @@ namespace Server.Queries
             // a feed session may contain multiple requests
             if (putRequest.SessionId != default)
             {
+
+                KeyValuePool.ProcessPackedObjects(putRequest.Items);
+
+                
                 SessionManager.AddToSession(putRequest.SessionId, putRequest.Items);
 
                 if (putRequest.EndOfSession)
                 {
                     var all = SessionManager.EndSession(putRequest.SessionId);
 
-                    _transactionLog?.NewTransaction(new PutDurableTransaction {Items = all});
+                    _transactionLog?.NewTransaction(new PutDurableTransaction { Items = all });
 
                     _dataStore.InternalPutMany(all, putRequest.ExcludeFromEviction);
+
+                    GC.Collect();
 
                     Dbg.Trace($"End of session {all.Count:D5} items put session{putRequest.SessionId}");
 
                     return all.Count;
 
-                    
+
 
                 }
 
@@ -107,7 +113,7 @@ namespace Server.Queries
                 var item = putRequest.Items.First();
                 if (!_dataStore.DataByPrimaryKey.ContainsKey(item.PrimaryKey))
                 {
-                    _transactionLog?.NewTransaction(new PutDurableTransaction {Items = putRequest.Items});
+                    _transactionLog?.NewTransaction(new PutDurableTransaction { Items = putRequest.Items });
 
                     _dataStore.InternalAddNew(item, putRequest.ExcludeFromEviction);
 
@@ -131,7 +137,7 @@ namespace Server.Queries
 
                 if (putRequest.Predicate.Match(oldVersion))
                 {
-                    _transactionLog?.NewTransaction(new PutDurableTransaction {Items = putRequest.Items});
+                    _transactionLog?.NewTransaction(new PutDurableTransaction { Items = putRequest.Items });
 
                     _dataStore.InternalUpdate(newVersion);
 
@@ -142,8 +148,8 @@ namespace Server.Queries
 
             }
 
-            _transactionLog?.NewTransaction(new PutDurableTransaction {Items = putRequest.Items});
-            
+            _transactionLog?.NewTransaction(new PutDurableTransaction { Items = putRequest.Items });
+
             _dataStore.InternalPutMany(putRequest.Items, putRequest.ExcludeFromEviction);
 
             return putRequest.Items.Count;

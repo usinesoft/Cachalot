@@ -1,7 +1,7 @@
-﻿using System;
-using Client.ChannelInterface;
+﻿using Client.ChannelInterface;
 using Client.Interface;
 using Client.Messages;
+using System;
 
 namespace Server.Queries
 {
@@ -21,7 +21,7 @@ namespace Server.Queries
                 if (request is DomainDeclarationRequest domainDeclaration)
                 {
                     DomainDeclaration(domainDeclaration, client);
-                }            
+                }
                 else if (request is EvictionSetupRequest evictionSetup)
                 {
                     EvictionSetup(evictionSetup, client);
@@ -55,7 +55,7 @@ namespace Server.Queries
                 : evictionSetup.Type == EvictionType.TimeToLive
                     ? new TtlEvictionPolicy(
                         TimeSpan.FromMilliseconds(evictionSetup.TimeToLiveInMilliseconds))
-                    : (EvictionPolicy) new NullEvictionPolicy();
+                    : (EvictionPolicy)new NullEvictionPolicy();
 
             client.SendResponse(new NullResponse());
         }

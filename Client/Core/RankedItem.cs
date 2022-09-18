@@ -24,17 +24,17 @@ namespace Client.Core
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((RankedItem) obj);
+            return Equals((RankedItem)obj);
         }
 
-        readonly JTokenEqualityComparer  _comparer = new JTokenEqualityComparer();
+        readonly JTokenEqualityComparer _comparer = new JTokenEqualityComparer();
         public override int GetHashCode()
         {
 
             return _comparer.GetHashCode(Item);
-            
+
         }
     }
 
-    
+
 }

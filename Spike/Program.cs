@@ -1,6 +1,5 @@
 ﻿using System;
 using Tests.IntegrationTests;
-using Tests.UnitTests;
 
 namespace Spike
 {
@@ -9,7 +8,7 @@ namespace Spike
         static void Main(string[] args)
         {
 
-          
+
             try
             {
 
@@ -68,7 +67,7 @@ namespace Spike
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                
+
             }
         }
     }

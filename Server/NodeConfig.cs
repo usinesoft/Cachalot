@@ -1,6 +1,6 @@
 ﻿namespace Server
 {
-    
+
     public class NodeConfig : INodeConfig
     {
         public bool IsPersistent { get; set; }

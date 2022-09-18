@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Client.Core;
+﻿using Client.Core;
 using Client.Messages;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -20,12 +19,12 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType<Order>();
 
             var requests = new List<DataRequest>();
-            
+
             // simple put requests
             for (int i = 0; i < 100; i++)
             {
-                var order1 = new Order{Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1};    
-                
+                var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
+
                 var putRequest = new PutRequest("orders");
                 var packed1 = PackedObject.Pack(order1, schema, "orders");
                 putRequest.Items.Add(packed1);
@@ -36,8 +35,8 @@ namespace Tests.UnitTests
             // conditional put requests
             for (int i = 0; i < 100; i++)
             {
-                var order1 = new Order{Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1};    
-                
+                var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
+
                 var putRequest = new PutRequest("orders");
                 var packed1 = PackedObject.Pack(order1, schema, "orders");
                 putRequest.Items.Add(packed1);
@@ -49,10 +48,10 @@ namespace Tests.UnitTests
             // simple delete requests
             for (int i = 0; i < 100; i++)
             {
-                var order1 = new Order{Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1};    
+                var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
                 var packed1 = PackedObject.Pack(order1, schema, "orders1");
                 var deleteRequest = new RemoveRequest("orders1", packed1.PrimaryKey);
-                
+
                 requests.Add(deleteRequest);
             }
 
@@ -61,16 +60,16 @@ namespace Tests.UnitTests
             requests.Add(deleteMany);
 
 
-            var transactionRequest = new TransactionRequest(requests){TransactionId = Guid.NewGuid()};
+            var transactionRequest = new TransactionRequest(requests) { TransactionId = Guid.NewGuid() };
 
             var split = transactionRequest.SplitByServer(k => k.GetHashCode() % 5, 5);
 
-            var total = split.Values.Sum(r=>r.ChildRequests.Count);
-            
+            var total = split.Values.Sum(r => r.ChildRequests.Count);
+
             // 300 uniformly distributed + 5 (delete many) cloned on each server
             Assert.AreEqual(305, total);
 
-            Assert.IsTrue(split.Values.All(s=>s.TransactionId == transactionRequest.TransactionId));
+            Assert.IsTrue(split.Values.All(s => s.TransactionId == transactionRequest.TransactionId));
 
             var tr0 = split[0];
 

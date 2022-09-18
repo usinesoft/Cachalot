@@ -1,12 +1,12 @@
 #region
 
+using Client.Core;
+using Client.Messages;
+using Client.Queries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Client.Core;
-using Client.Messages;
-using Client.Queries;
 
 #endregion
 
@@ -57,12 +57,12 @@ namespace Server
             }
             else
             {
-                for (int i = _data.Count-1; i >= 0; i--)
+                for (int i = _data.Count - 1; i >= 0; i--)
                 {
                     yield return _data[i];
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -488,7 +488,7 @@ namespace Server
                 newEnd = mid;
             else
                 newStart = mid;
-             
+
             if (newStart == newEnd) //so also equal to mid
             {
                 if (Compare(midValue, value) < 0)

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Cachalot.Linq;
-using JetBrains.Annotations;
+﻿using Cachalot.Linq;
 using StressTests.Model;
+using System;
+using System.Collections.Generic;
 
 namespace StressTests.TestData
 {
@@ -43,7 +42,7 @@ namespace StressTests.TestData
                     Name = "Loreal Shrek X25",
                     ScanCode = "65465465",
                     Summary = "Put it on your face please",
-                    
+
                 },
                 new Product
                 {
@@ -58,7 +57,7 @@ namespace StressTests.TestData
                     ScanCode = "65465478",
                     Summary = "Put it on your face too please",
 
-                    
+
                 }
                 ,
                 new Product
@@ -75,7 +74,7 @@ namespace StressTests.TestData
                     Summary = "Anti-Ageing Day Cream, Day Cream with SPF 15",
 
                 },
-                
+
                 new Product
                 {
                     ProductId = ids[3],
@@ -106,7 +105,7 @@ namespace StressTests.TestData
                     Summary = "Advanced Brightening Cream. Anti-aging cream for age spots, dark spots on face, hands, body",
 
                 },
-                
+
                 new Product
                 {
                     ProductId = ids[5],
@@ -183,7 +182,7 @@ namespace StressTests.TestData
                 }
             };
 
-            
+
         }
 
         static Random _rand = new Random();
@@ -191,7 +190,7 @@ namespace StressTests.TestData
         public static IEnumerable<Tuple<Sale, SaleLine>> GenerateSales(int count, Outlet outlet, IList<Product> products)
         {
 
-            var date = new DateTime(2020, 1,1);
+            var date = new DateTime(2020, 1, 1);
 
             for (int i = 0; i < count; i++)
             {
@@ -202,21 +201,21 @@ namespace StressTests.TestData
                     OutletId = outlet.Id,
                     Date = date.AddDays(_rand.Next(100)).AddHours(_rand.Next(9, 19)),
                     Amount = _rand.NextDouble() * 100,
-                    
+
                 };
 
 
-                var saleLine= new  SaleLine
+                var saleLine = new SaleLine
                 {
                     Id = Guid.NewGuid(),
                     Amount = _rand.NextDouble() * 100,
                     ClientId = sale.ClientId,
                     Date = sale.Date,
                     IsDelivered = i % 2 == 0,
-                    ProductId = products[i%products.Count].ProductId,
+                    ProductId = products[i % products.Count].ProductId,
                     Quantity = _rand.Next(1, 5),
                     SaleId = sale.Id,
-                    Channel = (Model.Channel) (i % 3),
+                    Channel = (Model.Channel)(i % 3),
                 };
 
                 yield return new Tuple<Sale, SaleLine>(sale, saleLine);

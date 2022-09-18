@@ -1,10 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
+using System;
+using System.IO;
+using System.Linq;
 using Tests.TestData.MoneyTransfer;
 
 namespace Tests.IntegrationTests
@@ -34,8 +34,8 @@ namespace Tests.IntegrationTests
 
             using (var connector = new Connector(new ClientConfig()))
             {
-                  connector.DeclareCollection<Account>();  
-                  connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
 
@@ -43,8 +43,8 @@ namespace Tests.IntegrationTests
 
                 var tIds = connector.GenerateUniqueIds("transfer_ids", 2);
 
-                accounts.Put(new Account {Id = accountIds[0], Balance = 1000});
-                accounts.Put(new Account {Id = accountIds[1], Balance = 0});
+                accounts.Put(new Account { Id = accountIds[0], Balance = 1000 });
+                accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
 
                 // first transaction should succeed
@@ -53,13 +53,15 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 334;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
-                        Id = tIds[0], Amount = transferredMoney, SourceAccount = accountIds[0],
+                        Id = tIds[0],
+                        Amount = transferredMoney,
+                        SourceAccount = accountIds[0],
                         DestinationAccount = accountIds[1]
                     });
                     transaction.Commit();
@@ -86,10 +88,10 @@ namespace Tests.IntegrationTests
                     var transferredMoney = 1001;
 
                     var transaction = connector.BeginTransaction();
-                    transaction.UpdateIf(new Account {Id = accountIds[0], Balance = 1000 - transferredMoney},
+                    transaction.UpdateIf(new Account { Id = accountIds[0], Balance = 1000 - transferredMoney },
                         account => account.Balance >= transferredMoney);
 
-                    transaction.Put(new Account {Id = accountIds[1], Balance = transferredMoney});
+                    transaction.Put(new Account { Id = accountIds[1], Balance = transferredMoney });
                     transaction.Put(new MoneyTransfer
                     {
                         Id = tIds[0],
@@ -134,8 +136,8 @@ namespace Tests.IntegrationTests
             // check that everything is persisted ok
             using (var connector = new Connector(new ClientConfig()))
             {
-                connector.DeclareCollection<Account>();  
-                connector.DeclareCollection<MoneyTransfer>();  
+                connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
 
                 var accounts = connector.DataSource<Account>();
                 var src = accounts[accountIds[0]];

@@ -1,19 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Tools;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Client.Messages
 {
     [ProtoContract]
     public class TransactionRequest : Request
     {
-        
-         [field: ProtoMember(1)] public IList<DataRequest> ChildRequests { get; set; }  = new List<DataRequest>();
+
+        [field: ProtoMember(1)] public IList<DataRequest> ChildRequests { get; set; } = new List<DataRequest>();
 
         /// <summary>
         /// This property is assigned later when we find out if more than one node in the cluster participates into a transaction
@@ -37,21 +37,21 @@ namespace Client.Messages
         }
 
         public override RequestClass RequestClass => RequestClass.DataAccess;
-        
+
         public override bool IsSimple => IsSingleStage;
 
-       
+
         /// <summary>
         /// Split a transaction request between multiple shards
         /// </summary>
         /// <param name="serverSelector">a functions that gives the shard index for a primary key</param>
         /// <param name="serverCount">the total number of shards</param>
         /// <returns></returns>
-        public SafeDictionary<int, TransactionRequest> SplitByServer([NotNull] Func<KeyValue, int> serverSelector, int serverCount )
+        public SafeDictionary<int, TransactionRequest> SplitByServer([NotNull] Func<KeyValue, int> serverSelector, int serverCount)
         {
             if (serverSelector == null) throw new ArgumentNullException(nameof(serverSelector));
 
-            var result = new SafeDictionary<int, TransactionRequest>(() => new TransactionRequest{TransactionId = TransactionId});
+            var result = new SafeDictionary<int, TransactionRequest>(() => new TransactionRequest { TransactionId = TransactionId });
 
             foreach (var childRequest in ChildRequests)
             {
@@ -63,7 +63,7 @@ namespace Client.Messages
 
                     // simple put requests contain ore or more items from the same collection and no condition
                     case PutRequest simplePutRequest when !simplePutRequest.HasCondition:
-                        
+
                         var byServer = simplePutRequest.SplitByServer(serverSelector);
 
                         foreach (var pair in byServer)
@@ -100,7 +100,7 @@ namespace Client.Messages
                 }
             }
 
-            
+
             return result;
         }
 

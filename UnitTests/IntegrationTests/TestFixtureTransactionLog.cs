@@ -1,10 +1,10 @@
+using NUnit.Framework;
+using Server.Persistence;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
-using Server.Persistence;
 
 namespace Tests.IntegrationTests
 {
@@ -83,12 +83,12 @@ namespace Tests.IntegrationTests
             // check that the worker is blocked
             Assert.IsFalse(workerFinished);
 
-            log.NewTransaction(new byte[] {1, 2, 3});
+            log.NewTransaction(new byte[] { 1, 2, 3 });
             Thread.Sleep(100);
             Assert.AreEqual(1, processed);
             Assert.IsFalse(workerFinished);
 
-            log.NewTransaction(new byte[] {2, 3, 4});
+            log.NewTransaction(new byte[] { 2, 3, 4 });
             Thread.Sleep(100);
             Assert.AreEqual(2, processed);
             Assert.IsFalse(workerFinished);
@@ -103,9 +103,9 @@ namespace Tests.IntegrationTests
         [Test]
         public void Clear_log_when_everything_is_processed()
         {
-            var t1 = new byte[] {1, 2, 3};
-            var t2 = new byte[] {11, 12, 13, 14, 15, 16};
-            var t3 = new byte[] {100, 200, 210, 220};
+            var t1 = new byte[] { 1, 2, 3 };
+            var t2 = new byte[] { 11, 12, 13, 14, 15, 16 };
+            var t3 = new byte[] { 100, 200, 210, 220 };
 
             var log = new TransactionLog();
 
@@ -182,7 +182,7 @@ namespace Tests.IntegrationTests
         public void Performance_test()
         {
             var data = new byte[1000];
-            for (var i = 0; i < 1000; i++) data[i] = (byte) (i % 255);
+            for (var i = 0; i < 1000; i++) data[i] = (byte)(i % 255);
 
             using (var log = new TransactionLog())
             {
@@ -201,7 +201,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Test_cancel_delayed_transactions()
         {
-            var t1 = new byte[] {1, 2, 3};
+            var t1 = new byte[] { 1, 2, 3 };
 
             var log = new TransactionLog();
 
@@ -242,7 +242,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Test_delayed_transactions()
         {
-            var t1 = new byte[] {1, 2, 3};
+            var t1 = new byte[] { 1, 2, 3 };
 
             var log = new TransactionLog();
 
@@ -267,8 +267,8 @@ namespace Tests.IntegrationTests
         [Test]
         public void Test_persistent_transaction_log()
         {
-            var t1 = new byte[] {1, 2, 3};
-            var t2 = new byte[] {11, 12, 13, 14, 15, 16};
+            var t1 = new byte[] { 1, 2, 3 };
+            var t2 = new byte[] { 11, 12, 13, 14, 15, 16 };
 
             var log = new TransactionLog();
 

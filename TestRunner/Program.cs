@@ -1,5 +1,4 @@
 ﻿using System;
-using Remotion.Linq.Clauses;
 using Tests.IntegrationTests;
 
 namespace TestRunner
@@ -12,9 +11,9 @@ namespace TestRunner
 
             fixture.RunBeforeAnyTests();
 
-            Run(() => fixture.Domain_declaration_example(), () => fixture.Init(), ()=> fixture.Exit());
+            Run(() => fixture.Domain_declaration_example(), () => fixture.Init(), () => fixture.Exit());
 
-            
+
         }
 
         static void Run(Action toRun, Action before, Action after)

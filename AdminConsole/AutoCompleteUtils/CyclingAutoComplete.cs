@@ -1,8 +1,5 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Client.Core;
-using Client.Messages;
+﻿using Client.Core;
+using System.Collections.Generic;
 
 namespace AdminConsole.AutoCompleteUtils
 {
@@ -29,7 +26,7 @@ namespace AdminConsole.AutoCompleteUtils
             "search"
         };
 
-        private readonly char[] _tokenDelimiters = {' ', ','};
+        private readonly char[] _tokenDelimiters = { ' ', ',' };
         private int _autoCompleteIndex;
         private IList<string> _autoCompleteList;
         private string _previousAutoComplete = string.Empty;

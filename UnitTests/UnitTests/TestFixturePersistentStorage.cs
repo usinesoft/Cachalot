@@ -1,9 +1,9 @@
+using NUnit.Framework;
+using Server.Persistence;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using NUnit.Framework;
-using Server.Persistence;
 
 namespace Tests.UnitTests
 {
@@ -48,7 +48,7 @@ namespace Tests.UnitTests
         [Test]
         public void Create_then_delete_object()
         {
-            var data = new byte[] {1, 2, 3};
+            var data = new byte[] { 1, 2, 3 };
 
             // add two new blocks
             using (var storage = new ReliableStorage(new NullProcessor()))
@@ -87,10 +87,10 @@ namespace Tests.UnitTests
         public void Performance_test()
         {
             var data = new byte[1000];
-            for (var i = 0; i < 1000; i++) data[i] = (byte) (i % 255);
+            for (var i = 0; i < 1000; i++) data[i] = (byte)(i % 255);
 
             var data1 = new byte[2000];
-            for (var i = 0; i < 2000; i++) data1[i] = (byte) (i % 255);
+            for (var i = 0; i < 2000; i++) data1[i] = (byte)(i % 255);
 
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
@@ -246,9 +246,9 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(0, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {1, 2, 3}, "a1", 150);
-                storage.StoreBlock(new byte[] {1, 2, 3, 4, 5}, "a2", 151);
-                storage.StoreBlock(new byte[] {21, 22, 23, 24, 25}, "a3", 152);
+                storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
+                storage.StoreBlock(new byte[] { 1, 2, 3, 4, 5 }, "a2", 151);
+                storage.StoreBlock(new byte[] { 21, 22, 23, 24, 25 }, "a3", 152);
 
                 Assert.AreEqual(3, storage.BlockCount);
                 Assert.AreEqual(0, storage.InactiveBlockCount);
@@ -299,9 +299,9 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(0, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {1, 2, 3}, "a1", 150);
-                storage.StoreBlock(new byte[] {1, 2, 3, 4, 5}, "a2", 151);
-                storage.StoreBlock(new byte[] {21, 22, 23, 24, 25}, "a3", 152);
+                storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
+                storage.StoreBlock(new byte[] { 1, 2, 3, 4, 5 }, "a2", 151);
+                storage.StoreBlock(new byte[] { 21, 22, 23, 24, 25 }, "a3", 152);
 
                 Assert.AreEqual(3, storage.BlockCount);
                 Assert.AreEqual(0, storage.InactiveBlockCount);
@@ -344,7 +344,7 @@ namespace Tests.UnitTests
 
 
                 // do some updates after recovery
-                storage.StoreBlock(new byte[] {121, 122, 123, 124, 125, 126}, "a4", 152);
+                storage.StoreBlock(new byte[] { 121, 122, 123, 124, 125, 126 }, "a4", 152);
 
                 storage.DeleteBlock("a1", 455);
             }
@@ -383,10 +383,10 @@ namespace Tests.UnitTests
         public void Test_with_backup_storage()
         {
             var data = new byte[1000];
-            for (var i = 0; i < 1000; i++) data[i] = (byte) (i % 255);
+            for (var i = 0; i < 1000; i++) data[i] = (byte)(i % 255);
 
             var data1 = new byte[2000];
-            for (var i = 0; i < 2000; i++) data1[i] = (byte) (i % 255);
+            for (var i = 0; i < 2000; i++) data1[i] = (byte)(i % 255);
 
             using (var storage = new ReliableStorage(new NullProcessor(), null, "backup"))
             {
@@ -466,8 +466,8 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(0, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {1, 2, 3}, "a1", 150);
-                storage.StoreBlock(new byte[] {11, 12, 13, 14}, "a2", 151);
+                storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
+                storage.StoreBlock(new byte[] { 11, 12, 13, 14 }, "a2", 151);
 
                 Assert.AreEqual(2, storage.BlockCount);
             }
@@ -480,9 +480,9 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(2, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {21, 22, 23}, "a3", 150); // new block
+                storage.StoreBlock(new byte[] { 21, 22, 23 }, "a3", 150); // new block
 
-                storage.StoreBlock(new byte[] {11, 12, 13, 14, 15}, "a2", 155); // in place update of old block
+                storage.StoreBlock(new byte[] { 11, 12, 13, 14, 15 }, "a2", 155); // in place update of old block
 
                 Assert.AreEqual(3, storage.BlockCount);
             }
@@ -506,7 +506,7 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(3, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {11, 12, 13, 14, 15, 16, 17, 18}, "a2", 155);
+                storage.StoreBlock(new byte[] { 11, 12, 13, 14, 15, 16, 17, 18 }, "a2", 155);
 
                 Assert.AreEqual(3, storage.BlockCount);
                 Assert.AreEqual(1, storage.InactiveBlockCount);
@@ -532,7 +532,7 @@ namespace Tests.UnitTests
         public void Write_reload_test_with_one_million_objects()
         {
             var data = new byte[1000];
-            for (var i = 0; i < 1000; i++) data[i] = (byte) (i % 255);
+            for (var i = 0; i < 1000; i++) data[i] = (byte)(i % 255);
 
 
             using (var storage = new ReliableStorage(new NullProcessor()))
@@ -578,8 +578,8 @@ namespace Tests.UnitTests
                 storage.LoadPersistentData();
                 Assert.AreEqual(0, storage.BlockCount);
 
-                storage.StoreBlock(new byte[] {1, 2, 3}, "a1", 150);
-                storage.StoreBlock(new byte[] {1, 2, 3}, "a1", 150);
+                storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
+                storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
 
 
                 Assert.AreEqual(1, storage.BlockCount);
@@ -599,7 +599,7 @@ namespace Tests.UnitTests
         [Test]
         public void Write_then_reload_object()
         {
-            var data = new byte[] {1, 2, 3};
+            var data = new byte[] { 1, 2, 3 };
 
             // add two new blocks
             using (var storage = new ReliableStorage(new NullProcessor()))

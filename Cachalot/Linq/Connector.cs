@@ -1,15 +1,18 @@
 //#define DEBUG_VERBOSE
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Client.Parsing;
 using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json.Nodes;
+using System.Threading;
 
 // ReSharper disable AssignNullToNotNullAttribute
 
@@ -30,14 +33,15 @@ namespace Cachalot.Linq
         {
             lock (_collectionSchema)
             {
-                if (_collectionSchema.TryGetValue(collectionName, out var oldSchema))
+                var key = collectionName.Trim().ToUpper();
+                if (_collectionSchema.TryGetValue(key, out var oldSchema))
                 {
                     if (!schema.Equals(oldSchema))
                         throw new CacheException($"Schema declaration conflict for collection {collectionName}");
                 }
                 else
                 {
-                    _collectionSchema[collectionName] = schema;
+                    _collectionSchema[key] = schema;
                 }
 
                 // redeclare anyway in case the server is a non persistent cache and it has restarted since the last declaration
@@ -69,7 +73,7 @@ namespace Cachalot.Linq
             lock (_collectionSchema)
             {
                 foreach (var collection in collections)
-                    if (!_collectionSchema.ContainsKey(collection))
+                    if (!_collectionSchema.ContainsKey(collection.Trim().ToUpper()))
                         throw new NotSupportedException(
                             $"Unknown collection {collection}. Use Connector.DeclareCollection");
             }
@@ -171,7 +175,7 @@ namespace Cachalot.Linq
 
             lock (_collectionSchema)
             {
-                _collectionSchema[collectionName] = schema;
+                _collectionSchema[collectionName.Trim().ToUpper()] = schema;
             }
         }
 
@@ -179,7 +183,7 @@ namespace Cachalot.Linq
         {
             lock (_collectionSchema)
             {
-                if (_collectionSchema.TryGetValue(collectionName, out var schema))
+                if (_collectionSchema.TryGetValue(collectionName.Trim().ToUpper(), out var schema))
                     return schema;
 
                 return null;
@@ -188,6 +192,14 @@ namespace Cachalot.Linq
 
         private Server.Server _server;
 
+
+        /// <summary>
+        /// No parameters => we will create an internal, non persistent server
+        /// </summary>
+        public Connector():this(new ClientConfig(){IsPersistent = false})
+        {
+
+        }
 
         public Connector(string connectionString) : this(new ClientConfig(connectionString))
         {
@@ -203,11 +215,11 @@ namespace Cachalot.Linq
                 Client = new DataClient { Channel = channel };
 
                 _server = new Server.Server(new NodeConfig
-                    {
-                        IsPersistent = config.IsPersistent,
-                        DataPath = "."
-                    })
-                    { Channel = channel };
+                {
+                    IsPersistent = config.IsPersistent,
+                    DataPath = "."
+                })
+                { Channel = channel };
 
                 _server.Start();
             }
@@ -306,14 +318,8 @@ namespace Cachalot.Linq
         {
             collectionName ??= typeof(T).Name;
 
-            lock (_collectionSchema)
-            {
-                if (_collectionSchema.TryGetValue(collectionName, out var schema))
-                    return new DataSource<T>(this, collectionName, schema);
-            }
+            return new DataSource<T>(this, collectionName, GetCollectionSchema(collectionName));
 
-            throw new CacheException(
-                $"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
         }
 
 
@@ -321,19 +327,103 @@ namespace Cachalot.Linq
         {
             collectionName ??= typeof(T).Name;
 
-            lock (_collectionSchema)
-            {
-                if (_collectionSchema.TryGetValue(collectionName, out var schema))
-                    return new DataSource<T>(this, collectionName, schema, sessionId);
-            }
+            return new DataSource<T>(this, collectionName, GetCollectionSchema(collectionName), sessionId);
 
-            throw new CacheException(
-                $"No schema available for collection {collectionName}. Use Connector.DeclareCollection");
         }
 
         public DataAdmin AdminInterface()
         {
             return new DataAdmin(Client);
+        }
+
+        public IEnumerable<JObject> SqlQueryAsJson(string sql)
+        {
+            var parsed = new Parser().ParseSql(sql);
+
+            var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from");
+
+            var tableName = fromNode.Children.Single().Token;
+
+
+            CollectionSchema schema = GetCollectionSchema(tableName);
+
+            if (schema == null) 
+            {
+                var info = Client.GetClusterInformation();
+                schema = info.Schema.Where(x=>x.CollectionName.ToUpper() == tableName.ToUpper()).FirstOrDefault();
+                if(schema == null)
+                {
+                    throw new CacheException($"Unknown collection: {schema.CollectionName}");
+                }
+
+                lock (_collectionSchema)
+                {
+                    _collectionSchema[schema.CollectionName.ToUpper()] = schema;
+                }
+                
+            }
+
+            var query = parsed.ToQuery(schema);
+
+
+            if (query.CountOnly)
+            {
+               (_, var count) = Client.EvalQuery(query);
+
+                var result = new JObject();
+                result["count"] = count;
+
+                return new[] { result };
+                
+            }
+
+            return Client.GetMany(query).Select(ri => ri.Item);
+        }
+
+        
+        private IEnumerable<PackedObject> PackJson(IEnumerable<JObject> items, CollectionSchema schema, string collectionName = null)
+        {
+            foreach (var item in items)
+            {
+                yield return PackedObject.PackJson(item, schema, collectionName);
+            }
+        }
+
+        /// <summary>
+        /// Pack a data line of a csv file 
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <param name="schema"></param>
+        /// <param name="collectionName"></param>
+        /// <returns></returns>
+        private IEnumerable<PackedObject> PackCsv(IEnumerable<string> lines, string collectionName, char separator = ',')
+        {
+            int primaryKey = 100; 
+
+            foreach (var line in lines)
+            {
+                yield return PackedObject.PackCsv(primaryKey, line, collectionName, separator);
+
+                primaryKey++;
+            }
+        }
+
+        public void FeedWithJson(string collectionName, IEnumerable<JObject> items)
+        {
+            var schema = GetCollectionSchema(collectionName);
+
+            Client.FeedMany(collectionName, PackJson(items, schema, collectionName), false);
+        }
+
+        /// <summary>
+        /// Feed with CSV data lines (exclude header)
+        /// </summary>
+        /// <param name="collectionName"></param>
+        /// <param name="items"></param>
+        public void FeedWithCsvLines(string collectionName, IEnumerable<string> lines, char separator = ',')
+        {
+            
+            Client.FeedMany(collectionName, PackCsv(lines, collectionName, separator), false);
         }
     }
 }

@@ -1,15 +1,16 @@
+using Client.Messages;
+using Client.Tools;
+using ICSharpCode.SharpZipLib.GZip;
+using JetBrains.Annotations;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ProtoBuf;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Client.Messages;
-using ICSharpCode.SharpZipLib.GZip;
-using JetBrains.Annotations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using ProtoBuf;
 
 namespace Client.Core
 {
@@ -28,7 +29,7 @@ namespace Client.Core
         /// <summary>
         ///     The one and only primary key 
         /// </summary>
-        public KeyValue PrimaryKey  => Values[0];
+        public KeyValue PrimaryKey => Values[0];
 
 
         /// <summary>
@@ -38,14 +39,14 @@ namespace Client.Core
         public string CollectionName { get; private set; }
 
 
+
         /// <summary>
         ///     The original object serialized to byte[]
         /// </summary>
         [field: ProtoMember(2)]
         public byte[] ObjectData { get; private set; }
 
-        [field: ProtoMember(3)] public bool UseCompression { get; private set; }
-
+        [field: ProtoMember(3)] public Layout Layout { get; private set; }
         /// <summary>
         ///     Keys that can be used for "Contains" queries
         /// </summary>
@@ -70,11 +71,11 @@ namespace Client.Core
         {
         }
 
-        
+
 
         public string GlobalKey => CollectionName + PrimaryKey;
 
-       
+
 
         public static PackedObject Pack<TObject>(TObject instance, [NotNull] CollectionSchema typeDescription, string collectionName = null)
         {
@@ -86,12 +87,12 @@ namespace Client.Core
             var result = new PackedObject
             {
                 // scalar values that are visible server-side
-                Values = new KeyValue[typeDescription.ServerSide.Count(k=>!k.IsCollection)],
+                Values = new KeyValue[typeDescription.ServerSide.Count(k => !k.IsCollection)],
                 // vector values that are visible server-side
-                CollectionValues = new KeyValues[typeDescription.ServerSide.Count(k=>k.IsCollection)]
+                CollectionValues = new KeyValues[typeDescription.ServerSide.Count(k => k.IsCollection)]
             };
 
-            
+
             // process server-side values
             var pos = 0;
             var collectionPos = 0;
@@ -102,7 +103,7 @@ namespace Client.Core
 
                 if (!metadata.IsCollection)
                 {
-                    
+
                     // if the primary key is an empty Guid generate a value
                     if (metadata.IndexType == IndexType.Primary)
                     {
@@ -112,9 +113,9 @@ namespace Client.Core
                         }
                     }
 
-                    result.Values[pos++] = new KeyValue(value, metadata);
+                    result.Values[pos++] = new KeyValue(value);
                 }
-                else 
+                else
                 {
                     if (value is IEnumerable values && !(value is string))
                     {
@@ -123,7 +124,7 @@ namespace Client.Core
                             throw new NotSupportedException($"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
                         }
 
-                        var keyValues = values.Cast<object>().Select(v => new KeyValue(v, metadata));
+                        var keyValues = values.Cast<object>().Select(v => new KeyValue(v));
                         result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
                     }
                     else
@@ -131,10 +132,10 @@ namespace Client.Core
                         throw new NotSupportedException($"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {value.GetType().FullName}");
                     }
                 }
-                
+
             }
 
-            
+
             // process full text
             var lines = new List<string>();
 
@@ -142,30 +143,32 @@ namespace Client.Core
             {
                 lines.AddRange(ExpressionTreeHelper.GetStringValues(instance, fulltext));
             }
-                
+
 
             result.FullText = lines.ToArray();
 
 
-            result.ObjectData =
-                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.UseCompression);
+            // for "flat" objects do not store data. Everything is in the key-values
+            if (typeDescription.StorageLayout != Layout.Flat)
+            {
+                result.ObjectData =
+                SerializationHelper.ObjectToBytes(instance, SerializationMode.Json, typeDescription.StorageLayout == Layout.Compressed);
+            }
 
             result.CollectionName = collectionName ?? typeDescription.CollectionName;
 
-            result.UseCompression = typeDescription.UseCompression;
+            result.Layout = typeDescription.StorageLayout;
 
 
             return result;
         }
 
-
-        public string Json
+        public string GetJson(CollectionSchema schema)
         {
-            get
+            if (Layout != Layout.Flat)
             {
-                
                 var stream = new MemoryStream(ObjectData);
-                if (UseCompression)
+                if (Layout == Layout.Compressed)
                 {
                     var zInStream = new GZipInputStream(stream);
                     return new StreamReader(zInStream).ReadToEnd();
@@ -175,6 +178,9 @@ namespace Client.Core
 
                 return new StreamReader(stream).ReadToEnd();
             }
+
+
+            return ToJObjectForFlatLayout(schema).ToString(Formatting.None);
         }
 
         /// <summary>
@@ -185,17 +191,8 @@ namespace Client.Core
         /// <returns></returns>
         private JObject ToJObject(int[] valuesOrder, [CanBeNull] string[] valueNames)
         {
-            
-            // if only one value is specified, serialize it as primitive type
-            //if (valuesOrder.Length == 1)
-            //{
-            //    var kv = Values[0];
-            //    var jp = kv.ToJson();
 
-            //    return jp.Value;
-            //}
-            
-            
+
             var result = new JObject();
 
             int index = 0;
@@ -204,13 +201,8 @@ namespace Client.Core
                 if (i < Values.Length) // scalar value
                 {
                     var kv = Values[i];
-                    var jp = kv.ToJson();
+                    var jp = kv.ToJson(valueNames[index]);
 
-                    if (valueNames != null)
-                    {
-                        jp = new JProperty(valueNames[index], jp.Value);
-                    }
-                    
 
                     result.Add(jp);
                 }
@@ -223,7 +215,7 @@ namespace Client.Core
                     var array = new JArray();
                     foreach (var keyValue in collection.Values)
                     {
-                        array.Add(keyValue.ToJson().Value);
+                        array.Add(keyValue.ToJson(collection.Name).Value);
                     }
 
                     result.Add(collection.Name, array);
@@ -235,48 +227,70 @@ namespace Client.Core
             return result;
         }
 
+        private JObject ToJObjectForFlatLayout(CollectionSchema schema)
+        {
+
+            var result = new JObject();
+
+            int index = 0;
+            foreach (var kv in Values)
+            {
+                var jp = kv.ToJson(schema.ServerSide[index].Name);
+
+                result.Add(jp);
+
+                index++;
+
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Return object data. It may be complete data or a projection if <see cref="valuesOrder"/> contains any element
         /// </summary>
         /// <param name="valuesOrder">indexes of values to be serialized</param>
-        /// <param name="valueNames">optional names to replace the original property name</param>
+        /// <param name="valueNames">names (may be the original names in the schema definition or alias names)</param>
         /// <returns></returns>
-        public byte[] GetData(int[] valuesOrder, string[] valueNames = null)
+        public byte[] GetData(int[] valuesOrder, string[] valueNames)
         {
             if (valuesOrder.Length > 0)
             {
-                return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json, UseCompression);
+                return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json, Layout == Layout.Compressed);
             }
 
             return ObjectData;
         }
 
 
-        public byte[] GetServerSideData()
+        public byte[] GetServerSideData(CollectionSchema schema)
         {
             var result = new JObject();
 
-
-            foreach (var v in Values)
+            foreach (var info in schema.ServerSide)
             {
-                var jp = v.ToJson();
-                result.Add(jp);
-            }
-
-            foreach (var collection in CollectionValues)
-            {
-                var array = new JArray();
-                foreach (var keyValue in collection.Values)
+                if (!info.IsCollection)
                 {
-                    array.Add(keyValue.ToJson().Value);
+                    var jp = Values[info.Order].ToJson(info.Name);
+                    result.Add(jp);
                 }
+                else
+                {
+                    var values = CollectionValues[info.Order];
+                    var array = new JArray();
 
-                result.Add(collection.Name, array);
+                    foreach (var keyValue in values.Values)
+                    {
+                        array.Add(keyValue.ToJson(info.Name).Value);
+                    }
+
+                    result.Add(info.Name, array);
+                }
             }
 
 
-            return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, UseCompression);
+            return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, Layout == Layout.Compressed);
 
         }
 
@@ -290,7 +304,7 @@ namespace Client.Core
         public static PackedObject PackDictionary(IDictionary<string, object> propertyValues,
             CollectionSchema description)
         {
-            
+
             var json = JsonConvert.SerializeObject(propertyValues);
 
             return PackJson(json, description);
@@ -302,18 +316,18 @@ namespace Client.Core
             var jObject = JObject.Parse(json);
             return PackJson(jObject, collectionSchema);
         }
-        
+
         public static PackedObject PackJson(JObject jObject, CollectionSchema collectionSchema, string collectionName = null)
         {
-            
+
             if (jObject.Type == JTokenType.Array) throw new NotSupportedException("Pack called on a json array");
 
             var result = new PackedObject
             {
                 // scalar values that are visible server-side
-                Values = new KeyValue[collectionSchema.ServerSide.Count(k=>!k.IsCollection)],
+                Values = new KeyValue[collectionSchema.ServerSide.Count(k => !k.IsCollection)],
                 // vector values that are visible server-side
-                CollectionValues = new KeyValues[collectionSchema.ServerSide.Count(k=>k.IsCollection)]
+                CollectionValues = new KeyValues[collectionSchema.ServerSide.Count(k => k.IsCollection)]
             };
 
             // process server-side values
@@ -323,12 +337,12 @@ namespace Client.Core
             {
                 var jKey = jObject.Property(metadata.JsonName);
 
-                
+
                 if (!metadata.IsCollection)
                 {
                     result.Values[pos++] = JExtensions.JTokenToKeyValue(jKey, metadata);
                 }
-                else 
+                else
                 {
                     if (jKey?.Value.Type == JTokenType.Array)
                     {
@@ -341,7 +355,7 @@ namespace Client.Core
 
                         result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, keyValues);
                     }
-                    else if(jKey?.Value == null) // create an empty collection if no data
+                    else if (jKey?.Value == null) // create an empty collection if no data
                     {
                         result.CollectionValues[collectionPos++] = new KeyValues(metadata.Name, Enumerable.Empty<KeyValue>());
                     }
@@ -350,9 +364,9 @@ namespace Client.Core
                         throw new NotSupportedException($"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {jKey?.Name} ");
                     }
                 }
-                
+
             }
-            
+
 
 
             // process full text
@@ -369,37 +383,87 @@ namespace Client.Core
                     foreach (var jToken in jKey.Value.Children())
                         if (jToken.Type == JTokenType.String)
                         {
-                            lines.Add((string) jToken);
+                            lines.Add((string)jToken);
                         }
                         else
                         {
-                            var child = (JObject) jToken;
+                            var child = (JObject)jToken;
 
                             foreach (var jToken1 in child.Children())
                             {
-                                var field = (JProperty) jToken1;
+                                var field = (JProperty)jToken1;
                                 if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
-                                    lines.Add((string) field);
+                                    lines.Add((string)field);
                             }
                         }
                 else
-                    lines.Add((string) jKey);
+                    lines.Add((string)jKey);
             }
 
             result.FullText = lines.ToArray();
 
-           
-            result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema.UseCompression);
+
+            if (collectionSchema.StorageLayout != Layout.Flat)
+            {
+                result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json, collectionSchema.StorageLayout == Layout.Compressed);
+            }
+
 
             result.CollectionName = collectionName ?? collectionSchema.CollectionName;
 
-            result.UseCompression = collectionSchema.UseCompression;
+            result.Layout = collectionSchema.StorageLayout;
 
-            
+
             return result;
         }
 
-        
+        /// <summary>
+        /// Pack a csv line. Assume the flat layout in this case. All fields are scalars and are server-side visible
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static PackedObject PackCsv(int primaryKey, string line, string collectionName, char separator = ',')
+        {
+
+            var values = line.Split(separator);
+
+            var result = new PackedObject
+            {
+                Values = new KeyValue[values.Length + 1], // +1 for the primary key
+
+
+                CollectionValues = Array.Empty<KeyValues>()
+            };
+
+            // set the primary key
+            result.Values[0] = new KeyValue(primaryKey);
+
+            // process server-side values
+            int pos = 1;
+            foreach (var value in values)
+            {
+                var kv = KeyValueParsingPool.FromString(value);//CsvHelper.GetTypedValue(value);
+                
+                result.Values[pos] = kv;
+
+                pos++;
+
+            }
+
+
+            // for now no full text search for flat layout
+            result.FullText = Array.Empty<string>();
+
+
+            result.CollectionName = collectionName;
+
+            result.Layout = Layout.Flat;
+
+
+            return result;
+        }
+
+
 
         public override string ToString()
         {
@@ -407,7 +471,7 @@ namespace Client.Core
             sb.Append(PrimaryKey);
             sb.AppendLine(" {");
 
-          
+
             if (Values != null && Values.Length > 0)
             {
                 sb.Append("  values:");
@@ -425,11 +489,11 @@ namespace Client.Core
                 foreach (var key in FullText)
                 {
                     sb.AppendLine($"    {key}");
-                    
+
                 }
                 sb.AppendLine();
             }
-            
+
             sb.AppendLine(" } ");
 
             if (ObjectData != null)
@@ -444,10 +508,16 @@ namespace Client.Core
         /// </summary>
         /// <param name="packedObject"> </param>
         /// <returns> </returns>
-        public static T Unpack<T>(PackedObject packedObject)
+        public static T Unpack<T>(PackedObject packedObject, CollectionSchema schema)
         {
+
+            if (packedObject.Layout == Layout.Flat)
+            {
+                return JsonConvert.DeserializeObject<T>(packedObject.GetJson(schema));
+            }
+
             return SerializationHelper.ObjectFromBytes<T>(packedObject.ObjectData, SerializationMode.Json,
-                packedObject.UseCompression);
+                packedObject.Layout == Layout.Compressed);
         }
 
         private bool Equals(PackedObject other)
@@ -463,7 +533,7 @@ namespace Client.Core
                 return true;
             if (obj.GetType() != GetType())
                 return false;
-            return Equals((PackedObject) obj);
+            return Equals((PackedObject)obj);
         }
 
         public override int GetHashCode()
@@ -485,10 +555,7 @@ namespace Client.Core
 
         public KeyValues Collection(int order)
         {
-            // in a collection schema the vector values are positioned after scalar values
-            var pos = order - Values.Length;
-
-            return CollectionValues[pos];
+            return CollectionValues[order];
         }
     }
 }

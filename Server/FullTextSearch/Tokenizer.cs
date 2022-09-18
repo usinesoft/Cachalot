@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using Client;
+using Client.Tools;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Client;
-using Client.Tools;
 
 namespace Server.FullTextSearch
 {
@@ -56,7 +56,7 @@ namespace Server.FullTextSearch
             return RemoveDoubleChars(after);
         }
 
-        public static  IList<Token> TokenizeOneLine(string input)
+        public static IList<Token> TokenizeOneLine(string input)
         {
             var result = new List<Token>(1000);
 
@@ -112,7 +112,7 @@ namespace Server.FullTextSearch
             return result;
         }
 
-        
+
 
         public static IList<TokenizedLine> Tokenize(IEnumerable<string> input)
         {
@@ -121,7 +121,7 @@ namespace Server.FullTextSearch
             foreach (var line in input)
             {
                 var one = TokenizeOneLine(line);
-                result.Add(new TokenizedLine {Tokens = one.Select(t => t.NormalizedText).ToList()});
+                result.Add(new TokenizedLine { Tokens = one.Select(t => t.NormalizedText).ToList() });
             }
 
 

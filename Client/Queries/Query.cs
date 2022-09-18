@@ -25,5 +25,5 @@ namespace Client.Queries
         public abstract bool Match(PackedObject item);
     }
 
-    
+
 }

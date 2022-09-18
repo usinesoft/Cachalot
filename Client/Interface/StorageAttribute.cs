@@ -1,3 +1,4 @@
+using Client.Core;
 using System;
 
 namespace Client.Interface
@@ -5,11 +6,11 @@ namespace Client.Interface
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class StorageAttribute : Attribute
     {
-        public StorageAttribute(bool useCompression)
+        public StorageAttribute(Layout storageLayout)
         {
-            UseCompression = useCompression;
+            StorageLayout = storageLayout;
         }
 
-        public bool UseCompression { get; }
+        public Layout StorageLayout { get; }
     }
 }

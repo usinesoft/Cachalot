@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
 using Client;
 using Client.ChannelInterface;
 using Client.Core;
@@ -8,6 +5,9 @@ using Client.Messages;
 using Client.Tools;
 using ProtoBuf.Meta;
 using Server.Persistence;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Constants = Server.Persistence.Constants;
 
 namespace Server
@@ -16,7 +16,7 @@ namespace Server
     {
         private readonly NodeConfig _config;
 
-        
+
         private IServerChannel _channel;
 
         private DataContainer _dataContainer;
@@ -59,7 +59,7 @@ namespace Server
         /// <param name="e"></param>
         private void HandleRequestReceived(object sender, RequestEventArgs e)
         {
-            
+
             Dbg.Trace("request received ");
 
             if (e.Request is ImportDumpRequest importRequest)
@@ -193,14 +193,14 @@ namespace Server
 
                             // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
                             foreach (var dataStore in _dataContainer.Stores())
-                            foreach (var item in dataStore.DataByPrimaryKey)
-                            {
-                                var itemData =
-                                    SerializationHelper.ObjectToBytes(item.Value, SerializationMode.ProtocolBuffers,
-                                        dataStore.CollectionSchema.UseCompression);
+                                foreach (var item in dataStore.DataByPrimaryKey)
+                                {
+                                    var itemData =
+                                        SerializationHelper.ObjectToBytes(item.Value, SerializationMode.ProtocolBuffers,
+                                            dataStore.CollectionSchema.StorageLayout == Layout.Compressed);
 
-                                storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
-                            }
+                                    storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
+                                }
 
                             // import the sequences
 
@@ -265,25 +265,25 @@ namespace Server
         {
             // initialize protobuf metadata
             RuntimeTypeModel.Default.CompileInPlace();
-            
+
         }
 
         public void Start()
         {
             Dbg.Trace("starting server");
 
-        
+
             _startTime = DateTime.Now;
 
 
             if (_config.IsPersistent)
             {
                 Dbg.Trace("starting persistence engine");
-                
+
                 _persistenceEngine = new PersistenceEngine(_dataContainer, _config.DataPath, _serviceContainer);
                 _dataContainer.PersistenceEngine = _persistenceEngine;
 
-                 _persistenceEngine.Start();
+                _persistenceEngine.Start();
             }
 
             _dataContainer.StartProcessingClientRequests();

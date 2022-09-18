@@ -1,12 +1,12 @@
 ﻿#region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Core;
 using Client.Interface;
 using Client.Messages.Pivot;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Tests.TestData;
 
 #endregion
@@ -23,7 +23,7 @@ namespace Tests.UnitTests
 
             [ServerSideValue(IndexType.Dictionary)]
             public string Name { get; set; }
-            
+
         }
 
 
@@ -60,49 +60,25 @@ namespace Tests.UnitTests
             Assert.IsNotNull(cached.PrimaryKey);
             Assert.AreEqual(cached.PrimaryKey, 11);
 
-            
-            
-            foreach (var key in cached.Values)
-            {
-                if (key.KeyName == "IndexKeyDate")
-                {
-                    Assert.AreEqual(key, new DateTime(2009, 10, 25).Ticks);
-                    Assert.AreEqual(key.Type, KeyValue.OriginalType.Date);
-                }
 
-                if (key.KeyName == "IndexKeyValue")
-                {
-                    Assert.AreEqual(key, 15);
-                    Assert.AreEqual(key.Type, KeyValue.OriginalType.SomeInteger);
-                }
-
-                if (key.Type == KeyValue.OriginalType.String)
-                {
-                    Assert.AreEqual(key, "FOL");
-                    Assert.AreEqual(key.KeyName, "IndexKeyFolder");
-                }
-            }
-
-            var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached);
+            var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached, description);
             Assert.AreEqual(object1, fromCache);
         }
 
         [Test]
         public void PackedObjectSerialization()
         {
-            
+
             var schema = TypedSchemaFactory.FromType(typeof(Person));
 
-            var packed = PackedObject.Pack(new Person{Id = 13, First = "Dan", Last = "IONESCU"}, schema);
+            var packed = PackedObject.Pack(new Person { Id = 13, First = "Dan", Last = "IONESCU" }, schema);
 
-            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.UseCompression);
+            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.StorageLayout == Layout.Compressed);
 
             var reloaded = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
-           
-            Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
-            Assert.AreEqual("Dan", reloaded.Values.First(k=>k.KeyName == "First").StringValue);
 
+            Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
 
         }
 
@@ -110,8 +86,8 @@ namespace Tests.UnitTests
         [Test]
         public void TestObjectWithServerSideValues()
         {
-           
-         
+
+
             // now try attributes on type
             //var description = TypedSchemaFactory.FromType(typeof(Order));
 
@@ -124,8 +100,8 @@ namespace Tests.UnitTests
             //Assert.AreEqual(IndexType.Ordered, desc1.ServerSideValues.Single(v=>v.Name == "Amount").IndexType);
             //Assert.AreEqual(IndexType.None, desc1.ServerSideValues.Single(v=>v.Name == "Quantity").IndexType);
 
-         
-           
+
+
 
             //// pack an object using different kinds of type description
             //var order = new Order
@@ -195,14 +171,22 @@ namespace Tests.UnitTests
 
             var order1 = new Order
             {
-                Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
+                Amount = 123.45,
+                Date = DateTimeOffset.Now,
+                Category = "geek",
+                ClientId = 101,
+                ProductId = 401,
                 Id = Guid.NewGuid(),
                 Quantity = 2
             };
 
             var order2 = new Order
             {
-                Amount = 123.45, Date = DateTimeOffset.Now, Category = "sf", ClientId = 101, ProductId = 401,
+                Amount = 123.45,
+                Date = DateTimeOffset.Now,
+                Category = "sf",
+                ClientId = 101,
+                ProductId = 401,
                 Id = Guid.NewGuid(),
                 Quantity = 2
             };
@@ -210,11 +194,11 @@ namespace Tests.UnitTests
             var packed1 = PackedObject.Pack(order1, description);
             var packed2 = PackedObject.Pack(order2, description);
 
-            var pivot = new PivotLevel();
+            var pivot = new PivotLevel(description, new List<int>(), new List<int> { 1, 2 });
 
             // Amount and Quantity to be aggregated (index 1 and 2) in the schema
-            pivot.AggregateOneObject(packed1, new List<int>(), new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>(), new List<int>{1,2} );
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
 
 
             // Amount and Quantity should be aggregated
@@ -236,21 +220,33 @@ namespace Tests.UnitTests
 
             var order1 = new Order
             {
-                Amount = 123.45, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 401,
+                Amount = 123.45,
+                Date = DateTimeOffset.Now,
+                Category = "geek",
+                ClientId = 101,
+                ProductId = 401,
                 Id = Guid.NewGuid(),
                 Quantity = 2
             };
 
             var order2 = new Order
             {
-                Amount = 123.45, Date = DateTimeOffset.Now, Category = "sf", ClientId = 101, ProductId = 401,
+                Amount = 123.45,
+                Date = DateTimeOffset.Now,
+                Category = "sf",
+                ClientId = 101,
+                ProductId = 401,
                 Id = Guid.NewGuid(),
                 Quantity = 2
             };
 
             var order3 = new Order
             {
-                Amount = 14.5, Date = DateTimeOffset.Now, Category = "geek", ClientId = 101, ProductId = 402,
+                Amount = 14.5,
+                Date = DateTimeOffset.Now,
+                Category = "geek",
+                ClientId = 101,
+                ProductId = 402,
                 Id = Guid.NewGuid(),
                 Quantity = 2
             };
@@ -261,11 +257,11 @@ namespace Tests.UnitTests
 
 
             // first test with one single axis (Category index = 3)
-            var pivot = new PivotLevel();
+            var pivot = new PivotLevel(schema, new List<int> { 3 }, new List<int> { 1, 2 }); ;
 
-            pivot.AggregateOneObject(packed1, new List<int>{3},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>{3},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed3, new List<int>{3},new List<int>{1,2} );
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
+            pivot.AggregateOneObject(packed3);
 
 
             // Amount and Quantity should be aggregated
@@ -276,24 +272,24 @@ namespace Tests.UnitTests
             Assert.AreEqual(3, agg.Count);
             Assert.AreEqual(order1.Amount + order2.Amount + order3.Amount, agg.Sum);
 
-            Assert.IsTrue(pivot.Children.Keys.All(k=>k.KeyName == "Category"));
-            Assert.IsTrue(pivot.Children.Values.All(v=>v.AxisValue.KeyName == "Category"));
 
-            var geek = pivot.Children.Values.First(p => p.AxisValue.StringValue == "geek");
+            Assert.IsTrue(pivot.Children.Values.All(v => v.AxisValue.Name == "Category"));
+
+            var geek = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
             Assert.AreEqual(2, geek.AggregatedValues.Count);
 
             // then with two axis
 
-            pivot = new PivotLevel();
+            pivot = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
-            pivot.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
-            
+            pivot.AggregateOneObject(packed1);
+            pivot.AggregateOneObject(packed2);
+            pivot.AggregateOneObject(packed3);
+
             Console.WriteLine(pivot.ToString());
 
-            var geek1 = pivot.Children.Values.First(p => p.AxisValue.StringValue == "geek");
+            var geek1 = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
             Assert.AreEqual(2, geek1.AggregatedValues.Count);
             Assert.AreEqual(2, geek1.Children.Count);
@@ -304,24 +300,28 @@ namespace Tests.UnitTests
             // a new category
             var order4 = new Order
             {
-                Amount = 66.5, Date = DateTimeOffset.Now, Category = "student", ClientId = 101, ProductId = 405,
+                Amount = 66.5,
+                Date = DateTimeOffset.Now,
+                Category = "student",
+                ClientId = 101,
+                ProductId = 405,
                 Id = Guid.NewGuid(),
                 Quantity = 1
             };
 
             var packed4 = PackedObject.Pack(order4, schema);
 
-            var pivot1 = new PivotLevel();
+            var pivot1 = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot1.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot1.AggregateOneObject(packed2, new List<int>{3, 4},new List<int>{1,2} );
-            pivot1.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
+            pivot1.AggregateOneObject(packed1);
+            pivot1.AggregateOneObject(packed2);
+            pivot1.AggregateOneObject(packed3);
 
-            var pivot2 = new PivotLevel();
+            var pivot2 = new PivotLevel(schema, new List<int> { 3, 4 }, new List<int> { 1, 2 });
 
-            pivot2.AggregateOneObject(packed1, new List<int>{3, 4},new List<int>{1,2} );
-            pivot2.AggregateOneObject(packed3, new List<int>{3, 4},new List<int>{1,2} );
-            pivot2.AggregateOneObject(packed4, new List<int>{3, 4},new List<int>{1,2} );
+            pivot2.AggregateOneObject(packed1);
+            pivot2.AggregateOneObject(packed3);
+            pivot2.AggregateOneObject(packed4);
 
             pivot1.MergeWith(pivot2);
 
@@ -329,7 +329,7 @@ namespace Tests.UnitTests
 
             // check that an aggregate is equal to the sum of the children
             var sum1 = pivot1.AggregatedValues.First(v => v.ColumnName == "Amount").Sum;
-            var sum2 = pivot1.Children.Sum(c=> c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum) ;
+            var sum2 = pivot1.Children.Sum(c => c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum);
 
             Assert.AreEqual(sum1, sum2);
 
@@ -340,7 +340,7 @@ namespace Tests.UnitTests
         {
             var description = TypedSchemaFactory.FromType(typeof(TestData));
 
-            var obj = new TestData {Name = "toto"};
+            var obj = new TestData { Name = "toto" };
             var packed = PackedObject.Pack(obj, description);
 
             var pk = Guid.Parse(packed.PrimaryKey.ToString());

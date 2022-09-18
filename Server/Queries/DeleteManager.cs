@@ -1,9 +1,9 @@
-﻿using System;
-using System.Linq;
-using Client.ChannelInterface;
+﻿using Client.ChannelInterface;
 using Client.Messages;
 using Client.Queries;
 using Server.Persistence;
+using System;
+using System.Linq;
 
 namespace Server.Queries
 {
@@ -20,14 +20,14 @@ namespace Server.Queries
 
         public void ProcessRequest(Request request, IClient client)
         {
-            
+
             if (request is RemoveManyRequest removeManyRequest)
             {
                 try
                 {
                     int removed = RemoveMany(removeManyRequest.Query);
 
-                    client?.SendResponse(new ItemsCountResponse{ItemsCount = removed});
+                    client?.SendResponse(new ItemsCountResponse { ItemsCount = removed });
                 }
                 catch (Exception e)
                 {
@@ -50,7 +50,7 @@ namespace Server.Queries
                 {
                     _transactionLog?.NewTransaction(new DeleteDurableTransaction
                     {
-                        ItemsToDelete = {removed}
+                        ItemsToDelete = { removed }
                     });
 
                 }
@@ -93,7 +93,7 @@ namespace Server.Queries
             return toRemove.Count;
         }
 
-        
+
 
 
     }

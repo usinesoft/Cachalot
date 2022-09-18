@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using StressTests.Model;
 using StressTests.TestData;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace StressTests
 {
@@ -14,15 +14,15 @@ namespace StressTests
         static readonly Connector _connector = new Connector("localhost:48401");
         private static void Main(string[] args)
         {
-            
+
             FeedDatabase();
 
             while (true)
             {
-                QueryTests();    
+                QueryTests();
             }
-            
-            
+
+
         }
 
 
@@ -49,20 +49,20 @@ namespace StressTests
 
         private static void QueryTests()
         {
-            
+
 
             DeclareCollections(_connector);
 
             var products = _connector.DataSource<Product>("products");
-            
+
             var salesDetails = _connector.DataSource<SaleLine>("sales_detail");
 
             // = 
 
             {
-                
-                var withLinq = products.Where(p=>p.Brand == "REVLON").ToList();
-                
+
+                var withLinq = products.Where(p => p.Brand == "REVLON").ToList();
+
                 var withSql = products.SqlQuery("select from products where brand = REVLON").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -70,58 +70,58 @@ namespace StressTests
 
             // <>
             {
-                
-                var withLinq = products.Where(p=>p.Brand != "REVLON").ToList();
-                
+
+                var withLinq = products.Where(p => p.Brand != "REVLON").ToList();
+
                 var withSql1 = products.SqlQuery("select from products where brand != REVLON").ToList();
                 var withSql2 = products.SqlQuery("select from products where brand <> REVLON").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql1);
                 CheckEqualAndNotVoid(withLinq, withSql2);
             }
-            
+
             // < <= > >=
             {
 
                 var withLinq = salesDetails.Where(s =>
                     s.Date > new DateTime(2020, 1, 1) && s.Date <= new DateTime(2020, 1, 15)).ToList();
-                
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where date > 2020-01-01 and date <= 2020-01-15").ToList();
-                
-                
+
+
                 CheckEqualAndNotVoid(withLinq, withSql);
-                
+
             }
 
             // with bool value
             {
 
                 var withLinq = salesDetails.Where(s => s.IsDelivered).ToList();
-                
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered=true").ToList();
-                
-                
+
+
                 CheckEqualAndNotVoid(withLinq, withSql);
-                
+
             }
 
             // with enum value
             {
 
                 var withLinq = salesDetails.Where(s => s.Channel == Model.Channel.Facebook).ToList();
-                
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where channel = 1").ToList();
-                
-                
+
+
                 CheckEqualAndNotVoid(withLinq, withSql);
-                
+
             }
-            
+
             // in
             {
-                var brands = new[] {"REVLON", "Advanced Clinicals"};
-                var withLinq = products.Where(p=>brands.Contains(p.Brand)).ToList();
-                
+                var brands = new[] { "REVLON", "Advanced Clinicals" };
+                var withLinq = products.Where(p => brands.Contains(p.Brand)).ToList();
+
                 var withSql = products.SqlQuery("select from products where brand in (REVLON, Advanced Clinicals)").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -129,9 +129,9 @@ namespace StressTests
 
             // not in 
             {
-                var brands = new[] {"REVLON", "DOVE"};
-                var withLinq = products.Where(p=>!brands.Contains(p.Brand)).ToList();
-                
+                var brands = new[] { "REVLON", "DOVE" };
+                var withLinq = products.Where(p => !brands.Contains(p.Brand)).ToList();
+
                 var withSql = products.SqlQuery("select from products where brand not in (REVLON, DOVE)").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -140,9 +140,9 @@ namespace StressTests
 
             // contains
             {
-                
 
-                var withLinq = products.Where(p=>p.Categories.Contains("lip stick")).ToList();
+
+                var withLinq = products.Where(p => p.Categories.Contains("lip stick")).ToList();
                 var withSql = products.SqlQuery("select from products where categories contains lip stick").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -151,19 +151,19 @@ namespace StressTests
             // not contains
 
             {
-                
-                var withLinq = products.Where(p=>!p.Categories.Contains("soap")).ToList();
+
+                var withLinq = products.Where(p => !p.Categories.Contains("soap")).ToList();
                 var withSql = products.SqlQuery("select from products where categories not contains soap").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
             }
 
-            
+
 
             // like
             {
-                var withLinq = products.Where(p=>p.Brand.Contains("clinical")).ToList();
-                
+                var withLinq = products.Where(p => p.Brand.Contains("clinical")).ToList();
+
                 var withSql = products.SqlQuery("select from products where brand like %clinical%").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -171,8 +171,8 @@ namespace StressTests
 
             // starts with
             {
-                var withLinq = products.Where(p=>p.Brand.StartsWith("advanced")).ToList();
-                
+                var withLinq = products.Where(p => p.Brand.StartsWith("advanced")).ToList();
+
                 var withSql = products.SqlQuery("select from products where brand like advanced%").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -180,8 +180,8 @@ namespace StressTests
 
             // ends with
             {
-                var withLinq = products.Where(p=>p.Brand.EndsWith("clinicals")).ToList();
-                
+                var withLinq = products.Where(p => p.Brand.EndsWith("clinicals")).ToList();
+
                 var withSql = products.SqlQuery("select from products where brand like %clinicals").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -190,8 +190,8 @@ namespace StressTests
             // projection scalar 
             {
                 // this will return of collection of string
-                var withLinq = products.Where(p=>p.Brand == "REVLON").Select(p=>p.Name).ToList();
-                
+                var withLinq = products.Where(p => p.Brand == "REVLON").Select(p => p.Name).ToList();
+
                 // this will return a collection of Product with only the Name property filled
                 var withSql = products.SqlQuery("select Name from products where brand = REVLON").ToList();
 
@@ -199,38 +199,38 @@ namespace StressTests
 
             // projection collection
             {
-                var withLinq = products.Where(p=>p.Brand == "REVLON").Select(p=>new { p.Categories}).ToList();
-                
+                var withLinq = products.Where(p => p.Brand == "REVLON").Select(p => new { p.Categories }).ToList();
+
                 var withSql = products.SqlQuery("select categories from products where brand = REVLON").ToList();
 
             }
 
             // projection multiple properties
             {
-                var withLinq = products.Where(p=>p.Brand == "REVLON").Select(p=>new {p.Name, p.ScanCode}).ToList();
-                
+                var withLinq = products.Where(p => p.Brand == "REVLON").Select(p => new { p.Name, p.ScanCode }).ToList();
+
                 var withSql = products.SqlQuery("select name, scancode from products where brand = REVLON").ToList();
 
             }
 
             // distinct single property
             {
-                var withLinq = products.Select(p=>p.Brand).Distinct().ToList();
-                
+                var withLinq = products.Select(p => p.Brand).Distinct().ToList();
+
                 var withSql = products.SqlQuery("select distinct brand from products").ToList();
             }
 
             // distinct multiple properties
             {
-                var withLinq = products.Select(p=>new {p.Brand, p.Name}).Distinct().ToList();
-                
+                var withLinq = products.Select(p => new { p.Brand, p.Name }).Distinct().ToList();
+
                 var withSql = products.SqlQuery("select distinct brand, name from products").ToList();
             }
 
             // take
             {
-                var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).Take(10).ToList();
-                
+                var withLinq = salesDetails.Where(s => s.IsDelivered && s.Amount > 80).Take(10).ToList();
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered = true and amount > 80 take 10").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -238,8 +238,8 @@ namespace StressTests
 
             // order by
             {
-                var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).OrderBy(s=> s.Amount).ToList();
-                
+                var withLinq = salesDetails.Where(s => s.IsDelivered && s.Amount > 80).OrderBy(s => s.Amount).ToList();
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where isDelivered = true and amount > 80 order by AMOUNT").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -247,8 +247,8 @@ namespace StressTests
 
             // order by descending
             {
-                var withLinq = salesDetails.Where(s=>s.IsDelivered && s.Amount > 80).OrderByDescending(s=> s.Amount).ToList();
-                
+                var withLinq = salesDetails.Where(s => s.IsDelivered && s.Amount > 80).OrderByDescending(s => s.Amount).ToList();
+
                 var withSql = salesDetails.SqlQuery("select from sales_detail where isdelivered = true and amount > 80 order by amount descending").ToList();
 
                 CheckEqualAndNotVoid(withLinq, withSql);
@@ -268,12 +268,12 @@ namespace StressTests
 
         private static void FeedDatabase()
         {
-            
-            
+
+
             _connector.AdminInterface().DropDatabase();
 
             DeclareCollections(_connector);
-            
+
             try
             {
                 var outlets = _connector.DataSource<Outlet>("outlets");

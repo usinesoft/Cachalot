@@ -29,7 +29,7 @@ namespace Client.Parsing
 
         void ToString(StringBuilder result, int level)
         {
-            var indent = new string(' ', level *4);
+            var indent = new string(' ', level * 4);
             result.Append(indent).AppendLine(Token);
 
             foreach (var child in Children)
@@ -38,8 +38,8 @@ namespace Client.Parsing
             }
         }
 
-     
-        
+
+
     }
 
 }

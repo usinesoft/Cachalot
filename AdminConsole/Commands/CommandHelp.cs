@@ -1,4 +1,3 @@
-using Channel;
 using Client.Core;
 using Client.Interface;
 

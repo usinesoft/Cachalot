@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Client;
+﻿using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
@@ -9,6 +6,9 @@ using Client.Messages;
 using Client.Tools;
 using Server.Persistence;
 using Server.Queries;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Constants = Server.Persistence.Constants;
 
 namespace Server.Transactions
@@ -41,7 +41,7 @@ namespace Server.Transactions
                     case PutRequest putRequest:
                         new PutManager(null, null, store, null).ProcessRequest(putRequest, null);
                         break;
-                    case RemoveRequest  removeRequest:
+                    case RemoveRequest removeRequest:
                         new DeleteManager(store, null).ProcessRequest(removeRequest, null);
                         break;
                     case RemoveManyRequest removeManyRequest:
@@ -68,7 +68,7 @@ namespace Server.Transactions
             {
                 var ds = dataStores[deleteManyRequest.CollectionName];
                 var items = new QueryManager(ds).ProcessQuery(deleteManyRequest.Query);
-                
+
                 foreach (var item in items) itemsToDelete.Add(item);
             }
 
@@ -82,7 +82,7 @@ namespace Server.Transactions
                 {
                     itemsToDelete.Add(item);
                 }
-                
+
             }
 
             // get items to put (conditions have already been checked)
@@ -91,10 +91,10 @@ namespace Server.Transactions
 
             Dbg.Trace($"S: begin writing delayed transaction {transactionRequest.TransactionId}");
             _transactionLog?.NewTransaction(new MixedDurableTransaction
-                {
-                    ItemsToDelete = itemsToDelete.ToList(),
-                    ItemsToPut = itemsToPut
-                },
+            {
+                ItemsToDelete = itemsToDelete.ToList(),
+                ItemsToPut = itemsToPut
+            },
                 true
             );
         }
@@ -164,7 +164,7 @@ namespace Server.Transactions
         public void ProcessTransactionRequest(TransactionRequest transactionRequest, IClient client,
             SafeDictionary<string, DataStore> dataStores)
         {
-           
+
 
             if (transactionRequest.TransactionId == default)
             {

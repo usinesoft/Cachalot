@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Client.ChannelInterface;
+﻿using Client.ChannelInterface;
 using Client.Core;
 using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Server.Queries
 {
@@ -15,18 +15,18 @@ namespace Server.Queries
     /// Manages a read-only DataRequest
     /// A new instance is created for each request
     /// </summary>
-    public class QueryManager:IRequestManager
+    public class QueryManager : IRequestManager
     {
         /// <summary>
         /// Query execution plan with timing for each stage
         /// </summary>
-        
+
 
         private readonly DataStore _dataStore;
 
         private readonly ILog _log;
-        
-        
+
+
         /// <summary>
         /// Internally used to select the most efficient indexes for a query
         /// </summary>
@@ -50,13 +50,13 @@ namespace Server.Queries
 
         }
 
-        
+
         public QueryManager(DataStore dataStore, ILog log = null)
         {
             _dataStore = dataStore;
             _log = log;
 
-            
+
         }
 
 
@@ -72,28 +72,28 @@ namespace Server.Queries
             foreach (var atomicQuery in andQuery.Elements)
             {
                 var name = atomicQuery.PropertyName;
-                
+
                 var index = _dataStore.TryGetIndex(name);
 
-                if(index == null)
+                if (index == null)
                     continue;
 
                 if (atomicQuery.Operator == QueryOperator.Eq || atomicQuery.Operator == QueryOperator.In || atomicQuery.Operator == QueryOperator.Contains)
                 {
-                    
+
                     // for primary or unique key we do not need more than one index 
                     if (index.IndexType == IndexType.Primary)
                     {
-                        
+
                         // no need to count for the primary index. Waste of time as it wil always be the only index used
-                        return new List<IndexRanking>{new IndexRanking(index, atomicQuery, -1)};
+                        return new List<IndexRanking> { new IndexRanking(index, atomicQuery, -1) };
                     }
 
                     var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
                     result.Add(new IndexRanking(index, atomicQuery, indexResultCount));
 
                 }
-                else if(atomicQuery.IsComparison) // in this case we can only use ordered indexes
+                else if (atomicQuery.IsComparison) // in this case we can only use ordered indexes
                 {
                     if (index.IndexType == IndexType.Ordered)
                     {
@@ -101,7 +101,7 @@ namespace Server.Queries
 
                         result.Add(new IndexRanking(index, atomicQuery, indexResultCount));
                     }
-                    
+
                 }
 
             }
@@ -118,17 +118,17 @@ namespace Server.Queries
             }
 
             var queryExecutionPlan = new QueryExecutionPlan(query.ToString());
-            
+
             // this method can be called in parallel. The only common data is the global execution plan
             lock (executionPlan)
             {
-                executionPlan.QueryPlans.Add(queryExecutionPlan);    
+                executionPlan.QueryPlans.Add(queryExecutionPlan);
             }
-            
+
 
             queryExecutionPlan.StartPlanning();
             var indexesToUse = GetIndexesForQuery(query);
-            queryExecutionPlan.EndPlanning(indexesToUse.Select(r=>r.Index.Name).ToList());
+            queryExecutionPlan.EndPlanning(indexesToUse.Select(r => r.Index.Name).ToList());
 
             // this will contain all queries that have can not be resolved by indexes and need to be checked manually 
             var restOfTheQuery = query.Clone();
@@ -137,7 +137,7 @@ namespace Server.Queries
 
             var finalResult = new List<PackedObject>();
 
-            
+
 
             if (indexesToUse.Count == 1) // only one index can be used so do not bother with extra logic
             {
@@ -157,7 +157,7 @@ namespace Server.Queries
             {
                 queryExecutionPlan.StartIndexUse();
 
-                foreach (var plan in indexesToUse.OrderBy(p=>p.Ranking).Take(2)) // no more than two indexes
+                foreach (var plan in indexesToUse.OrderBy(p => p.Ranking).Take(2)) // no more than two indexes
                 {
                     if (result == null)
                     {
@@ -187,7 +187,7 @@ namespace Server.Queries
                 queryExecutionPlan.FullScan = true;
 
                 queryExecutionPlan.StartScan();
-                var res =  _dataStore.PrimaryIndex.GetAll().Where(o=>restOfTheQuery.Match(o)).ToList();
+                var res = _dataStore.PrimaryIndex.GetAll().Where(o => restOfTheQuery.Match(o)).ToList();
                 queryExecutionPlan.EndScan();
 
                 return res;
@@ -211,7 +211,7 @@ namespace Server.Queries
 
                 queryExecutionPlan.EndScan();
             }
-                
+
 
             return finalResult;
         }
@@ -235,33 +235,33 @@ namespace Server.Queries
 
             try
             {
-                
+
                 executionPlan.Begin();
 
                 // an empty query should return everything
                 if (query.IsEmpty())
                 {
-                    var all =  _dataStore.PrimaryIndex.GetAll().ToList();
+                    var all = _dataStore.PrimaryIndex.GetAll().ToList();
 
-                    
+
                     if (query.OrderByProperty != null)
                     {
                         return OrderBy(all.ToHashSet(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
                     }
-                
+
 
                     return all;
-                } 
+                }
 
                 // simplified processing if it is an atomic query
                 var atomicQuery = AsAtomic(query);
 
                 if (atomicQuery != null)
                 {
-                    
+
                     var res = ProcessSimpleQuery(atomicQuery, executionPlan);
 
-                   
+
                     if (query.OrderByProperty != null)
                     {
                         return OrderBy(res.ToHashSet(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
@@ -270,8 +270,8 @@ namespace Server.Queries
                     {
                         return res;
                     }
-                    
-                    
+
+
                 }
 
 
@@ -288,7 +288,7 @@ namespace Server.Queries
                     }
 
                     return set.ToList();
-                    
+
                 }
 
                 // if multiple AndQueries run in parallel
@@ -307,7 +307,7 @@ namespace Server.Queries
                 // merge the results (they may contain duplicates)
                 foreach (var result in results)
                 {
-                    if(orResult == null)
+                    if (orResult == null)
                         orResult = new HashSet<PackedObject>(result);
                     else
                         orResult.UnionWith(result);
@@ -320,9 +320,9 @@ namespace Server.Queries
                     return OrderBy(orResult, query.OrderByProperty, query.OrderByIsDescending, executionPlan);
                 }
 
-               
+
                 return orResult!.ToList();
-                
+
             }
             finally
             {
@@ -336,7 +336,7 @@ namespace Server.Queries
 
                 }
 
-                
+
             }
         }
 
@@ -352,7 +352,7 @@ namespace Server.Queries
             {
                 executionPlan.BeginOrderBy();
 
-                
+
                 foreach (var o in index.GetAll(orderByIsDescending))
                 {
                     if (selectedItems.Contains(o))
@@ -379,7 +379,7 @@ namespace Server.Queries
             HashSet<Projection> distinct = new HashSet<Projection>();
             foreach (var o in input)
             {
-                var  projection = new Projection(o, indexes);
+                var projection = new Projection(o, indexes);
                 if (distinct.Add(projection))
                 {
                     result.Add(o);
@@ -409,7 +409,7 @@ namespace Server.Queries
             {
                 if (atomicQuery.IndexType == IndexType.Primary)
                 {
-                    queryExecutionPlan.UsedIndexes = new List<string>{_dataStore.PrimaryIndex.Name};
+                    queryExecutionPlan.UsedIndexes = new List<string> { _dataStore.PrimaryIndex.Name };
                     return _dataStore.PrimaryIndex.GetMany(atomicQuery.Values).ToList();
                 }
 
@@ -420,14 +420,14 @@ namespace Server.Queries
 
             if (index != null)
             {
-                
+
                 if (atomicQuery.Operator == QueryOperator.Eq) // works with all kinds of indexes
                 {
                     try
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
+                        queryExecutionPlan.UsedIndexes = new List<string> { index.Name };
                         return index.GetMany(atomicQuery.Values).ToList();
                     }
                     finally
@@ -442,7 +442,7 @@ namespace Server.Queries
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
+                        queryExecutionPlan.UsedIndexes = new List<string> { index.Name };
                         return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
                     }
                     finally
@@ -457,15 +457,15 @@ namespace Server.Queries
                     {
                         queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                         queryExecutionPlan.StartIndexUse();
-                        queryExecutionPlan.UsedIndexes = new List<string>{index.Name};
+                        queryExecutionPlan.UsedIndexes = new List<string> { index.Name };
                         return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
                     }
                     finally
                     {
                         queryExecutionPlan.EndIndexUse();
                     }
-                } 
-            
+                }
+
 
             }
 
@@ -501,13 +501,27 @@ namespace Server.Queries
 
                 var aliases = query.SelectClause.Select(s => s.Alias).ToArray();
 
+
+
                 if (query.SelectClause.Count > 0)
                 {
                     client.SendMany(result, indexOfSelectedProperties, aliases);
                 }
                 else
                 {
-                    client.SendMany(result, new int[0], null);
+                    // for flat layout we have to generate dynamically the JSON
+                    if (result.Count > 0 && result[0].Layout == Layout.Flat)
+                    {
+                        var names = _dataStore.CollectionSchema.ServerSide.Select(x => x.Name).ToArray();
+                        var indexes = Enumerable.Range(0, names.Length).ToArray();
+
+                        client.SendMany(result, indexes, names);
+                    }
+                    else
+                    {
+                        client.SendMany(result, new int[0], null);
+                    }
+
                 }
             }
             catch (Exception e)
@@ -518,10 +532,10 @@ namespace Server.Queries
             {
                 _dataStore.ProcessEviction();
             }
-            
+
         }
 
-        public IList<PackedObject> 
+        public IList<PackedObject>
             ProcessQuery(OrQuery query)
         {
             if (query.OnlyIfComplete)
@@ -571,7 +585,7 @@ namespace Server.Queries
 
             if (query.Distinct)
             {
-                
+
                 var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause.Select(s => s.Name)
                     .ToArray());
 
@@ -605,14 +619,14 @@ namespace Server.Queries
             switch (request)
             {
                 case GetRequest getRequest:
-                        ProcessGetRequest(getRequest, client);                    
+                    ProcessGetRequest(getRequest, client);
                     break;
                 case EvalRequest evalRequest:
-                    ProcessEvalRequest(evalRequest, client);                    
+                    ProcessEvalRequest(evalRequest, client);
                     break;
 
                 case PivotRequest pivotRequest:
-                    ProcessPivotRequest(pivotRequest, client);                    
+                    ProcessPivotRequest(pivotRequest, client);
                     break;
             }
         }
@@ -629,25 +643,25 @@ namespace Server.Queries
                 // partition data to allow for parallel calculation
                 var groupBy = filtered.GroupBy(i => i.PrimaryKey.GetHashCode() % 10);
 
-                            
+
                 Parallel.ForEach(groupBy, new ParallelOptions { MaxDegreeOfParallelism = 10 },
                     objects =>
                     {
-                        var pivot = new PivotLevel();
+                        var pivot = new PivotLevel(_dataStore.CollectionSchema, pivotRequest.AxisList, pivotRequest.ValuesList);
 
                         foreach (var o in objects)
                         {
-                            pivot.AggregateOneObject(o, pivotRequest.AxisList, pivotRequest.ValuesList);    
+                            pivot.AggregateOneObject(o);
                         }
 
                         lock (pr)
                         {
                             pr.Root.MergeWith(pivot);
                         }
-                                
+
                     });
 
-                            
+
                 client.SendResponse(pr);
             }
             catch (Exception e)

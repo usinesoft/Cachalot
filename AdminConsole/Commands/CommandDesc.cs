@@ -1,8 +1,7 @@
-using System;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Client.Messages;
+using System;
 
 namespace AdminConsole.Commands
 {
@@ -61,23 +60,23 @@ namespace AdminConsole.Commands
                     }
 
                     Logger.Write("Tables");
-                    
+
 
                     var header =
-                        $"| {"Name",35} | {"Zip",5} |";
-                    
-                    var  line = new string('-', header.Length);
-                    
+                        $"| {"Name",35} | {"Layout",10} |";
+
+                    var line = new string('-', header.Length);
+
                     Logger.Write(line);
                     Logger.Write(header);
                     Logger.Write(line);
 
                     foreach (var typeDescription in serverInfo.Schema)
                     {
-                        var compression = typeDescription.UseCompression.ToString();
+                        var compression = typeDescription.StorageLayout.ToString();
 
 
-                        Logger.Write("| {0,35} | {1,5} |",
+                        Logger.Write("| {0,35} | {1,10} |",
                             typeDescription.CollectionName,
                             compression
                         );
@@ -108,15 +107,15 @@ namespace AdminConsole.Commands
             Logger.Write("{0} ({1})", desc.CollectionName.ToUpper(), desc.CollectionName);
             var header = $"| {"property",45} | {"index type",13} |";
 
-            var  line = new string('-', header.Length);
+            var line = new string('-', header.Length);
 
             Logger.Write(line);
-            
+
 
             Logger.Write(header);
             Logger.Write(line);
 
-            
+
             foreach (var keyInfo in desc.ServerSide)
             {
                 Logger.Write($"| {keyInfo.Name,45} | {keyInfo.IndexType,13} | ");

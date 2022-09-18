@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Client;
+using Client.Core;
+using Client.Tools;
+using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Client;
-using Client.Core;
-using Client.Tools;
-using JetBrains.Annotations;
 
 namespace Server.FullTextSearch
 {
@@ -322,7 +322,7 @@ namespace Server.FullTextSearch
             // if the original text is available improve score calculation by taking into account order of tokens
             if (LineProvider != null)
             {
-                var tokenizedQuery = Tokenizer.Tokenize(new[] {query});
+                var tokenizedQuery = Tokenizer.Tokenize(new[] { query });
 
                 result = new Dictionary<LinePointer, LineResult>();
 
@@ -335,7 +335,7 @@ namespace Server.FullTextSearch
 
                     lock (result)
                     {
-                        result[r.Key] = new LineResult{Score = value,TokensFound = r.Value.TokensFound};
+                        result[r.Key] = new LineResult { Score = value, TokensFound = r.Value.TokensFound };
                     }
 
                 });
@@ -362,7 +362,7 @@ namespace Server.FullTextSearch
             // first sum-up the line scores
             var score = lineResults.Sum(r => r.Score);
 
-            var totalTokens = new HashSet<string>(lineResults.SelectMany(r=>r.TokensFound));
+            var totalTokens = new HashSet<string>(lineResults.SelectMany(r => r.TokensFound));
 
             score *= totalTokens.Count * TokenCoverageMultiplier;
 
@@ -383,7 +383,7 @@ namespace Server.FullTextSearch
                 .Select(g => new SearchResult
                 {
                     PrimaryKey = g.Key,
-                    Score = ComputeDocumentScore(g.Select(p=>p.Value).ToList()),
+                    Score = ComputeDocumentScore(g.Select(p => p.Value).ToList()),
                     LinePointers = g.OrderBy(p => p.Key.Line).Select(p => p.Key).ToList()
                 })
                 .OrderByDescending(d => d.Score).ToList();
@@ -396,7 +396,7 @@ namespace Server.FullTextSearch
 
                 return mostInterestingOnes.ToList();
             }
-            
+
 
             return documents;
         }
@@ -443,7 +443,7 @@ namespace Server.FullTextSearch
                 if (positions.Count != 0)
                 {
                     // a measure of the information content
-                    var score = Math.Log10((double) Entries / positions.Count);
+                    var score = Math.Log10((double)Entries / positions.Count);
                     foreach (var pointer in positions)
                         scores[pointer] += score;
                 }
@@ -455,7 +455,7 @@ namespace Server.FullTextSearch
                 // the multiplier applies only if more than one token in the query was found on the same line
                 var score = scores[pair.Key];
                 if (pair.Value.Count > 1) score *= SameLineMultiplier * pair.Value.Count;
-                result[pair.Key] = new LineResult {Score = scores[pair.Key] = score, TokensFound = pair.Value };
+                result[pair.Key] = new LineResult { Score = scores[pair.Key] = score, TokensFound = pair.Value };
             }
 
             return result;

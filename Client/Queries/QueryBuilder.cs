@@ -1,13 +1,8 @@
 #region
 
-using System;
-using System.Dynamic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Client.Core;
-using Client.Interface;
-using Client.Messages;
 using Client.Parsing;
+using System;
 
 #endregion
 
@@ -45,7 +40,7 @@ namespace Client.Queries
         /// <returns></returns>
         public OrQuery GetOne(object value)
         {
-            var keyValue = value as KeyValue ?? new KeyValue(value, _collectionSchema.PrimaryKeyField);
+            var keyValue = value as KeyValue ?? new KeyValue(value);
 
             var query = new OrQuery(_collectionSchema.CollectionName);
             var andQuery = new AndQuery();
@@ -68,6 +63,6 @@ namespace Client.Queries
             return new Parser().ParseSql(sql).ToQuery(_collectionSchema);
         }
 
-        
+
     }
 }

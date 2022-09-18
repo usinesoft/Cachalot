@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
+using System.Collections.Generic;
 
 namespace Server.FullTextSearch
 {

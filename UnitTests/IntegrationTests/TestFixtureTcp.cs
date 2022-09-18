@@ -1,13 +1,13 @@
 ﻿#region
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Channel;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Tests.TestData;
 
 #endregion
@@ -22,7 +22,7 @@ namespace Tests.IntegrationTests
         {
             _serverChannel = new TcpServerChannel();
 
-            _server = new Server.Server(new NodeConfig()) {Channel = _serverChannel};
+            _server = new Server.Server(new NodeConfig()) { Channel = _serverChannel };
             _serverPort = _serverChannel.Init();
             _serverChannel.Start();
             _server.Start();
@@ -102,7 +102,7 @@ namespace Tests.IntegrationTests
 
             //get both of them using an In query
 
-            var folders = new[] {"aaa", "bbb"};
+            var folders = new[] { "aaa", "bbb" };
 
             allItems = _client.GetMany<CacheableTypeOk>(x => folders.Contains(x.IndexKeyFolder)).ToList();
             Assert.AreEqual(allItems.Count, 2);
@@ -166,7 +166,7 @@ namespace Tests.IntegrationTests
             // parallel requests, shared channel (a if it is used in a server back-end)
             Parallel.For(0, clients, i =>
             {
-                using var client = new DataClient {Channel = sharedChannel};
+                using var client = new DataClient { Channel = sharedChannel };
 
                 IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
                 Assert.AreEqual(items.Count, 200);

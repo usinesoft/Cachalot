@@ -13,7 +13,7 @@ namespace Client.Core
 
         readonly Stopwatch _watch = new Stopwatch();
 
-        public int TotalTimeInMicroseconds{ get;  set; }
+        public int TotalTimeInMicroseconds { get; set; }
 
         public void Begin()
         {
@@ -24,7 +24,7 @@ namespace Client.Core
         {
             _watch.Stop();
 
-            TotalTimeInMicroseconds = (int) (_watch.Elapsed.TotalMilliseconds * 1000D);
+            TotalTimeInMicroseconds = (int)(_watch.Elapsed.TotalMilliseconds * 1000D);
         }
 
         public IList<QueryExecutionPlan> QueryPlans { get; set; } = new List<QueryExecutionPlan>();
@@ -38,8 +38,8 @@ namespace Client.Core
         /// Time to merge sub-queries (if more than one)
         /// </summary>
         public int MergeTimeInMicroseconds { get; set; }
-        
-        
+
+
         /// <summary>
         /// Order time in microseconds
         /// </summary>
@@ -86,7 +86,7 @@ namespace Client.Core
         {
             var elapsed = _watch.Elapsed;
 
-            DistinctTimeInMicroseconds = (int) ((elapsed.TotalMilliseconds - _startDistinct.TotalMilliseconds) * 1000);
+            DistinctTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startDistinct.TotalMilliseconds) * 1000);
 
         }
 
@@ -100,7 +100,7 @@ namespace Client.Core
         {
             var elapsed = _watch.Elapsed;
 
-            MergeTimeInMicroseconds = (int) ((elapsed.TotalMilliseconds - _startMerge.TotalMilliseconds) * 1000);
+            MergeTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startMerge.TotalMilliseconds) * 1000);
 
         }
 
@@ -115,7 +115,7 @@ namespace Client.Core
         {
             var elapsed = _watch.Elapsed;
 
-            OrderTimeInMicroseconds = (int) ((elapsed.TotalMilliseconds - _startOrderBy.TotalMilliseconds) * 1000);
+            OrderTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startOrderBy.TotalMilliseconds) * 1000);
         }
     }
 }

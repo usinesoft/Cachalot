@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Client;
+using Client.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using Client;
-using Client.Core;
 
 namespace Server.Persistence
 {
@@ -45,21 +45,24 @@ namespace Server.Persistence
             HashSet<string> frequentTokens = new HashSet<string>();
             foreach (var pair in _temporaryStorage)
             {
-                var store = _dataContainer. TryGetByName(pair.Key);
-                
+                var store = _dataContainer.TryGetByName(pair.Key);
+
+                // optimize in memory storage of identical values
+                KeyValuePool.ProcessPackedObjects(pair.Value);
+
                 store.InternalPutMany(pair.Value, true);
 
                 frequentTokens.UnionWith(store.GetMostFrequentTokens(100));
-                
+
             }
-                
+
             // generate a helper file containing most frequent tokens
 
             if (dataPath != null && frequentTokens.Count > 0)
             {
-                File.WriteAllLines(Path.Combine(dataPath, "Most_frequent_tokens.txt"),  frequentTokens);
+                File.WriteAllLines(Path.Combine(dataPath, "Most_frequent_tokens.txt"), frequentTokens);
             }
-            
+
             _temporaryStorage.Clear();
 
             Dbg.Trace("done loading persistent objects into memory");

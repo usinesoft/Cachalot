@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Client.ChannelInterface;
 using Client.Core;
-using Client.Interface;
 using Client.Queries;
 using JetBrains.Annotations;
 using ProtoBuf;
+using System.Collections.Generic;
 
 namespace Client.Messages.Pivot
 {
@@ -22,10 +18,10 @@ namespace Client.Messages.Pivot
         {
         }
 
-        internal  PivotRequest(OrQuery query)
+        internal PivotRequest(OrQuery query)
             : base(DataAccessType.Read, query.CollectionName)
         {
-            
+
             Query = query;
         }
 
@@ -35,13 +31,13 @@ namespace Client.Messages.Pivot
 
 
         [field: ProtoMember(1)] public OrQuery Query { get; }
-        
-        [field: ProtoMember(2)] public  List<int> AxisList { get; }= new List<int>();
 
-        [field: ProtoMember(3)] public  List<int> ValuesList { get; }= new List<int>();
+        [field: ProtoMember(2)] public List<int> AxisList { get; } = new List<int>();
+
+        [field: ProtoMember(3)] public List<int> ValuesList { get; } = new List<int>();
 
 
-        
-        
+
+
     }
 }

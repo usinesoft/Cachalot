@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Cachalot.Linq
 {
@@ -17,7 +17,7 @@ namespace Cachalot.Linq
     {
         private readonly IDataClient _client;
 
-        
+
         private readonly Connector _connector;
 
         readonly List<DataRequest> _childRequests = new List<DataRequest>();
@@ -64,16 +64,16 @@ namespace Cachalot.Linq
             var packed = Pack(newValue, collectionName);
 
             // put requests with condition can contain only one item
-            
+
             var request = new PutRequest(collectionName);
 
             request.Items.Add(packed);
 
             _childRequests.Add(request);
 
-            
+
             var query = PredicateToQuery(test, collectionName);
-            
+
             request.Predicate = query;
 
         }
@@ -102,13 +102,13 @@ namespace Cachalot.Linq
             var query = PredicateToQuery(where, collectionName);
 
             var request = new RemoveManyRequest(query);
-            
+
             _childRequests.Add(request);
 
         }
 
 
-       
+
         public void Delete<T>(T item, string collectionName = null)
         {
             collectionName ??= typeof(T).Name;
@@ -142,4 +142,4 @@ namespace Cachalot.Linq
             return packed;
         }
     }
-} 
+}

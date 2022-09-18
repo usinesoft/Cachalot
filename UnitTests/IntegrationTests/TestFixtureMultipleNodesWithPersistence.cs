@@ -1,136 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Cachalot.Linq;
-using Channel;
+﻿using Cachalot.Linq;
 using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using Newtonsoft.Json;
 using NUnit.Framework;
-using Server;
-using Server.HostServices.Logger;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Tests.TestData;
 using Tests.TestData.Events;
 
 namespace Tests.IntegrationTests
 {
+
     [TestFixture]
-    public class TestFixtureMultipleNodesWithPersistence
+    public class TestFixtureMultipleNodesWithPersistence : MultiServerTestFixtureBase
     {
         [TearDown]
         public void Exit()
         {
-            StopServers();
-
-            // deactivate all failure simulations
-            Dbg.DeactivateSimulation();
+            TearDown();
         }
 
         [SetUp]
         public void Init()
         {
-            for (var i = 0; i < ServerCount; i++)
-                if (Directory.Exists($"server{i:D2}"))
-                    Directory.Delete($"server{i:D2}", true);
-
-
-            StartServers();
+            SetUp();
         }
-
-        private class ServerInfo
-        {
-            public TcpServerChannel Channel { get; set; }
-            public Server.Server Server { get; set; }
-            public int Port { get; set; }
-        }
-
-        private List<ServerInfo> _servers = new List<ServerInfo>();
-
-        private List<FastLogger> _loggers = new List<FastLogger>();
-
-        private const int ServerCount = 10;
 
         [OneTimeSetUp]
         public void RunBeforeAnyTests()
         {
-            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
-            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-        }
-
-        private void StopServers()
-        {
-            foreach (var serverInfo in _servers)
-            {
-                serverInfo.Channel.Stop();
-                serverInfo.Server.Stop();
-            }
-
-            foreach (var logger in _loggers)
-            {
-                logger.Stop();
-            }
-        }
-
-
-        private void RestartOneServer()
-        {
-            var serverInfo = _servers[0];
-
-            serverInfo.Channel.Stop();
-            serverInfo.Server.Stop();
-
-            // restart on the same port
-            serverInfo.Port = serverInfo.Channel.Init(serverInfo.Port);
-            serverInfo.Channel.Start();
-            serverInfo.Server.Start();
-
-            Thread.Sleep(500);
-        }
-
-
-        private ClientConfig _clientConfig;
-
-        private void StartServers(int serverCount = 0)
-        {
-            _clientConfig = new ClientConfig();
-            _servers = new List<ServerInfo>();
-            _loggers = new List<FastLogger>();
-
-            serverCount = serverCount == 0 ? ServerCount : serverCount;
-
-            for (var i = 0; i < serverCount; i++)
-            {
-                var path = $"server{i:D2}";
-                var serverInfo = new ServerInfo {Channel = new TcpServerChannel()};
-                var nodeConfig = new NodeConfig {IsPersistent = true, DataPath = path};
-
-                var logger = new FastLogger();
-                logger.Start(path);
-                _loggers.Add(logger);
-
-                serverInfo.Server = new Server.Server(nodeConfig, logger)
-                {
-                    Channel = serverInfo.Channel
-                };
-
-                serverInfo.Port = serverInfo.Channel.Init();
-                serverInfo.Channel.Start();
-                serverInfo.Server.Start();
-
-                _servers.Add(serverInfo);
-
-                _clientConfig.Servers.Add(
-                    new ServerConfig {Host = "localhost", Port = serverInfo.Port});
-            }
-
-
-            Thread.Sleep(500); //be sure the server nodes are started
+            OneTimeSetUp();
         }
 
         [Test]
@@ -188,7 +94,7 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            
+
             List<Order> orders = Order.GenerateTestData(100_000);
 
             dataSource.PutMany(orders);
@@ -208,13 +114,13 @@ namespace Tests.IntegrationTests
 
             List<Order> orders = Order.GenerateTestData(10_000);
 
-            
+
             dataSource.PutMany(orders);
 
             // warm up
             var _ = dataSource.Where(o => o.Category == "geek").ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
+            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
             var watch = new Stopwatch();
             watch.Start();
@@ -225,32 +131,32 @@ namespace Tests.IntegrationTests
 
             watch.Restart();
 
-            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o=>o.Amount).ToList();
+            var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
 
             Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
-                
-            Assert.AreEqual(noOrder.Count, ascending.Count); 
+
+            Assert.AreEqual(noOrder.Count, ascending.Count);
 
             watch.Restart();
 
-            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o=>o.Amount).ToList();
+            var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
             Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
-                
-            Assert.AreEqual(noOrder.Count, descending.Count); 
+
+            Assert.AreEqual(noOrder.Count, descending.Count);
 
             // check that they are ordered
-            
+
             // check sorted ascending
             for (int i = 0; i < ascending.Count - 1; i++)
             {
-                Assert.LessOrEqual((int)ascending[i].Amount*10000, (int)ascending[i+1].Amount *10000);
+                Assert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
             }
 
             // check sorted descending
             for (int i = 0; i < descending.Count - 1; i++)
             {
-                Assert.GreaterOrEqual((int)descending[i].Amount*10000, (int)descending[i+1].Amount *10000);
+                Assert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
             }
 
             watch.Stop();
@@ -276,7 +182,7 @@ namespace Tests.IntegrationTests
 
                 Assert.IsFalse(wasAdded);
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
                 Assert.AreEqual(150, reloaded.Value);
@@ -288,7 +194,7 @@ namespace Tests.IntegrationTests
                 connector.DeclareCollection<Event>();
                 var events = connector.DataSource<Event>();
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
                 Assert.AreEqual(150, reloaded.Value);
@@ -305,11 +211,11 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
+                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") { Timestamp = DateTime.Now });
 
                 Assert.IsTrue(wasAdded);
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
                 var oldTimestamp = reloaded.Timestamp;
 
                 reloaded.Value = 160;
@@ -333,7 +239,7 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the updated value is persistent
                 Assert.AreEqual(160, reloaded.Value);
@@ -600,7 +506,7 @@ namespace Tests.IntegrationTests
                 var dataSource = connector.DataSource<CompressedItem>();
 
                 var items = new List<CompressedItem>();
-                for (var i = 0; i < 100; i++) items.Add(new CompressedItem {Id = i});
+                for (var i = 0; i < 100; i++) items.Add(new CompressedItem { Id = i });
 
                 dataSource.PutMany(items);
 
@@ -609,7 +515,7 @@ namespace Tests.IntegrationTests
                 admin.Dump(dumpPath);
 
 
-                dataSource.Put(new CompressedItem {Id = 133});
+                dataSource.Put(new CompressedItem { Id = 133 });
             }
 
             StopServers();
@@ -662,8 +568,13 @@ namespace Tests.IntegrationTests
                 {
                     var order = new Order
                     {
-                        Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now,
-                        Category = "geek", ProductId = 1000 + i % 10, Quantity = 2
+                        Id = Guid.NewGuid(),
+                        Amount = 10.15,
+                        ClientId = 100 + i + 10,
+                        Date = DateTimeOffset.Now,
+                        Category = "geek",
+                        ProductId = 1000 + i % 10,
+                        Quantity = 2
                     };
 
                     if (i % 5 == 0)
@@ -675,7 +586,7 @@ namespace Tests.IntegrationTests
 
                 dataSource.PutMany(orders);
 
-                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o=>o.Amount, o=>o.Quantity).Execute();
+                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o => o.Amount, o => o.Quantity).Execute();
 
                 sum1 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
@@ -685,8 +596,13 @@ namespace Tests.IntegrationTests
 
                 dataSource.Put(new Order
                 {
-                    Id = Guid.NewGuid(), Amount = 10.15, ClientId = 2, Date = DateTimeOffset.Now, Category = "youpee",
-                    ProductId = 5, Quantity = 2
+                    Id = Guid.NewGuid(),
+                    Amount = 10.15,
+                    ClientId = 2,
+                    Date = DateTimeOffset.Now,
+                    Category = "youpee",
+                    ProductId = 5,
+                    Quantity = 2
                 });
             }
 
@@ -713,7 +629,7 @@ namespace Tests.IntegrationTests
                 Assert.AreEqual(100, after);
 
                 // the pivot should be identical 
-                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o=>o.Amount, o=>o.Quantity).Execute();
+                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o => o.Amount, o => o.Quantity).Execute();
                 var sum2 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
                 Assert.AreEqual(sum1, sum2);
@@ -931,7 +847,10 @@ namespace Tests.IntegrationTests
 
                 var updated = new Home
                 {
-                    Id = 20, Address = "10 rue du chien qui fume", Town = "Nice", Comments = new List<Comment>
+                    Id = 20,
+                    Address = "10 rue du chien qui fume",
+                    Town = "Nice",
+                    Comments = new List<Comment>
                     {
                         new Comment {Text = "close to the metro"},
                         new Comment {Text = "4k tv"}
@@ -1047,7 +966,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Import_real_data_set()
         {
-            
+
             var schema = TypedSchemaFactory.FromType(typeof(Business));
 
             var serializer = new JsonSerializer();
@@ -1086,7 +1005,7 @@ namespace Tests.IntegrationTests
         }
 
 #if DEBUG
-// this test can work only in debug environment as failure simulations are deactivated in release
+        // this test can work only in debug environment as failure simulations are deactivated in release
         [Test]
         public void In_case_of_failure_during_dump_import_data_is_rolled_back()
         {
@@ -1164,7 +1083,7 @@ namespace Tests.IntegrationTests
                 // check that it is still working fine after rollback
                 dataSource.Put(new FixingEvent(66666, "GLE", 180, "IRD-500"));
 
-                var events = new[] {55555, 66666};
+                var events = new[] { 55555, 66666 };
 
                 var evts = dataSource.Where(e => events.Contains(e.EventId)).ToList();
 
@@ -1183,7 +1102,7 @@ namespace Tests.IntegrationTests
 
                 var dataSource = connector.DataSource<Event>();
 
-                var events = new[] {55555, 66666};
+                var events = new[] { 55555, 66666 };
                 var evts = dataSource.Where(e => events.Contains(e.EventId)).ToList();
 
                 Assert.AreEqual(2, evts.Count);
@@ -1246,12 +1165,12 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") {Timestamp = DateTime.Now});
+                var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") { Timestamp = DateTime.Now });
 
                 Assert.IsTrue(wasAdded);
 
-                var reloaded = (FixingEvent) events[1];
-                var firstVersion = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
+                var firstVersion = (FixingEvent)events[1];
 
 
                 reloaded.Value = 160;
@@ -1276,7 +1195,7 @@ namespace Tests.IntegrationTests
 
                 var events = connector.DataSource<Event>();
 
-                var reloaded = (FixingEvent) events[1];
+                var reloaded = (FixingEvent)events[1];
 
                 // check that the updated value is persistent
                 Assert.AreEqual(160, reloaded.Value);
@@ -1396,11 +1315,11 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            dataSource.Put(new Order{Category = "geek", ClientId = 101});
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
 
 
             // select more than one property with aliases (like select Category Cat, ClientId from ...)
-            var result1 = dataSource.Select(o => new {Cat = o.Category, o.ClientId}).ToList();
+            var result1 = dataSource.Select(o => new { Cat = o.Category, o.ClientId }).ToList();
 
             Assert.AreEqual(1, result1.Count);
             Assert.AreEqual("geek", result1[0].Cat);
@@ -1431,19 +1350,19 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            dataSource.Put(new Order{Category = "geek", ClientId = 101});
-            dataSource.Put(new Order{Category = "geek", ClientId = 101});
-            dataSource.Put(new Order{Category = "geek", ClientId = 102});
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
+            dataSource.Put(new Order { Category = "geek", ClientId = 102 });
 
 
             // select more than one property with aliases (like select Category Cat, ClientId from ...)
-            var result1 = dataSource.Select(o => new {Cat = o.Category, o.ClientId}).Distinct().ToList();
+            var result1 = dataSource.Select(o => new { Cat = o.Category, o.ClientId }).Distinct().ToList();
 
             Assert.AreEqual(2, result1.Count);
             Assert.AreEqual("geek", result1[0].Cat);
-            Assert.AreEqual(1, result1.Count(r=>r.ClientId == 102));
-            Assert.AreEqual(1, result1.Count(r=>r.ClientId == 101));
-            
+            Assert.AreEqual(1, result1.Count(r => r.ClientId == 102));
+            Assert.AreEqual(1, result1.Count(r => r.ClientId == 101));
+
 
             // select primitive types
             var result2 = dataSource.Select(o => o.Category).Distinct().ToList();
@@ -1452,7 +1371,7 @@ namespace Tests.IntegrationTests
 
             var result3 = dataSource.Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(2, result3.Count);
-            
+
         }
 
 
@@ -1465,46 +1384,46 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            dataSource.Put(new Order{Category = "geek", ClientId = 101, IsDelivered = true});
-            dataSource.Put(new Order{Category = "geek", ClientId = 101});
-            dataSource.Put(new Order{Category = "geek", ClientId = 102, IsDelivered = true});
-            dataSource.Put(new Order{Category = "sf", ClientId = 102});
+            dataSource.Put(new Order { Category = "geek", ClientId = 101, IsDelivered = true });
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
+            dataSource.Put(new Order { Category = "geek", ClientId = 102, IsDelivered = true });
+            dataSource.Put(new Order { Category = "sf", ClientId = 102 });
 
 
-            var result1 = dataSource.Where(o=> !o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
             Assert.AreEqual(2, result1.Count);
-            
-            var result2 = dataSource.Where(o=> o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
+
+            var result2 = dataSource.Where(o => o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
             Assert.AreEqual(2, result2.Count);
 
 
-            var result3 = dataSource.Where(o=> o.IsDelivered).Select(o => o.Category).Distinct().ToList();
+            var result3 = dataSource.Where(o => o.IsDelivered).Select(o => o.Category).Distinct().ToList();
             Assert.AreEqual(1, result3.Count);
 
-            var result4 = dataSource.Where(o=> o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
+            var result4 = dataSource.Where(o => o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
             Assert.AreEqual(2, result4.Count);
-            
 
-            dataSource.Put(new Order{Category = "sf", ClientId = 103});
-            dataSource.Put(new Order{Category = "sf", ClientId = 104});
-            dataSource.Put(new Order{Category = "travel", ClientId = 105});
 
-            var cats = new [] { "sf", "travel"};
-            var result5 = dataSource.Where(o=> cats.Contains( o.Category)).Select(o => o.ClientId).Distinct().ToList();
+            dataSource.Put(new Order { Category = "sf", ClientId = 103 });
+            dataSource.Put(new Order { Category = "sf", ClientId = 104 });
+            dataSource.Put(new Order { Category = "travel", ClientId = 105 });
+
+            var cats = new[] { "sf", "travel" };
+            var result5 = dataSource.Where(o => cats.Contains(o.Category)).Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(4, result5.Count);
 
-            var result6 = dataSource.Where(o=> o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
 
             // with precompiled queries
-             var categories = new [] { "sf", "travel"};
+            var categories = new[] { "sf", "travel" };
 
-             var resultWithLinq = dataSource.Where(o=> categories.Contains( o.Category)).ToList();
+            var resultWithLinq = dataSource.Where(o => categories.Contains(o.Category)).ToList();
 
-             var query = dataSource.PredicateToQuery(o=> categories.Contains( o.Category));
-             var resultWithPrecompiled = dataSource.WithPrecompiledQuery(query).ToList();
-             
-             Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
+            var query = dataSource.PredicateToQuery(o => categories.Contains(o.Category));
+            var resultWithPrecompiled = dataSource.WithPrecompiledQuery(query).ToList();
+
+            Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
 
 
         }
@@ -1531,7 +1450,7 @@ namespace Tests.IntegrationTests
 
             var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
 
-            Assert.AreEqual(1, reloaded1.Count );
+            Assert.AreEqual(1, reloaded1.Count);
 
             var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
 
@@ -1568,7 +1487,7 @@ namespace Tests.IntegrationTests
 
             var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
 
-            Assert.AreEqual(1, reloaded1.Count );
+            Assert.AreEqual(1, reloaded1.Count);
 
             var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
 
@@ -1618,46 +1537,46 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            dataSource.Put(new Order{Category = "geek", ClientId = 101, IsDelivered = true});
-            dataSource.Put(new Order{Category = "geek", ClientId = 101});
-            dataSource.Put(new Order{Category = "geek", ClientId = 102, IsDelivered = true});
-            dataSource.Put(new Order{Category = "sf", ClientId = 102});
+            dataSource.Put(new Order { Category = "geek", ClientId = 101, IsDelivered = true });
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
+            dataSource.Put(new Order { Category = "geek", ClientId = 102, IsDelivered = true });
+            dataSource.Put(new Order { Category = "sf", ClientId = 102 });
 
 
-            var result1 = dataSource.Where(o=> !o.IsDelivered).Select(o => new {o.Category, o.ClientId}).Distinct().ToList();
+            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
             Assert.AreEqual(2, result1.Count);
 
             //The activity table is filled asynchronously so we need to wait
 
             Thread.Sleep(2000);
-            var logEntries = activity.Where(l=>l.Type =="QUERY").ToList();
+            var logEntries = activity.Where(l => l.Type == "QUERY").ToList();
             Assert.IsTrue(logEntries.All(e => e.ExecutionTimeInMicroseconds == e.ExecutionPlan.TotalTimeInMicroseconds));
 
-            
-            var result2 = dataSource.Where(o=> o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
+
+            var result2 = dataSource.Where(o => o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
             Assert.AreEqual(2, result2.Count);
 
 
-            var result3 = dataSource.Where(o=> o.IsDelivered).Select(o => o.Category).Distinct().ToList();
+            var result3 = dataSource.Where(o => o.IsDelivered).Select(o => o.Category).Distinct().ToList();
             Assert.AreEqual(1, result3.Count);
 
-            var result4 = dataSource.Where(o=> o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
+            var result4 = dataSource.Where(o => o.Category == "geek").Select(o => o.IsDelivered).Distinct().ToList();
             Assert.AreEqual(2, result4.Count);
-            
 
-            dataSource.Put(new Order{Category = "sf", ClientId = 103});
-            dataSource.Put(new Order{Category = "sf", ClientId = 104});
-            dataSource.Put(new Order{Category = "travel", ClientId = 105});
 
-            var cats = new [] { "sf", "travel"};
-            var result5 = dataSource.Where(o=> cats.Contains( o.Category)).Select(o => o.ClientId).Distinct().ToList();
+            dataSource.Put(new Order { Category = "sf", ClientId = 103 });
+            dataSource.Put(new Order { Category = "sf", ClientId = 104 });
+            dataSource.Put(new Order { Category = "travel", ClientId = 105 });
+
+            var cats = new[] { "sf", "travel" };
+            var result5 = dataSource.Where(o => cats.Contains(o.Category)).Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(4, result5.Count);
 
-            var result6 = dataSource.Where(o=> o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
 
 
-            
+
         }
     }
 }

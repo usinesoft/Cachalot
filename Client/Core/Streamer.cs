@@ -1,14 +1,13 @@
 #region
 
+using Client.ChannelInterface;
+using Client.Interface;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using Client.ChannelInterface;
-using Client.Interface;
-using Client.Messages;
-using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -52,24 +51,24 @@ namespace Client.Core
             var result = new byte[dataSize];
 
             int offset = 0;
-            
+
             while (offset < dataSize)
             {
-                int read = await stream.ReadAsync(result, offset,dataSize - offset);
+                int read = await stream.ReadAsync(result, offset, dataSize - offset);
                 offset += read;
             }
-            
+
             return result;
         }
 
-        
+
         public static async Task<TItem> FromStreamAsync<TItem>(Stream stream)
         {
             // itemCount always one here
             var buffer = new byte[sizeof(int)];
-            await stream.ReadAsync(buffer, 0,sizeof(int));
+            await stream.ReadAsync(buffer, 0, sizeof(int));
             var itemCount = BitConverter.ToInt32(buffer, 0);
-            
+
             if (itemCount != 1)
             {
                 var msg = $"Waiting for one object, found {itemCount}";
@@ -78,25 +77,25 @@ namespace Client.Core
 
             // use protocol buffers or json
             buffer = new byte[sizeof(bool)];
-            await stream.ReadAsync(buffer, 0,sizeof(bool));
+            await stream.ReadAsync(buffer, 0, sizeof(bool));
             var useProtocolBuffers = BitConverter.ToBoolean(buffer, 0);
 
             // use compression
-            await stream.ReadAsync(buffer, 0,sizeof(bool));
+            await stream.ReadAsync(buffer, 0, sizeof(bool));
             var useCompression = BitConverter.ToBoolean(buffer, 0);
-            
+
             // read and ignore the rank (not used for single objects)
             buffer = new byte[sizeof(double)];
-            await stream.ReadAsync(buffer, 0,sizeof(double));
-            
+            await stream.ReadAsync(buffer, 0, sizeof(double));
+
             // size of raw data
             buffer = new byte[sizeof(int)];
-            await stream.ReadAsync(buffer, 0,sizeof(int));
+            await stream.ReadAsync(buffer, 0, sizeof(int));
             var dataSize = BitConverter.ToInt32(buffer, 0);
 
             // raw data
             var data = await ReadDataAsync(stream, dataSize);
-            
+
             var mode = SerializationMode.Json;
             if (useProtocolBuffers)
                 mode = SerializationMode.ProtocolBuffers;
@@ -111,7 +110,7 @@ namespace Client.Core
 
             var useProtocolBuffers =
                 collectionSchema == null; // use protocol buffers only for requests not for business objects
-            var useCompression = collectionSchema != null && collectionSchema.UseCompression;
+            var useCompression = collectionSchema != null && collectionSchema.StorageLayout == Layout.Compressed;
 
             var mode = SerializationMode.ProtocolBuffers;
             if (!useProtocolBuffers)
@@ -130,7 +129,7 @@ namespace Client.Core
             writer.Flush();
         }
 
-        
+
 
 
         /// <summary>
@@ -188,10 +187,10 @@ namespace Client.Core
 
             foreach (var item in items)
             {
-                var data = selectedIndexes.Length > 0? item.GetData(selectedIndexes,aliases) :item.ObjectData;
+                var data = selectedIndexes.Length > 0 ? item.GetData(selectedIndexes, aliases) : item.ObjectData;
 
                 writer.Write(false);
-                writer.Write(item.UseCompression);
+                writer.Write(item.Layout == Layout.Compressed);
                 writer.Write(item.Rank);
                 writer.Write(data.Length);
                 writer.Write(data);
@@ -236,7 +235,7 @@ namespace Client.Core
                 if (deserializationFailure)
                 {
                     memStream.Seek(0, SeekOrigin.Begin);
-                    var exception  = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
+                    var exception = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
                         useCompression);
 
                     if (exception != null)
@@ -248,9 +247,9 @@ namespace Client.Core
                     throw new StreamingException(message);
                 }
 
-                    
 
-                yield return new RankedItem( rank, result);
+
+                yield return new RankedItem(rank, result);
             }
         }
 
@@ -289,7 +288,7 @@ namespace Client.Core
                         try
                         {
                             result = SerializationHelper.ObjectFromStream<TItemType>(memStream, mode, useCompression);
-                            dataHandler((TItemType) result, i + 1, items);
+                            dataHandler((TItemType)result, i + 1, items);
                         }
                         catch (Exception)
                         {
@@ -304,7 +303,7 @@ namespace Client.Core
 
                             if (result != null)
                             {
-                                exceptionHandler((ExceptionResponse) result);
+                                exceptionHandler((ExceptionResponse)result);
                             }
                             else
                             {

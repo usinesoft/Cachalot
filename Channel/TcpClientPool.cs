@@ -1,10 +1,9 @@
 ﻿#region
 
+using Client.Core;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
-using Client.Core;
 
 #endregion
 
@@ -35,7 +34,7 @@ namespace Channel
         {
             try
             {
-                var client = new TcpClient(AddressFamily.InterNetworkV6) {Client = {DualMode = true}, NoDelay = true};
+                var client = new TcpClient(AddressFamily.InterNetworkV6) { Client = { DualMode = true }, NoDelay = true };
 
                 client.Connect(_address, _port);
 
@@ -56,14 +55,14 @@ namespace Channel
                 //    {
                 //        connectDone.Set ();    
                 //    }
-                    
+
                 //});
 
-                
+
                 //client.BeginConnect(_address, _port, endConnect, client);
                 //connectDone.WaitOne (TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
 
-                
+
                 if (!client.Connected)
                     return null;
 

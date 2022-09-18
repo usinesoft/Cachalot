@@ -1,7 +1,7 @@
-﻿using System;
+﻿using AdminConsole.ConsoleUtils.ConsoleActions;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using AdminConsole.ConsoleUtils.ConsoleActions;
 
 namespace AdminConsole.ConsoleUtils
 {
@@ -79,7 +79,7 @@ namespace AdminConsole.ConsoleUtils
 
         public static void SimulateKeyPress(ConsoleKey consoleKey)
         {
-            SimulateKeyPress(new ConsoleKeyInfo((char) consoleKey, consoleKey, false, false, false));
+            SimulateKeyPress(new ConsoleKeyInfo((char)consoleKey, consoleKey, false, false, false));
         }
 
         public static void SimulateKeyPress(ConsoleKeyInfo keyInfo)
@@ -306,7 +306,7 @@ namespace AdminConsole.ConsoleUtils
                 Console.BufferWidth = Math.Max(Console.BufferWidth,
                     Math.Min(byte.MaxValue, Math.Max(_maxLineLength, CurrentLine.Length + 1)));
             }
-            
+
         }
 
         private static void UpdateBuffer()

@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Client.ChannelInterface;
 using ProtoBuf;
+using System;
+using System.Collections.Generic;
 
 namespace Client.Messages
 {
@@ -22,7 +22,7 @@ namespace Client.Messages
         /// If false lock
         /// </summary>
         [ProtoMember(2)] public bool Unlock { get; set; }
-        
+
 
         /// <summary>
         /// The maximum time it waits to acquire a lock (never infinite to avoid deadlocks)
@@ -33,6 +33,6 @@ namespace Client.Messages
 
         [ProtoMember(5)] public IList<string> CollectionsToLock { get; set; } = new List<string>();
 
-        
+
     }
 }

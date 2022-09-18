@@ -13,7 +13,7 @@ namespace AdminConsole.ConsoleUtils
 
         public static char ConvertConsoleKey(ConsoleKey consoleKey)
         {
-            return (char) consoleKey;
+            return (char)consoleKey;
         }
     }
 }

@@ -11,17 +11,17 @@
         /// prefix of a request message 
         /// </summary>
         public static readonly byte RequestCookie = 0;
-        
+
         public static readonly int ReceiveTimeoutInMilliseconds = 1000;
-        
+
         public static readonly int ConnectionTimeoutInMilliseconds = 3000;
-        
+
         public static readonly int StreamingThreshold = 50000;
-        
+
         public static readonly int DefaultPort = 48401;
-        
+
         public static readonly int DefaultPoolCapacity = 4;
-        
+
         public static readonly int DefaultPreloadedConnections = 1;
 
     }

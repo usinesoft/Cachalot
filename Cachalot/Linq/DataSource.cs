@@ -1,19 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
-using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Parsing;
 using Client.Queries;
 using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
 using Remotion.Linq;
 using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
 using Remotion.Linq.Parsing.Structure;
 using Remotion.Linq.Parsing.Structure.NodeTypeProviders;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Cachalot.Linq
 {
@@ -196,6 +196,7 @@ namespace Cachalot.Linq
             return _client.GetMany(query).Select(ri => QueryExecutor.FromJObject<T>(ri.Item));
         }
 
+        
 
         /// <summary>
         ///     Update or insert an object
@@ -324,10 +325,10 @@ namespace Cachalot.Linq
             var oldTimestamp = prop.GetValue(newValue);
 
 
-            var kv = new KeyValue(oldTimestamp,
-                new KeyInfo("Timestamp", 0, IndexType.Dictionary));
+            var kv = new KeyValue(oldTimestamp);
 
-            var q = new AtomicQuery(_collectionSchema.KeyByName(kv.KeyName), kv);
+
+            var q = new AtomicQuery(_collectionSchema.KeyByName("Timestamp"), kv);
             var andQuery = new AndQuery();
             andQuery.Elements.Add(q);
             var orq = new OrQuery(_collectionName);

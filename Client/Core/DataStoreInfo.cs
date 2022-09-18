@@ -1,6 +1,6 @@
-using System;
 using Client.Interface;
 using ProtoBuf;
+using System;
 
 namespace Client.Core
 {
@@ -11,14 +11,14 @@ namespace Client.Core
     [Serializable]
     public class DataStoreInfo
     {
-        [NonSerialized] [ProtoMember(7)] private DomainDescription _availableData;
+        [NonSerialized][ProtoMember(7)] private DomainDescription _availableData;
 
         /// <summary>
         ///     Number of items in the datastore
         /// </summary>
         [ProtoMember(3)] private long _count;
 
-        [ProtoMember(9)] private bool _dataCompression;
+        [ProtoMember(9)] private Layout _storageLayout;
 
         /// <summary>
         ///     Eviction policy for this cacheable type
@@ -46,7 +46,7 @@ namespace Client.Core
             set => _fullTypeName = value;
         }
 
-        
+
 
         /// <summary>
         ///     Number of items in the datastore
@@ -75,7 +75,7 @@ namespace Client.Core
             set => _evictionPolicyDescription = value;
         }
 
-        
+
 
         /// <summary>
         ///     Description of the loaded data <seealso cref="DomainDescription" />
@@ -93,10 +93,10 @@ namespace Client.Core
             set => _hitCount = value;
         }
 
-        public bool DataCompression
+        public Layout StorageLayout
         {
-            get => _dataCompression;
-            set => _dataCompression = value;
+            get => _storageLayout;
+            set => _storageLayout = value;
         }
 
 

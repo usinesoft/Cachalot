@@ -1,6 +1,6 @@
-using System;
 using Client.Core;
 using Client.Messages;
+using System;
 
 namespace Server
 {

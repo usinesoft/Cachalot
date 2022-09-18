@@ -1,11 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Cachalot.Linq;
+﻿using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
+using System;
+using System.IO;
+using System.Linq;
 using Tests.TestData;
 using Tests.TestData.Events;
 
@@ -24,22 +24,22 @@ namespace Tests.UnitTests
         [Test]
         public void Expression_tree_processing()
         {
-            
-            var towns = new[] {"Paris", "Nice"};
+
+            var towns = new[] { "Paris", "Nice" };
 
             // not supposed to be optimal; improving coverage (constant at left + extension at root level)
             var query = UtExtensions.PredicateToQuery<Home>(h => towns.Contains(h.Town) || "Toronto" == h.Town);
 
             Assert.AreEqual(2, query.Elements.Count);
 
-            Assert.AreEqual(QueryOperator.In,  query.Elements.First().Elements.Single().Operator);
-            Assert.AreEqual("Toronto",  query.Elements.Last().Elements.Single().Value.ToString());
+            Assert.AreEqual(QueryOperator.In, query.Elements.First().Elements.Single().Operator);
+            Assert.AreEqual("Toronto", query.Elements.Last().Elements.Single().Value.ToString());
 
             // check reversed "Contains" at root
             query = UtExtensions.PredicateToQuery<Home>(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
             Assert.AreEqual(2, query.Elements.Count);
 
-            Assert.AreEqual(QueryOperator.Contains,  query.Elements.First().Elements.Single().Operator);
+            Assert.AreEqual(QueryOperator.Contains, query.Elements.First().Elements.Single().Operator);
 
             // check boolean members without operator
             query = UtExtensions.PredicateToQuery<Order>(o => o.IsDelivered);
@@ -55,18 +55,18 @@ namespace Tests.UnitTests
             Assert.AreEqual(query1.Elements.Single().Elements.Single(), query2.Elements.Single().Elements.Single());
 
 
-            query = UtExtensions.PredicateToQuery<Order>(o => o.Amount < 0.1 || o.IsDelivered );
+            query = UtExtensions.PredicateToQuery<Order>(o => o.Amount < 0.1 || o.IsDelivered);
             Assert.AreEqual(2, query.Elements.Count);
 
-            query = UtExtensions.PredicateToQuery<Order>(o => o.Amount < 0.1 && o.IsDelivered );
+            query = UtExtensions.PredicateToQuery<Order>(o => o.Amount < 0.1 && o.IsDelivered);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
 
-            query = UtExtensions.PredicateToQuery<Order>(o =>  o.IsDelivered && o.Amount < 0.1 );
+            query = UtExtensions.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 0.1);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
 
-            query = UtExtensions.PredicateToQuery<Order>(o =>  !o.IsDelivered );
+            query = UtExtensions.PredicateToQuery<Order>(o => !o.IsDelivered);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             var str = query.ToString();
@@ -74,7 +74,7 @@ namespace Tests.UnitTests
 
 
             // check != operator
-            query = UtExtensions.PredicateToQuery<Order>(o =>  o.ClientId != 15 );
+            query = UtExtensions.PredicateToQuery<Order>(o => o.ClientId != 15);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             Assert.AreEqual(QueryOperator.NotEq, query.Elements[0].Elements[0].Operator);
@@ -85,7 +85,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             Assert.AreEqual(QueryOperator.NotContains, query.Elements[0].Elements[0].Operator);
 
-            query = UtExtensions.PredicateToQuery<Home>(h =>! towns.Contains(h.Town));
+            query = UtExtensions.PredicateToQuery<Home>(h => !towns.Contains(h.Town));
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             Assert.AreEqual(QueryOperator.NotIn, query.Elements[0].Elements[0].Operator);
@@ -94,23 +94,23 @@ namespace Tests.UnitTests
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
-            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.NotContains));
+            Assert.IsTrue(query.Elements[0].Elements.Any(q => q.Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" && !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
-            Assert.IsTrue(query.Elements[0].Elements.Any(q=>q.Operator == QueryOperator.NotContains));
+            Assert.IsTrue(query.Elements[0].Elements.Any(q => q.Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today) || h.Town == "Paris");
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
-            Assert.IsTrue(query.Elements.Any(q=>q.Elements[0].Operator == QueryOperator.NotContains));
+            Assert.IsTrue(query.Elements.Any(q => q.Elements[0].Operator == QueryOperator.NotContains));
 
             query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" || !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
-            Assert.IsTrue(query.Elements.Any(q=>q.Elements.Any(e=>e.Operator == QueryOperator.NotContains)));
+            Assert.IsTrue(query.Elements.Any(q => q.Elements.Any(e => e.Operator == QueryOperator.NotContains)));
             Console.WriteLine(query);
 
             // string operators
@@ -126,8 +126,8 @@ namespace Tests.UnitTests
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             Assert.AreEqual(QueryOperator.StrContains, query.Elements[0].Elements[0].Operator);
 
-            
-            query = UtExtensions.PredicateToQuery<Home>(h => h.Town.Contains("p")||h.Town.StartsWith("P")||h.Town.EndsWith("p"));
+
+            query = UtExtensions.PredicateToQuery<Home>(h => h.Town.Contains("p") || h.Town.StartsWith("P") || h.Town.EndsWith("p"));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(3, query.Elements.Count);
 
@@ -145,35 +145,35 @@ namespace Tests.UnitTests
         [Test]
         public void Select_distinct_order_by()
         {
-            var q = UtExtensions.Select<Home> (h => h.Town);
+            var q = UtExtensions.Select<Home>(h => h.Town);
 
             Assert.AreEqual(1, q.SelectClause.Count);
             Assert.AreEqual("Town", q.SelectClause[0].Name);
             Assert.AreEqual("Town", q.SelectClause[0].Alias);
 
-            q = UtExtensions.Select<Home> (h => new {Town = h.Town, Adress = h.Address});
+            q = UtExtensions.Select<Home>(h => new { Town = h.Town, Adress = h.Address });
             Assert.AreEqual(2, q.SelectClause.Count);
             Assert.AreEqual("Town", q.SelectClause[0].Name);
 
             Assert.IsFalse(q.Distinct);
 
             // check with distinct clause
-            q = UtExtensions.Select<Home> (h => new {Town = h.Town, Adress = h.Address}, true);
+            q = UtExtensions.Select<Home>(h => new { Town = h.Town, Adress = h.Address }, true);
 
             Assert.IsTrue(q.Distinct);
 
-            q = UtExtensions.OrderBy<Home,decimal> (h => h.PriceInEuros);
+            q = UtExtensions.OrderBy<Home, decimal>(h => h.PriceInEuros);
             Assert.AreEqual("PriceInEuros", q.OrderByProperty);
             Assert.IsFalse(q.OrderByIsDescending);
 
-            q = UtExtensions.OrderBy<Home,decimal> (h => h.PriceInEuros, true);
+            q = UtExtensions.OrderBy<Home, decimal>(h => h.PriceInEuros, true);
             Assert.AreEqual("PriceInEuros", q.OrderByProperty);
             Assert.IsTrue(q.OrderByIsDescending);
         }
 
-        
 
-        
+
+
 
         [Test]
         public void Between_operator_optimization()
@@ -183,7 +183,7 @@ namespace Tests.UnitTests
 
             using (var connector = new Connector(config))
             {
-                
+
                 connector.DeclareCollection<Trade>();
 
                 var trades = connector.DataSource<Trade>();
@@ -308,7 +308,7 @@ namespace Tests.UnitTests
 
 
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
@@ -317,7 +317,7 @@ namespace Tests.UnitTests
 
                 // with strings
                 {
-                    var folders = new[] {"TATA", "TOTO"};
+                    var folders = new[] { "TATA", "TOTO" };
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder) && t.ValueDate < DateTime.Today)
                         .ToList();
@@ -327,7 +327,7 @@ namespace Tests.UnitTests
 
                 // with ints
                 {
-                    var ids = new[] {1, 2, 3};
+                    var ids = new[] { 1, 2, 3 };
 
                     var list = dataSource.Where(t => ids.Contains(t.Id)).ToList();
 
@@ -336,7 +336,7 @@ namespace Tests.UnitTests
 
                 // with convertors (dates are internally converted to ints
                 {
-                    var dates = new[] {DateTime.Today};
+                    var dates = new[] { DateTime.Today };
                     var list = dataSource.Where(t => dates.Contains(t.ValueDate)).ToList();
 
                     Assert.AreEqual(3, list.Count);

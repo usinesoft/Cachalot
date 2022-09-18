@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Server.Persistence;
+using System;
 using System.IO;
-using Server.Persistence;
 
 namespace StorageAnalyzer
 {
@@ -35,7 +35,7 @@ namespace StorageAnalyzer
             Console.WriteLine();
 
             var report = AnalyzeTransactionLog(dir);
-            
+
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(report.ToString());
 
@@ -76,7 +76,7 @@ namespace StorageAnalyzer
         private static long FindNextBeginMarker(long offset, Stream stream)
         {
             var reader = new BinaryReader(stream);
-            for (var curOffset = offset;; curOffset++)
+            for (var curOffset = offset; ; curOffset++)
                 try
                 {
                     stream.Seek(curOffset, SeekOrigin.Begin);
@@ -98,11 +98,11 @@ namespace StorageAnalyzer
             storage.Seek(0, SeekOrigin.Begin);
 
             var block = new PersistentBlock();
-           
+
             var reader = new BinaryReader(storage);
 
             var storageReport = new StorageReport();
-            
+
             // read all the blocks
             while (block.Read(reader, true))
             {
@@ -154,14 +154,14 @@ namespace StorageAnalyzer
         {
             var fullPath = Path.Combine(dir, TransactionLog.LogFileName);
 
-            using var transactionLog = new FileStream(fullPath,FileMode.Open);
+            using var transactionLog = new FileStream(fullPath, FileMode.Open);
 
             transactionLog.Seek(0, SeekOrigin.Begin);
 
             using var reader = new BinaryReader(transactionLog);
 
-            
-            var report = new TransactionLogReport {LastOffset = reader.ReadInt64()};
+
+            var report = new TransactionLogReport { LastOffset = reader.ReadInt64() };
 
             var stop = false;
             while (!stop)
@@ -169,7 +169,7 @@ namespace StorageAnalyzer
                 try
                 {
                     var transactionData = TransactionLog.ReadTransaction(reader);
-                    
+
                     report.TransactionCount++;
 
                     switch (transactionData.TransactionStatus)
@@ -187,15 +187,15 @@ namespace StorageAnalyzer
                         case TransactionStatus.Canceled:
                             report.CanceledCount++;
                             break;
-                        
+
                     }
 
                     if (!transactionData.EndMarkerOk)
                     {
                         report.TransactionsWithIssues.Add(transactionData);
                     }
-                    
-                    
+
+
                 }
                 catch (EndOfStreamException)
                 {

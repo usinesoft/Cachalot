@@ -2,11 +2,10 @@
 
 #region
 
+using Client;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using Client;
 
 #endregion
 
@@ -29,16 +28,16 @@ namespace Channel
         private long _pendingResourceClaims;
 
         private readonly SemaphoreSlim _poolEvent;
-        
+
 
         protected PoolStrategy(int poolCapacity)
         {
             PoolCapacity = poolCapacity;
             _pool = new Queue<T>(poolCapacity);
-            
+
             _poolEvent = new SemaphoreSlim(0, PoolCapacity);
 
-            
+
         }
 
         public int PoolCapacity { get; }
@@ -62,7 +61,7 @@ namespace Channel
             {
                 lock (_pool)
                 {
-                    return (int) _pool?.Count;
+                    return (int)_pool?.Count;
                 }
             }
         }
@@ -92,10 +91,10 @@ namespace Channel
                 //Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Put");
 
                 Dbg.Trace($"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut before");
-                
+
                 _pool.Enqueue(resource);
 
-                
+
                 if (_pool.Count > PoolCapacity)
                 {
                     Dbg.Trace("Too many resources. Remove older ones");
@@ -105,16 +104,16 @@ namespace Channel
                         var toDispose = _pool.Dequeue();
                         Release(toDispose);
                     }
-                    
+
                 }
 
                 if (_poolEvent.CurrentCount < _pool.Count)
                 {
                     _poolEvent.Release(_pool.Count - _poolEvent.CurrentCount);
                 }
-                
+
                 Dbg.Trace($"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut after");
-         
+
             }
         }
 
@@ -147,7 +146,7 @@ namespace Channel
                     {
                         Interlocked.Decrement(ref _pendingResourceClaims);
                     }
-                    
+
                 });
             }
         }
@@ -175,7 +174,7 @@ namespace Channel
                 {
                     AsyncClaimNewResource();
                     poolIsEmpty = true;
-                    
+
                 }
                 else
                 {
@@ -190,7 +189,7 @@ namespace Channel
                     if (IsStillValid(resource))
                         return resource;
                 }
-                    
+
             }
 
             // wait for new connections outside the pool lock
@@ -198,11 +197,11 @@ namespace Channel
             {
                 _poolEvent.Wait();
             }
-            
+
 
             return Get(); //recursive call
 
-            
+
         }
 
         /// <summary>
@@ -213,7 +212,7 @@ namespace Channel
         {
             if (resource == null)
                 throw new ArgumentNullException(nameof(resource));
-            
+
             InternalPut(resource);
         }
 
@@ -249,7 +248,7 @@ namespace Channel
                 {
                     _poolEvent.Release(PoolCapacity - _poolEvent.CurrentCount);
                 }
-                
+
             }
         }
 

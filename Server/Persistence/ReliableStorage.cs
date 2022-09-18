@@ -36,7 +36,7 @@ namespace Server.Persistence
 
         public void LightRestart()
         {
-            
+
             var fullPath = Path.Combine(DataPath, StorageFileName);
 
             StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
@@ -96,6 +96,8 @@ namespace Server.Persistence
                 try
                 {
                     LoadAll(useObjectProcessor);
+
+                    GC.Collect();
 
                     success = true;
                 }
@@ -169,7 +171,7 @@ namespace Server.Persistence
         private long FindNextBeginMarker(long offset)
         {
             var reader = new BinaryReader(StorageStream);
-            for (var curOffset = offset;; curOffset++)
+            for (var curOffset = offset; ; curOffset++)
                 try
                 {
                     StorageStream.Seek(curOffset, SeekOrigin.Begin);
@@ -242,7 +244,7 @@ namespace Server.Persistence
                 while (block.Read(reader))
                     if (block.BlockStatus == BlockStatus.Active)
                     {
-                        offset = (int) StorageStream.Position;
+                        offset = (int)StorageStream.Position;
                         block.Write(writer);
                     }
 
@@ -331,7 +333,7 @@ namespace Server.Persistence
                 {
                     oldBlock.Read(reader);
                 }
-                catch (Exception )
+                catch (Exception)
                 {
                     validBlock = false;
                 }
@@ -354,8 +356,8 @@ namespace Server.Persistence
                         WriteBlock(oldBlock, blockInfo.Offset);
 
                     }
-                    
-                    block.ReservedDataSize = (int) (block.UsedDataSize * 1.5);
+
+                    block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
                     StorageSize = WriteBlock(block, StorageSize);
 
                     BlockInfoByPrimaryKey[primaryKey] = new BlockInfo(StorageSize, block.LastTransactionId);
@@ -364,7 +366,7 @@ namespace Server.Persistence
             else // a new object not already in the persistent storage
             {
                 // reserve some more space to allow for in-place updating
-                block.ReservedDataSize = (int) (block.UsedDataSize * 1.5);
+                block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
 
                 var offset = StorageSize;
                 StorageSize = WriteBlock(block, StorageSize);

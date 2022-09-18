@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Tools;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Client.Interface
 {
@@ -55,7 +55,7 @@ namespace Client.Interface
 
                 Shards = clients.Count;
 
-                var transactionRequest = new TransactionRequest(requests){TransactionId = Guid.NewGuid()};
+                var transactionRequest = new TransactionRequest(requests) { TransactionId = Guid.NewGuid() };
 
                 RequestByServer = transactionRequest.SplitByServer(WhichNode, Shards);
 
@@ -77,7 +77,7 @@ namespace Client.Interface
 
                     CurrentStatus = Status.Completed;
                 }
-                    
+
             }
 
             public void AcquireLock()
@@ -85,7 +85,7 @@ namespace Client.Interface
                 CheckStatus(Status.Initialized);
 
                 CurrentStatus = Status.AcquiringLocks;
-                
+
                 LockPolicy.SmartRetry(TryAcquireLock);
 
                 CurrentStatus = Status.LocksAcquired;
@@ -140,7 +140,7 @@ namespace Client.Interface
                     }
                 });
 
-                
+
             }
 
             public void CommitSecondStage()
@@ -165,7 +165,7 @@ namespace Client.Interface
                 {
                     var session = SessionByServer[client.ShardIndex];
                     client.Channel.EndSession(session);
-                }); 
+                });
 
                 CurrentStatus = Status.Completed;
             }
@@ -243,14 +243,14 @@ namespace Client.Interface
                         if (StatusByServer[client.ShardIndex])
                         {
                             var session = SessionByServer[client.ShardIndex];
-                            client.Channel.PushRequest(session, new ContinueRequest {Rollback = true});
+                            client.Channel.PushRequest(session, new ContinueRequest { Rollback = true });
                         }
                     });
                 else // all clients have acquired locks 
                     Parallel.ForEach(Clients, client =>
                     {
                         var session = SessionByServer[client.ShardIndex];
-                        client.Channel.PushRequest(session, new ContinueRequest {Rollback = false});
+                        client.Channel.PushRequest(session, new ContinueRequest { Rollback = false });
                     });
 
                 return locksOk;

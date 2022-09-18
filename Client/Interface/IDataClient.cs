@@ -1,12 +1,11 @@
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Client.Core;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
+using System;
+using System.Collections.Generic;
 
 #endregion
 
@@ -96,7 +95,7 @@ namespace Client.Interface
         /// <returns></returns>
         IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default(Guid));
 
-        
+
         /// <summary>
         ///     Check if the cluster is up and running
         /// </summary>

@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using Client.Tools;
+using System;
+using System.Collections.Generic;
 
 namespace Server.Queries
 {
@@ -10,7 +10,7 @@ namespace Server.Queries
     /// </summary>
     public class FeedSessionManager : IFeedSessionManager
     {
-        readonly SafeDictionary<Guid, List<PackedObject>> _objectsBySession = new SafeDictionary<Guid, List<PackedObject>>(()=> new List<PackedObject>());
+        readonly SafeDictionary<Guid, List<PackedObject>> _objectsBySession = new SafeDictionary<Guid, List<PackedObject>>(() => new List<PackedObject>());
 
         public void AddToSession(Guid sessionId, IList<PackedObject> objects)
         {
@@ -19,7 +19,7 @@ namespace Server.Queries
             {
                 list.AddRange(objects);
             }
-            
+
         }
 
 

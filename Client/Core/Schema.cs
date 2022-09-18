@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Security;
-using Client.Messages;
 
 namespace Client.Core
 {
@@ -16,6 +14,6 @@ namespace Client.Core
         /// </summary>
         public int ShardCount { get; set; }
 
-        public IDictionary<string,  CollectionSchema> CollectionsDescriptions { get; set; } = new Dictionary<string, CollectionSchema>();
+        public IDictionary<string, CollectionSchema> CollectionsDescriptions { get; set; } = new Dictionary<string, CollectionSchema>();
     }
 }

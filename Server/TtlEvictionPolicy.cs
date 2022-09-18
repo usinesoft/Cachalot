@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Server
 {
@@ -16,14 +16,14 @@ namespace Server
 
         private readonly HashSet<PackedObject> _removed = new HashSet<PackedObject>();
 
-       
+
 
         public TtlEvictionPolicy(TimeSpan timeToLive)
         {
             _timeToLive = timeToLive;
         }
 
-        public override bool IsEvictionRequired => _evictionQueue.Count > 0 && DateTimeOffset.Now - _evictionQueue.Peek().Item1 > _timeToLive ;
+        public override bool IsEvictionRequired => _evictionQueue.Count > 0 && DateTimeOffset.Now - _evictionQueue.Peek().Item1 > _timeToLive;
 
 
         public override EvictionType Type => EvictionType.TimeToLive;

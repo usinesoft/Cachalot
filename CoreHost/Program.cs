@@ -1,7 +1,7 @@
-﻿using System;
-using System.Threading;
-using Server;
+﻿using Server;
 using Server.HostServices;
+using System;
+using System.Threading;
 
 namespace Host
 {
@@ -26,12 +26,13 @@ namespace Host
 
             }
 
-            
+
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             HostServices.Log.LogError(e.ExceptionObject.ToString());
+            Console.WriteLine(e.ExceptionObject.ToString());
         }
     }
 }

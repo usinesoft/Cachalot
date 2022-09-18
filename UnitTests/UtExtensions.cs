@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using Client.Queries;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Tests
 {
@@ -18,7 +18,7 @@ namespace Tests
     {
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
-            
+
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             collectionName ??= schema.CollectionName;
@@ -35,11 +35,11 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false,  string collectionName = null)
+        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false, string collectionName = null)
         {
-            
+
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
-            
+
             collectionName ??= schema.CollectionName;
 
             // create a fake queryable to force query parsing and capture resolution
@@ -54,7 +54,7 @@ namespace Tests
             {
                 var unused = queryable.Select(selector).Distinct().ToList();
             }
-            
+
 
             var query = executor.Expression;
             query.CollectionName = typeof(T).Name;
@@ -64,24 +64,24 @@ namespace Tests
 
         public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false, string collectionName = null)
         {
-            
+
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
             var executor = new NullExecutor(schema, collectionName ?? schema.CollectionName);
             var queryable = new NullQueryable<T>(executor);
 
-            
+
             var unused = descending ? queryable.OrderByDescending(selector).ToList() : queryable.OrderBy(selector).ToList();
-            
+
             var query = executor.Expression;
-            
+
             query.CollectionName = typeof(T).Name;
 
             return query;
         }
 
-        
+
 
         public static CollectionSchema DeclareCollection<T>(this IDataClient @this)
         {
@@ -95,11 +95,11 @@ namespace Tests
 
         public static IEnumerable<T> GetMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-            
+
             var query = PredicateToQuery(where);
 
-            
-            return @this.GetMany(query).Select(ri => ((JObject) ri.Item).ToObject<T>(SerializationHelper.Serializer));
+
+            return @this.GetMany(query).Select(ri => ((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
         }
 
         public static T GetOne<T>(this IDataClient @this, Expression<Func<T, bool>> where)
@@ -112,7 +112,7 @@ namespace Tests
             var description = TypeDescriptionsCache.GetDescription(typeof(T));
             var schema = description;
 
-            @this.FeedMany(schema.CollectionName, items.Select(i=> PackedObject.Pack(i, schema)), excludeFromEviction);
+            @this.FeedMany(schema.CollectionName, items.Select(i => PackedObject.Pack(i, schema)), excludeFromEviction);
         }
 
         public static void PutOne<T>(this IDataClient @this, T item, bool excludeFromEviction = false)
@@ -125,7 +125,7 @@ namespace Tests
 
         public static int RemoveMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-            
+
             var query = PredicateToQuery(where);
 
             return @this.RemoveMany(query);
@@ -140,7 +140,7 @@ namespace Tests
 
         public static int Count<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-         
+
             var query = PredicateToQuery(where);
 
             return @this.EvalQuery(query).Item2;
@@ -148,7 +148,7 @@ namespace Tests
 
         public static bool IsComplete<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-            
+
             var query = PredicateToQuery(where);
 
             return @this.EvalQuery(query).Item1;

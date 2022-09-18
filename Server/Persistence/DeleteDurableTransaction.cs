@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using ProtoBuf;
+using System.Collections.Generic;
 
 namespace Server.Persistence
 {

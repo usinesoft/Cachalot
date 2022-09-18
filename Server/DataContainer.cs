@@ -2,13 +2,6 @@
 
 #region
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Client;
 using Client.ChannelInterface;
 using Client.Core;
@@ -19,6 +12,13 @@ using Client.Tools;
 using Server.Persistence;
 using Server.Queries;
 using Server.Transactions;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Constants = Server.Persistence.Constants;
 
 #endregion
@@ -30,14 +30,14 @@ namespace Server
     /// </summary>
     public class DataContainer
     {
-        
+
         private readonly Services _serviceContainer;
 
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
         public DataContainer(Services serviceContainer)
         {
-            
+
             _serviceContainer = serviceContainer;
 
         }
@@ -45,7 +45,7 @@ namespace Server
         /// <summary>
         ///     <see cref="DataStore" /> by <see cref="CollectionSchema" />
         /// </summary>
-        private SafeDictionary<string, DataStore> DataStores {get;} = new SafeDictionary<string, DataStore>(null);
+        private SafeDictionary<string, DataStore> DataStores { get; } = new SafeDictionary<string, DataStore>(null);
 
 
         public long ActiveConnections { private get; set; }
@@ -140,14 +140,14 @@ namespace Server
                 if (lockRequest.Unlock)
                 {
                     lockManager.CloseSession(lockRequest.SessionId);
-                    client.SendResponse(new LockResponse{Success = true});
+                    client.SendResponse(new LockResponse { Success = true });
                 }
-                else 
+                else
                 {
                     bool lockAcquired = lockManager.TryAcquireReadLock(lockRequest.SessionId, Constants.DelayForLockInMilliseconds,
                         lockRequest.CollectionsToLock.ToArray());
 
-                    client.SendResponse(new LockResponse{Success = lockAcquired});
+                    client.SendResponse(new LockResponse { Success = lockAcquired });
                 }
             }
             catch (Exception e)
@@ -157,7 +157,7 @@ namespace Server
 
         }
 
-         
+
 
         public DataStore TryGetByName(string name)
         {
@@ -172,7 +172,7 @@ namespace Server
             return DataStores.Values.Where(ds => types.Contains(ds.CollectionSchema.CollectionName)).ToList();
         }
 
-        
+
         /// <summary>
         ///     Creates the associated <see cref="DataStore" /> for new cacheable type
         /// </summary>
@@ -180,7 +180,7 @@ namespace Server
         /// <param name="client"></param>
         private void RegisterType(RegisterTypeRequest request, IClient client)
         {
-             
+
             try
             {
                 var typeDescription = request.CollectionSchema;
@@ -189,7 +189,7 @@ namespace Server
 
                 var dataStore = DataStores.TryGetValue(collectionName);
 
-                
+
                 if (ShardCount == 0) // not initialized
                 {
                     ShardIndex = request.ShardIndex;
@@ -207,22 +207,22 @@ namespace Server
                     //if the type description changed reindex
                     if (!typeDescription.Equals(dataStore.CollectionSchema))
                     {
-                      
+
                         var newDataStore = DataStore.Reindex(dataStore, typeDescription);
 
                         DataStores[collectionName] = newDataStore;
 
                         _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
-                
+
                     }
                 }
                 else // new type, store it in the type dictionary and initialize its DataStore
                 {
-            
+
                     var newDataStore =
                         new DataStore(typeDescription, new NullEvictionPolicy(), _serviceContainer.NodeConfig.FullTextConfig);
 
-                    
+
                     DataStores.Add(collectionName, newDataStore);
 
                     _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
@@ -265,7 +265,7 @@ namespace Server
                 throw new NotSupportedException("Unknown collection : " + dataRequest.CollectionName);
             }
 
-            
+
             Dbg.Trace($"begin processing {dataRequest.AccessType} request on server {ShardIndex}");
 
             var lockManager = _serviceContainer.LockManager;
@@ -294,7 +294,7 @@ namespace Server
                     else if (dataRequest is PutRequest putRequest)
                     {
                         var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore, _serviceContainer.Log);
-                        
+
                         mgr.ProcessRequest(putRequest, client);
                     }
                     else if (dataRequest is DomainDeclarationRequest domainDeclarationRequest)
@@ -302,7 +302,7 @@ namespace Server
                         var mgr = new CacheOnlyManager(dataStore);
 
                         mgr.ProcessRequest(domainDeclarationRequest, client);
-                        
+
                     }
 
                     else if (dataRequest is EvictionSetupRequest evictionSetupRequest)
@@ -310,9 +310,9 @@ namespace Server
                         var mgr = new CacheOnlyManager(dataStore);
 
                         mgr.ProcessRequest(evictionSetupRequest, client);
-                        
+
                     }
-                    
+
                 }, dataRequest.CollectionName);
 
             }
@@ -345,7 +345,7 @@ namespace Server
                 {
                     lockManager.DoWithReadLock(() =>
                     {
-                        
+
                         if (dataRequest is GetRequest getRequest)
                         {
                             new QueryManager(dataStore, _serviceContainer.Log).ProcessRequest(getRequest, client);
@@ -359,10 +359,10 @@ namespace Server
                             new QueryManager(dataStore).ProcessRequest(pivotRequest, client);
                         }
 
-                    },dataRequest.CollectionName);
+                    }, dataRequest.CollectionName);
 
                 }
-                
+
             }
 
             Dbg.Trace($"end processing {dataRequest.AccessType} request on server {ShardIndex}");
@@ -416,7 +416,7 @@ namespace Server
                         try
                         {
                             _serviceContainer.SequencePersistence.SaveValues(_lastIdByGeneratorName);
-                            
+
                             // return a response only if persisted successfully
                             client.SendResponse(new GenerateUniqueIdsResponse(ids.ToArray()));
                         }
@@ -439,7 +439,7 @@ namespace Server
 
                     try
                     {
-                        
+
                         _serviceContainer.SequencePersistence.SaveValues(_lastIdByGeneratorName);
 
                         // return a response only if persisted successfully
@@ -467,7 +467,7 @@ namespace Server
         /// <param name="client"></param>
         private void Dump(DumpRequest request, IClient client)
         {
-            
+
             var lockManager = _serviceContainer.LockManager;
 
             // acquire a read lock on all the data stores
@@ -476,7 +476,7 @@ namespace Server
                 InternalDump(request, client);
             }, DataStores.Keys.ToArray());
 
-            
+
         }
 
         private void InternalDump(DumpRequest request, IClient client)
@@ -511,7 +511,7 @@ namespace Server
                 }
 
                 // save the sequences. Each shard has different values
-                
+
                 var dumpSequenceFileName = $"sequence_{ShardIndex:D3}.json";
                 var sequencePath = Path.Combine(fullPath, dumpSequenceFileName);
 
@@ -530,7 +530,7 @@ namespace Server
         }
 
 
-        
+
         private void GetKnownTypes(IClient client)
         {
             try
@@ -545,7 +545,7 @@ namespace Server
                 {
                     response.AddTypeDescription(store.CollectionSchema);
 
-                    
+
                     var info = new DataStoreInfo
                     {
                         Count = store.DataByPrimaryKey.Count,
@@ -556,7 +556,7 @@ namespace Server
                         AvailableData =
                             store.DomainDescription ??
                             new DomainDescription(null),
-                        DataCompression = store.CollectionSchema.UseCompression,
+                        StorageLayout = store.CollectionSchema.StorageLayout,
 
                         HitCount = store.HitCount,
                         ReadCount = store.ReadCount
@@ -579,14 +579,14 @@ namespace Server
 
                     response.AddTypeDescription(_serviceContainer.Log.ActivityTable.CollectionSchema);
                 }
-                
+
 
                 var currentProcess = Process.GetCurrentProcess();
 
                 var assembly = Assembly.GetAssembly(typeof(Server));
                 response.ServerProcessInfo = new ServerInfo
                 {
-                    ConnectedClients = (int) ActiveConnections,
+                    ConnectedClients = (int)ActiveConnections,
                     StartTime = StartTime,
                     Bits = IntPtr.Size * 8,
                     Threads = currentProcess.Threads.Count,
@@ -661,7 +661,7 @@ namespace Server
 
         public Schema GenerateSchema()
         {
-            
+
             var collectionsDescriptions = new Dictionary<string, CollectionSchema>();
 
             foreach (var store in DataStores.Pairs)
@@ -670,9 +670,9 @@ namespace Server
             }
 
             return new Schema
-                {ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions};
+            { ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions };
 
-            
+
         }
 
         public void LoadSchema(string path)
@@ -683,7 +683,7 @@ namespace Server
             {
                 foreach (var description in schema.CollectionsDescriptions)
                 {
-                     ServerLog.LogInfo($"declaring collection {description.Key}");
+                    ServerLog.LogInfo($"declaring collection {description.Key}");
                     RegisterType(new RegisterTypeRequest(description.Value, schema.ShardIndex, schema.ShardCount), null);
                 }
 

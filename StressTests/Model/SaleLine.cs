@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
 
 namespace StressTests.Model
 {
@@ -31,7 +30,7 @@ namespace StressTests.Model
         [ServerSideValue()]
         public int Quantity { get; set; }
 
-        
+
         [ServerSideValue(IndexType.Dictionary)]
         public int ProductId { get; set; }
 
@@ -46,7 +45,7 @@ namespace StressTests.Model
 
         [ServerSideValue(IndexType.Dictionary)]
         public int Month => Date.Month;
-        
+
         [ServerSideValue(IndexType.Dictionary)]
         public int Year => Date.Year;
 
@@ -66,7 +65,7 @@ namespace StressTests.Model
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
-            return Equals((SaleLine) obj);
+            return Equals((SaleLine)obj);
         }
 
         public override int GetHashCode()

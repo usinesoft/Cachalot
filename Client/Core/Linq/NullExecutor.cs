@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
-using Client.Messages;
 using Client.Queries;
 using Remotion.Linq;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Client.Core.Linq
 {

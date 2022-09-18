@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Client.Messages;
 using JetBrains.Annotations;
+using System;
 
 namespace Client.Core
 {
@@ -21,12 +19,8 @@ namespace Client.Core
             }
 
             private int _index;
+            private int _collectionIndex;
 
-            private int NewIndex()
-            {
-                _index++;
-                return _index;
-            }
 
             public FluentToken PrimaryKey(string name)
             {
@@ -34,6 +28,9 @@ namespace Client.Core
                     throw new NotSupportedException("A primary key had already been defined for this collection");
 
                 Product.ServerSide.Add(new KeyInfo(name, 0, IndexType.Primary));
+
+                _index = 1; // 0 is reserved for the primary key
+                _collectionIndex = 0;
 
                 return this;
             }
@@ -44,7 +41,7 @@ namespace Client.Core
                 if (Product.PrimaryKeyField == null)
                     throw new NotSupportedException("A primary key has to be defined first");
 
-                var order = NewIndex();
+                var order = _index++;
 
                 Product.ServerSide.Add(new KeyInfo(name, order, indexType));
 
@@ -58,9 +55,9 @@ namespace Client.Core
                 if (Product.PrimaryKeyField == null)
                     throw new NotSupportedException("A primary key has to be defined first");
 
-                var order = NewIndex();
+                var order = _collectionIndex++;
 
-                Product.ServerSide.Add(new KeyInfo(name, order + CollectionOrderOffset, IndexType.Dictionary, null,
+                Product.ServerSide.Add(new KeyInfo(name, order, IndexType.Dictionary, null,
                     true));
 
 
@@ -84,36 +81,14 @@ namespace Client.Core
                 if (Product.PrimaryKeyField == null)
                     throw new NotSupportedException("The primary key is mandatory when defining a collection schema");
 
-                Product.ServerSide = Product.ServerSide.OrderBy(k => k.Order).ToList();
-
-                // Adjust order. Line numbers give relative order of keys but they need to be adjusted to a continuous range with the primary key at index 0 and the collections at the end
-                var lineNumbers = new HashSet<int>();
-                foreach (var keyInfo in Product.ServerSide)
-                {
-                    lineNumbers.Add(keyInfo.Order);
-                }
-
-            
-                var lineNumberByPosition = lineNumbers.OrderBy(x => x).ToList();
-
-                foreach (var keyInfo in Product.ServerSide)
-                {
-                    var adjustedOrder = lineNumberByPosition.FindIndex(l => l == keyInfo.Order);
-                    keyInfo.Order = adjustedOrder;
-                }
-
-
-                Product.ServerSide = Product.ServerSide.OrderBy(k => k.Order).ToList();
-
 
                 return Product;
             }
         }
 
 
-        private const int CollectionOrderOffset = 1000;
 
-        public static FluentToken New([NotNull] string collectionName, bool useCompression = false)
+        public static FluentToken New([NotNull] string collectionName, Layout storageLayout = Layout.Default)
         {
             if (collectionName == null) throw new ArgumentNullException(nameof(collectionName));
 
@@ -121,7 +96,7 @@ namespace Client.Core
             return new FluentToken(new CollectionSchema
             {
                 CollectionName = collectionName,
-                UseCompression = useCompression,
+                StorageLayout = storageLayout,
             });
         }
     }

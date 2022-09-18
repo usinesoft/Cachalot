@@ -27,7 +27,7 @@ namespace Cachalot.Linq
         {
             collectionName ??= typeof(T).Name;
 
-            if(!AvailableCollections.Contains(collectionName))
+            if (!AvailableCollections.Contains(collectionName))
                 throw new NotSupportedException($"The collection {collectionName} is not available in this context");
 
             return Connector.ReadOnlyCollection<T>(SessionId, collectionName);

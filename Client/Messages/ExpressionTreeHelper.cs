@@ -1,14 +1,13 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Queries;
 using Client.Tools;
 using JetBrains.Annotations;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Client.Messages
 {
@@ -44,20 +43,20 @@ namespace Client.Messages
         }
 
 
-        private static readonly  Dictionary<string, Func<object, object>> PrecompiledGetters = new Dictionary<string, Func<object, object>>();
+        private static readonly Dictionary<string, Func<object, object>> PrecompiledGetters = new Dictionary<string, Func<object, object>>();
 
         public static Func<object, object> Getter<TEntity>(string name)
         {
             return Getter(typeof(TEntity), name);
         }
 
-        public static Func<object, object> Getter(Type declaringType, string name) 
+        public static Func<object, object> Getter(Type declaringType, string name)
         {
             var key = declaringType.FullName + "." + name;
 
             lock (PrecompiledGetters)
             {
-                if (PrecompiledGetters.TryGetValue(key,  out var getter))
+                if (PrecompiledGetters.TryGetValue(key, out var getter))
                 {
                     return getter;
                 }
@@ -70,36 +69,36 @@ namespace Client.Messages
             }
         }
 
-       
-        
+
+
         private static Func<object, object> CompileGetter(Type declaringType, string propertyName)
         {
-            var instance = Expression.Parameter(typeof (object), "instance");
+            var instance = Expression.Parameter(typeof(object), "instance");
 
-            
+
             var propertyInfo = declaringType.GetProperty(propertyName);
             if (propertyInfo == null)
             {
                 throw new NotSupportedException($"Can not find property {propertyName} of type{declaringType.FullName}");
 
             }
-            
+
             var instanceCast = declaringType.IsValueType
                 ? Expression.TypeAs(instance, declaringType)
                 : Expression.Convert(instance, declaringType);
 
             return
                 Expression.Lambda<Func<object, object>>(
-                        Expression.TypeAs(Expression.Call(instanceCast, propertyInfo.GetGetMethod()), typeof (object)),
+                        Expression.TypeAs(Expression.Call(instanceCast, propertyInfo.GetGetMethod()), typeof(object)),
                         instance)
                     .Compile();
         }
 
-        
+
 
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
-            
+
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
             collectionName ??= schema.CollectionName;
 
@@ -110,7 +109,7 @@ namespace Client.Messages
             var unused = queryable.Where(where).ToList();
 
             var query = executor.Expression;
-            query.CollectionName = collectionName??  typeof(T).FullName;
+            query.CollectionName = collectionName ?? typeof(T).FullName;
 
             return query;
         }
@@ -164,7 +163,7 @@ namespace Client.Messages
             }
             else
             {
-                
+
                 if (value != null) result.AddRange(ToStrings(value));
             }
 
@@ -176,14 +175,14 @@ namespace Client.Messages
         /// </summary>
         /// <param name="instance"></param>
         /// <returns></returns>
-        private  static IList<string> ToStrings(object instance)
+        private static IList<string> ToStrings(object instance)
         {
             var result = new List<string>();
             var type = instance.GetType();
 
             if (type == typeof(string))
             {
-                result.Add((string) instance);
+                result.Add((string)instance);
             }
             else if (type.Namespace != null && type.Namespace.StartsWith("System"))
             {
@@ -212,5 +211,5 @@ namespace Client.Messages
 
     }
 
-    
+
 }

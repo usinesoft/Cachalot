@@ -1,19 +1,16 @@
-﻿using System;
+﻿using Client.Core;
+using Client.Parsing;
+using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
-using Client.Core;
-using Client.Parsing;
-using Microsoft.VisualBasic;
-using Remotion.Linq.Clauses;
 
 namespace AdminConsole.AutoCompleteUtils
 {
     public static class AutoComplete
     {
 
-        static readonly string[] Commands = new []
+        static readonly string[] Commands = new[]
         {
             "desc",
             "help",
@@ -39,7 +36,7 @@ namespace AdminConsole.AutoCompleteUtils
         {
             if (tableName != null)
             {
-                return knownTypes.Where(t=>t.CollectionName.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)).SelectMany(t => t.ServerSide).Select(k => k.Name).ToList();
+                return knownTypes.Where(t => t.CollectionName.Equals(tableName, StringComparison.InvariantCultureIgnoreCase)).SelectMany(t => t.ServerSide).Select(k => k.Name).ToList();
             }
 
             return knownTypes.SelectMany(t => t.ServerSide).Select(k => k.Name).ToList();
@@ -48,7 +45,7 @@ namespace AdminConsole.AutoCompleteUtils
 
         static IList<string> AfterSelect(IList<CollectionSchema> knownTypes)
         {
-            return Properties(knownTypes).Union(new[] {"distinct"}).ToList();
+            return Properties(knownTypes).Union(new[] { "distinct" }).ToList();
         }
 
 
@@ -126,7 +123,7 @@ namespace AdminConsole.AutoCompleteUtils
             {
                 if (!lineBefore.EndsWith(" "))
                 {
-                    return Commands.Where(c=> c.StartsWith(partsBefore[0].ToLowerInvariant())).ToList();
+                    return Commands.Where(c => c.StartsWith(partsBefore[0].ToLowerInvariant())).ToList();
                 }
 
                 command = partsBefore[0].ToLowerInvariant();
@@ -152,14 +149,14 @@ namespace AdminConsole.AutoCompleteUtils
 
             if (partsBefore.Length == 2 && !lineBefore.EndsWith(" ")) // command plus the beginning of something
             {
-                
+
                 command = partsBefore[0].ToLowerInvariant();
                 var toComplete = partsBefore[1].ToLowerInvariant();
 
                 if (command == "desc")
                 {
                     // collection name may be specified as optional parameter for these commands
-                    return knownTypes.Where(t=>t.CollectionName.ToLowerInvariant().StartsWith(toComplete)).Select(t => SmartJoin(command, t.CollectionName)).ToList();
+                    return knownTypes.Where(t => t.CollectionName.ToLowerInvariant().StartsWith(toComplete)).Select(t => SmartJoin(command, t.CollectionName)).ToList();
                 }
 
                 if (command == "help")
@@ -170,7 +167,7 @@ namespace AdminConsole.AutoCompleteUtils
 
                 if (command == "count" || command == "select")
                 {
-                    return AfterSelect(knownTypes).Where(t=>t.ToLowerInvariant().StartsWith(toComplete)).Select(t => SmartJoin(command, t, lineAfter) ).ToList();
+                    return AfterSelect(knownTypes).Where(t => t.ToLowerInvariant().StartsWith(toComplete)).Select(t => SmartJoin(command, t, lineAfter)).ToList();
                 }
 
             }
@@ -196,7 +193,7 @@ namespace AdminConsole.AutoCompleteUtils
 
                 if (beforeFrom)
                 {
-                    return Properties(knownTypes).Where(p=>p.ToLowerInvariant().StartsWith(lastBefore)).Select(p => SmartJoin(TrimLast( lineBefore), p, lineAfter)).ToList();
+                    return Properties(knownTypes).Where(p => p.ToLowerInvariant().StartsWith(lastBefore)).Select(p => SmartJoin(TrimLast(lineBefore), p, lineAfter)).ToList();
                 }
 
                 // end of projection section
@@ -225,8 +222,8 @@ namespace AdminConsole.AutoCompleteUtils
                     var tableName = TryGetTableName(lineBefore);
                     if (!lineBefore.EndsWith(" "))
                     {
-                        return Properties(knownTypes, tableName).Where(p=>p.ToLowerInvariant().StartsWith(lastBefore)).Select(p => SmartJoin(TrimLast(lineBefore), p)).ToList();
-                        
+                        return Properties(knownTypes, tableName).Where(p => p.ToLowerInvariant().StartsWith(lastBefore)).Select(p => SmartJoin(TrimLast(lineBefore), p)).ToList();
+
                     }
 
                     return Properties(knownTypes, tableName).Select(p => SmartJoin(lineBefore, p)).ToList();

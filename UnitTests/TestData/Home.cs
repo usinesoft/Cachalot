@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Client.Core;
+﻿using Client.Core;
 using Client.Interface;
+using System;
+using System.Collections.Generic;
 
 namespace Tests.TestData
 {

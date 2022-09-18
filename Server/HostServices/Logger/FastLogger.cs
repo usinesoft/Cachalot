@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Client.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using Client.Core;
 
 namespace Server.HostServices.Logger
 {
@@ -33,7 +33,7 @@ namespace Server.HostServices.Logger
         private StreamWriter _writer;
 
 
-        public DataStore ActivityTable { get; set; } 
+        public DataStore ActivityTable { get; set; }
 
         public void LogActivity(string type, string collectionName, int executionTimeInMicroseconds, string detail,
             string query = null, ExecutionPlan plan = null)
@@ -113,7 +113,7 @@ namespace Server.HostServices.Logger
             var schema = TypedSchemaFactory.FromType<LogEntry>();
             schema.CollectionName = LogEntry.Table;
 
-            ActivityTable = new DataStore(schema, new LruEvictionPolicy(20_000, 1000), new FullTextConfig() );
+            ActivityTable = new DataStore(schema, new LruEvictionPolicy(20_000, 1000), new FullTextConfig());
 
 
             _worker = new Thread(() =>
@@ -125,9 +125,7 @@ namespace Server.HostServices.Logger
 
                     DoHouseKeeping();
 
-                    var fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
-
-                    _writer = new StreamWriter(Path.Combine(_logDirectory, fileName), true);
+                    
 
                     var newItems = new List<Item>();
 
@@ -141,24 +139,36 @@ namespace Server.HostServices.Logger
                         }
                     }
 
-                    foreach (var item in newItems.Where(i=>i.Entry == null))
+                    if (newItems.Any())
                     {
-                        _writer.WriteLine(item);
+                        var fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
 
-                        StoreInCache(item.ToString());
+                        _writer = new StreamWriter(Path.Combine(_logDirectory, fileName), true);
 
-                        Console.WriteLine(item);
+                        foreach (var item in newItems.Where(i => i.Entry == null))
+                        {
+                            _writer.WriteLine(item);
+
+                            StoreInCache(item.ToString());
+
+                            Console.WriteLine(item);
+                        }
+
+                        _writer.Dispose();
+
+                        List<PackedObject> entries = new List<PackedObject>();
+                        foreach (var item in newItems.Where(i => i.Entry != null))
+                        {
+                            entries.Add(PackedObject.Pack(item.Entry, schema, LogEntry.Table));
+                        }
+
+                        if (entries.Any())
+                        {
+                            ActivityTable.InternalPutMany(entries, false);
+                        }
+                        
                     }
 
-                    _writer.Dispose();
-
-                    List<PackedObject> entries = new List<PackedObject>();
-                    foreach (var item in newItems.Where(i=>i.Entry != null))
-                    {
-                        entries.Add(PackedObject.Pack(item.Entry, schema, LogEntry.Table));
-                    }
-
-                    ActivityTable.InternalPutMany(entries, false);
                 }
             });
 
@@ -218,16 +228,16 @@ namespace Server.HostServices.Logger
             /// <param name="detail">sql-like description</param>
             /// <param name="query">query without parameters value</param>
             /// <param name="plan"></param>
-            public Item(string collection, string type, int executionTimeInMicroseconds, string detail, string query,  ExecutionPlan plan = null)
+            public Item(string collection, string type, int executionTimeInMicroseconds, string detail, string query, ExecutionPlan plan = null)
             {
                 Entry = new LogEntry
                 {
-                    Id = Guid.NewGuid(), 
-                    ExecutionPlan = plan, 
-                    Type = type, 
-                    Detail = detail, 
+                    Id = Guid.NewGuid(),
+                    ExecutionPlan = plan,
+                    Type = type,
+                    Detail = detail,
                     CollectionName = collection.ToLowerInvariant(),
-                    ExecutionTimeInMicroseconds = executionTimeInMicroseconds, 
+                    ExecutionTimeInMicroseconds = executionTimeInMicroseconds,
                     Query = query,
                     TimeStamp = DateTimeOffset.Now
                 };

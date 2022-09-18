@@ -4,7 +4,7 @@ using Client.Interface;
 namespace Tests.TestData
 {
 
-    [Storage(true)]
+    [Storage(Layout.Compressed)]
     public class CompressedItem
     {
         [ServerSideValue(IndexType.Primary)]

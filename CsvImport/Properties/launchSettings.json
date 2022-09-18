@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CsvImport": {
+      "commandName": "Project",
+      "commandLineArgs": "--internal c:\\csv\\1m.csv 1m"
+    }
+  }
+}

@@ -1,5 +1,5 @@
-using System;
 using Client.Interface;
+using System;
 
 namespace AdminConsole.Commands
 {

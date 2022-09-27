@@ -342,11 +342,26 @@ namespace Server
 
                 InternalBeginBulkInsert(isBulkOperation);
 
-                foreach (var item in items)
-                    if (DataByPrimaryKey.ContainsKey(item.PrimaryKey))
-                        toUpdate.Add(item);
-                    else
+                // if feeding an empty collection do not waste time on checking if it is an update or an insert
+                if(DataByPrimaryKey.Count == 0)
+                {
+                    foreach (var item in items)
+                    {
                         InternalAddNew(item, excludeFromEviction);
+                    }
+                }
+                else
+                {
+                    foreach (var item in items)
+                    {
+                        if (DataByPrimaryKey.ContainsKey(item.PrimaryKey))
+                            toUpdate.Add(item);
+                        else
+                            InternalAddNew(item, excludeFromEviction);
+                    }
+                        
+                }
+                
             }
             finally
             {

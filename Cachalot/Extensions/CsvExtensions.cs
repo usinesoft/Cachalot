@@ -34,8 +34,6 @@ namespace Cachalot.Extensions
         {
             var csvSchema = new CsvSchemaBuilder(csvFileName).InfereSchema();
 
-            connector.DeclareCollection(collectionName, csvSchema.ToCollectionSchema());
-
             using var fileStream = File.OpenRead(csvFileName);
             using var reader = new StreamReader(fileStream, Encoding.UTF8, true, 50000);
             

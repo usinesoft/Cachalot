@@ -35,35 +35,44 @@ namespace Client.Core
 
         private const double FloatingPrecision = 10000;
 
+
+
         [ProtoMember(1)]
         private long _hashCode;
 
         [ProtoMember(2)]
-        private byte[] _data;
+        private byte[] _data = Array.Empty<byte>();
 
+        [ProtoMember(3)]
+        private OriginalType _dataType;
 
-        public OriginalType Type => (OriginalType)_data[0];
-        public bool IsNull => _data[0] == (int)OriginalType.Null;
+        /// <summary>
+        /// Mostly for diagnostic
+        /// </summary>
+        public int ExtraBytes => _data.Length;
+
+        public OriginalType Type => _dataType;
+        public bool IsNull => _dataType == OriginalType.Null;
 
         public double NumericValue
         {
             get
             {
-                var type = (OriginalType)_data[0];
+                
 
-                if (type == OriginalType.SomeInteger)
+                if (_dataType == OriginalType.SomeInteger)
                 {
                     return _hashCode;
                 }
 
-                if (type == OriginalType.SomeFloat)
+                if (_dataType == OriginalType.SomeFloat)
                 {
                     if (_hashCode % 10 == 0)
                     {
                         return _hashCode / FloatingPrecision;
                     }
 
-                    return BitConverter.ToDouble(_data, 1);
+                    return BitConverter.ToDouble(_data, 0);
                 }
 
                 return double.NaN;
@@ -74,13 +83,13 @@ namespace Client.Core
         {
             get
             {
-                var type = (OriginalType)_data[0];
-                if (type != OriginalType.String)
+                
+                if (_dataType != OriginalType.String)
                 {
                     return null;
                 }
 
-                return Encoding.UTF8.GetString(_data, 1, _data.Length - 1);
+                return Encoding.UTF8.GetString(_data, 0, _data.Length);
             }
         }
 
@@ -90,15 +99,16 @@ namespace Client.Core
         {
             get
             {
-                if (Type != OriginalType.Date)
+                if (_dataType != OriginalType.Date)
                 {
                     return null;
                 }
 
-                if (_data.Length == 1)//no offset
+                if (_data.Length == 0)//no offset
                     return new DateTimeOffset(new DateTime(_hashCode));
 
-                var offset = BitConverter.ToInt64(_data, 1);
+                var offset = BitConverter.ToInt64(_data, 0);
+                
                 return new DateTimeOffset(_hashCode, new TimeSpan(offset));
 
             }
@@ -108,9 +118,9 @@ namespace Client.Core
         {
             get
             {
-                var type = (OriginalType)_data[0];
+                
 
-                switch (type)
+                switch (_dataType)
                 {
                     case OriginalType.SomeInteger:
                         return new JValue(_hashCode);
@@ -122,10 +132,10 @@ namespace Client.Core
                         return new JValue(_hashCode != 0);
 
                     case OriginalType.Date:
-                        if (_data.Length == 1)//no offset
+                        if (_data.Length == 0)//no offset
                             return new JValue(new DateTime(_hashCode));
 
-                        var offset = BitConverter.ToInt64(_data, 1);
+                        var offset = BitConverter.ToInt64(_data, 0);
                         return new JValue(new DateTimeOffset(_hashCode, new TimeSpan(offset)));
 
                     case OriginalType.String:
@@ -144,9 +154,8 @@ namespace Client.Core
 
         public override string ToString()
         {
-            var type = (OriginalType)_data[0];
-
-            switch (type)
+            
+            switch (_dataType)
             {
                 case OriginalType.SomeInteger:
                     return _hashCode.ToString();
@@ -158,10 +167,10 @@ namespace Client.Core
                     return (_hashCode != 0).ToString();
 
                 case OriginalType.Date:
-                    if (_data.Length == 1)//no offset
+                    if (_data.Length == 0)//no offset
                         return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
 
-                    var offset = BitConverter.ToInt64(_data, 1);
+                    var offset = BitConverter.ToInt64(_data, 0);
                     return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
 
                 case OriginalType.String:
@@ -244,7 +253,7 @@ namespace Client.Core
 
         public JProperty ToJson(string name)
         {
-            var type = (OriginalType)_data[0];
+            var type = _dataType;
 
             switch (type)
             {
@@ -258,10 +267,10 @@ namespace Client.Core
                     return new JProperty(name, _hashCode != 0);
 
                 case OriginalType.Date:
-                    if (_data.Length == 1)//no offset
+                    if (_data.Length == 0)//no offset
                         return new JProperty(name, new DateTime(_hashCode));
 
-                    var offset = BitConverter.ToInt64(_data, 1);
+                    var offset = BitConverter.ToInt64(_data, 0);
 
                     return new JProperty(name, new DateTimeOffset(_hashCode, new TimeSpan(offset)));
 
@@ -298,14 +307,16 @@ namespace Client.Core
         void FromLong(long longValue, OriginalType type)
         {
             _hashCode = longValue;
-            _data[0] = (byte)type;
+            _dataType = type;
         }
 
         void FromFloatingPoint(double floatValue, OriginalType type)
         {
             _hashCode = (long)(floatValue * FloatingPrecision);
 
-            _data[0] = (byte)type;
+            _dataType = OriginalType.SomeFloat;
+
+            //TODO use spans
 
             // If no precision was lost, no need to keep the original value otherwise store it
             // If possible, storing it as an int mai handle the precision better than the double (1.7 for example )
@@ -313,10 +324,9 @@ namespace Client.Core
             {
                 var original = BitConverter.GetBytes(floatValue);
 
-                var data = new byte[1 + original.Length];
-                data[0] = _data[0];
-
-                Buffer.BlockCopy(original, 0, data, 1, original.Length);
+                var data = new byte[original.Length];
+                
+                Buffer.BlockCopy(original, 0, data, 0, original.Length);
 
                 _data = data;
             }
@@ -333,11 +343,11 @@ namespace Client.Core
             
             int estimatedSize = Encoding.UTF8.GetByteCount(stringValue);
 
-            _data = new byte[estimatedSize + 1];
+            _data = new byte[estimatedSize];
 
-            _data[0] = (byte)OriginalType.String;
+            _dataType = OriginalType.String;
 
-            Encoding.UTF8.GetBytes(stringValue, new Span<byte>(_data, 1, estimatedSize));
+            Encoding.UTF8.GetBytes(stringValue, new Span<byte>(_data, 0, estimatedSize));
 
             
         }
@@ -346,7 +356,7 @@ namespace Client.Core
         {
             _hashCode = 0;
 
-            _data[0] = (byte)OriginalType.Null;
+            _dataType = OriginalType.Null;
         }
 
         /// <summary>
@@ -357,21 +367,20 @@ namespace Client.Core
         {
             _hashCode = value.Ticks;
 
+            _dataType = OriginalType.Date;
 
             var offset = value.Offset.Ticks;
 
             if (offset == 0)
-            {
-                _data[0] = (byte)OriginalType.Date;
+            {                
                 return;
             }
 
             var offsetBytes = BitConverter.GetBytes(offset);
 
-            _data = new byte[1 + offsetBytes.Length];
-            _data[0] = (byte)OriginalType.Date;
-
-            Buffer.BlockCopy(offsetBytes, 0, _data, 1, offsetBytes.Length);
+            _data = new byte[offsetBytes.Length];
+            
+            Buffer.BlockCopy(offsetBytes, 0, _data, 0, offsetBytes.Length);
 
         }
 
@@ -388,8 +397,7 @@ namespace Client.Core
 
         public KeyValue(object value)
         {
-            _data = new byte[1];
-
+            
             
             if (value is null)
             {
@@ -487,14 +495,7 @@ namespace Client.Core
                 return;
             }
 
-            // ReSharper disable once PossibleNullReferenceException
-            //if (!propertyType.Namespace.StartsWith("System"))
-            //{
-            //    throw new NotSupportedException($"Only system types are supported for server-side values. {propertyType.FullName} is not supported");
-            //}
-
             FromString(value.ToString());
-
 
         }
 

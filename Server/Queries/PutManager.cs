@@ -87,9 +87,24 @@ namespace Server.Queries
                 {
                     var all = SessionManager.EndSession(putRequest.SessionId);
 
-                    _transactionLog?.NewTransaction(new PutDurableTransaction { Items = all });
+                    _log?.LogInfo("Saving data in the transaction log");
 
+                    // split huge transactions before commiting to the transaction log to avoid huge memory peak when thay are reloaded to be stored 
+                    // in the persistent storage
+                    if(_transactionLog != null)
+                    {
+                        foreach (var tr in new PutDurableTransaction { Items = all }.Split(10_000))
+                        {
+                            _transactionLog.NewTransaction(tr);
+                        }
+                    }
+
+
+                    _log?.LogInfo("Indexing data in memory");
+                    
                     _dataStore.InternalPutMany(all, putRequest.ExcludeFromEviction);
+
+                    _log?.LogInfo("End of feed operation");
 
                     GC.Collect();
 

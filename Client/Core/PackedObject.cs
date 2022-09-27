@@ -425,11 +425,11 @@ namespace Client.Core
         public static PackedObject PackCsv(int primaryKey, string line, string collectionName, char separator = ',')
         {
 
-            var values = line.Split(separator);
+            var values = CsvHelper.SplitCsvLine(line, separator);
 
             var result = new PackedObject
             {
-                Values = new KeyValue[values.Length + 1], // +1 for the primary key
+                Values = new KeyValue[values.Count + 1], // +1 for the primary key
 
 
                 CollectionValues = Array.Empty<KeyValues>()

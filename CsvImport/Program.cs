@@ -9,6 +9,7 @@ using Client.Core;
 Console.WriteLine("------------------------------");
 Console.WriteLine(" CSV import tool for Cachalot");
 Console.WriteLine("------------------------------");
+
 if (args.Length == 1) // just simulate reading
 {
 
@@ -88,12 +89,18 @@ try
     connector.FeedCsvWithAutomaticSchema(csvFile, collection);
     watch.Stop();
 
-    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000}");
+    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000} seconds");
+
+    KeyValueParsingPool.Clear();
+
+  
+
     if (connectionString == "--internal")
     {
+        Console.WriteLine($"Value pool: hit ratio={KeyValuePool.HitRatio * 100:F2}% complex_values={KeyValuePool.ComplexRatio * 100:F2}%");
+
         GC.Collect();
 
-        
         var myself = Process.GetCurrentProcess();
 
         Console.WriteLine($"used memory={myself.WorkingSet64 / 1_000_000} MB");

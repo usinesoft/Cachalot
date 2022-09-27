@@ -27,7 +27,7 @@ namespace Client.Tools
         /// Convert to <see cref="CollectionSchema"/> which will be used to store the CSV into Cachalot DB
         /// </summary>
         /// <returns></returns>
-        public CollectionSchema ToCollectionSchema(int maxIndexes = 10)
+        public CollectionSchema ToCollectionSchema(int maxIndexes = 4)
         {
             var schema = new CollectionSchema { StorageLayout = Layout.Flat };
 

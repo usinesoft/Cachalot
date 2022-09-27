@@ -1,6 +1,7 @@
 ﻿using Client.Core;
 using ProtoBuf;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Server.Persistence
 {
@@ -20,5 +21,12 @@ namespace Server.Persistence
         }
 
         [ProtoMember(10)] public IList<PackedObject> Items { get; set; } = new List<PackedObject>();
+
+        public IList<PutDurableTransaction> Split(int maxPacketSize)
+        {
+            
+            return Items.Chunk(maxPacketSize).Select(c => new PutDurableTransaction { Items = c }).ToList(); 
+
+        }
     }
 }

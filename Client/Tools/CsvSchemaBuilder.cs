@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Client.Tools
 {
@@ -14,6 +13,8 @@ namespace Client.Tools
     /// </summary>
     public class CsvSchemaBuilder
     {
+        
+        public event EventHandler<ProgressEventArgs> Progress;
 
         /// <summary>
         /// A bucket = lines grouped by values in a column
@@ -40,6 +41,12 @@ namespace Client.Tools
             FilePath = filePath;
         }
 
+        private void ReportProgress(string message)
+        {
+            Progress?.Invoke(this, new ProgressEventArgs(message));
+        }
+
+
         /// <summary>
         /// Generate a schema based on heuristics that process a fragment of the file 
         /// </summary>
@@ -48,6 +55,8 @@ namespace Client.Tools
         /// <exception cref="Exception"></exception>
         public CsvSchema InfereSchema(int linesToUse = 10_000)
         {
+
+
             var schema = new CsvSchema();
 
 
@@ -60,8 +69,11 @@ namespace Client.Tools
 
             var header = reader.ReadLine();
 
+            ReportProgress("Start schema inference");
 
             ProcessHeader(header, schema);
+
+            ReportProgress("Header processed");
 
             InitBuckets(schema);
 
@@ -77,6 +89,9 @@ namespace Client.Tools
                 ProcessLine(line, schema, i);
             }
 
+            ReportProgress("Lines parsed");
+
+
             for (int i = 0; i < schema.Columns.Count; i++)
             {
                 var metrics = ComputeBucketMetrics(i);
@@ -84,12 +99,16 @@ namespace Client.Tools
                 schema.Columns[i].MaxLinesInBucket = metrics.Max;
             }
 
+            ReportProgress("Determining the most discriminant composite key");
+
             (var col1, var col2, var max) = DetermineMostDiscriminantCompositeKey(schema);
 
             if (col1 != col2) // both are zero if no composite key is better then the most discriminant single column
             {
                 schema.MostDiscriminantColumns.Add(schema.Columns[col1]);
                 schema.MostDiscriminantColumns.Add(schema.Columns[col2]);
+
+                ReportProgress($"Most discriminant composite key: {schema.Columns[col1]}");
             }
 
             schema.Separator = Separator;
@@ -237,51 +256,14 @@ namespace Client.Tools
 
         List<List<string>> LinesCache { get; set; } = new List<List<string>>();
 
+
         private void ProcessLine(string line, CsvSchema schema, int lineIndex)
         {
-            List<KeyValue> values = new List<KeyValue>();
-
-            var stringValues = new List<string>();
+            
+            var stringValues = CsvHelper.SplitCsvLine(line, Separator);
             LinesCache.Add(stringValues);
 
-            bool ignoreSeparator = false;
-
-            var currentValue = new StringBuilder();
-
-            foreach (char c in line)
-            {
-                if (c == '"') // ignore separator inside "" according to csv specification
-                {
-                    if (ignoreSeparator)
-                    {
-                        ignoreSeparator = false;
-                    }
-                    else
-                    {
-                        ignoreSeparator = true;
-                    }
-                }
-                else if (c == Separator)
-                {
-                    var stringValue = currentValue.ToString();
-                    values.Add(CsvHelper.GetTypedValue(stringValue));
-                    stringValues.Add(stringValue);
-                    currentValue.Clear();
-                }
-                else
-                {
-                    currentValue.Append(c);
-                }
-            }
-
-            // add the last column
-            if (!line.EndsWith(Separator))
-            {
-                var stringValue = currentValue.ToString();
-                values.Add(CsvHelper.GetTypedValue(stringValue));
-                stringValues.Add(stringValue);
-
-            }
+            List<KeyValue> values = stringValues.Select(x => CsvHelper.GetTypedValue(x)).ToList();
 
             if (schema.Columns.Count != values.Count)
             {

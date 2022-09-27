@@ -5,6 +5,7 @@ using Server.FullTextSearch;
 using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Server.Persistence
 {
@@ -16,7 +17,7 @@ namespace Server.Persistence
 
         private volatile bool _shouldContinue = true;
 
-        private Thread _singleConsumer;
+        private Task _singleConsumer;
         private ReliableStorage _storage;
 
         public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null,
@@ -194,7 +195,7 @@ namespace Server.Persistence
         private void StartProcessingTransactions()
         {
             _shouldContinue = true;
-            _singleConsumer = new Thread(() =>
+            _singleConsumer = Task.Run(() =>
             {
                 while (_shouldContinue)
                     try
@@ -278,7 +279,6 @@ namespace Server.Persistence
                     }
             });
 
-            _singleConsumer.Start();
         }
 
         public void NewTransaction(DurableTransaction durableTransaction, bool isDelayed = false)
@@ -302,8 +302,7 @@ namespace Server.Persistence
         {
             _shouldContinue = false;
 
-
-            _singleConsumer.Join(500);
+            _singleConsumer.Wait(500);
 
             TransactionLog.Dispose();
 

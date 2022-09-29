@@ -285,7 +285,7 @@ namespace Client.Tools
 
         private void ProcessHeader(string header, CsvSchema result)
         {
-            DetectSeparator(header);
+            Separator = CsvHelper.DetectSeparator(header);
 
             var parts = header.Split(Separator);
 

@@ -204,8 +204,8 @@ namespace Server
 
                 if (dataStore != null) //type already registered
                 {
-                    //if the type description changed reindex
-                    if (!typeDescription.Equals(dataStore.CollectionSchema))
+                    //if schema changed reindex if the new one is more complex
+                    if(!CollectionSchema.AreCompatible(typeDescription, dataStore.CollectionSchema))                    
                     {
 
                         var newDataStore = DataStore.Reindex(dataStore, typeDescription);

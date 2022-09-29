@@ -1,6 +1,6 @@
 ﻿using Client.Core;
+using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Client.Tools
@@ -8,6 +8,12 @@ namespace Client.Tools
     public static class CsvHelper
     {
 
+
+        /// <summary>
+        /// Parse a string value
+        /// </summary>
+        /// <param name="stringValue"></param>
+        /// <returns></returns>
         public static KeyValue GetTypedValue(string stringValue)
         {
             if (string.IsNullOrWhiteSpace(stringValue))
@@ -17,6 +23,41 @@ namespace Client.Tools
 
             return new KeyValue(JExtensions.SmartParse(stringValue));
         }
+
+        /// <summary>
+        /// Detect the separator from the header of a CSV file
+        /// </summary>
+        /// <param name="header"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="FormatException"></exception>
+        public static char DetectSeparator(string header)
+        {
+            if (string.IsNullOrWhiteSpace(header))
+            {
+                throw new ArgumentException($"'{nameof(header)}' cannot be null or whitespace.", nameof(header));
+            }
+
+
+            // automatically detect ",", "\t" or ";" used as separator; 
+            if (header.Contains(','))
+            {
+                return ',';
+            }
+            else if (header.Contains(';'))
+            {
+                return ';';
+            }
+            else if (header.Contains('\t'))
+            {
+                return '\t';
+            }
+
+
+            throw new FormatException($"Can not detect column separator from header {header}");
+
+        }
+
 
 
         /// <summary>

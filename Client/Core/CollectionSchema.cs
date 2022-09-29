@@ -126,6 +126,61 @@ namespace Client.Core
             return true;
         }
 
+        /// <summary>
+        /// Clients can declare schemas that are simpler than the server side ones. This will not trigger reindexation 
+        /// Client indexes may be a subset of server indexes. 
+        /// The <see cref="Layout"/> of the two schemas must be the same
+        /// The two schemas must define the same primary key
+        /// Client index may be <see cref="IndexType.Dictionary"/> and the corresponding server index <see cref="IndexType.Ordered"/> but NOT the other way around.
+        /// Client indexes may be <see cref="IndexType.None"/> and server index <see cref="IndexType.Dictionary"/> or <see cref="IndexType.Ordered"/> but NOT the other way around
+        /// </summary>
+        /// <param name="clientSchema"></param>
+        /// <param name="serverSchema"></param>
+        /// <returns></returns>
+        public static bool AreCompatible(CollectionSchema clientSchema, CollectionSchema serverSchema)
+        {
+            if (clientSchema is null)
+            {
+                throw new ArgumentNullException(nameof(clientSchema));
+            }
+
+            if (serverSchema is null)
+            {
+                throw new ArgumentNullException(nameof(serverSchema));
+            }
+
+            
+            if (!Equals(clientSchema.PrimaryKeyField, serverSchema.PrimaryKeyField))
+                return false;
+
+            
+            if (!Equals(clientSchema.StorageLayout, serverSchema.StorageLayout))
+                return false;
+
+            //check all the fields
+            if (clientSchema.ServerSide.Count > serverSchema.ServerSide.Count)
+                return false;
+
+            for (int i = 1; i < clientSchema.ServerSide.Count; i++)
+            {
+                var clientField = clientSchema.ServerSide[i];
+                var serverField = serverSchema.ServerSide[i];
+
+                if (clientField.Name != serverField.Name)
+                    return false;
+
+                if (clientField.Order != serverField.Order)
+                    return false;
+
+                if (clientField.IndexType > serverField.IndexType)
+                    return false;
+
+            }
+
+
+            return true;
+        }
+
         public KeyInfo KeyByName(string name)
         {
             name = name.ToLower();

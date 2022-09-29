@@ -5,6 +5,7 @@ using System.Text;
 using Cachalot.Extensions;
 using Cachalot.Linq;
 using Client.Core;
+using Client.Tools;
 
 Console.WriteLine("------------------------------");
 Console.WriteLine(" CSV import tool for Cachalot");
@@ -81,15 +82,45 @@ IEnumerable<string> ReadLines(string csvFileName)
 
 try
 {
-
+    
     using var connector = connectionString == "--internal" ? new Connector(): new Connector(connectionString);
 
     var watch = new Stopwatch();
-    watch.Start();
-    connector.FeedCsvWithAutomaticSchema(csvFile, collection);
+
+    
+    var schema = connector.GetCollectionSchema(collection);
+
+    if(schema == null)
+    {
+        Console.WriteLine($"No schema defined for collection {collection}. Trying to infere one from the csv data...");
+
+        watch.Start();
+        var csvSchema = new CsvSchemaBuilder(csvFile).InfereSchema();
+        watch.Stop();
+
+        Console.WriteLine($"Done.Took {watch.ElapsedMilliseconds:F2}");
+
+        Console.Write(csvSchema.AnalysisReport());
+
+        schema = csvSchema.ToCollectionSchema();
+        connector.DeclareCollection(collection, schema);
+    }
+    else
+    {
+
+        Console.WriteLine("Collection already defined. Using existing schema");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Start feeding data...");
+
+    watch.Restart();
+    
+    connector.FeedCsv(csvFile, collection);
+        
     watch.Stop();
 
-    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000} seconds");
+    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000L:F2} seconds");
 
     KeyValueParsingPool.Clear();
 

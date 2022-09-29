@@ -16,7 +16,7 @@ namespace Client.Core
 {
     /// <summary>
     ///     Any object is converted to this form while stored in the database and transferred through the
-    ///     network. Only server-side values are available, the rest of the object is serialized as json
+    ///     network. Only server-side values are available for queries, the rest of the object is serialized as json
     /// </summary>
     [ProtoContract]
     public class PackedObject

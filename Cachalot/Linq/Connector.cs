@@ -1,5 +1,6 @@
 //#define DEBUG_VERBOSE
 
+using Cachalot.Extensions;
 using Channel;
 using Client;
 using Client.Core;
@@ -11,7 +12,6 @@ using Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Nodes;
 using System.Threading;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -186,19 +186,36 @@ namespace Cachalot.Linq
                 if (_collectionSchema.TryGetValue(collectionName.Trim().ToUpper(), out var schema))
                     return schema;
 
-                return null;
+                
+                // try to get schema from server   
+                var info = Client.GetClusterInformation();
+                schema = info.Schema.Where(x => x.CollectionName.ToUpper() == collectionName.ToUpper()).FirstOrDefault();
+                if (schema == null)
+                {
+                    return null;
+                }
+
+                lock (_collectionSchema)
+                {
+                    _collectionSchema[schema.CollectionName.ToUpper()] = schema;
+                }
+
+                return schema;
+                
             }
         }
 
         private Server.Server _server;
 
+        public bool IsInternalServer { get; } 
 
         /// <summary>
         /// No parameters => we will create an internal, non persistent server
         /// </summary>
         public Connector(bool isPersistent = false):this(new ClientConfig(){IsPersistent = isPersistent})
         {
-
+            IsInternalServer = true;
+            IsPersistent = isPersistent;
         }
 
         public Connector(string connectionString) : this(new ClientConfig(connectionString))
@@ -282,6 +299,7 @@ namespace Cachalot.Linq
             return new Transaction(this);
         }
 
+        private int _lastUniqueIdForInternalServer = 1;
 
         /// <summary>
         ///     Generate <paramref name="quantity" /> unique identifiers
@@ -291,6 +309,18 @@ namespace Cachalot.Linq
         /// <param name="quantity">number of unique ids to generate</param>
         public int[] GenerateUniqueIds(string generatorName, int quantity)
         {
+            // for non-persistent internal servers we can safely generate unique ids in client memory
+            if (IsInternalServer && !IsPersistent) 
+            { 
+                var result = new int[quantity];
+                for(int i = 0; i < quantity; i++)
+                {
+                    result[i] = Interlocked.Increment(ref _lastUniqueIdForInternalServer);
+                }
+
+                return result;
+            }
+
             if (quantity == 0) throw new CacheException("When generating unique ids quantity must be at least 1");
             return Client.GenerateUniqueIds(generatorName, quantity);
         }
@@ -313,6 +343,8 @@ namespace Cachalot.Linq
                 return new DataSource<LogEntry>(this, "@ACTIVITY", schema);
             }
         }
+
+        public bool IsPersistent { get; }
 
         public DataSource<T> DataSource<T>(string collectionName = null)
         {
@@ -347,22 +379,7 @@ namespace Cachalot.Linq
 
             CollectionSchema schema = GetCollectionSchema(tableName);
 
-            if (schema == null) 
-            {
-                var info = Client.GetClusterInformation();
-                schema = info.Schema.Where(x=>x.CollectionName.ToUpper() == tableName.ToUpper()).FirstOrDefault();
-                if(schema == null)
-                {
-                    throw new CacheException($"Unknown collection: {schema.CollectionName}");
-                }
-
-                lock (_collectionSchema)
-                {
-                    _collectionSchema[schema.CollectionName.ToUpper()] = schema;
-                }
-                
-            }
-
+            
             var query = parsed.ToQuery(schema);
 
 
@@ -389,25 +406,6 @@ namespace Cachalot.Linq
             }
         }
 
-        /// <summary>
-        /// Pack a data line of a csv file 
-        /// </summary>
-        /// <param name="lines"></param>
-        /// <param name="schema"></param>
-        /// <param name="collectionName"></param>
-        /// <returns></returns>
-        private IEnumerable<PackedObject> PackCsv(IEnumerable<string> lines, string collectionName, char separator = ',')
-        {
-            int primaryKey = 100; 
-
-            foreach (var line in lines)
-            {
-                yield return PackedObject.PackCsv(primaryKey, line, collectionName, separator);
-
-                primaryKey++;
-            }
-        }
-
         public void FeedWithJson(string collectionName, IEnumerable<JObject> items)
         {
             var schema = GetCollectionSchema(collectionName);
@@ -423,7 +421,7 @@ namespace Cachalot.Linq
         public void FeedWithCsvLines(string collectionName, IEnumerable<string> lines, char separator = ',')
         {
             
-            Client.FeedMany(collectionName, PackCsv(lines, collectionName, separator), false);
+            Client.FeedMany(collectionName, this.PackCsv(lines, collectionName, separator), false);
         }
     }
 }

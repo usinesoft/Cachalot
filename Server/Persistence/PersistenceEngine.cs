@@ -228,10 +228,10 @@ namespace Server.Persistence
                                         unchecked((int)persistentTransaction.Id));
                                 }
 
-                                foreach (var item in mixedTransaction.ItemsToDelete)
+                                foreach (var item in mixedTransaction.GlobalKeysToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int)persistentTransaction.Id));
+                                    _storage.DeleteBlock(item, unchecked((int)persistentTransaction.Id));
                                 }
                             }
 
@@ -257,10 +257,10 @@ namespace Server.Persistence
                             }
 
                             if (transaction is DeleteDurableTransaction deleteTransaction)
-                                foreach (var item in deleteTransaction.ItemsToDelete)
+                                foreach (var item in deleteTransaction.GlobalKeysToDelete)
                                 {
                                     Dbg.Trace($"deleting persistent block {persistentTransaction.Id}");
-                                    _storage.DeleteBlock(item.GlobalKey, unchecked((int)persistentTransaction.Id));
+                                    _storage.DeleteBlock(item, unchecked((int)persistentTransaction.Id));
                                 }
 
                             TransactionLog.EndProcessing(persistentTransaction);

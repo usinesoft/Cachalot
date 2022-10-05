@@ -13,6 +13,7 @@ namespace Server.Persistence
         public const int BeginMarkerValue = 0xABCD;
 
         public const int EndMarkerValue = 0xDCBA;
+        
         public static readonly long MinSize = 35;
 
         private byte[] _rawData;

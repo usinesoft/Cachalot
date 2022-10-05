@@ -19,6 +19,9 @@ namespace Server.Persistence
         {
         }
 
-        [ProtoMember(20)] public IList<PackedObject> ItemsToDelete { get; set; } = new List<PackedObject>();
+        /// <summary>
+        /// Primary keys of items to delete
+        /// </summary>
+        [ProtoMember(20)] public IList<string> GlobalKeysToDelete { get; set; } = new List<string>();
     }
 }

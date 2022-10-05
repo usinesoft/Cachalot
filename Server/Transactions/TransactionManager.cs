@@ -92,7 +92,7 @@ namespace Server.Transactions
             Dbg.Trace($"S: begin writing delayed transaction {transactionRequest.TransactionId}");
             _transactionLog?.NewTransaction(new MixedDurableTransaction
             {
-                ItemsToDelete = itemsToDelete.ToList(),
+                GlobalKeysToDelete = itemsToDelete.Select(x=>x.GlobalKey).ToList(),
                 ItemsToPut = itemsToPut
             },
                 true

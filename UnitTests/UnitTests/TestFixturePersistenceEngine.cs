@@ -79,7 +79,7 @@ namespace Tests.UnitTests
             foreach (var item in items)
             {
                 var packed = PackedObject.Pack(item, _schema);
-                transaction.ItemsToDelete.Add(packed);
+                transaction.GlobalKeysToDelete.Add(packed.GlobalKey);
             }
 
             return transaction;

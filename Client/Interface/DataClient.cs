@@ -421,7 +421,7 @@ namespace Client.Interface
                     throw new CacheException("Error while registering a type on the server", exResponse.Message,
                         exResponse.CallStack);
 
-                FeedMany(typeDescription.Value.CollectionName, DumpHelper.ObjectsInDump(path, typeDescription.Value), true, 100);
+                FeedMany(typeDescription.Value.CollectionName, DumpHelper.ObjectsInDump(path, typeDescription.Value), true);
             }
 
             // reinitialize the sequences. As the shard count has probably changed reinitialize all the sequences in each shard

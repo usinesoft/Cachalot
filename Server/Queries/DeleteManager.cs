@@ -50,7 +50,7 @@ namespace Server.Queries
                 {
                     _transactionLog?.NewTransaction(new DeleteDurableTransaction
                     {
-                        ItemsToDelete = { removed }
+                        GlobalKeysToDelete = { removed.GlobalKey }
                     });
 
                 }
@@ -70,8 +70,8 @@ namespace Server.Queries
 
                 _transactionLog?.NewTransaction(new DeleteDurableTransaction
                 {
-                    ItemsToDelete = all
-                });
+                    GlobalKeysToDelete = all.Select(x => x.GlobalKey).ToList()
+                }); ;
 
                 var count = all.Count;
                 _dataStore.Truncate();
@@ -85,7 +85,7 @@ namespace Server.Queries
 
             _transactionLog?.NewTransaction(new DeleteDurableTransaction
             {
-                ItemsToDelete = toRemove
+                GlobalKeysToDelete = toRemove.Select(x => x.GlobalKey).ToList()
             });
 
             _dataStore.RemoveMany(toRemove);

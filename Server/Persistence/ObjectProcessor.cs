@@ -23,6 +23,9 @@ namespace Server.Persistence
             var item = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers,
                 false); // the json itself may be compressed, but the persisted object is never compressed
 
+            // optimize in memory storage of identical values
+            KeyValuePool.ProcessPackedObject(item);
+
             Dbg.Trace($"processing persistent object {data.Length} bytes {item}");
 
             if (!_temporaryStorage.TryGetValue(item.CollectionName, out var list))
@@ -46,9 +49,6 @@ namespace Server.Persistence
             foreach (var pair in _temporaryStorage)
             {
                 var store = _dataContainer.TryGetByName(pair.Key);
-
-                // optimize in memory storage of identical values
-                KeyValuePool.ProcessPackedObjects(pair.Value);
 
                 store.InternalPutMany(pair.Value, true);
 

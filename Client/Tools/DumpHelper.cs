@@ -1,10 +1,12 @@
 using Client.Core;
 using Client.Interface;
+using ICSharpCode.SharpZipLib.GZip;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
@@ -49,23 +51,43 @@ namespace Client.Tools
             int shardIndex = -1)
         {
             var fileMask = shardIndex != -1
-                ? $"{collectionSchema.CollectionName}_shard{shardIndex:D4}*.txt"
-                : $"{collectionSchema.CollectionName}_shard*.txt";
+                ? $"{collectionSchema.CollectionName}_shard{shardIndex:D4}*.gzip"
+                : $"{collectionSchema.CollectionName}_shard*.gzip";
 
             var files = Directory.GetFiles(path, fileMask);
 
             foreach (var file in files)
             {
-                var content = File.ReadAllText(file);
+                var oneObject = new StringBuilder();
 
-                var parts = content.Split(new[] { "\\-" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(txt => txt.Trim()).Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+                using (FileStream reader = File.OpenRead(file))
+                using (GZipStream zip = new GZipStream(reader, CompressionMode.Decompress, true))
+                using (StreamReader unzip = new StreamReader(zip))
+                    while (!unzip.EndOfStream)
+                    {
+                        var line = unzip.ReadLine();
 
-                foreach (var part in parts)
+                        if (line.StartsWith("\\-"))// object separator
+                        {
+                            var cachedObject = PackedObject.PackJson(oneObject.ToString(), collectionSchema);
+                            yield return cachedObject;
+
+                            oneObject = new StringBuilder();
+                        }
+                        else
+                        {
+                            oneObject.AppendLine(line);
+                        }
+                    }
+                        
+                var lastContent = oneObject.ToString();
+                if (!string.IsNullOrWhiteSpace(lastContent))
                 {
-                    var cachedObject = PackedObject.PackJson(part, collectionSchema);
+                    var cachedObject = PackedObject.PackJson(oneObject.ToString(), collectionSchema);
                     yield return cachedObject;
+
                 }
+
             }
         }
 
@@ -96,43 +118,50 @@ namespace Client.Tools
             var index = 1;
             var fileIndex = 1;
 
-            const int maxObjectsInFile = 1000;
+            const int maxObjectsInFile = 50_000;
 
 
-            var sb = new StringBuilder();
+            var fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.gzip";
+            var filePath = Path.Combine(fullPath, fileName);
+            var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            var zstream = new GZipStream(stream,CompressionMode.Compress, false);
+            var writer = new StreamWriter(zstream);
 
             foreach (var cachedObject in objects)
             {
                 var json = cachedObject.AsJson(collectionSchema);
 
-
-                sb.Append(json);
-                sb.AppendLine();
-                sb.AppendLine("\\-"); // separator which is illegal in json
-
-
+                writer.Write(json);
+                writer.WriteLine();
+                writer.WriteLine("\\-");
+                
                 if (index == maxObjectsInFile)
                 {
-                    var fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
-                    var filePath = Path.Combine(fullPath, fileName);
-                    File.WriteAllText(filePath, sb.ToString());
-                    sb = new StringBuilder();
-                    index = 0;
+
+                    writer.Dispose();
+
+
                     fileIndex++;
+
+                    fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.gzip";
+                    filePath = Path.Combine(fullPath, fileName);
+                    
+                    stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                    zstream = new GZipStream(stream, CompressionMode.Compress, false);
+                    writer = new StreamWriter(zstream);
+
+
+                    index = 0;
+                    
                 }
 
                 index++;
             }
 
-
-            // write what's left after the last complete block
-            var content = sb.ToString().Trim();
-            if (!string.IsNullOrWhiteSpace(content))
-            {
-                var fileName = $"{collectionSchema.CollectionName}_shard{shardIndex:D4}_{fileIndex:D5}.txt";
-                var filePath = Path.Combine(fullPath, fileName);
-                File.WriteAllText(filePath, content);
-            }
+            // write what's left after the last complete block            
+            writer.Dispose();
+            
+            
         }
 
         /// <summary>

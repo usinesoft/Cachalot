@@ -192,6 +192,9 @@ namespace Server
         {
             foreach (var cachedObject in DumpHelper.ObjectsInDump(path, CollectionSchema, shardIndex))
             {
+                // use a pool for duplicated values
+                KeyValuePool.ProcessPackedObject(cachedObject);
+
                 InternalAddNew(cachedObject);
 
                 // only in debug, only if this simulation was activated (for tests only)

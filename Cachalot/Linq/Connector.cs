@@ -397,13 +397,27 @@ namespace Cachalot.Linq
             return Client.GetMany(query).Select(ri => ri.Item);
         }
 
+        public event EventHandler<ProgressEventArgs> Progress;
+
         
         private IEnumerable<PackedObject> PackJson(IEnumerable<JObject> items, CollectionSchema schema, string collectionName = null)
         {
+            Progress?.Invoke(this, new ProgressEventArgs(ProgressEventArgs.ProgressNotification.Start, 0));
+
+            int processed = 0;
+
             foreach (var item in items)
             {
+                processed++;
                 yield return PackedObject.PackJson(item, schema, collectionName);
+
+                if(processed % 10_000 == 0)
+                {
+                    Progress?.Invoke(this, new ProgressEventArgs(ProgressEventArgs.ProgressNotification.Progress, processed));
+                }
             }
+
+            Progress?.Invoke(this, new ProgressEventArgs(ProgressEventArgs.ProgressNotification.End, processed));
         }
 
         public void FeedWithJson(string collectionName, IEnumerable<JObject> items)
@@ -411,6 +425,11 @@ namespace Cachalot.Linq
             var schema = GetCollectionSchema(collectionName);
 
             Client.FeedMany(collectionName, PackJson(items, schema, collectionName), false);
+        }
+
+        internal void NotifyProgress(int processedItems, int totalItems = 0)
+        {
+            Progress?.Invoke(this, new ProgressEventArgs(ProgressEventArgs.ProgressNotification.Progress, processedItems, totalItems));
         }
 
         /// <summary>
@@ -424,4 +443,28 @@ namespace Cachalot.Linq
             Client.FeedMany(collectionName, this.PackCsv(lines, collectionName, separator), false);
         }
     }
+
+    public class ProgressEventArgs : EventArgs
+    {
+        public ProgressEventArgs(ProgressNotification type, int itemsProcessed, int totalToProcess = 0)
+        {
+            Type = type;
+            ItemsProcessed = itemsProcessed;
+            TotalToProcess = totalToProcess;
+        }
+
+        public enum ProgressNotification
+        {
+            Start,
+            Progress, 
+            End
+        }
+
+        public int ItemsProcessed { get; }
+
+        public int TotalToProcess { get; }
+
+        public ProgressNotification Type { get; }
+    }
+
 }

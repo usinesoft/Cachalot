@@ -1,6 +1,7 @@
 ﻿
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using Cachalot.Extensions;
 using Cachalot.Linq;
@@ -98,6 +99,7 @@ try
         var csvSchema = new CsvSchemaBuilder(csvFile).InfereSchema();
         watch.Stop();
 
+        Console.WriteLine();
         Console.WriteLine($"Done.Took {watch.ElapsedMilliseconds:F2}");
 
         Console.Write(csvSchema.AnalysisReport());
@@ -114,13 +116,17 @@ try
     Console.WriteLine();
     Console.WriteLine($"Start feeding data...");
 
+
+    connector.Progress += Connector_Progress;
+
     watch.Restart();
     
     connector.FeedCsv(csvFile, collection);
         
     watch.Stop();
 
-    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000L:F2} seconds");
+    Console.WriteLine();
+    Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000.0:F2} seconds");
 
     KeyValueParsingPool.Clear();
 
@@ -147,4 +153,14 @@ catch(Exception ex)
     Console.WriteLine(ex.ToString());
 }
 
-
+void Connector_Progress(object? sender, Cachalot.Linq.ProgressEventArgs e)
+{
+    if(e.Type == Cachalot.Linq.ProgressEventArgs.ProgressNotification.Progress)
+    {
+        Console.Write(".");
+    }
+    else
+    {
+        Console.WriteLine();
+    }
+}

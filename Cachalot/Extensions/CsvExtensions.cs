@@ -3,9 +3,11 @@ using Client.Core;
 using Client.Interface;
 using Client.Tools;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Cachalot.Extensions
 {
@@ -67,6 +69,8 @@ namespace Cachalot.Extensions
 
         }
 
+        
+
         /// <summary>
         /// Pack a data line of a csv file. It also generates unique primary keys
         /// </summary>
@@ -81,26 +85,47 @@ namespace Cachalot.Extensions
                 throw new ArgumentNullException(nameof(connector));
             }
 
-            int primaryKeyIndex = 0;
 
-           
-            // as we do not know how many lines there are, generate unique ids by pack of 1000
-            var ids = connector.GenerateUniqueIds($"{collectionName}_id", 1000);
+            BlockingCollection<PackedObject> processingQueue = new BlockingCollection<PackedObject>();
 
-            foreach (var line in lines)
+
+            Task.Run(() =>
             {
-                yield return PackedObject.PackCsv(ids[primaryKeyIndex], line, collectionName, separator);
+                int primaryKeyIndex = 0;
 
-                primaryKeyIndex++;
+                int processedLines = 0;
 
-                if (primaryKeyIndex == ids.Length - 1) // a new pack of unique ids is required
+                // as we do not know how many lines there are, generate unique ids by pack of 1000
+                var ids = connector.GenerateUniqueIds($"{collectionName}_id", 1000);
+
+                foreach (var line in lines)
                 {
-                    ids = connector.GenerateUniqueIds($"{collectionName}_id", 1000);
 
-                    primaryKeyIndex = 0;
+                    processedLines++;
+
+                    processingQueue.Add( PackedObject.PackCsv(ids[primaryKeyIndex], line, collectionName, separator));
+
+                    primaryKeyIndex++;
+
+                    if (primaryKeyIndex == ids.Length - 1) // a new pack of unique ids is required
+                    {
+                        ids = connector.GenerateUniqueIds($"{collectionName}_id", 1000);
+
+                        primaryKeyIndex = 0;
+                    }
+
+                    if (processedLines % 10_000 == 0)
+                    {
+                        connector.NotifyProgress(processedLines);
+                    }
+
                 }
 
-            }
+                processingQueue.CompleteAdding();
+            });
+
+            return processingQueue.GetConsumingEnumerable();
+            
         }
     }
 }

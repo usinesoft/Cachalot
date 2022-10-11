@@ -93,7 +93,7 @@ namespace Server.Queries
                     // in the persistent storage
                     if(_transactionLog != null)
                     {
-                        foreach (var tr in new PutDurableTransaction { Items = all }.Split(10_000))
+                        foreach (var tr in new PutDurableTransaction { Items = all }.Split(50_000))
                         {
                             _transactionLog.NewTransaction(tr);
                         }

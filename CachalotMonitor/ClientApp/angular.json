@@ -27,6 +27,7 @@
               "src/assets"
             ],
             "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "src/styles.css"
             ],
@@ -95,6 +96,7 @@
               "src/assets"
             ],
             "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.css"
             ],
             "scripts": []
@@ -129,5 +131,7 @@
       }
     }
   },
-  "defaultProject": "CachaloServer"
+  "cli": {
+    "analytics": "04d1833e-29a2-4dc6-94d2-1c2390f44acb"
+  }
 }

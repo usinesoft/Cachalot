@@ -1,0 +1,51 @@
+.connection-container{
+    display:flex;
+    flex-direction: column;
+}
+
+.servers-container {
+    display:flex;
+    flex-direction: column;
+    padding: 2rem;
+    
+    min-width: 50rem;
+}
+
+.server-container {
+    display:flex;
+    flex-direction: row;
+    align-items: stretch;
+    margin-top: 10px;
+    
+}
+
+.actions-container{
+    display:flex;
+    flex-direction: row;
+    padding: 2rem;
+    
+    min-width: 20rem;
+    align-items: center;
+}
+
+.status-container{
+    display:flex;
+    flex-direction: row;
+    padding: 2rem;
+    
+    min-width: 20rem;
+
+    align-items: stretch;
+    margin-top: 10px;
+}
+
+.home-container{
+    display: flex;
+    flex-direction: column;
+    
+}
+
+.server-button{
+    margin: 10px;
+}
+

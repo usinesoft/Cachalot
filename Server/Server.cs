@@ -127,8 +127,12 @@ namespace Server
             // delete persistent data
             _persistenceEngine?.StoreDataForRollback();
 
+            KeyValuePool.Reset();
+
             // delete data from memory
             _dataContainer = new DataContainer(_serviceContainer);
+
+            GC.Collect();
 
             if (_persistenceEngine != null) _persistenceEngine.Container = _dataContainer;
 

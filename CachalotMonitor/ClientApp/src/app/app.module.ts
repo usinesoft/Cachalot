@@ -17,6 +17,8 @@ import { MatIconModule } from '@angular/material/icon'
 import { MatButtonModule } from '@angular/material/button'
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ClipboardModule } from '@angular/cdk/clipboard';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { FormatSizePipe } from './size.pipe';
 
 @NgModule({
   declarations: [
@@ -24,7 +26,8 @@ import { ClipboardModule } from '@angular/cdk/clipboard';
     NavMenuComponent,
     HomeComponent,
     CounterComponent,
-    FetchDataComponent
+    FetchDataComponent,
+    FormatSizePipe
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -36,6 +39,7 @@ import { ClipboardModule } from '@angular/cdk/clipboard';
     MatButtonModule,
     MatTooltipModule,
     ClipboardModule,
+    MatSnackBarModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'counter', component: CounterComponent },

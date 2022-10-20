@@ -1,6 +1,8 @@
 {
-  "IsPersistent": true,
+  "IsPersistent": false,
   "ClusterName": "test",
   "TcpPort": 48401,
-  "DataPath": "root"
+  "DataPath": "root",
+  "MemoryLimitInGigabytes": 16
+
 }

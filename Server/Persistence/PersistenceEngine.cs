@@ -20,6 +20,8 @@ namespace Server.Persistence
         private Task _singleConsumer;
         private ReliableStorage _storage;
 
+        public int PendingTransactions => TransactionLog.PendingTransactionsCount;
+
         public PersistenceEngine(DataContainer dataContainer = null, string workingDirectory = null,
             Services serviceContainer = null)
         {

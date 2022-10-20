@@ -1,6 +1,10 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { interval, Subscription } from 'rxjs';
-import { ClusterNode, ConnectionData } from '../model/connection-data';
+import { ClusterInformation, ClusterNode, ConnectionData, ConnectionResponse } from '../model/connection-data';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MonitoringService } from '../monitoring.service';
+
 
 @Component({
   selector: 'app-home',
@@ -11,27 +15,63 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   public connection: ConnectionData = new ConnectionData;
 
-  public canConnect:boolean = false;
+  public canConnect: boolean = false;
 
-  private timerSubscription:Subscription|undefined;
+  private timerSubscription: Subscription | undefined;
 
-  public connected:boolean = false;
-
-  public connectionString:string = "a very long connection string";
-
-  constructor(){
+  constructor(private service:MonitoringService, private snackBar: MatSnackBar) {
     var defaultNode = new ClusterNode();
     defaultNode.host = 'localhost';
     defaultNode.port = 48401;
     this.connection.nodes.push(defaultNode);
   }
-  
+
+
+  public connected:boolean = false;
+
+  public get connectionString():string|undefined{
+    return this.service.connectionString;
+  }
+
+  public get clusterInformation():ClusterInformation{
+    return this.service.clusterInfo;
+  }
 
   ngOnInit() {
-    
+
+
+    // init the timer
+    let tick:number = 0;
     this.timerSubscription = interval(400)
-           .subscribe(x => { this.checkCanConnect(); });
+      .subscribe(x => {  
+        this.onFastTimer();
+
+        if(tick%5 == 0){
+          this.onSlowTimer();
+        }
+
+        tick++;
+      });
+
+    this.service.connected.subscribe(value => {
+      this.connected = value;
+      
+    });
   }
+
+
+  //every 400 ms
+  private onFastTimer():void{
+    this.checkCanConnect();
+  }
+
+  // every 2 seconds
+  private onSlowTimer():void{
+    if(this.connected){
+      this.service.updateClusterStatus();
+    }
+  }
+
 
 
   ngOnDestroy(): void {
@@ -39,15 +79,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
 
-  public connect(){
-    this.connected = true;
+  public connect() {
+
+    this.service.connect(this.connection);
+
   }
 
-  public disconnect(){
+  public disconnect() {
     this.connected = false;
   }
 
-  public addServer(){
+  public addServer() {
     var node = new ClusterNode;
     node.port = 48401;
     this.connection.nodes.push(node);
@@ -55,22 +97,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.checkCanConnect();
   }
 
-  public removeServer(toRemove:ClusterNode) {
+  public removeServer(toRemove: ClusterNode) {
     var index = this.connection.nodes.indexOf(toRemove);
     this.connection.nodes.splice(index, 1);
     this.checkCanConnect();
   }
 
 
-  public checkCanConnect(){
+  public checkCanConnect() {
 
     let result = true;
     this.connection.nodes.forEach(element => {
-      if(!element.host || !element.port)
+      if (!element.host || !element.port)
         result = false;
     });
 
     this.canConnect = result;
   }
-  
+
 }

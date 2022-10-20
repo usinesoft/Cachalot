@@ -5,6 +5,12 @@ import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 
 export function getBaseUrl() {
+  
+  // harcdcoded in development environment
+  if(environment.rootUrl){
+    return environment.rootUrl;
+  }
+  
   return document.getElementsByTagName('base')[0].href;
 }
 

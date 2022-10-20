@@ -30,7 +30,7 @@ namespace Server
         public Server(NodeConfig config, ILog log = null)
         {
             _serviceContainer = new Services(log, config);
-            _dataContainer = new DataContainer(_serviceContainer);
+            _dataContainer = new DataContainer(_serviceContainer, config);
 
             _config = config;
         }
@@ -74,6 +74,7 @@ namespace Server
             else if (e.Request is SwitchModeRequest switchModeRequest)
             {
                 Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
+                _dataContainer.IsReadOnly = Mode == ServerMode.ReadOnly;
                 e.Client.SendResponse(new NullResponse());
             }
             else if (e.Request is DropRequest)
@@ -130,7 +131,7 @@ namespace Server
             KeyValuePool.Reset();
 
             // delete data from memory
-            _dataContainer = new DataContainer(_serviceContainer);
+            _dataContainer = new DataContainer(_serviceContainer, _config);
 
             GC.Collect();
 
@@ -177,7 +178,7 @@ namespace Server
                             File.Copy(Path.Combine(path, Constants.SchemaFileName),
                                 Path.Combine(dataPath, Constants.SchemaFileName));
 
-                            _dataContainer = new DataContainer(_serviceContainer);
+                            _dataContainer = new DataContainer(_serviceContainer, _config);
                             _persistenceEngine.Container = _dataContainer;
                             _dataContainer.PersistenceEngine = _persistenceEngine;
 
@@ -228,7 +229,7 @@ namespace Server
                     case 3: // something bad happened. Rollback
                         _persistenceEngine.RollbackData();
 
-                        _dataContainer = new DataContainer(_serviceContainer);
+                        _dataContainer = new DataContainer(_serviceContainer, _config);
                         _persistenceEngine.Container = _dataContainer;
                         _dataContainer.PersistenceEngine = _persistenceEngine;
 

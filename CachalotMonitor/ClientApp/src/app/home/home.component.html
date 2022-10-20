@@ -50,8 +50,46 @@
     </button>
     </div>
   </div>
-  <div class="cluster-container">
-
+  <div  *ngIf="connected" class="cluster-container">
+    <div *ngFor="let node of clusterInformation.serversStatus" [ngClass] = "{'server-info-not-persistent':!node.isReadOnly&&!node.isPersistent,'server-info-readonly':node.isReadOnly, 'server-info':!node.isReadOnly}">
+      <h3>{{node.host}}</h3>
+      <table>
+        
+        <tr>
+          <td>Cluster</td><td>{{node.clusterName}}</td>
+        </tr>
+        <tr>
+          <td>Port</td><td>{{node.port}}</td>
+        </tr>
+        <tr>
+          <td>Startup time</td><td>{{node.startTime|date:'short'}}</td>
+        </tr>
+        <tr>
+          <td>Threads</td><td>{{node.threads}}</td>
+        </tr>
+        <tr>
+          <td>Software version</td><td>{{node.softwareVersion}}</td>
+        </tr>
+        <tr>
+          <td>Connected clients</td><td>{{node.connectedClients}}</td>
+        </tr>
+        <tr>
+          <td>Transaction lag</td><td>{{node.transactionLag}}</td>
+        </tr>
+        <tr>
+          <td>Is persistent</td><td>{{node.isPersistent}}</td>
+        </tr>
+        <tr>
+          <td>Is read-only</td><td>{{node.isReadOnly}}</td>
+        </tr>
+        <tr>
+          <td>Memory limit</td><td>{{node.memoryLimitInGigabytes }} GB</td>
+        </tr>
+        <tr>
+          <td>Used memory</td><td>{{node.workingSet|formatSize:false }}</td>
+        </tr>
+      </table>
+    </div>
   </div>
   <div class="collections-container">
 

@@ -30,13 +30,13 @@ namespace Client.Messages
         /// </summary>
         [ProtoMember(4)] private int _port;
 
-        [ProtoMember(9)] private string _softwareVersion;
+        [ProtoMember(5)] private string _softwareVersion;
 
 
         /// <summary>
         ///     Time when the server process was started
         /// </summary>
-        [ProtoMember(8)] private DateTime _startTime;
+        [ProtoMember(6)] private DateTime _startTime;
 
         /// <summary>
         ///     Number of threads
@@ -46,13 +46,31 @@ namespace Client.Messages
         /// <summary>
         ///     Virtual memory (physical + swap) allocated for the server process
         /// </summary>
-        [ProtoMember(6)] private long _virtualMemory;
+        [ProtoMember(8)] private long _virtualMemory;
 
         /// <summary>
         ///     Physical memory allocated for the server process
         /// </summary>
-        [ProtoMember(5)] private long _workingSet;
+        [ProtoMember(9)] private long _workingSet;
 
+
+        /// <summary>
+        /// Transactions present in the transactio log but not yet applied to the persistent storage
+        /// </summary>
+        [ProtoMember(10)]
+        private int _transactionLag;
+
+        [ProtoMember(11)]
+        private bool _isPersistent;
+
+        [ProtoMember(12)]
+        private int _memoryLimitInGigabytes;
+
+        [ProtoMember(13)]
+        private bool _isReadOnly;
+
+        [ProtoMember(14)]
+        private string _clusterName;
 
         /// <summary>
         ///     32 or 64 bits server process
@@ -131,5 +149,15 @@ namespace Client.Messages
             get => _softwareVersion;
             set => _softwareVersion = value;
         }
+
+        public int TransactionLag { get => _transactionLag; set => _transactionLag = value; }
+        
+        public bool IsPersistent { get => _isPersistent; set => _isPersistent = value; }
+        
+        public int MemoryLimitInGigabytes { get => _memoryLimitInGigabytes; set => _memoryLimitInGigabytes = value; }
+        
+        public bool IsReadOnly { get => _isReadOnly; set => _isReadOnly = value; }
+        
+        public string ClusterName { get => _clusterName; set => _clusterName = value; }
     }
 }

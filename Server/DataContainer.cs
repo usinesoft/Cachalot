@@ -35,11 +35,12 @@ namespace Server
 
         private Dictionary<string, int> _lastIdByGeneratorName = new Dictionary<string, int>();
 
-        public DataContainer(Services serviceContainer)
+        
+        public DataContainer(Services serviceContainer, NodeConfig _config)
         {
 
             _serviceContainer = serviceContainer;
-
+            Config = serviceContainer.NodeConfig;
         }
 
         /// <summary>
@@ -58,6 +59,9 @@ namespace Server
         public int ShardIndex { get; set; }
 
         private int ShardCount { get; set; }
+        
+        public INodeConfig Config { get; }
+        public bool IsReadOnly { get; internal set; }
 
         public void StartProcessingClientRequests()
         {
@@ -586,12 +590,19 @@ namespace Server
                 var assembly = Assembly.GetAssembly(typeof(Server));
                 response.ServerProcessInfo = new ServerInfo
                 {
+                    TransactionLag = PersistenceEngine?.PendingTransactions ?? 0,
                     ConnectedClients = (int)ActiveConnections,
                     StartTime = StartTime,
                     Bits = IntPtr.Size * 8,
                     Threads = currentProcess.Threads.Count,
                     WorkingSet = currentProcess.WorkingSet64,
                     VirtualMemory = currentProcess.VirtualMemorySize64,
+                    IsPersistent = Config.IsPersistent,
+                    Host = Environment.MachineName,
+                    Port = Config.TcpPort,
+                    MemoryLimitInGigabytes = Config.MemoryLimitInGigabytes,
+                    IsReadOnly = IsReadOnly,
+                    ClusterName = Config.ClusterName,
                     SoftwareVersion =
                         assembly != null
                             ? assembly.GetName().Version.ToString()

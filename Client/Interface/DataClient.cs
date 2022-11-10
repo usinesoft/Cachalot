@@ -17,6 +17,11 @@ namespace Client.Interface
 
         public int ShardsCount { get; set; } = 1;
 
+        /// <summary>
+        /// Informative only. In case of connection error
+        /// </summary>
+        public string ServerHostname { get; set; }
+        public int ServerPort { get; set; }
 
         /// <summary>
         ///     In order to connect to a server, a client needs a channel for data transport.
@@ -48,17 +53,31 @@ namespace Client.Interface
         {
             var request = new GetKnownTypesRequest();
 
-            var response = Channel.SendRequest(request);
+            try
+            {
+                var response = Channel.SendRequest(request);
 
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while getting server information", exResponse.Message,
-                    exResponse.CallStack);
+                if (response is ExceptionResponse exResponse)
+                    throw new CacheException("Error while getting server information", exResponse.Message,
+                        exResponse.CallStack);
 
-            var concreteResponse = response as ServerDescriptionResponse;
+                var concreteResponse = response as ServerDescriptionResponse;
 
-            Dbg.CheckThat(concreteResponse != null);
+                Dbg.CheckThat(concreteResponse != null);
 
-            return new ClusterInformation(new[] { concreteResponse });
+                return new ClusterInformation(new[] { concreteResponse });
+            }
+            catch (Exception)
+            {
+                var response = new ServerDescriptionResponse
+                {
+                    ConnectionError = true,
+                    ServerProcessInfo = new ServerInfo
+                        { Host = ServerHostname, Port = ServerPort }
+                };
+
+                return new ClusterInformation(new[] { response });
+            }
         }
 
         public ServerLog GetLog(int lastLines)

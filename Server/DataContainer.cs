@@ -576,7 +576,8 @@ namespace Server
                     var activityInfo = new DataStoreInfo
                     {
                         FullTypeName = LogEntry.Table,
-                        Count = _serviceContainer.Log.ActivityTable.DataByPrimaryKey.Count
+                        Count = _serviceContainer.Log.ActivityTable.DataByPrimaryKey.Count,
+                        EvictionPolicy = _serviceContainer.Log.ActivityTable.EvictionType
                     };
 
                     response.AddDataStoreInfo(activityInfo);

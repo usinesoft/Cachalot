@@ -1,11 +1,5 @@
 //#define DEBUG_VERBOSE
 
-using Client.ChannelInterface;
-using Client.Core;
-using Client.Messages;
-using Client.Messages.Pivot;
-using Client.Queries;
-using Client.Tools;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,921 +7,860 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Client.ChannelInterface;
+using Client.Core;
+using Client.Messages;
+using Client.Messages.Pivot;
+using Client.Queries;
+using Client.Tools;
 
-namespace Client.Interface
+namespace Client.Interface;
+
+public partial class
+    DataAggregator : IDataClient
 {
-    public partial class
+    private readonly object _transactionSync = new();
 
-        DataAggregator : IDataClient
+
+    public IList<DataClient> CacheClients { get; } = new List<DataClient>();
+
+    public void Dispose()
     {
+        foreach (var client in CacheClients) client.Dispose();
+    }
 
-        private readonly object _transactionSync = new object();
+    public ClusterInformation GetClusterInformation()
+    {
+        var responses = new ServerDescriptionResponse[CacheClients.Count];
 
 
-        public IList<DataClient> CacheClients { get; } = new List<DataClient>();
-
-        public void Dispose()
+        Parallel.For(0, CacheClients.Count, i =>
         {
-            foreach (var client in CacheClients) client.Dispose();
-        }
-
-        public ClusterInformation GetClusterInformation()
-        {
-            var responses = new ServerDescriptionResponse[CacheClients.Count];
-
             try
             {
-                Parallel.For(0, CacheClients.Count, i =>
-                {
-                    var server = CacheClients[i].GetServerDescription();
+                var server = CacheClients[i].GetServerDescription();
 
-                    responses[i] = server;
-                });
+                responses[i] = server;
             }
-            catch (AggregateException e)
+            catch (Exception)
             {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-
-
-            // check that all schemas are identical
-
-            var reference = responses[0];
-            for (var i = 1; i < CacheClients.Count; i++)
-                foreach (var typeDescription in reference.KnownTypesByFullName)
+                responses[i] = new()
                 {
-                    if (!responses[i].KnownTypesByFullName.ContainsKey(typeDescription.Key))
+                    ConnectionError = true,
+                    ServerProcessInfo = new()
                     {
-                        throw new CacheException(
-                            $"Servers have different schemas. You are probably trying to connect to servers that belong to different clusters");
+                        Host = CacheClients[i].ServerHostname, Port = CacheClients[i].ServerPort
                     }
+                };
+            }
+        });
 
-                    if (!responses[i].KnownTypesByFullName[typeDescription.Key].Equals(typeDescription.Value))
-                        throw new CacheException(
-                            $"Servers have different schemas: {responses[0].ServerProcessInfo.Host} <> {responses[i].ServerProcessInfo.Host} ");
-                }
+        
 
+        return new(responses);
+    }
 
-            return new ClusterInformation(responses);
+    public ServerLog GetLog(int lastLines)
+    {
+        var responses = new ServerLog[CacheClients.Count];
+
+        try
+        {
+            Parallel.For(0, CacheClients.Count, i =>
+            {
+                var serverLog = CacheClients[i].GetLog(lastLines);
+
+                responses[i] = serverLog;
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
         }
 
-        public ServerLog GetLog(int lastLines)
-        {
-            var responses = new ServerLog[CacheClients.Count];
 
-            try
+        return new(responses);
+    }
+
+    public void SetReadonlyMode(bool rw = false)
+    {
+        try
+        {
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].SetReadonlyMode(rw); });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
+        }
+    }
+
+    public void DropDatabase()
+    {
+        try
+        {
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].DropDatabase(); });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
+        }
+    }
+
+    private int _startIndex;
+
+    public int[] GenerateUniqueIds(string generatorName, int quantity = 1)
+    {
+        var ids = new List<int>();
+
+        // quantity of ids to be generated by each node
+        var quantityToGenerate = new int[CacheClients.Count];
+
+
+        var quantityPerShard = quantity / CacheClients.Count + 1;
+
+        var quantityLeft = quantity;
+
+        var i = _startIndex;
+        for (; i < CacheClients.Count + _startIndex; i++)
+        {
+            quantityToGenerate[i % CacheClients.Count] = quantityPerShard;
+            quantityLeft -= quantityPerShard;
+            if (quantityLeft < quantityPerShard) quantityPerShard = quantityLeft;
+
+            // In order to uniformly distribute objects on the multiple nodes always increment the _startIndex
+            // Otherwise if we ask n times for one id, the same node would answer and the sharding system will allocate this node for all objects
+            if (quantityLeft == 0)
             {
-                Parallel.For(0, CacheClients.Count, i =>
+                _startIndex = i + 1;
+                break;
+            }
+        }
+
+
+        try
+        {
+            Parallel.For(0, CacheClients.Count, idx =>
+            {
+                if (quantityToGenerate[idx] > 0)
                 {
-                    var serverLog = CacheClients[i].GetLog(lastLines);
-
-                    responses[i] = serverLog;
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-
-
-            return new ServerLog(responses);
-        }
-
-        public void SetReadonlyMode(bool rw = false)
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].SetReadonlyMode(rw); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-        }
-
-        public void DropDatabase()
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].DropDatabase(); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-        }
-
-        private int _startIndex;
-        public int[] GenerateUniqueIds(string generatorName, int quantity = 1)
-        {
-            var ids = new List<int>();
-
-            // quantity of ids to be generated by each node
-            var quantityToGenerate = new int[CacheClients.Count];
-
-
-            var quantityPerShard = quantity / CacheClients.Count + 1;
-
-            var quantityLeft = quantity;
-
-            var i = _startIndex;
-            for (; i < CacheClients.Count + _startIndex; i++)
-            {
-                quantityToGenerate[i % CacheClients.Count] = quantityPerShard;
-                quantityLeft -= quantityPerShard;
-                if (quantityLeft < quantityPerShard) quantityPerShard = quantityLeft;
-
-                // In order to uniformly distribute objects on the multiple nodes always increment the _startIndex
-                // Otherwise if we ask n times for one id, the same node would answer and the sharding system will allocate this node for all objects
-                if (quantityLeft == 0)
-                {
-                    _startIndex = i + 1;
-                    break;
-                }
-            }
-
-
-            try
-            {
-                Parallel.For(0, CacheClients.Count, idx =>
-                {
-                    if (quantityToGenerate[idx] > 0)
+                    var list = CacheClients[idx].GenerateUniqueIds(generatorName, quantityToGenerate[idx]);
+                    lock (ids)
                     {
-                        var list = CacheClients[idx].GenerateUniqueIds(generatorName, quantityToGenerate[idx]);
-                        lock (ids)
-                        {
-                            ids.AddRange(list);
-                        }
+                        ids.AddRange(list);
                     }
-                });
-            }
-            catch (AggregateException e)
+                }
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
+        }
+
+        ids.Sort();
+
+        return ids.Take(quantity).ToArray();
+    }
+
+    private int WhichNode(PackedObject obj)
+    {
+        return WhichNode(obj.PrimaryKey);
+    }
+
+    private int WhichNode(KeyValue primaryKey)
+    {
+        return primaryKey.GetHashCode() % CacheClients.Count;
+    }
+
+    public void Put(string collectionName, PackedObject item, bool excludeFromEviction = false)
+    {
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
+
+
+        var request = new PutRequest(collectionName) { ExcludeFromEviction = excludeFromEviction };
+
+
+        request.Items.Add(item);
+
+
+        // select the node using a sharding algorithm
+        var index = WhichNode(item);
+
+        var response = CacheClients[index].Channel.SendRequest(request);
+
+        if (response is ExceptionResponse exResponse)
+            throw new CacheException("Error while writing an object to the cache", exResponse.Message,
+                exResponse.CallStack);
+    }
+
+    public void FeedMany(string collectionName, IEnumerable<PackedObject> items, bool excludeFromEviction,
+                         int packetSize = 50000)
+    {
+        if (items == null)
+            throw new ArgumentNullException(nameof(items));
+
+        var sessionId = Guid.NewGuid();
+
+
+        // initialize one request per node
+        var requests = new PutRequest[CacheClients.Count];
+
+        var totalSent = 0;
+        var total = 0;
+
+        // Parallelize both nodes and requests (multiple requests for the same node are executed in parallel if multiple connections are available in the pool)
+        var tasks = new List<Task>();
+        foreach (var item in items)
+        {
+            var node = WhichNode(item);
+
+            requests[node] ??= new(collectionName)
             {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
+                ExcludeFromEviction = excludeFromEviction,
+                SessionId = sessionId
+            };
 
-            ids.Sort();
-
-            return ids.Take(quantity).ToArray();
-        }
-
-        private int WhichNode(PackedObject obj)
-        {
-            return WhichNode(obj.PrimaryKey);
-        }
-
-        private int WhichNode(KeyValue primaryKey)
-        {
-
-            return primaryKey.GetHashCode() % CacheClients.Count;
-        }
-
-        public void Put(string collectionName, PackedObject item, bool excludeFromEviction = false)
-        {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
-
-            var request = new PutRequest(collectionName) { ExcludeFromEviction = excludeFromEviction };
-
-
+            var request = requests[node];
 
             request.Items.Add(item);
 
-
-            // select the node using a sharding algorithm
-            var index = WhichNode(item);
-
-            var response = CacheClients[index].Channel.SendRequest(request);
-
-            if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while writing an object to the cache", exResponse.Message,
-                    exResponse.CallStack);
-        }
-
-        public void FeedMany(string collectionName, IEnumerable<PackedObject> items, bool excludeFromEviction, int packetSize = 50000)
-        {
-            if (items == null)
-                throw new ArgumentNullException(nameof(items));
-
-            var sessionId = Guid.NewGuid();
-
-
-            // initialize one request per node
-            var requests = new PutRequest[CacheClients.Count];
-
-            int totalSent = 0;
-            int total = 0;
-
-            // Parallelize both nodes and requests (multiple requests for the same node are executed in parallel if multiple connections are available in the pool)
-            var tasks = new List<Task>();
-            foreach (var item in items)
+            if (request.Items.Count == packetSize)
             {
+                var task = Task.Factory.StartNew(re =>
+                {
+                    var put = (PutRequest)re;
+                    Interlocked.Add(ref total, put.Items.Count);
 
-                var node = WhichNode(item);
+                    var split = put.SplitWithMaxSize();
 
-                requests[node] ??= new PutRequest(collectionName)
+                    foreach (var putRequest in split)
+                    {
+                        var response =
+                            CacheClients[node].Channel.SendRequest(putRequest);
+
+                        Interlocked.Add(ref totalSent, putRequest.Items.Count);
+
+                        if (response is ExceptionResponse exResponse)
+                            throw new CacheException(
+                                "Error while writing an object to the cache",
+                                exResponse.Message, exResponse.CallStack);
+                    }
+                }, request);
+
+
+                tasks.Add(task);
+                requests[node] = new(collectionName)
                 {
                     ExcludeFromEviction = excludeFromEviction,
                     SessionId = sessionId
                 };
-
-                var request = requests[node];
-
-                request.Items.Add(item);
-
-                if (request.Items.Count == packetSize)
-                {
-                    var task = Task.Factory.StartNew(re =>
-                    {
-                        var put = (PutRequest)re;
-                        Interlocked.Add(ref total, put.Items.Count);
-
-                        var split = put.SplitWithMaxSize();
-
-                        foreach (var putRequest in split)
-                        {
-                            var response =
-                                CacheClients[node].Channel.SendRequest(putRequest);
-
-                            Interlocked.Add(ref totalSent, putRequest.Items.Count);
-
-                            if (response is ExceptionResponse exResponse)
-                                throw new CacheException(
-                                    "Error while writing an object to the cache",
-                                    exResponse.Message, exResponse.CallStack);
-                        }
-
-                    }, request);
-
-
-                    tasks.Add(task);
-                    requests[node] = new PutRequest(collectionName)
-                    {
-                        ExcludeFromEviction = excludeFromEviction,
-                        SessionId = sessionId
-                    };
-                }
-            }
-
-            try
-            {
-                Task.WaitAll(tasks.ToArray());
-                Dbg.Trace($"{tasks.Count} tasks finished");
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-            tasks.Clear();
-
-            //send the last packet left for each node
-            for (var node = 0; node < CacheClients.Count; node++)
-            {
-                var request = requests[node];
-
-
-                if (request != null)
-                {
-                    request.EndOfSession = true;
-
-                    var n = node;
-                    var task = Task.Factory.StartNew(re =>
-                    {
-                        var put = (PutRequest)re;
-                        Interlocked.Add(ref total, put.Items.Count);
-                        var split = put.SplitWithMaxSize();
-
-
-                        foreach (var putRequest in split)
-                        {
-                            var response =
-                                CacheClients[n].Channel.SendRequest(putRequest);
-
-                            Interlocked.Add(ref totalSent, putRequest.Items.Count);
-
-                            if (response is ExceptionResponse exResponse)
-                                throw new CacheException(
-                                    "Error while writing an object to the cache",
-                                    exResponse.Message, exResponse.CallStack);
-                        }
-                    }, request);
-
-                    tasks.Add(task);
-                }
-            }
-
-            try
-            {
-                Task.WaitAll(tasks.ToArray());
-                Dbg.Trace($"{tasks.Count} tasks finished");
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
             }
         }
 
-        public int RemoveMany(OrQuery query)
+        try
         {
-            var sum = 0;
-            try
-            {
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    var removed = client.RemoveMany(query);
-                    Interlocked.Add(ref sum, removed);
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-            return sum;
+            Task.WaitAll(tasks.ToArray());
+            Dbg.Trace($"{tasks.Count} tasks finished");
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
         }
 
-        public PivotLevel ComputePivot(OrQuery filter, IEnumerable<int> axis, IEnumerable<int> values)
-        {
-            var result = new PivotLevel();
+        tasks.Clear();
 
-            try
+        //send the last packet left for each node
+        for (var node = 0; node < CacheClients.Count; node++)
+        {
+            var request = requests[node];
+
+
+            if (request != null)
             {
-                Parallel.ForEach(CacheClients, client =>
+                request.EndOfSession = true;
+
+                var n = node;
+                var task = Task.Factory.StartNew(re =>
                 {
-                    var pivot = client.ComputePivot(filter, axis, values);
-                    lock (result)
+                    var put = (PutRequest)re;
+                    Interlocked.Add(ref total, put.Items.Count);
+                    var split = put.SplitWithMaxSize();
+
+
+                    foreach (var putRequest in split)
                     {
-                        result.MergeWith(pivot);
+                        var response =
+                            CacheClients[n].Channel.SendRequest(putRequest);
+
+                        Interlocked.Add(ref totalSent, putRequest.Items.Count);
+
+                        if (response is ExceptionResponse exResponse)
+                            throw new CacheException(
+                                "Error while writing an object to the cache",
+                                exResponse.Message, exResponse.CallStack);
                     }
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
+                }, request);
 
-            return result;
+                tasks.Add(task);
+            }
         }
 
-        public int Truncate(string collectionName)
+        try
         {
-            var sum = 0;
-            try
-            {
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    var removed = client.Truncate(collectionName);
-                    Interlocked.Add(ref sum, removed);
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-            return sum;
+            Task.WaitAll(tasks.ToArray());
+            Dbg.Trace($"{tasks.Count} tasks finished");
         }
-
-        public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
+        catch (AggregateException e)
         {
-            Dbg.Trace($"GetMany for session {sessionId}");
-
-            // do not work too hard if it is a simple query by primary key
-            if (query.ByPrimaryKey)
-            {
-                var primaryKey = query.Elements[0].Elements[0].Value;
-
-                var node = WhichNode(primaryKey);
-
-                var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
-                if (one != null)
-                {
-                    yield return one;
-                }
-
-                yield break;
-            }
-
-            var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
-
-            try
-            {
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    var resultsFromThisNode = client.GetMany(query, sessionId);
-                    clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-
-            HashSet<RankedItem> distinctSet = new HashSet<RankedItem>();
-
-            // for full-text queries the order is given by the result rank
-            // for normal queries order is either explicit (order by clause) or thy are unordered
-            if (!query.IsFullTextQuery)
-            {
-                // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
-                if (query.OrderByProperty == null)
-                {
-
-                    var count = 0;
-                    while (true)
-                    {
-                        var allFinished = true;
-                        foreach (var clientResult in clientResults)
-                        {
-                            // limit the number of returned object if Take linq extension method was used
-                            if (query.Take > 0 && count >= query.Take) yield break;
-
-                            if (clientResult.MoveNext())
-                            {
-                                allFinished = false;
-
-                                var current = clientResult.Current;
-                                if (query.Distinct)
-                                {
-                                    if (distinctSet.Add(clientResult.Current))
-                                    {
-                                        yield return current;
-                                    }
-                                }
-                                else
-                                {
-                                    yield return current;
-                                }
-
-                                count++;
-                            }
-                        }
-
-                        if (allFinished) yield break;
-                    }
-                }
-
-
-                var count1 = 0;
-
-                // if ordered merge results by preserving order (either ascending or descending)
-                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending, clientResults))
-                {
-
-                    yield return item;
-
-                    count1++;
-
-                    if (query.Take > 0 && count1 >= query.Take) yield break;
-
-                }
-            }
-            else
-            {
-                // for full text queries we have to merge all results and sort by rank
-                var all = new List<RankedItem>();
-
-                Parallel.ForEach(clientResults, r =>
-                {
-                    List<RankedItem> resultFromClient = new List<RankedItem>();
-                    while (r.MoveNext())
-                    {
-                        resultFromClient.Add(r.Current);
-                    }
-
-                    lock (all)
-                    {
-                        all.AddRange(resultFromClient);
-                    }
-
-                });
-
-                foreach (var item in all.OrderByDescending(ri => ri.Rank))
-                {
-                    yield return item;
-                }
-            }
-
+            if (e.InnerException != null) throw e.InnerException;
         }
+    }
 
-        public void ReleaseLock(Guid sessionId)
-        {
-
-            try
-            {
-                Dbg.Trace($"Aggregator release lock for session {sessionId}");
-
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    client.ReleaseLock(sessionId);
-
-                });
-
-
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-        }
-
-        public bool Ping()
-        {
-            var answers = new ConcurrentQueue<bool>();
-
-            try
-            {
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    var oneResult = client.Ping();
-                    answers.Enqueue(oneResult);
-                });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-            return answers.All(a => a);
-        }
-
-        public void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1)
+    public int RemoveMany(OrQuery query)
+    {
+        var sum = 0;
+        try
         {
             Parallel.ForEach(CacheClients, client =>
             {
-                client.DeclareCollection(collectionName, schema, shard);
+                var removed = client.RemoveMany(query);
+                Interlocked.Add(ref sum, removed);
             });
         }
-
-        public Tuple<bool, int> EvalQuery(OrQuery query)
+        catch (AggregateException e)
         {
-            try
+            if (e.InnerException != null) throw e.InnerException;
+        }
+
+        return sum;
+    }
+
+    public PivotLevel ComputePivot(OrQuery filter, IEnumerable<int> axis, IEnumerable<int> values)
+    {
+        var result = new PivotLevel();
+
+        try
+        {
+            Parallel.ForEach(CacheClients, client =>
             {
-                var total = 0;
-
-                var complete = true;
-
-                if (query.Distinct)
+                var pivot = client.ComputePivot(filter, axis, values);
+                lock (result)
                 {
-                    throw new CacheException("Can not count with distinct clause in multi-node environment. Use select and count the result");
+                    result.MergeWith(pivot);
                 }
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
 
-                Parallel.For(0, CacheClients.Count, i =>
+        return result;
+    }
+
+    public int Truncate(string collectionName)
+    {
+        var sum = 0;
+        try
+        {
+            Parallel.ForEach(CacheClients, client =>
+            {
+                var removed = client.Truncate(collectionName);
+                Interlocked.Add(ref sum, removed);
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+
+        return sum;
+    }
+
+    public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
+    {
+        Dbg.Trace($"GetMany for session {sessionId}");
+
+        // do not work too hard if it is a simple query by primary key
+        if (query.ByPrimaryKey)
+        {
+            var primaryKey = query.Elements[0].Elements[0].Value;
+
+            var node = WhichNode(primaryKey);
+
+            var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
+            if (one != null) yield return one;
+
+            yield break;
+        }
+
+        var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
+
+        try
+        {
+            Parallel.ForEach(CacheClients, client =>
+            {
+                var resultsFromThisNode = client.GetMany(query, sessionId);
+                clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+
+
+        var distinctSet = new HashSet<RankedItem>();
+
+        // for full-text queries the order is given by the result rank
+        // for normal queries order is either explicit (order by clause) or thy are unordered
+        if (!query.IsFullTextQuery)
+        {
+            // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
+            if (query.OrderByProperty == null)
+            {
+                var count = 0;
+                while (true)
                 {
-                    var response =
-                        CacheClients[i].EvalQuery(query);
-                    // ReSharper disable once AccessToModifiedClosure
-                    Interlocked.Add(ref total, response.Item2);
+                    var allFinished = true;
+                    foreach (var clientResult in clientResults)
+                    {
+                        // limit the number of returned object if Take linq extension method was used
+                        if (query.Take > 0 && count >= query.Take) yield break;
 
-                    complete |= response.Item1;
-                });
+                        if (clientResult.MoveNext())
+                        {
+                            allFinished = false;
 
-                if (query.Take > 0 && total > query.Take) total = query.Take;
-                return new Tuple<bool, int>(complete, total);
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
+                            var current = clientResult.Current;
+                            if (query.Distinct)
+                            {
+                                if (distinctSet.Add(clientResult.Current)) yield return current;
+                            }
+                            else
+                            {
+                                yield return current;
+                            }
 
-                return new Tuple<bool, int>(true, 0);
-            }
-        }
+                            count++;
+                        }
+                    }
 
-        public void Dump(string path)
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].Dump(path); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-        }
-
-        public void ImportDump(string path)
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage0(path); });
-
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage1(path); });
-
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage2(path); });
-            }
-            catch (AggregateException e)
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage3(path); });
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-        }
-
-        public void ResyncUniqueIds(IDictionary<string, int> newValues)
-        {
-            try
-            {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ResyncUniqueIds(newValues); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null)
-                    if (e.InnerException is CacheException ex)
-                        throw ex;
-            }
-        }
-
-        public void InitializeFromDump(string path)
-        {
-            path = DumpHelper.NormalizeDumpPath(path);
-
-            var schemaPath = Path.Combine(path, "schema.json");
-
-            var json = File.ReadAllText(schemaPath);
-
-            var schema = SerializationHelper.DeserializeJson<Schema>(json);
-
-            foreach (var collections in schema.CollectionsDescriptions)
-            {
-                // register the type on the server
-                var shard = 0;
-                foreach (var client in CacheClients)
-                {
-                    client.DeclareCollection(collections.Key, collections.Value, shard);
-
-                    shard++;
-                }
-
-                FeedMany(collections.Key, DumpHelper.ObjectsInDump(path, collections.Value), true);
-            }
-
-            // reinitialize the sequences. As the shard count has probably changed reinitialize all the sequences in each shard
-            // starting with the maximum value
-
-            var maxValues = new Dictionary<string, int>();
-
-            var files = Directory.EnumerateFiles(path, "sequence_*.json");
-
-            foreach (var file in files)
-            {
-                var sequenceJson = File.ReadAllText(file);
-                var seq = SerializationHelper.DeserializeJson<Dictionary<string, int>>(sequenceJson);
-                foreach (var pair in seq)
-                {
-                    var keyFound = maxValues.ContainsKey(pair.Key);
-                    if (keyFound && maxValues[pair.Key] < pair.Value || !keyFound) maxValues[pair.Key] = pair.Value;
+                    if (allFinished) yield break;
                 }
             }
 
-            // resync sequences on the server
 
-            ResyncUniqueIds(maxValues);
-        }
+            var count1 = 0;
 
-        public void Stop(bool restart)
-        {
-            try
+            // if ordered merge results by preserving order (either ascending or descending)
+            foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty, query.OrderByIsDescending,
+                         clientResults))
             {
-                Parallel.For(0, CacheClients.Count, i => { CacheClients[i].Stop(restart); });
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
+                yield return item;
+
+                count1++;
+
+                if (query.Take > 0 && count1 >= query.Take) yield break;
             }
         }
-
-
-
-
-        public void ExecuteTransaction(IList<DataRequest> requests)
+        else
         {
+            // for full text queries we have to merge all results and sort by rank
+            var all = new List<RankedItem>();
 
-            // the same connector will not execute transactions in parallel
-            lock (_transactionSync)
+            Parallel.ForEach(clientResults, r =>
             {
-                Dbg.Trace("Entered transaction");
+                var resultFromClient = new List<RankedItem>();
+                while (r.MoveNext()) resultFromClient.Add(r.Current);
 
-                var status = new TransactionState();
-
-                status.Initialize(requests, CacheClients);
-
-                status.CheckStatus(TransactionState.Status.Initialized);
-
-                status.TryExecuteAsSingleStage();
-
-                if (status.CurrentStatus == TransactionState.Status.Completed)
+                lock (all)
                 {
-                    TransactionStatistics.ExecutedAsSingleStage();
-
-                    return;
+                    all.AddRange(resultFromClient);
                 }
+            });
 
+            foreach (var item in all.OrderByDescending(ri => ri.Rank)) yield return item;
+        }
+    }
 
-                // stage zero : send the transaction request to the servers and wait for them to acquire write locks
-                status.AcquireLock();
+    public void ReleaseLock(Guid sessionId)
+    {
+        try
+        {
+            Dbg.Trace($"Aggregator release lock for session {sessionId}");
 
-                status.CheckStatus(TransactionState.Status.LocksAcquired);
+            Parallel.ForEach(CacheClients, client => { client.ReleaseLock(sessionId); });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+    }
 
+    public bool Ping()
+    {
+        var answers = new ConcurrentQueue<bool>();
 
-                // first stage: the durable transaction is written in the transaction log
-                status.ProceedWithFirstStage();
-
-
-                // second stage: commit or rollback only the servers that processed successfully the first stage
-                // (if a server answered with an exception response the transaction was already rolled back on this server)
-
-                if (status.CurrentStatus == TransactionState.Status.FirstStageCompleted)
-                {
-                    // commit the transaction
-                    status.CommitSecondStage();
-
-                    status.CheckStatus(TransactionState.Status.SecondStageCompleted);
-
-                    // close the transaction
-                    status.CloseTransaction();
-
-                    status.CheckStatus(TransactionState.Status.Completed);
-
-                    TransactionStatistics.NewTransactionCompleted();
-
-                }
-                else
-                {
-                    status.Rollback();
-
-                    throw new CacheException(
-                        $"Error in two stage transaction. The transaction was successfully rolled back: {status.ExceptionType}", status.ExceptionType);
-                }
-
-
-            }
+        try
+        {
+            Parallel.ForEach(CacheClients, client =>
+            {
+                var oneResult = client.Ping();
+                answers.Enqueue(oneResult);
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
         }
 
-        public void Import(string collectionName, string jsonFile)
-        {
-            var objects = DumpHelper.LoadObjects(this, jsonFile, collectionName);
+        return answers.All(a => a);
+    }
 
-            FeedMany(collectionName, objects, true);
+    public void DeclareCollection(string collectionName, CollectionSchema schema, int shard = -1)
+    {
+        Parallel.ForEach(CacheClients, client => { client.DeclareCollection(collectionName, schema, shard); });
+    }
+
+    public Tuple<bool, int> EvalQuery(OrQuery query)
+    {
+        try
+        {
+            var total = 0;
+
+            var complete = true;
+
+            if (query.Distinct)
+                throw new CacheException(
+                    "Can not count with distinct clause in multi-node environment. Use select and count the result");
+
+            Parallel.For(0, CacheClients.Count, i =>
+            {
+                var response =
+                    CacheClients[i].EvalQuery(query);
+                // ReSharper disable once AccessToModifiedClosure
+                Interlocked.Add(ref total, response.Item2);
+
+                complete |= response.Item1;
+            });
+
+            if (query.Take > 0 && total > query.Take) total = query.Take;
+            return new(complete, total);
         }
-
-        public bool TryAdd(string collectionName, PackedObject item)
+        catch (AggregateException e)
         {
+            if (e.InnerException != null) throw e.InnerException;
 
-            var node = WhichNode(item);
-
-            return CacheClients[node].TryAdd(collectionName, item);
+            return new(true, 0);
         }
+    }
 
-        public void UpdateIf(PackedObject newValue, OrQuery testAsQuery)
+    public void Dump(string path)
+    {
+        try
         {
-            var node = WhichNode(newValue);
-
-            CacheClients[node].UpdateIf(newValue, testAsQuery);
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].Dump(path); });
         }
-
-
-        public Guid AcquireLock(bool writeAccess, params string[] collections)
+        catch (AggregateException e)
         {
-
-
-            Guid sessionId = Guid.NewGuid();
-
-            LockPolicy.SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
-
-            return sessionId;
-
-
-
+            if (e.InnerException != null) throw e.InnerException;
         }
+    }
 
-        private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
+    public void ImportDump(string path)
+    {
+        try
         {
-            bool[] resultByClient = new bool[CacheClients.Count];
-            try
-            {
-                // to avoid deadlock between the pool and the distributed locks reserve connections for all servers
-                foreach (var client in CacheClients)
-                {
-                    client.ReserveConnection(sessionId);
-                }
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage0(path); });
 
-                Parallel.For(0, CacheClients.Count, i =>
-                {
-                    resultByClient[i] = CacheClients[i].TryAcquireLock(sessionId, writeAccess, collections);
-                });
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage1(path); });
 
-                // all succeeded
-                if (resultByClient.All(r => r))
-                    return true;
-
-                // otherwise release the successful locks to avoid deadlocks
-                Parallel.For(0, CacheClients.Count, i =>
-                {
-                    if (resultByClient[i])
-                        CacheClients[i].ReleaseLock(sessionId);
-                });
-
-                // release the connections too
-                foreach (var client in CacheClients)
-                {
-                    client.ReleaseConnections(sessionId);
-                }
-
-                return false;
-
-            }
-            catch (AggregateException e)
-            {
-                Parallel.For(0, CacheClients.Count, i =>
-                {
-                    if (resultByClient[i])
-                        CacheClients[i].ReleaseLock(sessionId);
-                });
-
-
-                throw e.InnerException ?? e;
-
-            }
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage2(path); });
         }
-
-        public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)
+        catch (AggregateException e)
         {
-            try
-            {
-                Parallel.ForEach(CacheClients, client => client.DeclareDataFullyLoaded(collectionName, isFullyLoaded));
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage3(path); });
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
         }
+    }
 
-        public bool IsDataFullyLoaded(string collectionName)
+    public void ResyncUniqueIds(IDictionary<string, int> newValues)
+    {
+        try
         {
-            bool result = true;
-            try
-            {
-                Parallel.ForEach(CacheClients, client => result &= client.IsDataFullyLoaded(collectionName));
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-
-            return result;
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ResyncUniqueIds(newValues); });
         }
-
-        public void DeclareDomain(DomainDescription domain)
+        catch (AggregateException e)
         {
-            try
-            {
-                Parallel.ForEach(CacheClients, client => client.DeclareDomain(domain));
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
+            if (e.InnerException != null)
+                if (e.InnerException is CacheException ex)
+                    throw ex;
         }
+    }
 
-        public void ConfigEviction(string collectionName, EvictionType evictionType, int limit, int itemsToRemove,
-            int timeLimitInMilliseconds)
+    public void InitializeFromDump(string path)
+    {
+        path = DumpHelper.NormalizeDumpPath(path);
+
+        var schemaPath = Path.Combine(path, "schema.json");
+
+        var json = File.ReadAllText(schemaPath);
+
+        var schema = SerializationHelper.DeserializeJson<Schema>(json);
+
+        foreach (var collections in schema.CollectionsDescriptions)
         {
-            try
-            {
-                // the limit is global to the cluster
-                var limitByNode = limit / CacheClients.Count;
-                var removeByNode = itemsToRemove / CacheClients.Count + 1;
-
-                Parallel.ForEach(CacheClients,
-                    client => client.ConfigEviction(collectionName, evictionType, limitByNode, removeByNode, timeLimitInMilliseconds));
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerException != null) throw e.InnerException;
-            }
-        }
-
-        public void ReleaseConnections(Guid sessionId)
-        {
+            // register the type on the server
+            var shard = 0;
             foreach (var client in CacheClients)
             {
-                client.ReleaseConnections(sessionId);
+                client.DeclareCollection(collections.Key, collections.Value, shard);
+
+                shard++;
+            }
+
+            FeedMany(collections.Key, DumpHelper.ObjectsInDump(path, collections.Value), true);
+        }
+
+        // reinitialize the sequences. As the shard count has probably changed reinitialize all the sequences in each shard
+        // starting with the maximum value
+
+        var maxValues = new Dictionary<string, int>();
+
+        var files = Directory.EnumerateFiles(path, "sequence_*.json");
+
+        foreach (var file in files)
+        {
+            var sequenceJson = File.ReadAllText(file);
+            var seq = SerializationHelper.DeserializeJson<Dictionary<string, int>>(sequenceJson);
+            foreach (var pair in seq)
+            {
+                var keyFound = maxValues.ContainsKey(pair.Key);
+                if ((keyFound && maxValues[pair.Key] < pair.Value) || !keyFound) maxValues[pair.Key] = pair.Value;
             }
         }
+
+        // resync sequences on the server
+
+        ResyncUniqueIds(maxValues);
+    }
+
+    public void Stop(bool restart)
+    {
+        try
+        {
+            Parallel.For(0, CacheClients.Count, i => { CacheClients[i].Stop(restart); });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+    }
+
+
+    public void ExecuteTransaction(IList<DataRequest> requests)
+    {
+        // the same connector will not execute transactions in parallel
+        lock (_transactionSync)
+        {
+            Dbg.Trace("Entered transaction");
+
+            var status = new TransactionState();
+
+            status.Initialize(requests, CacheClients);
+
+            status.CheckStatus(TransactionState.Status.Initialized);
+
+            status.TryExecuteAsSingleStage();
+
+            if (status.CurrentStatus == TransactionState.Status.Completed)
+            {
+                TransactionStatistics.ExecutedAsSingleStage();
+
+                return;
+            }
+
+
+            // stage zero : send the transaction request to the servers and wait for them to acquire write locks
+            status.AcquireLock();
+
+            status.CheckStatus(TransactionState.Status.LocksAcquired);
+
+
+            // first stage: the durable transaction is written in the transaction log
+            status.ProceedWithFirstStage();
+
+
+            // second stage: commit or rollback only the servers that processed successfully the first stage
+            // (if a server answered with an exception response the transaction was already rolled back on this server)
+
+            if (status.CurrentStatus == TransactionState.Status.FirstStageCompleted)
+            {
+                // commit the transaction
+                status.CommitSecondStage();
+
+                status.CheckStatus(TransactionState.Status.SecondStageCompleted);
+
+                // close the transaction
+                status.CloseTransaction();
+
+                status.CheckStatus(TransactionState.Status.Completed);
+
+                TransactionStatistics.NewTransactionCompleted();
+            }
+            else
+            {
+                status.Rollback();
+
+                throw new CacheException(
+                    $"Error in two stage transaction. The transaction was successfully rolled back: {status.ExceptionType}",
+                    status.ExceptionType);
+            }
+        }
+    }
+
+    public void Import(string collectionName, string jsonFile)
+    {
+        var objects = DumpHelper.LoadObjects(this, jsonFile, collectionName);
+
+        FeedMany(collectionName, objects, true);
+    }
+
+    public bool TryAdd(string collectionName, PackedObject item)
+    {
+        var node = WhichNode(item);
+
+        return CacheClients[node].TryAdd(collectionName, item);
+    }
+
+    public void UpdateIf(PackedObject newValue, OrQuery testAsQuery)
+    {
+        var node = WhichNode(newValue);
+
+        CacheClients[node].UpdateIf(newValue, testAsQuery);
+    }
+
+
+    public Guid AcquireLock(bool writeAccess, params string[] collections)
+    {
+        var sessionId = Guid.NewGuid();
+
+        LockPolicy.SmartRetry(() => TryAcquireLock(sessionId, writeAccess, collections));
+
+        return sessionId;
+    }
+
+    private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
+    {
+        var resultByClient = new bool[CacheClients.Count];
+        try
+        {
+            // to avoid deadlock between the pool and the distributed locks reserve connections for all servers
+            foreach (var client in CacheClients) client.ReserveConnection(sessionId);
+
+            Parallel.For(0, CacheClients.Count,
+                i => { resultByClient[i] = CacheClients[i].TryAcquireLock(sessionId, writeAccess, collections); });
+
+            // all succeeded
+            if (resultByClient.All(r => r))
+                return true;
+
+            // otherwise release the successful locks to avoid deadlocks
+            Parallel.For(0, CacheClients.Count, i =>
+            {
+                if (resultByClient[i])
+                    CacheClients[i].ReleaseLock(sessionId);
+            });
+
+            // release the connections too
+            foreach (var client in CacheClients) client.ReleaseConnections(sessionId);
+
+            return false;
+        }
+        catch (AggregateException e)
+        {
+            Parallel.For(0, CacheClients.Count, i =>
+            {
+                if (resultByClient[i])
+                    CacheClients[i].ReleaseLock(sessionId);
+            });
+
+
+            throw e.InnerException ?? e;
+        }
+    }
+
+    public void DeclareDataFullyLoaded(string collectionName, bool isFullyLoaded)
+    {
+        try
+        {
+            Parallel.ForEach(CacheClients, client => client.DeclareDataFullyLoaded(collectionName, isFullyLoaded));
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+    }
+
+    public bool IsDataFullyLoaded(string collectionName)
+    {
+        var result = true;
+        try
+        {
+            Parallel.ForEach(CacheClients, client => result &= client.IsDataFullyLoaded(collectionName));
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+
+        return result;
+    }
+
+    public void DeclareDomain(DomainDescription domain)
+    {
+        try
+        {
+            Parallel.ForEach(CacheClients, client => client.DeclareDomain(domain));
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+    }
+
+    public void ConfigEviction(string collectionName, EvictionType evictionType, int limit, int itemsToRemove,
+                               int timeLimitInMilliseconds)
+    {
+        try
+        {
+            // the limit is global to the cluster
+            var limitByNode = limit / CacheClients.Count;
+            var removeByNode = itemsToRemove / CacheClients.Count + 1;
+
+            Parallel.ForEach(CacheClients,
+                client => client.ConfigEviction(collectionName, evictionType, limitByNode, removeByNode,
+                    timeLimitInMilliseconds));
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+    }
+
+    public void ReleaseConnections(Guid sessionId)
+    {
+        foreach (var client in CacheClients) client.ReleaseConnections(sessionId);
     }
 }

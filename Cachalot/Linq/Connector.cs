@@ -247,7 +247,12 @@ namespace Cachalot.Linq
                 var channel = new TcpClientChannel(new TcpClientPool(config.ConnectionPoolCapacity,
                     config.PreloadedConnections, serverCfg.Host, serverCfg.Port));
 
-                Client = new DataClient { Channel = channel };
+                Client = new DataClient
+                {
+                    Channel = channel,
+                    ServerHostname = serverCfg.Host,
+                    ServerPort = serverCfg.Port
+                };
             }
             else // multiple servers
             {
@@ -264,7 +269,9 @@ namespace Cachalot.Linq
                     {
                         Channel = channel,
                         ShardIndex = index,
-                        ShardsCount = config.Servers.Count
+                        ShardsCount = config.Servers.Count,
+                        ServerHostname = serverConfig.Host,
+                        ServerPort = serverConfig.Port
                     };
                     aggregator.CacheClients.Add(client);
                     index++;

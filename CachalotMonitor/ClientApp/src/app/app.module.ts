@@ -17,8 +17,18 @@ import { MatIconModule } from '@angular/material/icon'
 import { MatButtonModule } from '@angular/material/button'
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ClipboardModule } from '@angular/cdk/clipboard';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormatSizePipe } from './size.pipe';
+import { CollectionCardComponent } from './collection-card/collection-card.component';
+import { TooltipModule } from 'ng2-tooltip-directive';
+import { NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import { CommonModule} from '@angular/common';
+import { MatProgressBarModule} from '@angular/material/progress-bar';
+import { MatSelectModule} from '@angular/material/select';
+import { SchemaComponent } from './schema/schema.component';
+
 
 @NgModule({
   declarations: [
@@ -27,7 +37,9 @@ import { FormatSizePipe } from './size.pipe';
     HomeComponent,
     CounterComponent,
     FetchDataComponent,
-    FormatSizePipe
+    FormatSizePipe,
+    CollectionCardComponent,
+    SchemaComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -38,12 +50,21 @@ import { FormatSizePipe } from './size.pipe';
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    MatCardModule,
+    MatDividerModule,
     ClipboardModule,
     MatSnackBarModule,
+    TooltipModule,
+    NgbModule,
+    CommonModule,
+    MatProgressBarModule,
+    MatSelectModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'counter', component: CounterComponent },
       { path: 'fetch-data', component: FetchDataComponent },
+      { path: 'schema/:collection', component: SchemaComponent },
+      { path: 'schema', component: SchemaComponent },
     ]),
     BrowserAnimationsModule
   ],

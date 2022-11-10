@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { interval, Subscription } from 'rxjs';
-import { ClusterInformation, ClusterNode, ConnectionData, ConnectionResponse } from '../model/connection-data';
+import { ClusterInformation, ClusterNode, CollectionSummary, ConnectionData, ConnectionResponse } from '../model/connection-data';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MonitoringService } from '../monitoring.service';
 
@@ -19,6 +19,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private timerSubscription: Subscription | undefined;
 
+
   constructor(private service:MonitoringService, private snackBar: MatSnackBar) {
     var defaultNode = new ClusterNode();
     defaultNode.host = 'localhost';
@@ -27,15 +28,41 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
 
-  public connected:boolean = false;
+  public get connected():boolean {
+
+    if(!this.service.clusterInfo){
+      return false;
+    }
+
+    return  this.service.clusterInfo?.status != 'NotConnected';
+  }
+
+  public get working():boolean {
+    return this.service.working;
+  }
+
+  public get disconnecting():boolean {
+    return this.service.disconnecting;
+  }
+
+  
+
 
   public get connectionString():string|undefined{
     return this.service.connectionString;
   }
 
-  public get clusterInformation():ClusterInformation{
+  public get clusterInformation():ClusterInformation|undefined{
     return this.service.clusterInfo;
   }
+
+  public get history():string[]{
+    return this.service.history;
+  }
+
+  public identifyCollection(index:Number, collection:CollectionSummary) {
+    return collection.name;
+ }
 
   ngOnInit() {
 
@@ -53,10 +80,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         tick++;
       });
 
-    this.service.connected.subscribe(value => {
-      this.connected = value;
-      
-    });
+    
+    this.service.getConnectionHistory();
+
   }
 
 
@@ -67,8 +93,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // every 2 seconds
   private onSlowTimer():void{
-    if(this.connected){
-      this.service.updateClusterStatus();
+    if(this.connected && !this.disconnecting){
+      this.service.updateClusterStatus('slow timer');
     }
   }
 
@@ -80,13 +106,17 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 
   public connect() {
-
     this.service.connect(this.connection);
+  }
 
+  public connectWithHistory(entry:string) {
+    this.service.connectWithHistory(entry);
   }
 
   public disconnect() {
-    this.connected = false;
+
+    this.service.disconnect();
+    
   }
 
   public addServer() {

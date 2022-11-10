@@ -1,0 +1,54 @@
+<div class="root-container">
+
+    <div class="schema-selection-container">
+        <mat-form-field appearance="fill">
+            <mat-label>Collections</mat-label>
+            <mat-select [(value)]="selectedCollection">
+                <mat-option *ngFor="let collection of collections" [value]="collection">
+                    {{collection|uppercase}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+    <div class="schemas-container">
+        <app-collection-card [name]="summary?.name" [items]="summary?.itemsCount"
+            [fullText]="summary?.fullTextSearch" [layout]="summary?.storageLayout"
+            [eviction]="summary?.evictionType"
+            *ngIf="summary">
+        </app-collection-card>
+
+        <div class="schema-container" *ngIf="schema">
+
+            <div class="table">
+
+                <div class="row header blue">
+                    <div class="cell">
+                        Name
+                    </div>
+                    <div class="cell">
+                        Index Type
+                    </div>
+                    <div class="cell">
+                        Is Collection
+                    </div>
+
+                </div>
+
+                <div class="row" *ngFor="let prop of schema.serverSide">
+                    <div class="cell" data-title="Name">
+                        {{prop.name}}
+                    </div>
+                    <div class="cell" data-title="Index Type">
+                        {{prop.indexType}}
+                    </div>
+                    <div class="cell" data-title="Is Collection">
+                        {{prop.isCollection}}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

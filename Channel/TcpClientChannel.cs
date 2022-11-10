@@ -72,7 +72,7 @@ namespace Channel
 
         public void Dispose()
         {
-            if (_disposed)
+            if (!_disposed)
             {
                 _connectionPool?.Dispose();
 

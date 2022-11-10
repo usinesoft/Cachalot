@@ -112,6 +112,7 @@ namespace Server.HostServices.Logger
             // initialize the @ACTIVITY table
             var schema = TypedSchemaFactory.FromType<LogEntry>();
             schema.CollectionName = LogEntry.Table;
+            schema.StorageLayout = Layout.Compressed;
 
             ActivityTable = new DataStore(schema, new LruEvictionPolicy(20_000, 1000), new FullTextConfig());
 

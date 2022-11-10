@@ -9,6 +9,11 @@ namespace CachalotMonitor.Services
 
         string Connect(Model.ConnectionInfo connectionInfo);
 
+        void Disconnect();
+
         ClusterInformation GetClusterInformation();
+        void SaveToConnectionHistory(Model.ConnectionInfo info, string name);
+        Model.ConnectionInfo GetFromConnectionHistory(string name);
+        string[] GetHistoryEntries();
     }
 }

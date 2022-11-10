@@ -6,7 +6,7 @@
 .servers-container {
     display:flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 1rem;
     
     min-width: 50rem;
 }
@@ -31,7 +31,7 @@
 .status-container{
     display:flex;
     flex-direction: row;
-    padding: 2rem;
+    padding: 1rem;
     
     min-width: 20rem;
 
@@ -51,47 +51,92 @@
 
 .server-info{
     padding: 1rem;
-    background-color: green;
+   
     color: azure;
     min-width: 20rem;
     min-height: 30rem;
-    gap: 1rem;
+    
     border-radius: 10px;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.server-info-persistent{
+   
+    background-color: green;
+   
 }
 
 .server-info-not-persistent{
-    padding: 1rem;
+   
     background-color: darkgreen;
-    color: azure;
-    min-width: 30rem;
-    min-height: 30rem;
-    margin: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    
 }
 
 .server-info-readonly{
-    padding: 1rem;
+    
     background-color: blue;
-    color: azure;
-    min-width: 30rem;
-    min-height: 30rem;
-    margin: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    
+}
+
+.server-info-error{
+    background-color: red;
 }
 
 .cluster-container{
 
     display:flex;
     flex-direction: row;
-    padding: 2rem;
+    padding: 1rem;
     gap: 1rem;
     min-width: 100%;
 }
 
+.cluster-status-container{
+
+    display:flex;
+    flex-direction: row;
+    padding: 1rem;
+    gap: 1rem;
+    min-height: 3rem;
+    min-width: 100%;
+}
+
+.status-icon{
+    font-size: 2rem;     
+    height: 3rem;
+    width: 3rem;
+}
+
+.collections-container{
+
+    display:flex;
+    flex-direction: row;
+    padding: 1rem;
+    gap: 1rem;
+    min-width: 100%;
+    align-items: stretch;
+    align-content: stretch;
+}
+
+.collection-info{
+    padding: 0.3rem;
+   
+    color: black;
+    background-color: cornsilk;
+    min-width: 20rem;
+    min-height: 10rem;
+    
+    border-radius: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
 td{
+    margin-left: 1rem;
+    padding-left: 1rem;
+    padding-top: 0.2rem;
+}
+
+th{
     margin-left: 1rem;
     padding-left: 1rem;
     padding-top: 0.2rem;

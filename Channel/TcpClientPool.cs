@@ -101,8 +101,12 @@ namespace Channel
 
         protected override void Release(TcpClient resource)
         {
-            resource.Client.Close();
-            resource.Close();
+            if (resource != null)
+            {
+                resource.Client.Close();
+                resource.Close();
+            }
+            
         }
     }
 }

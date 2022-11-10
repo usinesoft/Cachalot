@@ -1,8 +1,9 @@
+<!--CONNECTION AREA--------------------------------------------------------------------------------------------------------->
 <div class="home-container">
   <div class="connection-container">
-
     <div class="servers-container" *ngIf="!connected">
       <h3>Connect to a cluster of servers</h3>
+      <mat-progress-bar mode="indeterminate" *ngIf="working || disconnecting"></mat-progress-bar>
       <div *ngFor="let server of connection.nodes; index as i" class="server-container">
         <!--host-->
         <mat-form-field appearance="fill" style="flex-grow:2">
@@ -20,79 +21,121 @@
           <mat-hint>TCP port</mat-hint>
         </mat-form-field>
         <!--add/remove-->
-        <button *ngIf="i==0" class="server-button" mat-mini-fab color="primary"
-          aria-label="add" (click)="addServer()"  matTooltip="Add a server">
+        <button *ngIf="i==0" class="server-button" mat-mini-fab color="primary" aria-label="add" (click)="addServer()"
+          matTooltip="Add a server">
           <mat-icon>add</mat-icon>
         </button>
-        <button *ngIf="i!=0" class="server-button" mat-mini-fab color="warn"
-          aria-label="remove" (click)="removeServer(server)" matTooltip="remove this server">
+        <button *ngIf="i!=0" class="server-button" mat-mini-fab color="warn" aria-label="remove"
+          (click)="removeServer(server)" matTooltip="remove this server">
           <mat-icon>remove</mat-icon>
         </button>
 
       </div>
     </div>
-    <div class="actions-container" *ngIf="!connected">      
-        <button mat-raised-button color="primary" aria-label="Connect"  matTooltip="connect to cluster" [disabled] = "!canConnect" (click) = "connect()">
-            <mat-icon>electrical_services</mat-icon>
-        </button>        
+    <!--actions and history-->
+    <div class="actions-container" *ngIf="!connected">
+      <button mat-raised-button color="primary" aria-label="Connect" matTooltip="connect to cluster"
+        [disabled]="!canConnect" (click)="connect()">
+        <mat-icon>electrical_services</mat-icon>
+      </button>
+      <button style="margin-left: 1rem;" *ngFor='let h of history' mat-raised-button color="primary"
+        aria-label="Connect" matTooltip="connect to cluster from connection history" 
+        (click)="connectWithHistory(h)">
+        <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
+      </button>
     </div>
+    <!--connection status when connected-->
     <div class="status-container" *ngIf="connected">
       <mat-form-field appearance="outline" style="min-width: 50rem;">
         <mat-label>connection string</mat-label>
-        <input matInput [ngModel] = "connectionString" [disabled]="true">
+        <input matInput [ngModel]="connectionString" [disabled]="true">
         <mat-hint>copy to use it in your code</mat-hint>
-        <button *ngIf="connectionString" matSuffix mat-icon-button aria-label="Copy" [cdkCopyToClipboard]="connectionString">
+        <button *ngIf="connectionString" matSuffix mat-icon-button aria-label="Copy"
+          [cdkCopyToClipboard]="connectionString">
           <mat-icon>content_copy</mat-icon>
         </button>
       </mat-form-field>
-      <button mat-fab color="warn" aria-label="Disconnect"  matTooltip="disconnect" class="server-button" (click) = "disconnect()">
+      <button mat-fab color="warn" aria-label="Disconnect" matTooltip="disconnect" class="server-button"
+        (click)="disconnect()" [disabled] = 'disconnecting'>
         <mat-icon>electrical_services</mat-icon>
-    </button>
+      </button>
     </div>
   </div>
-  <div  *ngIf="connected" class="cluster-container">
-    <div *ngFor="let node of clusterInformation.serversStatus" [ngClass] = "{'server-info-not-persistent':!node.isReadOnly&&!node.isPersistent,'server-info-readonly':node.isReadOnly, 'server-info':!node.isReadOnly}">
+
+  <!--CLUSTER VIEW - SERVERS--------------------------------------------------------------------------------------------------------->
+  
+  <div *ngIf="clusterInformation" class="cluster-status-container">
+    <div>      
+      <!-- <mat-icon style="color:green" class="status-icon" *ngIf="clusterInformation.status == 'Ok'">check_circle</mat-icon> -->
+      <mat-icon style="color:orange" class="status-icon" *ngIf="clusterInformation.status == 'Warning'">warning</mat-icon>
+      <mat-icon style="color:red" class="status-icon" *ngIf="clusterInformation.status == 'Error'">error</mat-icon>
+    </div>
+    <div *ngIf="clusterInformation.status != 'Ok' && clusterInformation.status != 'NotConnected'" style="font-size:1.2rem ;">{{clusterInformation.statusReason}}</div>
+  </div>
+  <div *ngIf="clusterInformation" class="cluster-container">
+
+    <div *ngFor="let node of clusterInformation.serversStatus" class="server-info"
+      [ngClass]="{'server-info-error': node.connectionError, 'server-info-not-persistent':!node.isReadOnly&&!node.isPersistent&&!node.connectionError,'server-info-readonly':node.isReadOnly&&!node.connectionError, 'server-info-persistent':!node.isReadOnly&&!node.connectionError}">
       <h3>{{node.host}}</h3>
       <table>
-        
+
         <tr>
-          <td>Cluster</td><td>{{node.clusterName}}</td>
+          <td>Cluster</td>
+          <td>{{node.clusterName}}</td>
         </tr>
         <tr>
-          <td>Port</td><td>{{node.port}}</td>
+          <td>Port</td>
+          <td>{{node.port}}</td>
         </tr>
         <tr>
-          <td>Startup time</td><td>{{node.startTime|date:'short'}}</td>
+          <td>Startup time</td>
+          <td>{{node.startTime|date:'short'}}</td>
         </tr>
         <tr>
-          <td>Threads</td><td>{{node.threads}}</td>
+          <td>Threads</td>
+          <td>{{node.threads}}</td>
         </tr>
         <tr>
-          <td>Software version</td><td>{{node.softwareVersion}}</td>
+          <td>Software version</td>
+          <td>{{node.softwareVersion}}</td>
         </tr>
         <tr>
-          <td>Connected clients</td><td>{{node.connectedClients}}</td>
+          <td>Connected clients</td>
+          <td>{{node.connectedClients}}</td>
         </tr>
         <tr>
-          <td>Transaction lag</td><td>{{node.transactionLag}}</td>
+          <td>Transaction lag</td>
+          <td>{{node.transactionLag}}</td>
         </tr>
         <tr>
-          <td>Is persistent</td><td>{{node.isPersistent}}</td>
+          <td>Is persistent</td>
+          <td>{{node.isPersistent}}</td>
         </tr>
         <tr>
-          <td>Is read-only</td><td>{{node.isReadOnly}}</td>
+          <td>Is read-only</td>
+          <td>{{node.isReadOnly}}</td>
         </tr>
         <tr>
-          <td>Memory limit</td><td>{{node.memoryLimitInGigabytes }} GB</td>
+          <td>Memory limit</td>
+          <td>{{node.memoryLimitInGigabytes }} GB</td>
         </tr>
         <tr>
-          <td>Used memory</td><td>{{node.workingSet|formatSize:false }}</td>
+          <td>Used memory</td>
+          <td>{{node.workingSet|formatSize:false }}</td>
         </tr>
       </table>
     </div>
   </div>
-  <div class="collections-container">
+  <!--CLUSTER VIEW - COLLECTIONS--------------------------------------------------------------------------------------------------------->
 
+  <div class="collections-container" *ngIf="clusterInformation">    
+    <app-collection-card [name]="collection?.name" 
+    [items] = "collection?.itemsCount" 
+    [fullText] = "collection?.fullTextSearch" 
+    [layout] = "collection?.storageLayout" 
+    [eviction] = "collection?.evictionType" 
+    *ngFor="let collection of clusterInformation?.collectionsSummary; trackBy:identifyCollection"></app-collection-card>
   </div>
+  
 
 </div>

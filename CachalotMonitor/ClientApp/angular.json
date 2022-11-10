@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "CachaloServer": {
+    "CachalotServer": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:application": {
@@ -70,10 +70,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "CachaloServer:build:production"
+              "browserTarget": "CachalotServer:build:production"
             },
             "development": {
-              "browserTarget": "CachaloServer:build:development",
+              "browserTarget": "CachalotServer:build:development",
               "proxyConfig": "proxy.conf.js"
             }
           },
@@ -82,7 +82,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "CachaloServer:build"
+            "browserTarget": "CachalotServer:build"
           }
         },
         "test": {

@@ -139,7 +139,7 @@ namespace BookingMarketplace
             try
             {
                 // test with a cluster of two nodes
-                using var connector = new Connector("localhost:48401+localhost:48402");
+                using var connector = new Connector("localhost:48411+localhost:48412");
 
                 Title("test with a cluster of two nodes");
                 
@@ -150,33 +150,33 @@ namespace BookingMarketplace
                 Console.WriteLine(e.Message);
             }
 
-            try
-            {
-                // test with one external server
-                using var connector = new Connector("localhost:48401");
+            //try
+            //{
+            //    // test with one external server
+            //    using var connector = new Connector("localhost:48401");
                 
-                Title("test with one external server");
+            //    Title("test with one external server");
                 
-                PerfTest(connector);
-            }
-            catch (CacheException e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            //    PerfTest(connector);
+            //}
+            //catch (CacheException e)
+            //{
+            //    Console.WriteLine(e.Message);
+            //}
 
-            try
-            {
-                // quick test with in-process server
-                using var connector = new Connector(new ClientConfig { IsPersistent = true });
+            //try
+            //{
+            //    // quick test with in-process server
+            //    using var connector = new Connector(new ClientConfig { IsPersistent = true });
                 
-                Title("test with in-process server");
+            //    Title("test with in-process server");
                 
-                PerfTest(connector);
-            }
-            catch (CacheException e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            //    PerfTest(connector);
+            //}
+            //catch (CacheException e)
+            //{
+            //    Console.WriteLine(e.Message);
+            //}
         }
     }
 }

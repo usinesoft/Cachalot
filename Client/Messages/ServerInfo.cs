@@ -55,7 +55,7 @@ namespace Client.Messages
 
 
         /// <summary>
-        /// Transactions present in the transactio log but not yet applied to the persistent storage
+        /// Transactions present in the transaction log but not yet applied to the persistent storage
         /// </summary>
         [ProtoMember(10)]
         private int _transactionLag;
@@ -71,6 +71,8 @@ namespace Client.Messages
 
         [ProtoMember(14)]
         private string _clusterName;
+
+        
 
         /// <summary>
         ///     32 or 64 bits server process
@@ -157,7 +159,8 @@ namespace Client.Messages
         public int MemoryLimitInGigabytes { get => _memoryLimitInGigabytes; set => _memoryLimitInGigabytes = value; }
         
         public bool IsReadOnly { get => _isReadOnly; set => _isReadOnly = value; }
-        
+        public bool ConnectionError => _connectedClients == 0;
+
         public string ClusterName { get => _clusterName; set => _clusterName = value; }
     }
 }

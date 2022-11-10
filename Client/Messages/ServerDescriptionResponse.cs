@@ -32,6 +32,12 @@ namespace Client.Messages
             set => _serverProcessInfo = value;
         }
 
+
+        /// <summary>
+        /// Not persistent on-purpose ; filled client-side
+        /// </summary>
+        public bool ConnectionError { get; set; }
+
         public void AddTypeDescription(CollectionSchema description)
         {
             KnownTypesByFullName.Add(description.CollectionName, description);

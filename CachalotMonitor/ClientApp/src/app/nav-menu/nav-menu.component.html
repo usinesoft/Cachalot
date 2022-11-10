@@ -27,12 +27,17 @@
           >
             <a class="nav-link text-dark" [routerLink]="['/']">Cluster</a>
           </li>
-          <li class="nav-item" [routerLinkActive]="['link-active']">
+          <li class="nav-item" [routerLinkActive]="['link-active']" *ngIf="service.clusterInfo && service.clusterInfo?.status != 'NotConnected'">
+            <a class="nav-link text-dark" [routerLink]="['/schema']"
+             >Schema</a
+            >
+          </li>
+          <li class="nav-item" [routerLinkActive]="['link-active']" *ngIf="service.clusterInfo && service.clusterInfo?.status != 'NotConnected'">
             <a class="nav-link text-dark" [routerLink]="['/counter']"
               >Data</a
             >
           </li>
-          <li class="nav-item" [routerLinkActive]="['link-active']">
+          <li class="nav-item" [routerLinkActive]="['link-active']" *ngIf="service.clusterInfo && service.clusterInfo?.status != 'NotConnected'">
             <a class="nav-link text-dark" [routerLink]="['/fetch-data']"
               >Admin</a
             >

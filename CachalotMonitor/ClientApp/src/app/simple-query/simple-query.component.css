@@ -1,0 +1,5 @@
+.query-container{
+    display: flex;
+    direction: row;
+    gap:3px;
+}

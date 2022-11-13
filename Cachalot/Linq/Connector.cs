@@ -390,7 +390,7 @@ namespace Cachalot.Linq
             var query = parsed.ToQuery(schema);
 
 
-            if (query.CountOnly)
+            if (query.CountOnly)        
             {
                (_, var count) = Client.EvalQuery(query);
 

@@ -1,0 +1,26 @@
+<div class="data-root">
+
+    <div class="data-selection-container">
+        <mat-form-field appearance="fill">
+            <mat-label>Collections</mat-label>
+            <mat-select [(value)]="selectedCollection">
+                <mat-option *ngFor="let collection of collections" [value]="collection">
+                    {{collection|uppercase}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+
+    <div class="query-container" *ngIf="schema">
+        <app-simple-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery">
+        </app-simple-query>
+    </div>
+
+    <div>
+        <p>{{sql}}</p>
+    </div>
+    <div class="result-container">
+
+    </div>
+
+</div>

@@ -28,6 +28,10 @@ import { CommonModule} from '@angular/common';
 import { MatProgressBarModule} from '@angular/material/progress-bar';
 import { MatSelectModule} from '@angular/material/select';
 import { SchemaComponent } from './schema/schema.component';
+import { DataComponent } from './data/data.component';
+import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
+import { SimpleQueryComponent } from './simple-query/simple-query.component';
+import { AndQueryComponent } from './and-query/and-query.component';
 
 
 @NgModule({
@@ -39,7 +43,10 @@ import { SchemaComponent } from './schema/schema.component';
     FetchDataComponent,
     FormatSizePipe,
     CollectionCardComponent,
-    SchemaComponent
+    SchemaComponent,
+    DataComponent,
+    SimpleQueryComponent,
+    AndQueryComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -59,12 +66,14 @@ import { SchemaComponent } from './schema/schema.component';
     CommonModule,
     MatProgressBarModule,
     MatSelectModule,
+    NgxMatSelectSearchModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'counter', component: CounterComponent },
       { path: 'fetch-data', component: FetchDataComponent },
       { path: 'schema/:collection', component: SchemaComponent },
       { path: 'schema', component: SchemaComponent },
+      { path: 'data', component: DataComponent },
     ]),
     BrowserAnimationsModule
   ],

@@ -11,9 +11,9 @@
         </mat-form-field>
     </div>
     <div class="schemas-container">
-        <app-collection-card [name]="summary?.name" [items]="summary?.itemsCount"
-            [fullText]="summary?.fullTextSearch" [layout]="summary?.storageLayout"
-            [eviction]="summary?.evictionType"
+        <app-collection-card [name]="summary.name" [items]="summary.itemsCount"
+            [fullText]="summary.fullTextSearch" [layout]="summary.storageLayout"
+            [eviction]="summary.evictionType"
             *ngIf="summary">
         </app-collection-card>
 
@@ -21,7 +21,7 @@
 
             <div class="table">
 
-                <div class="row header blue">
+                <div class="row header black">
                     <div class="cell">
                         Name
                     </div>

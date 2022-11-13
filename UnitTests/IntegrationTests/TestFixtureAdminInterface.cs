@@ -130,7 +130,7 @@ namespace Tests.IntegrationTests
                 Assert.IsTrue(files.Any(f => f.Contains("sequence")), "sequences where not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json")).ToList();
-                Assert.AreEqual(3, dataFiles.Count); // one containing 1000 the second one 10 and the sequence file
+                Assert.AreEqual(2, dataFiles.Count); // one data file and the sequence file
 
                 // add some data after dump
                 dataSource.Put(new Trade(2000, 3000, "TITI", DateTime.Now.Date, 150));

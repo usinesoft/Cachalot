@@ -12,6 +12,9 @@ class QueryService : IQueryService
         _clusterService = clusterService;
     }
 
+
+   
+
     public QueryMetadata GetMetadata(string collection, string property)
     {
         try
@@ -33,24 +36,29 @@ class QueryService : IQueryService
                     metadata.CollectionName = collection;
                     metadata.PropertyName = property;
 
+                    
                     // query distinct values of the property
-                    var result = _clusterService.Connector?.SqlQueryAsJson($"select distinct {property} from {collection} take 1000").ToList();
+                    var result = _clusterService.Connector?.SqlQueryAsJson($"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 1}").ToList();
 
-                    if (result == null || result.Count == 0)
-                    {
-                        metadata.AvailableOperators = new[] {"is null", "is not null" };
+                    if (result?.Count == 0) // only if the table is empty
                         return metadata;
-                    }
-
+                    
                     if (pr.IsCollection)
                     {
-                        MetadataForCollectionProperty(property, result, metadata);    
+                        MetadataForCollectionProperty(property, result!, metadata);    
                     }
                     else
                     {
-                        MetadataForScalarProperty(property, result, metadata);    
+                        MetadataForScalarProperty(property, result!, metadata);    
                     }
-                    
+
+                    // if more than max values do not load the network as the result can not be used for query definition
+                    if (result!.Count > QueryMetadata.MaxValues)
+                    {
+                        metadata.PossibleValues = Array.Empty<string>();
+                    }
+
+                    metadata.PossibleValuesCount = result!.Count;
 
                     return metadata;
                 }

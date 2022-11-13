@@ -7,6 +7,7 @@ export class QueryMetadata {
     propertyType: string |undefined;
     possibleValues: string[] = [];
     availableOperators: string[] = [];
+    possibleValuesCount:number = 0;
 }
 
 export class SimpleQuery{
@@ -16,5 +17,5 @@ export class SimpleQuery{
 }
 
 export class AndQuery{
-    simpleQueries:SimpleQuery[] = [new SimpleQuery];
+    simpleQueries:SimpleQuery[] = [];
 }

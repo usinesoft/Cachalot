@@ -443,14 +443,19 @@ public partial class
                             var current = clientResult.Current;
                             if (query.Distinct)
                             {
-                                if (distinctSet.Add(clientResult.Current)) yield return current;
+                                if (distinctSet.Add(clientResult.Current))
+                                {
+                                    count++;
+                                    yield return current;
+                                }
                             }
                             else
                             {
+                                count++;
                                 yield return current;
                             }
 
-                            count++;
+                            
                         }
                     }
 

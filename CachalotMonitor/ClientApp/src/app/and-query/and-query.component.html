@@ -1,1 +1,20 @@
-<p>and-query works!</p>
+<div class="and-query-container">
+    
+    <div class="query-line" *ngFor="let q of query.simpleQueries; index as i">        
+        <button mat-mini-fab color="warn" style="margin:0.5rem" aria-label="remove line" matTooltip="remove this line" [disabled]="query.simpleQueries.length == 1"
+            (click)="removeLine(q)">
+            <mat-icon>delete</mat-icon>
+        </button>
+        <app-simple-query [collection]="collection" [properties]="properties" [query]="q"></app-simple-query>        
+        <div *ngIf="i != query.simpleQueries.length-1">
+            <p style="margin:1rem">AND</p>
+        </div>
+        <div *ngIf="i == query.simpleQueries.length-1">
+            <button mat-mini-fab color="primary" style="margin:0.5rem" aria-label="add line" matTooltip="add a new line"
+            (click)="newLine()">
+            AND
+        </button>
+        </div>
+    </div>
+    
+</div>

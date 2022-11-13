@@ -12,10 +12,11 @@
     </div>
 
     <div class="query-container" *ngIf="schema">
-        <app-simple-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery">
-        </app-simple-query>
+        <app-and-query [collection]="selectedCollection" [properties]="properties" >
+        </app-and-query>    
     </div>
 
+    
     <div>
         <p>{{sql}}</p>
     </div>

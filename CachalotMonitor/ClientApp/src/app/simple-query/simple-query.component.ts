@@ -72,9 +72,10 @@ export class SimpleQueryComponent implements OnInit {
         this.values = [...md.possibleValues];
         this.filteredValues = [...md.possibleValues];
         this._propertyDataType = md.propertyType;
-        this._propertyIsCollection = md.propertyIsCollection;
-        this.working = false;
+        this._propertyIsCollection = md.propertyIsCollection;        
         this.operator = md.availableOperators[0];
+        this.canSelectValues = md.possibleValues.length > 0;
+        this.working = false;
         console.log(`metadata received => data type = ${this._propertyDataType} is collection = ${this._propertyIsCollection}`);
       }, _err => {
         this.working = true;
@@ -86,6 +87,11 @@ export class SimpleQueryComponent implements OnInit {
 
 
   public multipleValuesAllowed:boolean = false;
+  public canSelectValues:boolean = false;
+  
+  // "is null" and "is not null" operators can not have values
+  public hasValue:boolean = true;
+
 
   public get operator(): string | undefined {
     return this.operatorToUnicode(this._query.operator);
@@ -94,6 +100,13 @@ export class SimpleQueryComponent implements OnInit {
   public set operator(v: string | undefined) {
     this._query.operator = this.operatorFromUnicode(v);
     
+    if(this._query.operator == 'is null' || this._query.operator == 'is not null'){
+      this.hasValue= false;
+    }
+    else{
+      this.hasValue = true;
+    }
+
     if((this._query.operator == '=' || this._query.operator == '!=') && this._propertyDataType != 'SomeFloat' && !this._propertyIsCollection){
       this.multipleValuesAllowed = true;
     }

@@ -52,31 +52,29 @@ export class SimpleQueryComponent implements OnInit {
 
   public working: boolean = false;
 
-  private _propertyDataType: string | undefined;
-  private _propertyIsCollection: boolean = false;
-
+  
   public get selectedProperty(): string | undefined {
     return this._query.propertyName;
   }
 
   public set selectedProperty(v: string | undefined) {
     this._query.propertyName = v;
+    this._query.values = [];
     
-    this.queryChange.emit(this._query);
-
-    // get metadata => data type => acceptable operators
+    // get metadata => data type => acceptable operators and values list if not too big (limited to 1000 values)
     if (this.collection && this.selectedProperty) {
       this.working = true;
       this.queryService.GetQueryMetadata(this.collection, this.selectedProperty).subscribe(md => {
         this.operators = md.availableOperators.map(o => this.operatorToUnicode(o)!);
         this.values = [...md.possibleValues];
-        this.filteredValues = [...md.possibleValues];
-        this._propertyDataType = md.propertyType;
-        this._propertyIsCollection = md.propertyIsCollection;        
+        this.filteredValues = [...md.possibleValues];        
+        this._query.propertyIsCollection = md.propertyIsCollection;        
         this.operator = md.availableOperators[0];
         this.canSelectValues = md.possibleValues.length > 0;
         this.working = false;
-        console.log(`metadata received => data type = ${this._propertyDataType} is collection = ${this._propertyIsCollection}`);
+        this._query.dataType = md.propertyType;
+        this.queryChange.emit(this._query);
+        console.log(`metadata received => data type = ${this._query.dataType} is collection = ${this._query.propertyIsCollection}`);
       }, _err => {
         this.working = true;
       });
@@ -84,6 +82,17 @@ export class SimpleQueryComponent implements OnInit {
 
   }
 
+
+
+  public clearAll(){
+    console.log('clear called');
+    this.selectedValues = [];
+  }
+
+  public selectAll(){
+    console.log('select all called');
+    
+  }
 
 
   public multipleValuesAllowed:boolean = false;
@@ -107,7 +116,7 @@ export class SimpleQueryComponent implements OnInit {
       this.hasValue = true;
     }
 
-    if((this._query.operator == '=' || this._query.operator == '!=') && this._propertyDataType != 'SomeFloat' && !this._propertyIsCollection){
+    if((this._query.operator == '=' || this._query.operator == '!=') && this._query.dataType != 'SomeFloat' && !this._query.propertyIsCollection){
       this.multipleValuesAllowed = true;
     }
     else{
@@ -115,7 +124,7 @@ export class SimpleQueryComponent implements OnInit {
     }
     this.queryChange.emit(this._query);
 
-    console.log(`operator changed => data type = ${this._propertyDataType} is collection = ${this._propertyIsCollection} op = ${this.operator} multiple values = ${this.multipleValuesAllowed}` );
+    console.log(`operator changed => data type = ${this._query.dataType} is collection = ${this._query.propertyIsCollection} op = ${this.operator} multiple values = ${this.multipleValuesAllowed}` );
   }
 
   
@@ -124,7 +133,7 @@ export class SimpleQueryComponent implements OnInit {
     return this._query.values;
   }
   public set selectedValues(v : string[]) {
-    this._query.values = v;
+    this._query.values = v.filter(v=>v);
     this.queryChange.emit(this._query);
   }
 
@@ -152,9 +161,13 @@ export class SimpleQueryComponent implements OnInit {
   }
   public set singleValue(v : string|undefined) {
     if(v){
-      this._query.values = [v];
-      this.queryChange.emit(this._query);
+      this._query.values = [v];      
     }
+    else{ 
+      this._query.values = [];
+    }
+
+    this.queryChange.emit(this._query);
   }
   
   

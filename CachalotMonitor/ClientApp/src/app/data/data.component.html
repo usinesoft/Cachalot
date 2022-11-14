@@ -12,16 +12,40 @@
     </div>
 
     <div class="query-container" *ngIf="schema">
-        <app-and-query [collection]="selectedCollection" [properties]="properties" >
+        <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)] = "currentQuery" >
         </app-and-query>    
+        <div class="sql-container">
+            
+            <p>{{sql}}</p>
+            
+        </div>
     </div>
 
     
-    <div>
-        <p>{{sql}}</p>
-    </div>
-    <div class="result-container">
+    
 
+    
+    <div class="result-container">
+       
+
+            <div class="table" *ngIf="schema">
+
+                <div class="row header black">
+                    <div class="cell" *ngFor="let col of schema.serverSide">
+                        {{col.name}}
+                    </div>
+                    
+
+                </div>
+
+                <div class="row" *ngFor="let r of data">
+                    <div class="cell" *ngFor="let col of schema.serverSide">
+                        {{r[col.name]}}
+                    </div>
+
+                </div>
+            </div>
+        
     </div>
 
 </div>

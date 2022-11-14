@@ -1,4 +1,7 @@
-﻿using CachalotMonitor.Model;
+﻿using System.Text;
+using CachalotMonitor.Model;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace CachalotMonitor.Services;
@@ -13,8 +16,19 @@ class QueryService : IQueryService
     }
 
 
-   
+    public string QueryAsJson(string sql)
+    {
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql).ToList() ;
 
+        if (result != null)
+        {
+            var ja = new JArray(result);
+            return ja.ToString(Formatting.None, new IsoDateTimeConverter{DateTimeFormat = "yyyy-MM-dd"});
+        }
+
+        return "[]";
+    }
+    
     public QueryMetadata GetMetadata(string collection, string property)
     {
         try
@@ -58,7 +72,7 @@ class QueryService : IQueryService
                         metadata.PossibleValues = Array.Empty<string>();
                     }
 
-                    metadata.PossibleValuesCount = result!.Count;
+                    metadata.PossibleValuesCount = result.Count;
 
                     return metadata;
                 }
@@ -73,6 +87,164 @@ class QueryService : IQueryService
 
     }
 
+    private void SimpleQueryToSql(SimpleQuery query, StringBuilder builder)
+    {
+        string ValueToSql(string value, string? op = null)
+        {
+            if (query.DataType == PropertyType.String && !query.PropertyIsCollection)
+            {
+                if (op == "starts with")
+                {
+                    return $"'{value}%'";
+                }
+
+                if (op == "ends with")
+                {
+                    return $"'%{value}'";
+                }
+
+                if (op == "contains")
+                {
+                    return $"'%{value}%'";
+                }
+
+                return $"'{value}'";
+            }
+
+            if (query.DataType == PropertyType.SomeFloat)
+            {
+                return $"{value}.";
+            }
+
+            if (query.PropertyIsCollection)
+            {
+                return $"'{value}'";
+            }
+
+            return value;
+        }
+
+        if (query.CheckIsValid())
+        {
+            builder.Append(query.PropertyName);
+            builder.Append(" ");
+
+            // values may be either explicit list or a literal list separated by comma
+            var values = new List<string>();
+
+            if (query.Values.Length > 1)
+            {
+                values.AddRange(query.Values);
+            }
+            else if (query.Values.Length ==1)
+            {
+                var first = query.Values[0];
+                if (first.Contains(','))    
+                {
+                    values.AddRange(first.Split(',', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries));
+                }
+                else
+                {
+                    values.Add(first.Trim());
+                }
+            }
+
+            bool needValue = true;
+
+            switch (query.Operator)
+            {
+                case "is null":
+                    builder.Append("= null");
+                    needValue = false;
+                    break;
+                case "is not null":
+                    builder.Append("!= null");
+                    needValue = false;
+                    break;
+                case "=":
+                    builder.Append(values.Count > 1 ? "in" : "=");
+                    break;
+                case "!=":
+                    builder.Append(values.Count > 1 ? "not in" : "!=");
+                    break;
+                case "starts with":
+                    builder.Append("like");
+                    break;
+                case "ends with":
+                    builder.Append("like");
+                    break;
+                case "contains":
+                    builder.Append(!query.PropertyIsCollection ? "like" : "contains");
+
+                    break;
+                default:
+                    builder.Append(query.Operator);
+
+                    break;
+            }
+
+            if (needValue)
+            {
+                builder.Append(" ");
+
+                if (values.Count > 1)
+                {
+                    builder.Append("(");
+                    builder.Append(string.Join(',', values.Select(v=> ValueToSql(v))));
+                    builder.Append(")");
+                }
+                else
+                {
+                    builder.Append(ValueToSql(values[0], query.Operator));
+                }
+
+            }
+        }
+        
+    }
+
+    public string ClientQueryToSql(string collection, AndQuery query)
+    {
+        var builder = new StringBuilder();
+
+        builder.Append("SELECT");
+        builder.Append(" ");
+        builder.Append("FROM");
+        builder.Append(" ");
+        builder.Append(collection);
+        builder.Append(" ");
+
+
+        if (query.SimpleQueries.Any(q => q.CheckIsValid()))
+        {
+            builder.Append("WHERE");
+            builder.Append(Environment.NewLine);
+
+        }
+        
+        for (int i = 0; i < query.SimpleQueries.Length; i++)
+        {
+            var q = query.SimpleQueries[i];
+            SimpleQueryToSql(q, builder);
+            if (i < query.SimpleQueries.Length - 1)
+            {
+                if (query.SimpleQueries[i + 1].CheckIsValid())
+                {
+                    builder.Append(" ");
+                    builder.Append("AND");
+                    builder.Append(Environment.NewLine);
+                    builder.Append(" ");
+                }
+                
+            }
+        }
+
+        builder.Append(Environment.NewLine);
+        builder.Append("TAKE 100");
+        
+        return builder.ToString();
+    }
+
     private static void MetadataForScalarProperty(string property, List<JObject> result, QueryMetadata metadata)
     {
         List<string> values = new();
@@ -83,7 +255,7 @@ class QueryService : IQueryService
         {
             var jt = (JProperty)jo.First!;
 
-            var ct = jt!.Value.Type switch
+            var ct = jt.Value.Type switch
             {
                 JTokenType.Integer => PropertyType.SomeInteger,
                 JTokenType.Float => PropertyType.SomeFloat,

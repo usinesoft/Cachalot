@@ -14,8 +14,18 @@ export class SimpleQuery{
     propertyName:string|undefined;
     operator:string|undefined;
     values:string[] = [];
+    dataType:string|undefined;
+    propertyIsCollection:boolean = false;
 }
 
 export class AndQuery{
     simpleQueries:SimpleQuery[] = [];
+}
+
+export class SqlResponse{
+    sql:string|undefined;
+}
+
+export class DataResponse{
+    json:string|undefined;
 }

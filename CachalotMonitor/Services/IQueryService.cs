@@ -5,6 +5,9 @@ namespace CachalotMonitor.Services;
 public interface IQueryService
 {
     public QueryMetadata GetMetadata(string collection, string property);
+
+    public string ClientQueryToSql(string collection, AndQuery query);
+    string QueryAsJson(string sql);
 }
 
 /// <summary>

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CollectionSummary } from '../model/connection-data';
-import { SimpleQuery } from '../model/query';
+import { AndQuery, SimpleQuery } from '../model/query';
 import { Schema } from '../model/schema';
 import { MonitoringService } from '../monitoring.service';
 import { QueryService } from '../query.service';
@@ -18,6 +18,11 @@ export class DataComponent implements OnInit {
 
   public set selectedCollection(value:string|undefined){
     this._selectedCollection = value;
+
+    var nq = new AndQuery;
+    nq.simpleQueries.push(new SimpleQuery);
+    this._currentQuery = nq;
+
     if(value){
       this.schema = this.monitoringService. clusterInfo?.schema.find(s=>s.collectionName == value);
       this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s=>s.name == value);
@@ -45,13 +50,34 @@ export class DataComponent implements OnInit {
 
   sql:string|undefined;
 
-  private _currentQuery : SimpleQuery|undefined;
-  public get currentQuery() : SimpleQuery|undefined {
+
+  data:any[] = [];
+
+  private _currentQuery : AndQuery|undefined;
+  public get currentQuery() : AndQuery|undefined {
     return this._currentQuery;
   }
-  public set currentQuery(v : SimpleQuery|undefined) {
+  public set currentQuery(v : AndQuery|undefined) {
+    console.log('query changed');
     this._currentQuery = v;
-    this.sql = `${this._currentQuery?.propertyName} ${this._currentQuery?.operator} ${this._currentQuery?.values[0]}`
+    
+    this.queryService.GetAsSql(this.selectedCollection!, this._currentQuery!).subscribe(data=>{
+      
+      let oldSql = this.sql;
+      this.sql = data.sql;
+
+      if(data.sql && data.sql != oldSql){
+        this.queryService.ExecuteQuery(data.sql).subscribe(d=>{
+          if(d.json){
+            this.data = JSON.parse( d.json);
+            console.log(this.data.length + ' items received');
+          }
+          
+        });
+      }
+    }, err=> this.sql = err);
+    
+    
   }
   
 

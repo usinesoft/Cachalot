@@ -1,0 +1,15 @@
+<mat-select placeholder="Value(s)" [multiple]="true" [(ngModel)]="selectedValues" #multiSelect>
+            
+    <!--search box only if more than 10 values (by default)-->
+    <mat-option *ngIf="values.length > searchThreshold">
+        <ngx-mat-select-search [(ngModel)]="searchText" placeholderLabel="Search..."
+            noEntriesFoundLabel="'no matching value'"></ngx-mat-select-search>
+    </mat-option>
+    <mat-option class="clear" *ngIf="canSelectAll || canClearAll">
+        <mat-icon *ngIf="canClearAll" (click)="clearAll()" fontIcon="clear_all" style="color: red;" tooltip="clear selection"></mat-icon>
+        <mat-icon *ngIf="canSelectAll"(click)="selectAll()" fontIcon="check_all" style="color: green;" tooltip="select all"></mat-icon>
+    </mat-option>
+    <mat-option *ngFor="let val of filteredValues " [value]="val">
+        {{val}}
+    </mat-option>
+</mat-select>

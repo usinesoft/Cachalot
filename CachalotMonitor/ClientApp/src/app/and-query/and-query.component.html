@@ -5,7 +5,7 @@
             (click)="removeLine(q)">
             <mat-icon>delete</mat-icon>
         </button>
-        <app-simple-query [collection]="collection" [properties]="properties" [query]="q"></app-simple-query>        
+        <app-simple-query [collection]="collection" [properties]="properties" [query]="q" (queryChange) = "queryChanged()"></app-simple-query>        
         <div *ngIf="i != query.simpleQueries.length-1">
             <p style="margin:1rem">AND</p>
         </div>

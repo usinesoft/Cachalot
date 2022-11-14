@@ -32,6 +32,7 @@ import { DataComponent } from './data/data.component';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { SimpleQueryComponent } from './simple-query/simple-query.component';
 import { AndQueryComponent } from './and-query/and-query.component';
+import { SmartMultiSelectComponent } from './smart-multi-select/smart-multi-select.component';
 
 
 @NgModule({
@@ -46,7 +47,8 @@ import { AndQueryComponent } from './and-query/and-query.component';
     SchemaComponent,
     DataComponent,
     SimpleQueryComponent,
-    AndQueryComponent
+    AndQueryComponent,
+    SmartMultiSelectComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),

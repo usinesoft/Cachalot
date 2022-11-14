@@ -22,6 +22,7 @@ export class AndQueryComponent implements OnInit {
    public set query(v: AndQuery|undefined) {
      if(v){
        this._query = v;
+       
      }
      
    }
@@ -55,13 +56,21 @@ export class AndQueryComponent implements OnInit {
     }
   }
 
+  
   public newLine(){
-    this._query.simpleQueries.push(new SimpleQuery)
+    var nq = new SimpleQuery;    
+    this._query.simpleQueries.push(nq);
+    this.queryChange.emit(this._query);
   }
 
   public removeLine(q:SimpleQuery){
     var index = this._query.simpleQueries.indexOf(q);
     this._query.simpleQueries.splice(index, 1);    
+    this.queryChange.emit(this._query);
+  }
+
+  public queryChanged(){
+    this.queryChange.emit(this._query);
   }
 
 }

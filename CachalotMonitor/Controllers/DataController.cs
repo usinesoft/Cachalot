@@ -1,4 +1,5 @@
-﻿using CachalotMonitor.Services;
+﻿using CachalotMonitor.Model;
+using CachalotMonitor.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CachalotMonitor.Controllers;
@@ -18,5 +19,20 @@ public class DataController : ControllerBase
     public QueryMetadata GetQueryMetadata(string collection, string property)
     {
         return _queryService.GetMetadata(collection, property);
+    }
+
+    [HttpPost("query/sql/{collection}")]
+    public SqlResponse GetQueryMetadata(string collection, [FromBody]AndQuery clientQuery)
+    {
+        var sql = _queryService.ClientQueryToSql(collection, clientQuery);
+        return new() { Sql = sql };
+    }
+
+    [HttpPost("query/execute")]
+    public DataResponse ExecuteQuery([FromBody]InputQuery query)
+    {
+        if (query.Sql != null) return new DataResponse { Json = _queryService.QueryAsJson(query.Sql) };
+
+        throw new ArgumentException("Empty sql");
     }
 }

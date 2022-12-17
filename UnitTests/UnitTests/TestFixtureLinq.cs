@@ -70,7 +70,7 @@ namespace Tests.UnitTests
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             var str = query.ToString();
-            Assert.AreEqual("IsDelivered = False", str);
+            Assert.AreEqual("SELECT  FROM Order WHERE IsDelivered = False", str);
 
 
             // check != operator

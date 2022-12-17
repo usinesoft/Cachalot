@@ -87,7 +87,7 @@ namespace Client.Queries
             Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
             Value = value ?? throw new ArgumentNullException(nameof(value));
             Value2 = value2 ?? throw new ArgumentNullException(nameof(value2));
-
+             
             if (!oper.IsRangeOperator())
                 throw new ArgumentException("Only range operators can be used with two values");
 

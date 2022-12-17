@@ -1,11 +1,14 @@
 .root-container{
     display: flex;
-    flex-direction: column;    
+    flex-direction: column;   
+    gap:5px; 
+    max-height: 100%;   
 }
 
 .schema-selection-container{
     display: flex;
-    flex-direction: row;    
+    flex-direction: row;   
+    /* align-items: baseline;  */
 }
 
 .schemas-container{
@@ -14,10 +17,25 @@
 }
 
 .schema-container{
-    display: flex;
-    flex-direction: column; 
-    margin-left: 1rem;   
+  display: flex;
+  direction: column;
+  overflow: scroll;
+  border-radius: 6px;
+  margin-left: 1rem;
+  padding: 1rem;
+  flex-grow: 2;
+  max-height: 80vh;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
+
+.action-button{
+    /* font-size: 3rem; */
+    height: 3.5rem;
+    margin-left: 1rem;
+    margin-top: 2px;
+    /* margin-top: 5px; */
+}
+
 
 /*---------------------------------------------table----------------------*/
 @media screen and (max-width: 580px) {
@@ -67,11 +85,24 @@
   }
 
   .row.black {
-    background: darkblue;
+    background: #111111;
   }
   .row.blue {
     background: #2980b9;
   }
+  
+  
+  td {
+    padding: 6px 12px;
+    display: table-cell;
+    padding: 0.3rem;
+  }
+  
+  th{
+    padding: 0.5rem;
+    font-weight: 500;
+  }
+
   @media screen and (max-width: 580px) {
     .row {
       padding: 14px 0 7px;

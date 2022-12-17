@@ -7,8 +7,6 @@ import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
 import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
-import { CounterComponent } from './counter/counter.component';
-import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -16,11 +14,13 @@ import { MatInputModule } from '@angular/material/input'
 import { MatIconModule } from '@angular/material/icon'
 import { MatButtonModule } from '@angular/material/button'
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { FormatSizePipe } from './size.pipe';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { FormatSizePipe, EvictionPipe, IndexPipe, CheckPipe } from './pipes';
 import { CollectionCardComponent } from './collection-card/collection-card.component';
 import { TooltipModule } from 'ng2-tooltip-directive';
 import { NgbModule} from '@ng-bootstrap/ng-bootstrap';
@@ -33,22 +33,26 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { SimpleQueryComponent } from './simple-query/simple-query.component';
 import { AndQueryComponent } from './and-query/and-query.component';
 import { SmartMultiSelectComponent } from './smart-multi-select/smart-multi-select.component';
+import { NgxJsonViewerModule } from 'ngx-json-viewer';
+import { AdminComponent } from './admin/admin.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     NavMenuComponent,
-    HomeComponent,
-    CounterComponent,
-    FetchDataComponent,
+    HomeComponent,    
     FormatSizePipe,
+    IndexPipe,
+    EvictionPipe,
+    CheckPipe,
     CollectionCardComponent,
     SchemaComponent,
     DataComponent,
     SimpleQueryComponent,
     AndQueryComponent,
-    SmartMultiSelectComponent
+    SmartMultiSelectComponent,
+    AdminComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -69,11 +73,12 @@ import { SmartMultiSelectComponent } from './smart-multi-select/smart-multi-sele
     MatProgressBarModule,
     MatSelectModule,
     NgxMatSelectSearchModule,
+    NgxJsonViewerModule,
+    MatCheckboxModule,
+    MatSlideToggleModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
-      { path: 'counter', component: CounterComponent },
-      { path: 'fetch-data', component: FetchDataComponent },
-      { path: 'schema/:collection', component: SchemaComponent },
+      { path: 'admin', component: AdminComponent },
       { path: 'schema', component: SchemaComponent },
       { path: 'data', component: DataComponent },
     ]),

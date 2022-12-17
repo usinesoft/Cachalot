@@ -30,6 +30,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<IQueryService, QueryService>();
 builder.Services.AddSingleton<IClusterService, ClusterService>();
+builder.Services.AddSingleton<IAdminService, AdminService>();
+builder.Services.AddSingleton<ISchemaService, SchemaService>();
 
 
 var app = builder.Build();
@@ -41,7 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 

@@ -76,8 +76,8 @@ namespace BookingMarketplace
                 Town = "Paris",
                 Comments = new List<Comment>
                 {
-                    new Comment{Text="beautiful view"},
-                    new Comment{Text="close to the metro"},
+                    new() {Text="beautiful view"},
+                    new() {Text="close to the metro"},
                 }
             };
 
@@ -92,8 +92,8 @@ namespace BookingMarketplace
                 Town = "Paris",
                 Comments = new List<Comment>
                 {
-                    new Comment{Text="ps4"},
-                    new Comment{Text="close to the metro"},
+                    new() {Text="ps4"},
+                    new() {Text="close to the metro"},
                 }
             };
 
@@ -108,8 +108,8 @@ namespace BookingMarketplace
                 Town = "Nice",
                 Comments = new List<Comment>
                 {
-                    new Comment{Text="wonderful sea view"},
-                    new Comment{Text="close to beach"},
+                    new() {Text="wonderful sea view"},
+                    new() {Text="close to beach"},
                 }
             };
 
@@ -120,28 +120,55 @@ namespace BookingMarketplace
             return result;
         }
 
-        private static int ObjectCount = 100_000;
+        private static int _objectCount = 100_000;
+        
+        private static string _connectionString = "localhost:48401";
+
 
         private static void Main(string[] args)
         {
+
+            Title("Test application for Cachalot DB");
+            
+            Console.WriteLine("Command line options (optional):");
+            Console.WriteLine();
+            Console.WriteLine("1) connection string: host:port or host1:port1+host2;port2... or --internal to run an in-process server");
+            Console.WriteLine($"    by default it will try to connect to {_connectionString}");
+
+            Console.WriteLine("2) number of objects fed to the database for this test");
+            Console.WriteLine($"    by default {_objectCount}");
+
             if (args.Length > 0)
             {
                 try
                 {
-                    ObjectCount = int.Parse(args[0]);
+                    _connectionString = args[0];
+                    if (_connectionString == "--internal")
+                    {
+                        _connectionString = null;
+                    }
+
+                    if (args.Length > 1)
+                    {
+                        _objectCount = int.Parse(args[1]);
+                    }
+                    
                 }
                 catch (Exception )
                 {
-                    Console.WriteLine("Argument ignored. Only one integer argument can be specified");
+                    Console.WriteLine("Invalid command line: using default values");
                 }
             }
 
             try
             {
-                // test with a cluster of two nodes
-                using var connector = new Connector("localhost:48411+localhost:48412");
+                
+                using var connector = _connectionString != null ? 
+                    new Connector(_connectionString): 
+                    // ReSharper disable once RedundantArgumentDefaultValue
+                    new Connector(false); // internal, non persistent server
 
-                Title("test with a cluster of two nodes");
+                Title($"testing with {_connectionString} and {_objectCount} objects");
                 
                 PerfTest(connector);
             }
@@ -150,33 +177,7 @@ namespace BookingMarketplace
                 Console.WriteLine(e.Message);
             }
 
-            //try
-            //{
-            //    // test with one external server
-            //    using var connector = new Connector("localhost:48401");
-                
-            //    Title("test with one external server");
-                
-            //    PerfTest(connector);
-            //}
-            //catch (CacheException e)
-            //{
-            //    Console.WriteLine(e.Message);
-            //}
-
-            //try
-            //{
-            //    // quick test with in-process server
-            //    using var connector = new Connector(new ClientConfig { IsPersistent = true });
-                
-            //    Title("test with in-process server");
-                
-            //    PerfTest(connector);
-            //}
-            //catch (CacheException e)
-            //{
-            //    Console.WriteLine(e.Message);
-            //}
+            
         }
     }
 }

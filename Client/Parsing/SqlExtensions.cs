@@ -13,7 +13,7 @@ namespace Client.Parsing
 
             OrQuery result = null;
 
-            if (node.Token == "select" || node.Token == "count")
+            if (node.Token is "select" or "count")
             {
                 result = SelectToQuery(node, schema);
             }

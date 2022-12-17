@@ -10,13 +10,13 @@ namespace BookingMarketplace
     {
         private static void PerfTest(Connector connector)
         {
-            connector.AdminInterface().DropDatabase();
 
             connector.DeclareCollection<Home>();
 
             var homes = connector.DataSource<Home>();
+            homes.Truncate();
 
-            int feedObjects = ObjectCount;
+            int feedObjects = _objectCount;
             var ids = connector.GenerateUniqueIds("property_id", feedObjects);
 
             var items = GenerateTestData(ids);

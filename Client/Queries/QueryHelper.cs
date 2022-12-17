@@ -98,9 +98,14 @@ namespace Client.Queries
                                             oper = QueryOperator.GtLt;
                                         }
 
-                                    var between = new AtomicQuery(q1.Metadata, q2.Value, q1.Value, oper);
-                                    atomicQueries.Add(between);
-                                    optimized = true;
+                                    // if false means value 2 < value 1. It will return an empty result. No need to optimize
+                                    if (oper.IsRangeOperator())
+                                    {
+                                        var between = new AtomicQuery(q1.Metadata, q2.Value, q1.Value, oper);
+                                        atomicQueries.Add(between);
+                                        optimized = true;
+                                    }
+                                    
                                 }
                             }
 

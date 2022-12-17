@@ -16,10 +16,20 @@ export class SimpleQuery{
     values:string[] = [];
     dataType:string|undefined;
     propertyIsCollection:boolean = false;
+    possibleValues:string[] = [];
+    availableOperators:string[] = []
 }
 
 export class AndQuery{
     simpleQueries:SimpleQuery[] = [];
+    orderBy:string|undefined;
+    descending:boolean=false;
+    take:string = '100';
+}
+
+export class SearchRequest{
+    sql:string|undefined;
+    fullText:string|undefined;
 }
 
 export class SqlResponse{

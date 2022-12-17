@@ -12,10 +12,15 @@ namespace CachalotMonitor.Controllers
     {
 
         IClusterService ClusterService { get; }
+        public IAdminService AdminService { get; }
 
-        public AdminController(IClusterService clusterService)
+        public ISchemaService SchemaService { get; }
+
+        public AdminController(IClusterService clusterService, IAdminService adminService, ISchemaService schemaService)
         {
             ClusterService = clusterService;
+            AdminService = adminService;
+            SchemaService = schemaService;
         }
 
         /// <summary>
@@ -48,6 +53,13 @@ namespace CachalotMonitor.Controllers
 
 
         }
+
+        [HttpPost("update/schema")]
+        public void UpdateSchema([FromBody] SchemaUpdateRequest request)
+        {
+            SchemaService.UpdateSchema(request);
+        }
+        
 
 
         /// <summary>
@@ -109,5 +121,74 @@ namespace CachalotMonitor.Controllers
             return ClusterService.GetClusterInformation();
 
         }
+
+        [HttpPost("backup/path")]
+        public void ConfigureBackup([FromBody]BackupConfig cfg)
+        {
+            if(cfg.BackupDirectory != null)
+                AdminService.SetBackupDirectory(cfg.BackupDirectory);
+        }
+
+        [HttpGet("backup/path")]
+        public BackupConfig GetBackupDirectory()
+        {
+            return new(AdminService.GetBackupDirectory());
+        }
+
+        [HttpGet("backup/list")]
+        public string[] GetAvailableBackups()
+        {
+            return AdminService.GetAvailableBackups().OrderByDescending(x=>x).ToArray();
+        }
+
+        [HttpPost("backup/save")]
+        public void CreateBackup()
+        {
+            AdminService.StartBackup();
+        }
+
+        [HttpPost("backup/restore/{backup}")]
+        public void RestoreFromBackup(string backup)
+        {
+            AdminService.StartRestore(backup);
+        }
+
+        [HttpPost("backup/recreate/{backup}")]
+        public void RecreateFromBackup(string backup)
+        {
+            AdminService.StartRecreate(backup);
+        }
+
+        [HttpGet("process/list")]
+        public Process[] GetProcessHistory()
+        {
+            return AdminService.GetLastProcesses(20).OrderByDescending(x=>x.StartTime).ToArray();
+        }
+
+        [HttpDelete("process/delete/{id}")]
+        public void DeleteProcess(Guid id)
+        {   
+            AdminService.DeleteProcess(id);
+        }
+
+
+        [HttpDelete("truncate/{collection}")]
+        public void Truncate(string collection)
+        {
+            AdminService.TruncateTable(collection);
+        }
+
+        [HttpDelete("drop")]
+        public void Drop()
+        {
+            AdminService.DropDatabase();
+        }
+
+
+
+
+
+
+
     }
 }

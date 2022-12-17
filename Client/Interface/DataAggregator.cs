@@ -583,6 +583,16 @@ public partial class
 
     public void ImportDump(string path)
     {
+        var nodesFromPath = path.Split('_').FirstOrDefault(x=>x.Contains("nodes"));
+        if (nodesFromPath != null)
+        {
+            var nodes = int.Parse( nodesFromPath[..2]);
+            if (nodes != CacheClients.Count)
+            {
+                throw new CacheException($"You can not restore a {nodes} nodes dump to a {CacheClients.Count} nodes cluster. Use DROP + FEED instead ");
+            }
+        }
+
         try
         {
             Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage0(path); });

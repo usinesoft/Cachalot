@@ -12,4 +12,10 @@ export interface Schema {
     order: number
     isCollection: boolean
   }
+
+  export interface SchemaUpdateRequest{
+    collectionName:string;
+    propertyName:string;
+    indexType:string;
+  }
   

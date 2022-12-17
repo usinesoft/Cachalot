@@ -7,7 +7,8 @@ public interface IQueryService
     public QueryMetadata GetMetadata(string collection, string property);
 
     public string ClientQueryToSql(string collection, AndQuery query);
-    string QueryAsJson(string sql);
+
+    string QueryAsJson(string? sql, string? fullTextQuery = null);
 }
 
 /// <summary>

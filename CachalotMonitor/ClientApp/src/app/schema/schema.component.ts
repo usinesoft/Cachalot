@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { CollectionSummary } from '../model/connection-data';
-import { Schema } from '../model/schema';
+import { Schema, SchemaUpdateRequest } from '../model/schema';
 import { MonitoringService } from '../monitoring.service';
+import { ScreenStateService } from '../screen-state.service';
 
 @Component({
   selector: 'app-schema',
@@ -11,23 +12,91 @@ import { MonitoringService } from '../monitoring.service';
 })
 export class SchemaComponent implements OnInit {
 
-  constructor(private monitoringService:MonitoringService, private route: ActivatedRoute) { }
+  constructor(private monitoringService:MonitoringService, private stateService:ScreenStateService) { }
 
+  
   public collections:string[] = [];
+  
+  public serverSide:string[] = [];
+  
+  private editedProperty:string|undefined;
+  
+  
+  public get editedProperties() : string[] {
+    return this.editedProperty ?  [this.editedProperty]:[]
+  }
+  public set editedProperties(v : string[]) {
+    if(v.length ==1){
+      this.editedProperty = v[0];
 
-  private _selectedCollection:string|undefined;
+      this.selectedIndexType = this.schema?.serverSide.find(x=>x.name == this.editedProperty)?.indexType;
+
+      console.log('index type=' + this.selectedIndexType+' for ' + this.editedProperty);
+    }
+    else{
+      this.editedProperty = undefined;
+    }
+  }
+  
+  
+  public indexTypes:string[] = ['None', 'Dictionary', 'Ordered'];
+    
+  private _selectedIndexType: string | undefined;
+  public get selectedIndexType(): string | undefined {
+    return this._selectedIndexType;
+  }
+  public set selectedIndexType(value: string | undefined) {
+    this._selectedIndexType = value;
+  }
+
+  public editMode:boolean = false;
+
+  // system tables like @ACTIVITY can not be modified
+  public canBeEdited = false;
 
   public set selectedCollection(value:string|undefined){
-    this._selectedCollection = value;
+    this.stateService.schema.collectionName = value;
+    
+    if(value?.startsWith('@')){
+      this.canBeEdited = false;
+    }
+    else{
+      this.canBeEdited = true;
+    }
+
+
     if(value){
       this.schema = this.monitoringService. clusterInfo?.schema.find(s=>s.collectionName == value);
       this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s=>s.name == value);
+      this.serverSide = this.schema?.serverSide.map(x=> x.name) ?? [];
     }
     
   }
 
+  updateAfterSave(){
+    this.monitoringService.updateOnce().subscribe(data => {
+      this.schema = data.schema.find(s=>s.collectionName == this.selectedCollection);      
+      this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s=>s.name == this.selectedCollection);
+      this.serverSide = this.schema?.serverSide.map(x=> x.name) ?? [];
+    });
+
+  }
+
   public get selectedCollection():string|undefined{
-    return this._selectedCollection;    
+    return this.stateService.schema.collectionName;    
+  }
+
+  public working:boolean = false;
+
+  public updateSchema(){
+    let request:SchemaUpdateRequest = {collectionName:this.selectedCollection!, propertyName:this.editedProperty!, indexType : this._selectedIndexType! };
+
+    this.working = true;
+    this.monitoringService.updateSchema(request).subscribe(data=>{
+      this.working = false;
+      this.editMode = false;
+      this.updateAfterSave();
+    }, err=> this.working = false);
   }
 
   schema:Schema|undefined;
@@ -36,9 +105,15 @@ export class SchemaComponent implements OnInit {
   
   ngOnInit(): void {
      this.collections = this.monitoringService.clusterInfo?.schema.map(s=> s.collectionName) ?? [];
-     console.log(this.collections);
 
-     this.route.params.subscribe((params: Params) => this.selectedCollection = params['collection']);
+     if(this.stateService.schema.collectionName){
+      this.selectedCollection = this.stateService.schema.collectionName;
+     }
+     else{
+      this.selectedCollection = this.collections[0];
+     }
+
+     
   }
 
 }

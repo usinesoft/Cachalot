@@ -8,6 +8,7 @@ using Client.Tools;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Client.Interface
 {
@@ -99,7 +100,7 @@ namespace Client.Interface
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)
-                throw new CacheException("Error while resyncing unique id generators", exResponse.Message,
+                throw new CacheException("Error while switching read-only mode", exResponse.Message,
                     exResponse.CallStack);
         }
 
@@ -387,6 +388,16 @@ namespace Client.Interface
 
         public void ImportDump(string path)
         {
+            var nodesFromPath = path.Split('_').FirstOrDefault(x=>x.Contains("nodes"));
+            if (nodesFromPath != null)
+            {
+                var nodes = int.Parse( nodesFromPath[..2]);
+                if (nodes != 1)
+                {
+                    throw new CacheException($"You can not restore a {nodes} nodes dump to a single node cluster. Use DROP + FEED instead ");
+                }
+            }
+
             try
             {
                 ImportDumpStage0(path);

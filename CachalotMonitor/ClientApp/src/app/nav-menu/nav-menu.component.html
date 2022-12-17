@@ -4,6 +4,7 @@
   >
     <div class="container">
       <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor</a>
+      <span class="cluster" *ngIf="cluster">(connected to cluster {{cluster}})</span>
       <button
         class="navbar-toggler"
         type="button"
@@ -19,6 +20,7 @@
         class="navbar-collapse collapse d-sm-inline-flex justify-content-end"
         [ngClass]="{ show: isExpanded }"
       >
+      
         <ul class="navbar-nav flex-grow">
           <li
             class="nav-item"
@@ -38,7 +40,7 @@
             >
           </li>
           <li class="nav-item" [routerLinkActive]="['link-active']" *ngIf="service.clusterInfo && service.clusterInfo?.status != 'NotConnected'">
-            <a class="nav-link text-dark" [routerLink]="['/fetch-data']"
+            <a class="nav-link text-dark" [routerLink]="['/admin']"
               >Admin</a
             >
           </li>

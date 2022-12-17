@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AndQuery, DataResponse, QueryMetadata, SqlResponse } from './model/query';
+import { AndQuery, DataResponse, QueryMetadata, SearchRequest, SqlResponse } from './model/query';
 
 @Injectable({
   providedIn: 'root'
@@ -20,11 +20,13 @@ export class QueryService {
     return this.http.post<SqlResponse>(this.baseUrl + `Data/query/sql/${collection}`, query);
   }
 
-  public ExecuteQuery(sql:string){
+  public ExecuteQuery(sql:string|undefined, fullTextQuery:string|undefined){
 
-    var request = new SqlResponse();
+    var request = new SearchRequest();
     request.sql = sql;
+    request.fullText = fullTextQuery;
     return this.http.post<DataResponse>(this.baseUrl + 'Data/query/execute', request);
   }
 
+  
 }

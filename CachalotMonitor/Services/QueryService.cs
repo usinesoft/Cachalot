@@ -16,9 +16,9 @@ class QueryService : IQueryService
     }
 
 
-    public string QueryAsJson(string sql)
+    public string QueryAsJson(string? sql, string? fullTextQuery = null)
     {
-        var result = _clusterService.Connector?.SqlQueryAsJson(sql).ToList() ;
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery).ToList() ;
 
         if (result != null)
         {
@@ -239,8 +239,24 @@ class QueryService : IQueryService
             }
         }
 
+        if (query.OrderBy != null)
+        {
+            builder.Append(Environment.NewLine);
+            builder.Append(" ");
+            builder.Append("ORDER BY");
+            builder.Append(" ");
+            builder.Append(query.OrderBy);
+
+            if (query.Descending)
+            {
+                builder.Append(" ");
+                builder.Append("DESCENDING");
+            }
+
+        }
+
         builder.Append(Environment.NewLine);
-        builder.Append("TAKE 100");
+        builder.Append($"TAKE {query.Take}");
         
         return builder.ToString();
     }

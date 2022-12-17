@@ -1,20 +1,29 @@
 .collection-card {
-    min-width: 200px;
-  }
-  
-  .collection-header-image {
-   
-    background-size: cover;
-    background-repeat: no-repeat;
-  }
+  min-width: 200px;
+  max-width: 200px;
+}
 
-  .flat-image {
-    background-image: url('../../assets/flat.png');    
-  }
+.card-title ::ng-deep *{
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 
-  .default-image {
-    background-image: url('../../assets/compressed.png');    
-  }
+}
+
+.collection-header-image {
+
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.flat-image {
+  background-image: url('../../assets/flat.png');
+}
+
+.default-image {
+  background-image: url('../../assets/compressed.png');
+}
+
 /* 
   .mat-card-header{
     background-color:gold ;

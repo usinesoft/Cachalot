@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -13,6 +14,38 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureSql
     {
+
+        static (string a, string op, string b) ExtractUnitaryQuery(Node root, int nthQuery = 0)
+        {
+            var where = root.Children.FirstOrDefault(x => x.Token == "where");
+            Assert.IsNotNull(where);
+
+            var expr = where.Children[0]?.Children[0]?.Children[nthQuery];
+            Assert.IsNotNull(expr);
+            Assert.AreEqual(2, expr.Children.Count); 
+            
+
+            return (expr.Children[0].Token, expr.Token, expr.Children[1].Token); 
+
+        }
+
+        [TestCase("like '%john%'", "like", "'%john%'")]
+        [TestCase("a<>'%john%'", "a", "<>", "'%john%'")]
+        [TestCase("a<> '%john%'", "a", "<>", "'%john%'")]
+        [TestCase(" 'john' and jane", "'john'", "and", "jane")]
+        [TestCase(" name = ''", "name", "=", "''")]
+        [TestCase(" name = '' ", "name", "=", "''")]
+        public void Tokenizer_test(string input, params string[] tokens)
+        {
+            var tks = Tokenizer.TokenizeOneLine(input);
+            Assert.IsNotNull(tokens);
+            Assert.AreEqual(tokens.Length, tks.Count);
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                Assert.AreEqual(tokens[i], tks[i].Text);
+            }
+
+        }
 
         [Test]
         public void Select_all_parsing()
@@ -33,9 +66,13 @@ namespace Tests.UnitTests
         }
 
         [Test]
-        public void Parsing_with_single_expression()
+        [TestCase("select from persons where a== b", "a", "=", "b", 0)]
+        [TestCase("select from persons where a = b", "a", "=", "b", 0)]
+        [TestCase("select from persons where a = 'b'", "a", "=", "b", 0)]
+        [TestCase("select from persons where a = 'b' and c < 15", "c", "<", "15", 1)]
+        public void Parsing_with_single_expression(string expression, string a, string op, string b, int nth )
         {
-            var result = new Parser().ParseSql("select from persons where a== b");
+            var result = new Parser().ParseSql(expression);
             Assert.IsNull(result.ErrorMessage);
 
             Assert.AreEqual("select", result.Token);
@@ -45,6 +82,70 @@ namespace Tests.UnitTests
             Assert.AreEqual("where", result.Children[2].Token);
 
             Assert.IsNull(result.ErrorMessage);
+
+            var (va, vop, vb) = ExtractUnitaryQuery(result, nth);
+            Assert.IsNotNull(va);
+            Assert.IsNotNull(vb);
+            Assert.IsNotNull(vop);
+            Assert.AreEqual(a, va);
+            Assert.AreEqual(b, vb);
+            Assert.AreEqual(op, vop);
+
+            Console.WriteLine(result);
+        }
+
+
+        
+
+        [Test]
+        public void Ignore_keywords_inside_strings()
+        {
+            var result = new Parser().ParseSql("select from persons where a== 'select b from c'");
+            Assert.IsNull(result.ErrorMessage);
+
+            Assert.AreEqual("select", result.Token);
+            Assert.AreEqual(3, result.Children.Count);
+            Assert.AreEqual("projection", result.Children[0].Token);
+            Assert.AreEqual("from", result.Children[1].Token);
+            Assert.AreEqual("where", result.Children[2].Token);
+
+            Assert.IsNull(result.ErrorMessage);
+
+            var (va, vop, vb) = ExtractUnitaryQuery(result);
+            Assert.IsNotNull(va);
+            Assert.IsNotNull(vb);
+            Assert.IsNotNull(vop);
+
+            Assert.AreEqual("a", va);
+            Assert.AreEqual("select b from c", vb);
+            Assert.AreEqual("=", vop);
+
+            Console.WriteLine(result);
+        }
+
+        [Test]
+        [TestCase("select from persons where a== 'rue d\\'Antin'")]
+        public void Ignore_escaped_string_delimiters_inside_strings(string expression)
+        {
+            var result = new Parser().ParseSql(expression);
+            Assert.IsNull(result.ErrorMessage);
+
+            Assert.AreEqual("select", result.Token);
+            Assert.AreEqual(3, result.Children.Count);
+            Assert.AreEqual("projection", result.Children[0].Token);
+            Assert.AreEqual("from", result.Children[1].Token);
+            Assert.AreEqual("where", result.Children[2].Token);
+
+            Assert.IsNull(result.ErrorMessage);
+
+            var (va, vop, vb) = ExtractUnitaryQuery(result);
+            Assert.IsNotNull(va);
+            Assert.IsNotNull(vb);
+            Assert.IsNotNull(vop);
+
+            Assert.AreEqual("a", va);
+            Assert.AreEqual("rue d'Antin", vb);
+            Assert.AreEqual("=", vop);
 
             Console.WriteLine(result);
         }
@@ -448,7 +549,7 @@ namespace Tests.UnitTests
 
             var query2 = new Parser().ParseSql($"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200").ToQuery(schema);
 
-            Assert.AreEqual(query1.ToString(), query2.ToString());
+            Assert.AreEqual(query1.ToString().ToLower(), query2.ToString().ToLower());
 
 
 

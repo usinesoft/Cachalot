@@ -1,0 +1,183 @@
+<div class="admin-root">
+
+    
+
+
+    <div class="backup-dir">
+        <mat-form-field appearance="fill" style="flex-grow:2">
+            <mat-label>Backup directory</mat-label>
+            <input matInput placeholder="mapping of network shared folder" [(ngModel)]="backupPath">
+            <mat-hint>must be a network folder mapped under the same path for all nodes in the cluster</mat-hint>
+            <button mat-button *ngIf="backupPath" matSuffix mat-icon-button aria-label="Save"
+                (click)="saveBackupPath()">
+                <mat-icon>save</mat-icon>
+            </button>
+        </mat-form-field>
+    </div>
+
+    <div class="actions">
+        <button mat-raised-button color="primary" style="margin:0.5rem" aria-label="restore"
+            matTooltip="backup database" [disabled]="!backupPath" (click)="backup()" [disabled]="working">
+            <mat-icon>cloud_upload</mat-icon>
+            backup database
+        </button>
+
+    </div>
+
+
+    
+    <div class="dangerous-actions">
+        <div class="actions">
+            <ng-template #TooltipFeed>
+                <div>
+                <p style="font-size: larger;color: blue;">Feed from backup</p>
+                <p>Feed all data from a backup in an existing database</p>
+                <p>If the database is not empty, existing data is <u>replaced</u>, new data is inserted.</p>
+                <p>May be used to restore a database on which nodes were added or removed or to feed data between clusters with different number of nodes (for example feeding a development cluster with data from a production cluster)</p>
+                <p>If some nodes already have data, a DROP DATABASE is required before.</p>
+                <p>May also be used to merge data from two databases.</p>
+                </div>
+            </ng-template>
+            <ng-template #TooltipRestore>
+                <div>
+                <p style="font-size: larger;color: blue;">Restore from backup</p>
+                <p>Reset the database to a previous state. All current data is lost.</p>
+                <p>It is fast (all nodes are restored in parallel) but it requires the number of nodes to be the same as in the backup.</p>
+                <p>To restore data in a cluster with different configuration use “feed from backup”.</p>
+                <p>The database will not be available during the restore. Nodes will restart automatically when finished.</p>                
+                </div>
+            </ng-template>
+            <ng-template #TooltipDrop>
+                <div>
+                <p style="font-size: larger;color: blue;">Drop the database</p>
+                <p>Delete all data and schema information.</p>
+                <p>Used to reset database after tests or before using "Feed from backup"</p>                
+                </div>
+            </ng-template>
+            <ng-template #TooltipTruncate>
+                <div>
+                <p style="font-size: larger;color: blue;">Truncate the {{selectedCollection}} collection</p>
+                <p>All data will be deleted.</p>
+                <p>Schema information (queryable properties and indexes) is conserved</p>                
+                </div>
+            </ng-template>
+            
+            <mat-form-field appearance="standard">
+                <mat-label>select backup</mat-label>
+                <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedBackup" #multiSelect>
+                    <mat-option *ngFor="let val of backupList" [value]="val">
+                        {{val}}
+                    </mat-option>
+                </mat-select>
+
+            </mat-form-field>
+
+            <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button" aria-label="restore"
+                 (click)="actionToConfirm='restore'" [disabled]="working" [ngbPopover] ="TooltipRestore" triggers="mouseenter:mouseleave">
+                <mat-icon>cloud_download</mat-icon>
+                restore from backup
+            </button>
+            <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button" aria-label="feed from backup"
+                (click)="actionToConfirm='recreate'" [disabled]="working" [ngbPopover] ="TooltipFeed" triggers="mouseenter:mouseleave">
+                <mat-icon>reply</mat-icon>
+                feed from backup
+            </button>
+        </div>
+        <div class="actions">
+            <mat-form-field appearance="standard">
+                <mat-label>select collection</mat-label>
+                <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedCollection" #multiSelect>
+                    <mat-option *ngFor="let val of collections" [value]="val">
+                        {{val}}
+                    </mat-option>
+                </mat-select>
+
+            </mat-form-field>
+
+            <button *ngIf="selectedCollection" mat-raised-button color="warn" class="dangerous-button"
+                aria-label="truncate"  (click)="actionToConfirm='truncate'" [ngbPopover] ="TooltipTruncate" triggers="mouseenter:mouseleave"
+                [disabled]="working">
+                <mat-icon>delete</mat-icon>
+                truncate collection
+            </button>
+            <button mat-raised-button color="warn" class="dangerous-button" aria-label="drop" [ngbPopover] ="TooltipDrop" triggers="mouseenter:mouseleave"
+                (click)="actionToConfirm='drop'" [disabled]="working">
+                <mat-icon>delete_forever</mat-icon>
+                DROP DATABASE
+            </button>
+        </div>
+        <div class="confirm" *ngIf="actionToConfirm">
+            <div class="confirm-section">
+                <div style="min-width: 7rem; min-height: 4rem; font-size:56px">
+                    <mat-icon [inline]="true" style="color:red">
+                        dangerous
+                    </mat-icon>
+                </div>
+            </div>
+            <div class="confirm-section">
+                <div style="font-weight: bold;">
+                <p>Are you sure? This operation is irreversible.</p>
+                <p>Data will be lost !!!</p>
+            </div>
+                <div class="actions">
+                    <button mat-raised-button color="warn" aria-label="confirm"
+                        (click)="confirm()">                        
+                        YES
+                    </button>
+                    <button mat-raised-button color="primary" style="min-width: 8rem;" aria-label="confirm"
+                        (click)="actionToConfirm = undefined">                        
+                        NO
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+    <div class="backup-list">
+
+        <div class="result-container" *ngIf="processHistory.length > 0">
+
+            <table class="table">
+                <!--header-->
+                <thead class="row header black">
+                    <th class="cell">TYPE</th>
+                    <th class="cell">CLUSTER</th>
+                    <th class="cell">STARTED</th>
+                    <th class="cell">DURATION (sec.)</th>
+                    <th class="cell">STATUS</th>
+                    <th class="cell"></th>
+                    <th class="cell">ACTIONS</th>
+                </thead>
+                <!--data-->
+                <tr *ngFor="let r of processHistory; trackBy:identifyProcess" class="row">
+                    <td>{{r.processName}}</td>
+                    <td>{{r.clusterName}}</td>
+                    <td>{{r.startTime|date:'yyyy-MM-dd HH:mm'}}</td>
+                    <td>{{r.durationInSeconds}}</td>
+                    <td>{{r.status}}</td>
+                    <td>
+                        <ng-template #TooltipError >
+                            <div style="background-color: white;padding: 1rem;">
+                            <p style="font-size: larger;color: blue;">Operation failed</p>
+                            <p>Error message:</p>
+                            <p>{{r.errorMessage}}</p>                
+                            </div>
+                        </ng-template>
+                        <mat-icon *ngIf="r.status=='Failed'" style="width:2rem;height:2rem;color:brown" [ngbPopover] ="TooltipError" triggers="mouseenter:mouseleave">info</mat-icon>
+                    </td>
+                    <td><button mat-mini-fab color="accent" aria-label="remove from history"
+                            style="width: 2rem;height:2rem;padding:0"
+                            matTooltip="remove this entry from hitory (the backup will not be deleted)"
+                            (click)="removeFromHistory(r.processId)">
+                            <mat-icon style="font-size: 1.2rem;">delete</mat-icon>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+    <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
+
+</div>

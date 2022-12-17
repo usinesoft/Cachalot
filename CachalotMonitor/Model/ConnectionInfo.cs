@@ -14,4 +14,6 @@
     
         public int? Port { get; set; }
     }
+
+    public record BackupConfig(string? BackupDirectory);
 }

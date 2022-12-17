@@ -21,3 +21,71 @@ body {
   margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; 
  
 }
+
+/*---------------------------------------------table----------------------*/
+
+section.ngx-json-viewer{
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+  .cell-expand{
+      vertical-align: top;
+  }
+
+.wrapper {
+  margin: 0 auto;
+  padding: 40px;
+  max-width: 800px;
+}
+
+.table {
+  margin: 0 0 40px 0;
+  width: 100%;
+  min-width: 50rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  display: table;
+}
+
+.row {
+  display: table-row;    
+  background: #f6f6f6;
+}
+
+.row-json {
+  display: inline;
+  flex-direction: row;    
+  background: darkgrey;
+}
+
+.row > * {
+  width: inherit;
+}
+.row:nth-of-type(odd) { 
+  background: #e9e9e9;
+}
+.row.header { 
+  color: #ffffff;
+  background: #ea6153;
+}
+.row.green {
+  background: #27ae60;
+}
+
+.row.black {
+  background: #111111;
+}
+.row.blue {
+  background: #2980b9;
+}
+
+
+td {
+  padding: 6px 12px;
+  display: table-cell;
+  padding: 0.3rem;
+}
+
+th{
+  padding: 0.5rem;
+  font-weight: 500;
+}

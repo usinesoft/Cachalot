@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ClusterInformation, ConnectionData, ConnectionResponse } from './model/connection-data';
+import { SchemaUpdateRequest } from './model/schema';
 
 @Injectable({
   providedIn: 'root'
@@ -48,6 +49,7 @@ export class MonitoringService {
     this.disconnecting = true;
 
     delete this.clusterInfo;
+    this.currentCluster.next(this.getCLusterName());
 
     this.http.post<any>(this.baseUrl + 'Admin/disconnect', null).subscribe(result => {
       console.log('disconnected');
@@ -70,7 +72,7 @@ export class MonitoringService {
   }
 
 
-  
+  public currentCluster:BehaviorSubject<string|null>  = new BehaviorSubject<string|null>(null);
 
   public updateClusterStatus(caller:string): void {
     
@@ -85,6 +87,7 @@ export class MonitoringService {
 
       if(!this.disconnecting){
         this.clusterInfo = data;
+        this.currentCluster.next(this.getCLusterName());
       }
       
       this.working = false;
@@ -93,10 +96,15 @@ export class MonitoringService {
     }, err => {
       console.log(`ERROR disconnecting = ${this.disconnecting} clusterInfo = ${this.clusterInfo}`);
       delete this.clusterInfo;
+      this.currentCluster.next(this.getCLusterName());
       this.working = false;
       this.disconnecting = false;
 
     });
+  }
+
+  public updateOnce():Observable<ClusterInformation>{
+    return this.http.get<ClusterInformation>(this.baseUrl + 'Admin');
   }
 
   public getConnectionHistory(): void {
@@ -104,6 +112,19 @@ export class MonitoringService {
       this.history = data;
     });
   }
+
+  public updateSchema(request:SchemaUpdateRequest): Observable<any> {
+    return this.http.post<any>(this.baseUrl + 'Admin/update/schema', request);
+  }
+
+  private getCLusterName():string|null{
+    if(this.clusterInfo){
+      return this.clusterInfo.serversStatus[0]?.clusterName ?? null;
+    }
+
+    return null;
+  }
+
 
 
 }

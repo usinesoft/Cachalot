@@ -44,7 +44,7 @@ namespace Server
 
         #endregion
 
-        private readonly FullTextConfig _fullTextConfig;
+        private FullTextConfig _fullTextConfig;
 
         public ISet<string> GetMostFrequentTokens(int max)
         {
@@ -57,10 +57,10 @@ namespace Server
         /// <summary>
         ///     List of indexes for index keys (multiple objects by key value)
         /// </summary>
-        private readonly Dictionary<string, IndexBase> _dataByIndexKey;
+        private Dictionary<string, IndexBase> _dataByIndexKey;
 
 
-        private readonly FullTextIndex _fullTextIndex;
+        private FullTextIndex _fullTextIndex;
 
 
         private long _hitCount;
@@ -117,8 +117,12 @@ namespace Server
                 };
         }
 
+        // internally used when reindexing
+        private DataStore()
+        {
+        }
 
-        public CollectionSchema CollectionSchema { get; }
+        public CollectionSchema CollectionSchema { get; private set; }
 
         public EvictionType EvictionType => EvictionPolicy.Type;
 
@@ -139,7 +143,7 @@ namespace Server
         /// <summary>
         ///     object by primary key
         /// </summary>
-        public Dictionary<KeyValue, PackedObject> DataByPrimaryKey { get; }
+        public Dictionary<KeyValue, PackedObject> DataByPrimaryKey { get; private set; }
 
 
         /// <summary>
@@ -183,7 +187,7 @@ namespace Server
                 index.Value.Put(packedObject);
 
 
-            if (packedObject.FullText != null && packedObject.FullText.Length > 0)
+            if (packedObject.FullText is { Length: > 0 })
                 _fullTextIndex.IndexDocument(packedObject);
         }
 
@@ -250,6 +254,10 @@ namespace Server
 
             // also reset the domain description
             DomainDescription = null;
+
+            KeyValuePool.Reset();
+
+            GC.Collect();
 
         }
 
@@ -397,40 +405,56 @@ namespace Server
 
 
         /// <summary>
-        ///     Like a bulk insert on an empty datastore. Used internally to reindex data when type description changed
+        ///     Reindex a data store while conserving the primary key. Used internally to reindex data when type description changed
         /// </summary>
-        /// <param name="items"></param>
-        private void InternalReindex(IEnumerable<PackedObject> items)
+        private void InternalReindex()
         {
-            var toUpdate = new List<PackedObject>();
+            
+            //////////////////////////////
+            // create empty indexes
+            
+            //initialize the indexes (one by index key)
+            _dataByIndexKey = new Dictionary<string, IndexBase>();
 
-            try
+            // scalar indexed fields
+            foreach (var indexField in CollectionSchema.IndexFields)
             {
-                InternalBeginBulkInsert(true);
-
-                foreach (var item in items)
-                    InternalAddNew(item, true);
+                var index = IndexFactory.CreateIndex(indexField);
+                _dataByIndexKey.Add(indexField.Name, index);
             }
-            finally
+
+
+            // create the full-text index if required
+            if (CollectionSchema.FullText.Count > 0)
+                _fullTextIndex = new FullTextIndex(_fullTextConfig)
+                {
+                    // a function that allows the full text engine to find the original line of text
+                    LineProvider = pointer => DataByPrimaryKey[pointer.PrimaryKey].TokenizedFullText[pointer.Line]
+                };
+
+            ////////////////////////////////////////////////////////////
+            // reindex all objects 
+
+            // effective only on ordered indexes (they will be ordered once at the end)
+            foreach (var index in _dataByIndexKey)
+                index.Value.BeginFill();
+
+            foreach (var p in DataByPrimaryKey)
             {
-                InternalEndBulkInsert(true);
+                foreach (var index in _dataByIndexKey)
+                    index.Value.Put(p.Value);
 
-                // update items outside the bulk insert
 
-                if (toUpdate.Count > Constants.BulkThreshold) // bulk optimization for updates
-                {
-                    RemoveMany(toUpdate);
-
-                    InternalPutMany(toUpdate, true);
-                }
-                else
-                {
-                    foreach (var cachedObject in toUpdate) InternalUpdate(cachedObject);
-                }
-
-                //TODO check if necessary
-                foreach (var cachedObject in toUpdate) EvictionPolicy.Touch(cachedObject);
+                if (p.Value.FullText is { Length: > 0 })
+                    _fullTextIndex.IndexDocument(p.Value);
             }
+
+            // re-sort the ordered indexes
+            foreach (var index in _dataByIndexKey)
+                index.Value.EndFill();
+
+
+           
         }
 
         private IEnumerable<string> InternalEnumerateAsJson()
@@ -460,14 +484,21 @@ namespace Server
 
         public static DataStore Reindex(DataStore old, CollectionSchema newDescription)
         {
-            var result = new DataStore(newDescription, old.EvictionPolicy, old._fullTextConfig);
+
+            var reindexed = new DataStore
+            {
+                CollectionSchema = newDescription,
+                DataByPrimaryKey = old.DataByPrimaryKey,
+                EvictionPolicy = old.EvictionPolicy,
+                _fullTextConfig = old._fullTextConfig
+            };
+
+            
+
+            reindexed.InternalReindex();
 
 
-            result.InternalReindex(old.InternalEnumerateAsJson()
-                .Select(json => PackedObject.PackJson(json, newDescription)));
-
-
-            return result;
+            return reindexed;
         }
 
 

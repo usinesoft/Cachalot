@@ -22,8 +22,12 @@ export class NavMenuComponent {
   // }
 
 
-  constructor(public service: MonitoringService) {
+  public cluster:string|null = null;
 
+  constructor(public service: MonitoringService) {
+    service.currentCluster.subscribe(data=>{
+      this.cluster = data;
+    });
   }
 
   collapse() {

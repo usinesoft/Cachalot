@@ -6,6 +6,7 @@ using ProtoBuf;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 #endregion
 
@@ -96,28 +97,89 @@ namespace Client.Queries
             get { return Elements.All(element => element.IsValid); }
         }
 
-
         /// <summary>
-        /// Like <see cref="ToString"/> but without the parameter values
-        /// To be used for administrative tasks. Mie detecting the most time-consuming type of query
+        /// Generate the part before WHERE
         /// </summary>
-        /// <returns></returns>
-        public override string ToString()
+        /// <param name="sb"></param>
+        private void GeneratePrefix(StringBuilder sb)
         {
-            if (Elements.Count == 0)
-                return "<empty>";
-            if (Elements.Count == 1)
+            if (CountOnly)
             {
-                var result = Elements[0].ToString();
-                if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
-
-                if (OnlyIfComplete)
-                    result += " + Only if complete ";
-
-                return result;
+                sb.Append("COUNT");
+            }
+            else
+            {
+                sb.Append("SELECT");
             }
 
+            sb.Append(" ");
+
+            if (Distinct)
+            {
+                sb.Append("DISTINCT");
+            }
+
+            sb.Append(" ");
+
+            // the projection clause
+            if (SelectClause.Count > 0)
+            {
+                sb.Append(string.Join(',', SelectClause.Select(x => x.Name)));
+                sb.Append(",");
+            }
+
+            sb.Append("FROM");
+            sb.Append(" ");
+
+            sb.Append(CollectionName);
+            sb.Append(" ");
+
+            if (Elements.Count > 0)
+            {
+                sb.Append("WHERE");
+                sb.Append(" ");
+            }
+
+        }
+
+        /// <summary>
+        /// Write extra information at the end: like full-text search query etc..
+        /// </summary>
+        /// <param name="sb"></param>
+        private void GenerateSuffix(StringBuilder sb)
+        {
+            if (!string.IsNullOrWhiteSpace(OrderByProperty))
+            {
+                sb.Append(" ");
+                sb.Append("ORDER BY");
+                sb.Append(" ");
+                sb.Append(OrderByProperty);
+
+                if (OrderByIsDescending)
+                {
+                    sb.Append(" ");
+                    sb.Append("DESCENDING");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(FullTextSearch))
+            {
+                sb.Append($" + Full text search ({FullTextSearch})");
+            }
+
+            if (OnlyIfComplete)
+            {
+                sb.Append(" + Only if complete");
+            }
+        }
+
+        public override string ToString()
+        {
+            
             var sb = new StringBuilder();
+
+            GeneratePrefix(sb);
+
             for (var i = 0; i < Elements.Count; i++)
             {
                 sb.Append(Elements[i]);
@@ -125,30 +187,22 @@ namespace Client.Queries
                     sb.Append(" OR ");
             }
 
-            if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
-
-            if (OnlyIfComplete)
-                sb.Append(" + Only if complete ");
+            GenerateSuffix(sb);
 
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Like <see cref="ToString"/> but without the parameter values
+        /// To be used for administrative tasks like detecting the most time-consuming type of query
+        /// </summary>
+        /// <returns></returns>
         public string Description()
         {
-            if (Elements.Count == 0)
-                return "<empty>";
-            if (Elements.Count == 1)
-            {
-                var result = Elements[0].Description();
-                if (!string.IsNullOrWhiteSpace(FullTextSearch)) result += $" + Full text search ({FullTextSearch})";
-
-                if (OnlyIfComplete)
-                    result += " + Only if complete ";
-
-                return result;
-            }
-
+            
             var sb = new StringBuilder();
+            GeneratePrefix(sb);
+
             for (var i = 0; i < Elements.Count; i++)
             {
                 sb.Append(Elements[i].Description());
@@ -156,10 +210,7 @@ namespace Client.Queries
                     sb.Append(" OR ");
             }
 
-            if (!string.IsNullOrWhiteSpace(FullTextSearch)) sb.Append($" + Full text search ({FullTextSearch})");
-
-            if (OnlyIfComplete)
-                sb.Append(" + Only if complete ");
+            GenerateSuffix(sb);
 
             return sb.ToString();
         }

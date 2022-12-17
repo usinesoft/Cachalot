@@ -10,18 +10,52 @@ namespace Accounts
     internal partial class Program
     {
 
-        const int TestIterations = 1000;
+        private static int _testIterations = 1000;
         
+        
+        private static string _connectionString = "localhost:48401";
+
         private static void Main(string[] args)
         {
             
+            Title("Test application for Cachalot DB");
             
+            Console.WriteLine("Command line options (optional):");
+            Console.WriteLine();
+            Console.WriteLine("1) connection string: host:port or host1:port1+host2;port2... or --internal to run an in-process server");
+            Console.WriteLine($"    by default it will try to connect to {_connectionString}");
+
+            Console.WriteLine("2) number of transactions for this test");
+            Console.WriteLine($"    by default {_testIterations}");
+            
+            if (args.Length > 0)
+            {
+                try
+                {
+                    _connectionString = args[0];
+                    if (_connectionString == "--internal")
+                    {
+                        _connectionString = null;
+                    }
+
+                    if (args.Length > 1)
+                    {
+                        _testIterations = int.Parse(args[1]);
+                    }
+                    
+                }
+                catch (Exception )
+                {
+                    Console.WriteLine("Invalid command line: using default values");
+                }
+            }
+
             try
             {
                 // quick test with a cluster of two nodes
-                using var connector = new Connector("localhost:48401+localhost:48402");
+                using var connector = new Connector(_connectionString);
                 
-                Title("test with a cluster of two servers");
+                Title("Starting test with " + _connectionString);
 
                     
                 PerfTest(connector);
@@ -31,52 +65,29 @@ namespace Accounts
                 Console.WriteLine(e.Message);
             }
 
-            try
-            {
-                // quick test with one external server
-                using var connector = new Connector("localhost:48401" );
-
-                Title("test with one server");
-                
-                PerfTest(connector);
-            }
-            catch (CacheException e)
-            {
-                Console.WriteLine(e.Message);
-            }
-
-            try
-            {
-                // quick test with in-process server
-                using var connector = new Connector(new ClientConfig { IsPersistent = true });
-
-                Title("test with in-process server");
-                
-                PerfTest(connector);
-            }
-            catch (CacheException e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            
         }
 
         private static void PerfTest(Connector connector)
         {
             
             TransactionStatistics.Reset();
-            // first delete all data to start with a clean database
-            connector.AdminInterface().DropDatabase();
             
             connector.DeclareCollection<Account>();
             connector.DeclareCollection<MoneyTransfer>();
 
             var accounts = connector.DataSource<Account>();
+            var transfers = connector.DataSource<MoneyTransfer>();
 
-            Header($"creating {TestIterations} accounts");
+            // first delete all data to start with a clean database
+            accounts.Truncate();
+            transfers.Truncate();
+
+            Header($"creating {_testIterations} accounts");
             
             RunOnce(() =>
             {
-                for (int i = 0; i < TestIterations; i++)
+                for (int i = 0; i < _testIterations; i++)
                 {
                     accounts.Put(new Account { Id = i, Balance = 1000 });
                 }
@@ -84,11 +95,11 @@ namespace Accounts
             
 
 
-            var ids = Enumerable.Range(0, TestIterations).ToArray();
+            var ids = Enumerable.Range(0, _testIterations).ToArray();
 
             try
             {
-                ids = connector.GenerateUniqueIds("transfer_id", TestIterations);
+                ids = connector.GenerateUniqueIds("transfer_id", _testIterations);
             }
             catch (Exception)
             {
@@ -100,12 +111,12 @@ namespace Accounts
 
             int failed = 0;
 
-            Header($"creating data transfers between random accounts and update the source and destination account transactionally");
+            Header($"creating data transfers between random accounts and update the source and destination account in a transaction");
             var sw = new Stopwatch();
 
             sw.Start();
 
-            for (int i = 0; i < TestIterations; i++)
+            for (int i = 0; i < _testIterations; i++)
             {
                 var src = rand.Next(1, 1000);
                 var dst = src + 1 > 999? src-1:src+1;
@@ -147,7 +158,7 @@ namespace Accounts
 
             sw.Stop();
 
-            Console.WriteLine($"{TestIterations} transactions took {sw.ElapsedMilliseconds} milliseconds. Rolled back transactions: {failed}. ");
+            Console.WriteLine($"{_testIterations} transactions took {sw.ElapsedMilliseconds} milliseconds. Rolled back transactions: {failed}. ");
             var stats = TransactionStatistics.AsString();
 
             Console.WriteLine(stats);

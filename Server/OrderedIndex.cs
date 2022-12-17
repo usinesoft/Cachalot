@@ -193,13 +193,15 @@ namespace Server
             if (values.Count > 2)
                 throw new ArgumentException("More than two keys passed to GetCount on ordered index  " + Name);
 
+            if (op == QueryOperator.In)
+                return int.MaxValue; // can not count efficiently so do not use me as index
+
             if (values.Count == 2 && !op.IsRangeOperator())
                 throw new ArgumentException("Two keys passed to GetCount on ordered index " + Name + " for operator " +
                                             op);
 
 
-            if (op == QueryOperator.In)
-                return int.MaxValue; // can not count efficiently so do not use me as index
+            
 
 
             var result = 0;
@@ -254,14 +256,18 @@ namespace Server
             if (values.Count == 0)
                 throw new ArgumentException("Empty list of keys passed to GetMany on index " + Name);
 
-            if (values.Count > 2 && op != QueryOperator.In)
-                throw new ArgumentException("More than two keys passed to GetMany on ordered index  " + Name);
+            if (values.Count > 1) 
+            {
+                if (op != QueryOperator.In)
+                {
+                    if (values.Count != 2 || !op.IsRangeOperator())
+                    {
+                        throw new ArgumentException($"{values.Count} with operator {op} are not supported");
+                    }
+                }
+            }
 
-            if (values.Count == 2 && !op.IsRangeOperator())
-                throw new ArgumentException("Two keys passed to GetMany on ordered index " + Name + " for operator " +
-                                            op);
-
-
+            
             var result = new HashSet<PackedObject>();
 
             if (op == QueryOperator.In)

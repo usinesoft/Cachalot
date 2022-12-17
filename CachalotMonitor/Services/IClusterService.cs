@@ -3,7 +3,7 @@ using Client.Interface;
 
 namespace CachalotMonitor.Services
 {
-    public interface IClusterService
+    public interface IClusterService:IDisposable
     {
         Connector? Connector { get; }
 
@@ -12,8 +12,11 @@ namespace CachalotMonitor.Services
         void Disconnect();
 
         ClusterInformation GetClusterInformation();
+
         void SaveToConnectionHistory(Model.ConnectionInfo info, string name);
+        
         Model.ConnectionInfo GetFromConnectionHistory(string name);
+        
         string[] GetHistoryEntries();
     }
 }

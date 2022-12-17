@@ -133,6 +133,8 @@ namespace Server
             // delete data from memory
             _dataContainer = new DataContainer(_serviceContainer, _config);
 
+            KeyValuePool.Reset();
+
             GC.Collect();
 
             if (_persistenceEngine != null) _persistenceEngine.Container = _dataContainer;
@@ -160,9 +162,9 @@ namespace Server
                     case 0:
 
                         Mode = ServerMode.DuringDumpImport;
-                        _persistenceEngine.Stop();
+                        _persistenceEngine?.Stop();
                         _dataContainer.Stop(); // this will wait for pending activity
-                        _persistenceEngine.StoreDataForRollback();
+                        _persistenceEngine?.StoreDataForRollback();
                         break;
 
                     case 1:
@@ -176,12 +178,17 @@ namespace Server
                                 ? Path.Combine(_config.DataPath, Constants.DataPath)
                                 : Constants.DataPath;
                             File.Copy(Path.Combine(path, Constants.SchemaFileName),
-                                Path.Combine(dataPath, Constants.SchemaFileName));
+                                Path.Combine(dataPath, Constants.SchemaFileName), true);
 
                             _dataContainer = new DataContainer(_serviceContainer, _config);
-                            _persistenceEngine.Container = _dataContainer;
-                            _dataContainer.PersistenceEngine = _persistenceEngine;
 
+                            if (_persistenceEngine != null)
+                            {
+                                _persistenceEngine.Container = _dataContainer;
+                                _dataContainer.PersistenceEngine = _persistenceEngine;
+
+                            }
+                            
                             // reinitialize data container                          
                             _dataContainer.LoadSchema(Path.Combine(dataPath, Constants.SchemaFileName));
 
@@ -196,8 +203,10 @@ namespace Server
                             Parallel.ForEach(_dataContainer.Stores(),
                                 store => store.LoadFromDump(path, importRequest.ShardIndex));
 
-                            // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
-                            foreach (var dataStore in _dataContainer.Stores())
+                            if (_persistenceEngine != null)
+                            {
+                                // write to the persistent storage (this is the only case where we write directly in the storage, not in the transaction log)
+                                foreach (var dataStore in _dataContainer.Stores())
                                 foreach (var item in dataStore.DataByPrimaryKey)
                                 {
                                     var itemData =
@@ -207,33 +216,40 @@ namespace Server
                                     storage.StoreBlock(itemData, item.Value.GlobalKey, 0);
                                 }
 
+                            }
+                            
                             // import the sequences
 
                             var sequenceFile = $"sequence_{importRequest.ShardIndex:D3}.json";
 
                             _dataContainer.LoadSequence(Path.Combine(path, sequenceFile));
                             File.Copy(Path.Combine(path, sequenceFile),
-                                Path.Combine(dataPath, Constants.SequenceFileName));
+                                Path.Combine(dataPath, Constants.SequenceFileName), true);
                         }
 
                         break;
                     case 2: // all good
-                        _persistenceEngine.LightStart();
+                        _persistenceEngine?.LightStart();
 
                         _dataContainer.StartProcessingClientRequests();
 
-                        _persistenceEngine.DeleteRollbackData();
+                        _persistenceEngine?.DeleteRollbackData();
                         Mode = ServerMode.Normal;
                         break;
 
                     case 3: // something bad happened. Rollback
-                        _persistenceEngine.RollbackData();
+                        _persistenceEngine?.RollbackData();
 
                         _dataContainer = new DataContainer(_serviceContainer, _config);
-                        _persistenceEngine.Container = _dataContainer;
-                        _dataContainer.PersistenceEngine = _persistenceEngine;
 
-                        _persistenceEngine.Start();
+                        if (_persistenceEngine!= null)
+                        {
+                            _persistenceEngine.Container = _dataContainer;
+                            _dataContainer.PersistenceEngine = _persistenceEngine;
+
+                        }
+                        
+                        _persistenceEngine?.Start();
 
                         Mode = ServerMode.Normal;
 

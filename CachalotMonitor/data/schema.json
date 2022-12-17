@@ -1,0 +1,48 @@
+{
+  "ShardIndex": 0,
+  "ShardCount": 1,
+  "CollectionsDescriptions": {
+    "Process": {
+      "ServerSide": [
+        {
+          "Name": "ProcessId",
+          "IndexType": "Primary",
+          "JsonName": "ProcessId",
+          "Order": 0,
+          "IsCollection": false
+        },
+        {
+          "Name": "ProcessName",
+          "IndexType": "None",
+          "JsonName": "ProcessName",
+          "Order": 1,
+          "IsCollection": false
+        },
+        {
+          "Name": "ClusterName",
+          "IndexType": "None",
+          "JsonName": "ClusterName",
+          "Order": 2,
+          "IsCollection": false
+        },
+        {
+          "Name": "Status",
+          "IndexType": "Dictionary",
+          "JsonName": "Status",
+          "Order": 3,
+          "IsCollection": false
+        },
+        {
+          "Name": "StartTime",
+          "IndexType": "Ordered",
+          "JsonName": "StartTime",
+          "Order": 4,
+          "IsCollection": false
+        }
+      ],
+      "CollectionName": "Process",
+      "StorageLayout": "Default",
+      "FullText": []
+    }
+  }
+}

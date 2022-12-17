@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { ScreenStateService } from '../screen-state.service';
 
 @Component({
   selector: 'app-collection-card',
@@ -26,14 +27,33 @@ export class CollectionCardComponent implements OnInit {
 
   
 
-  constructor(private router:Router) { }
+  constructor(private router:Router, private stateService:ScreenStateService) { }
 
   ngOnInit(): void {
   }
 
 
   public viewSchema(collection:string|undefined):void{
-    this.router.navigate(["schema", collection]);
+
+    this.stateService.schema.collectionName = collection;
+
+    this.router.navigate(["schema"]);
   }
+
+  public viewData(collection:string|undefined):void{
+
+    if(this.stateService.data.collectionName != collection){
+      this.stateService.data.collectionName = collection;
+      this.stateService.data.currentQuery = undefined;
+      
+      this.stateService.data.visibleColumns = [];
+
+
+    }
+    
+
+    this.router.navigate(["data"]);
+  }
+
 
 }

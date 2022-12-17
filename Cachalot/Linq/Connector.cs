@@ -189,7 +189,7 @@ namespace Cachalot.Linq
                 
                 // try to get schema from server   
                 var info = Client.GetClusterInformation();
-                schema = info.Schema.Where(x => x.CollectionName.ToUpper() == collectionName.ToUpper()).FirstOrDefault();
+                schema = info.Schema.FirstOrDefault(x => String.Equals(x.CollectionName, collectionName, StringComparison.CurrentCultureIgnoreCase));
                 if (schema == null)
                 {
                     return null;
@@ -375,11 +375,16 @@ namespace Cachalot.Linq
             return new DataAdmin(Client);
         }
 
-        public IEnumerable<JObject> SqlQueryAsJson(string sql)
+        public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null)
         {
             var parsed = new Parser().ParseSql(sql);
 
             var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from");
+
+            if (fromNode == null)
+            {
+                throw new CacheException($"Collection name missing in {sql}. FROM clause not found");
+            }
 
             var tableName = fromNode.Children.Single().Token;
 
@@ -389,13 +394,17 @@ namespace Cachalot.Linq
             
             var query = parsed.ToQuery(schema);
 
+            query.FullTextSearch = fullTextQuery;
+
 
             if (query.CountOnly)        
             {
-               (_, var count) = Client.EvalQuery(query);
+               var (_, count) = Client.EvalQuery(query);
 
-                var result = new JObject();
-                result["count"] = count;
+                var result = new JObject
+                {
+                    ["count"] = count
+                };
 
                 return new[] { result };
                 
@@ -443,11 +452,18 @@ namespace Cachalot.Linq
         /// Feed with CSV data lines (exclude header)
         /// </summary>
         /// <param name="collectionName"></param>
-        /// <param name="items"></param>
+        /// <param name="lines"></param>
+        /// <param name="separator"></param>
         public void FeedWithCsvLines(string collectionName, IEnumerable<string> lines, char separator = ',')
         {
             
             Client.FeedMany(collectionName, this.PackCsv(lines, collectionName, separator), false);
+        }
+
+
+        public void Truncate(string collectionName)
+        {
+            Client.Truncate(collectionName);
         }
     }
 

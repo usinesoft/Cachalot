@@ -23,6 +23,17 @@ export class SimpleQueryComponent implements OnInit {
   public set query(v: SimpleQuery|undefined) {
     if(v){
       this._query = v;
+      this.canSelectValues = v.possibleValues.length > 0;
+      this.updateConfigForOperator();
+      this.filteredValues = [...v.possibleValues];
+
+      console.log('query input set');
+      if(this._query.propertyName){
+        console.log('restaured query');
+      }
+      else{
+        console.log('empty query');
+      }
     }
     
   }
@@ -45,10 +56,14 @@ export class SimpleQueryComponent implements OnInit {
   @Input()
   public properties: string[] = [];
 
-
   public filteredValues: string[] = [];
-  public values: string[] = [];
-  public operators: string[] = [];
+
+  public get values(): string[]{
+    return this._query.possibleValues;
+  }
+  public get operators(): string[] {
+    return this._query.availableOperators
+  }
 
   public working: boolean = false;
 
@@ -65,8 +80,8 @@ export class SimpleQueryComponent implements OnInit {
     if (this.collection && this.selectedProperty) {
       this.working = true;
       this.queryService.GetQueryMetadata(this.collection, this.selectedProperty).subscribe(md => {
-        this.operators = md.availableOperators.map(o => this.operatorToUnicode(o)!);
-        this.values = [...md.possibleValues];
+        this._query.availableOperators = md.availableOperators.map(o => this.operatorToUnicode(o)!);
+        this._query.possibleValues = [...md.possibleValues];
         this.filteredValues = [...md.possibleValues];        
         this._query.propertyIsCollection = md.propertyIsCollection;        
         this.operator = md.availableOperators[0];
@@ -109,6 +124,14 @@ export class SimpleQueryComponent implements OnInit {
   public set operator(v: string | undefined) {
     this._query.operator = this.operatorFromUnicode(v);
     
+    this.updateConfigForOperator();
+    
+    this.queryChange.emit(this._query);
+
+    console.log(`operator changed => data type = ${this._query.dataType} is collection = ${this._query.propertyIsCollection} op = ${this.operator} multiple values = ${this.multipleValuesAllowed}` );
+  }
+
+  private updateConfigForOperator(){
     if(this._query.operator == 'is null' || this._query.operator == 'is not null'){
       this.hasValue= false;
     }
@@ -122,11 +145,7 @@ export class SimpleQueryComponent implements OnInit {
     else{
       this.multipleValuesAllowed = false;
     }
-    this.queryChange.emit(this._query);
-
-    console.log(`operator changed => data type = ${this._query.dataType} is collection = ${this._query.propertyIsCollection} op = ${this.operator} multiple values = ${this.multipleValuesAllowed}` );
   }
-
   
   
   public get selectedValues() : string[] {

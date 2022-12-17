@@ -1,6 +1,8 @@
 <div class="data-root">
 
+
     <div class="data-selection-container">
+        <!--collection selection-->
         <mat-form-field appearance="fill">
             <mat-label>Collections</mat-label>
             <mat-select [(value)]="selectedCollection">
@@ -9,43 +11,105 @@
                 </mat-option>
             </mat-select>
         </mat-form-field>
+        <!--full-text search (if enabled on the current collection)-->
+        <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
+            <mat-label>Full-text search</mat-label>
+            <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery">
+            <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
+            <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
+                (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
+                <mat-icon>close</mat-icon>
+            </button>
+            <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Search" (click)="search()">
+                <mat-icon>search</mat-icon>
+            </button>
+        </mat-form-field>
     </div>
 
+    <!--QUERY both structured and translated to sql-->
     <div class="query-container" *ngIf="schema">
-        <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)] = "currentQuery" >
-        </app-and-query>    
-        <div class="sql-container">
-            
+        <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
+            style="flex-grow: 2;">
+        </app-and-query>
+        <div class="sql-container" style="flex-grow: 1;">
+
             <p>{{sql}}</p>
-            
+            <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy" [cdkCopyToClipboard]="sql">
+                <mat-icon>content_copy</mat-icon>
+            </button>
         </div>
     </div>
 
-    
-    
+    <!--other params like visible columns and order-by-->
+    <div class="params-container" *ngIf="schema">
+        <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
+            [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
+            style="flex-grow: 2; min-width: 20rem;"></app-smart-multi-select>
 
-    
-    <div class="result-container">
-       
+        <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take" [allValues]="['10','50','100', '1000']"
+            [hint]="'limit displayed items'" label="Take">
+        </app-smart-multi-select>
 
-            <div class="table" *ngIf="schema">
+        <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
+            [allValues]="orderByProperties" [clearButton]="true"
+            [hint]="'select column to order by (must be ordered index)'" label="Order by">
+        </app-smart-multi-select>
+        <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
+            <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
+        </div>
 
-                <div class="row header black">
-                    <div class="cell" *ngFor="let col of schema.serverSide">
-                        {{col.name}}
-                    </div>
-                    
 
-                </div>
 
-                <div class="row" *ngFor="let r of data">
-                    <div class="cell" *ngFor="let col of schema.serverSide">
-                        {{r[col.name]}}
-                    </div>
+    </div>
 
-                </div>
-            </div>
-        
+    <!--result of the query-->
+
+    <div class="result-container" *ngIf="data.length > 0">
+
+        <table *ngIf="schema" class="table">
+            <!--header-->
+            <thead class="row header black mat-primary">
+                <th class="cell"></th>
+                <th class="cell"></th>
+                <th class="cell" *ngFor="let col of visibleColumns">
+                    {{col}}
+                </th>
+            </thead>
+            <!--data-->
+            <tr *ngFor="let r of data" class="row">
+
+                <td class="cell-expand">
+                    {{r['#']}}
+                </td>
+                <td class="cell-expand">
+                    <span>
+                        <mat-slide-toggle [(ngModel)]="r['#json']">json</mat-slide-toggle>
+                        <!-- <mat-icon class="primary" *ngIf="!r['#json']" style="color: blue;overflow: visible;"
+                            (click)="switchDisplay(r)">
+                            control_point</mat-icon>
+                        <mat-icon *ngIf="r['#json']" style="color: green;;overflow: visible" (click)="switchDisplay(r)">
+                            code</mat-icon> -->
+                    </span>
+                </td>
+                <ng-container *ngIf="!r['#json']">
+                    <td *ngFor="let col of visibleColumns">
+                        {{r[col]}}
+                    </td>
+                </ng-container>
+                <ng-container *ngIf="r['#json']">
+                    <td style="padding: 1rem;background-color: white;position:relative"
+                        [attr.colspan]="visibleColumns.length">
+                        <button class="json-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
+                            [cdkCopyToClipboard]="asJson(r)">
+                            <mat-icon>content_copy</mat-icon>
+                        </button>
+                        <ngx-json-viewer [json]="cleanup(r)" style="border: 1px;"></ngx-json-viewer>
+                    </td>
+
+                </ng-container>
+            </tr>
+        </table>
+
     </div>
 
 </div>

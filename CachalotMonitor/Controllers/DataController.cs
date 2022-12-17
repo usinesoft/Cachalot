@@ -31,7 +31,7 @@ public class DataController : ControllerBase
     [HttpPost("query/execute")]
     public DataResponse ExecuteQuery([FromBody]InputQuery query)
     {
-        if (query.Sql != null) return new DataResponse { Json = _queryService.QueryAsJson(query.Sql) };
+        if (query.Sql != null) return new() { Json = _queryService.QueryAsJson(query.Sql, query.FullText) };
 
         throw new ArgumentException("Empty sql");
     }

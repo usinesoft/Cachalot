@@ -1,23 +1,23 @@
-﻿using Cachalot.Linq;
-using Client;
-using Client.Core;
-using Client.Core.Linq;
-using Client.Interface;
-using Newtonsoft.Json;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Cachalot.Linq;
+using Client;
+using Client.Core;
+using Client.Core.Linq;
+using Client.Interface;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 using Tests.TestData;
 using Tests.TestData.Events;
 
 namespace Tests.IntegrationTests
 {
-
     [TestFixture]
     public class TestFixtureMultipleNodesWithPersistence : MultiServerTestFixtureBase
     {
@@ -76,15 +76,12 @@ namespace Tests.IntegrationTests
         [Test]
         public void Feed_many_sends_all_data()
         {
-
             // check that empty request are correctly split
             //var empty = new PutRequest("test"){EndOfSession = true, SessionId = Guid.NewGuid()};
             //var split = empty.SplitWithMaxSize();
             //Assert.AreEqual(1,split.Count);
             //Assert.IsTrue(split[0].EndOfSession);
             //Assert.IsEmpty(split[0].Items);
-
-
 
 
             using var connector = new Connector(_clientConfig);
@@ -95,7 +92,7 @@ namespace Tests.IntegrationTests
             var dataSource = connector.DataSource<Order>();
 
 
-            List<Order> orders = Order.GenerateTestData(100_000);
+            var orders = Order.GenerateTestData(100_000);
 
             dataSource.PutMany(orders);
 
@@ -112,7 +109,7 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            List<Order> orders = Order.GenerateTestData(10_000);
+            var orders = Order.GenerateTestData(10_000);
 
 
             dataSource.PutMany(orders);
@@ -127,13 +124,15 @@ namespace Tests.IntegrationTests
 
             var noOrder = dataSource.Where(o => o.Category == "geek").ToList();
 
-            Console.WriteLine($"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
 
             watch.Restart();
 
             var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
 
-            Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
 
             Assert.AreEqual(noOrder.Count, ascending.Count);
 
@@ -141,25 +140,67 @@ namespace Tests.IntegrationTests
 
             var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
-            Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
 
             Assert.AreEqual(noOrder.Count, descending.Count);
 
             // check that they are ordered
 
             // check sorted ascending
-            for (int i = 0; i < ascending.Count - 1; i++)
-            {
+            for (var i = 0; i < ascending.Count - 1; i++)
                 Assert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
-            }
 
             // check sorted descending
-            for (int i = 0; i < descending.Count - 1; i++)
-            {
+            for (var i = 0; i < descending.Count - 1; i++)
                 Assert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
-            }
 
             watch.Stop();
+        }
+
+        [Test]
+        public void Test_the_sql2json_interface()
+        {
+            using var connector = new Connector(_clientConfig);
+            connector.AdminInterface().DropDatabase();
+
+            connector.DeclareCollection<Home>();
+
+            var dataSource = connector.DataSource<Home>();
+            dataSource.Put(new Home
+                { Id = 1, CountryCode = "FR", Town = "Paris", Rooms = 1, Bathrooms = 1, PriceInEuros = 254 });
+            dataSource.Put(new Home
+                { Id = 2, CountryCode = "FR", Town = "Toulouse", Rooms = 2, Bathrooms = 1, PriceInEuros = 256 });
+            dataSource.Put(new Home
+                { Id = 3, CountryCode = "CA", Town = "Toronto", Rooms = 3, Bathrooms = 2, PriceInEuros = 55.5M });
+
+            var all = connector.SqlQueryAsJson("select from home").ToList();
+            Assert.AreEqual(3, all.Count);
+
+            var r1 = connector.SqlQueryAsJson("select from home where countryCode=CA").ToList();
+            Assert.AreEqual(1, r1.Count);
+            Assert.AreEqual("Toronto", r1[0]["Town"].Value<string>());
+
+            var r2 = connector.SqlQueryAsJson("select from home where rooms in (1, 2)").ToList();
+            Assert.AreEqual(2, r2.Count);
+
+            var r3 = connector.SqlQueryAsJson("select from home where rooms not in (1, 2)").ToList();
+            Assert.AreEqual(1, r3.Count);
+
+
+            var r4 = connector.SqlQueryAsJson("select from home where CountryCode not in (FR, 'CA')").ToList();
+            Assert.AreEqual(0, r4.Count);
+
+            var r5 = connector.SqlQueryAsJson("select from home where PriceInEuros < 56").ToList();
+            Assert.AreEqual(1, r5.Count);
+            r5 = connector.SqlQueryAsJson("select from home where PriceInEuros < 56 and PriceInEuros > 55").ToList();
+            Assert.AreEqual(1, r5.Count);
+
+            r5 = connector.SqlQueryAsJson("select from home where PriceInEuros <= 56").ToList();
+            Assert.AreEqual(1, r5.Count);
+            
+
+
         }
 
         [Test]
@@ -586,7 +627,8 @@ namespace Tests.IntegrationTests
 
                 dataSource.PutMany(orders);
 
-                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o => o.Amount, o => o.Quantity).Execute();
+                var pivot = dataSource.PreparePivotRequest().OnAxis(o => o.ClientId)
+                    .AggregateValues(o => o.Amount, o => o.Quantity).Execute();
 
                 sum1 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
@@ -629,7 +671,8 @@ namespace Tests.IntegrationTests
                 Assert.AreEqual(100, after);
 
                 // the pivot should be identical 
-                var pivot = dataSource.PreparePivotRequest(null).OnAxis(o => o.ClientId).AggregateValues(o => o.Amount, o => o.Quantity).Execute();
+                var pivot = dataSource.PreparePivotRequest().OnAxis(o => o.ClientId)
+                    .AggregateValues(o => o.Amount, o => o.Quantity).Execute();
                 var sum2 = pivot.AggregatedValues.Single(v => v.ColumnName == "Amount").Sum;
 
                 Assert.AreEqual(sum1, sum2);
@@ -780,8 +823,8 @@ namespace Tests.IntegrationTests
                     {
                         Id = 10, Address = "14 rue de le pompe", Town = "Paris", Comments = new List<Comment>
                         {
-                            new Comment {Text = "close to the metro"},
-                            new Comment {Text = "beautiful view"}
+                            new Comment { Text = "close to the metro" },
+                            new Comment { Text = "beautiful view" }
                         }
                     },
 
@@ -789,8 +832,8 @@ namespace Tests.IntegrationTests
                     {
                         Id = 20, Address = "10 rue du chien qui fume", Town = "Nice", Comments = new List<Comment>
                         {
-                            new Comment {Text = "close to the metro"},
-                            new Comment {Text = "ps4"}
+                            new Comment { Text = "close to the metro" },
+                            new Comment { Text = "ps4" }
                         }
                     }
                 });
@@ -852,8 +895,8 @@ namespace Tests.IntegrationTests
                     Town = "Nice",
                     Comments = new List<Comment>
                     {
-                        new Comment {Text = "close to the metro"},
-                        new Comment {Text = "4k tv"}
+                        new Comment { Text = "close to the metro" },
+                        new Comment { Text = "4k tv" }
                     }
                 };
 
@@ -966,7 +1009,6 @@ namespace Tests.IntegrationTests
         [Test]
         public void Import_real_data_set()
         {
-
             var schema = TypedSchemaFactory.FromType(typeof(Business));
 
             var serializer = new JsonSerializer();
@@ -1125,8 +1167,8 @@ namespace Tests.IntegrationTests
                         Id = 10, Address = "14 rue de le pompe", Town = "Paris", CountryCode = "FR", Comments =
                             new List<Comment>
                             {
-                                new Comment {Text = "close to the metro"},
-                                new Comment {Text = "beautiful view"}
+                                new Comment { Text = "close to the metro" },
+                                new Comment { Text = "beautiful view" }
                             }
                     },
 
@@ -1135,8 +1177,8 @@ namespace Tests.IntegrationTests
                         Id = 20, Address = "10 rue du chien qui fume", Town = "Nice", CountryCode = "FR", Comments =
                             new List<Comment>
                             {
-                                new Comment {Text = "close to the metro"},
-                                new Comment {Text = "ps4"}
+                                new Comment { Text = "close to the metro" },
+                                new Comment { Text = "ps4" }
                             }
                     }
                 });
@@ -1338,7 +1380,6 @@ namespace Tests.IntegrationTests
 
             var result4 = dataSource.Take(1).ToList();
             Assert.AreEqual(1, result4.Count);
-
         }
 
         [Test]
@@ -1371,7 +1412,6 @@ namespace Tests.IntegrationTests
 
             var result3 = dataSource.Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(2, result3.Count);
-
         }
 
 
@@ -1390,7 +1430,8 @@ namespace Tests.IntegrationTests
             dataSource.Put(new Order { Category = "sf", ClientId = 102 });
 
 
-            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct()
+                .ToList();
             Assert.AreEqual(2, result1.Count);
 
             var result2 = dataSource.Where(o => o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
@@ -1412,7 +1453,8 @@ namespace Tests.IntegrationTests
             var result5 = dataSource.Where(o => cats.Contains(o.Category)).Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(4, result5.Count);
 
-            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId)
+                .Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
 
             // with precompiled queries
@@ -1424,8 +1466,6 @@ namespace Tests.IntegrationTests
             var resultWithPrecompiled = dataSource.WithPrecompiledQuery(query).ToList();
 
             Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
-
-
         }
 
 
@@ -1462,8 +1502,6 @@ namespace Tests.IntegrationTests
             var reloaded3 = dataSource.Where(o => o.Category == "sf").ToList();
 
             Assert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
-
-
         }
 
         [Test]
@@ -1492,8 +1530,6 @@ namespace Tests.IntegrationTests
             var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
 
             Assert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
-
-
         }
 
 
@@ -1521,8 +1557,6 @@ namespace Tests.IntegrationTests
 
             var r3 = dataSource.SqlQuery("select distinct Category from order").ToList();
             Assert.AreEqual(5, r3.Count);
-
-
         }
 
         [Test]
@@ -1543,14 +1577,16 @@ namespace Tests.IntegrationTests
             dataSource.Put(new Order { Category = "sf", ClientId = 102 });
 
 
-            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+            var result1 = dataSource.Where(o => !o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct()
+                .ToList();
             Assert.AreEqual(2, result1.Count);
 
             //The activity table is filled asynchronously so we need to wait
 
             Thread.Sleep(2000);
             var logEntries = activity.Where(l => l.Type == "QUERY").ToList();
-            Assert.IsTrue(logEntries.All(e => e.ExecutionTimeInMicroseconds == e.ExecutionPlan.TotalTimeInMicroseconds));
+            Assert.IsTrue(logEntries.All(e =>
+                e.ExecutionTimeInMicroseconds == e.ExecutionPlan.TotalTimeInMicroseconds));
 
 
             var result2 = dataSource.Where(o => o.ClientId == 102).Select(o => o.Category).Distinct().ToList();
@@ -1572,11 +1608,9 @@ namespace Tests.IntegrationTests
             var result5 = dataSource.Where(o => cats.Contains(o.Category)).Select(o => o.ClientId).Distinct().ToList();
             Assert.AreEqual(4, result5.Count);
 
-            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId).Distinct().ToList();
+            var result6 = dataSource.Where(o => o.Category == "sf" || o.Category == "travel").Select(o => o.ClientId)
+                .Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
-
-
-
         }
     }
 }

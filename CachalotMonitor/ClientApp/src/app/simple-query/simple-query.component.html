@@ -21,6 +21,7 @@
     </mat-form-field>
     <!--value(s)-->
     <mat-form-field appearance="fill" *ngIf="multipleValuesAllowed && canSelectValues && hasValue" style="flex-grow:2">
+        <mat-label>Value(s)</mat-label>
         <mat-select placeholder="Value(s)" [multiple]="true" [(ngModel)]="selectedValues" #multiSelect>
             
             <!--search box only if more than 10 values-->

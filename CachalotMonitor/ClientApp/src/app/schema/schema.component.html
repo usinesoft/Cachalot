@@ -1,6 +1,27 @@
 <div class="root-container">
 
     <div class="schema-selection-container">
+        <ng-template #TooltipEdit>
+            <div>
+                <p style="font-size: larger;color: blue;">Modify schema</p>
+                <p>You can modify the type of an existing index or create a new index.</p>
+                <p>An ordered index enables sorting and faster comparison, but it is slower to update than a dictionary
+                    index.</p>
+                <p>Every index has a small impact on the start-up time and the memory usage</p>
+            </div>
+        </ng-template>
+        <ng-template #TooltipSave>
+            <div>
+                <p style="font-size: larger;color: blue;">Apply the modificatiions</p>
+                <p>Usually it takes less than 10 seconds.</p>                
+            </div>
+        </ng-template>
+        <ng-template #TooltipCancel>
+            <div>
+                <p style="font-size: larger;color: blue;">Cancel the modifications</p>
+                <p>Your schema will not be changed.</p>                
+            </div>
+        </ng-template>
         <mat-form-field appearance="fill">
             <mat-label>Collections</mat-label>
             <mat-select [(value)]="selectedCollection">
@@ -9,12 +30,36 @@
                 </mat-option>
             </mat-select>
         </mat-form-field>
+        <!--update index type-->
+        <button mat-raised-button color="accent" aria-label="edit" class="action-button" (click)="editMode=true" [ngbPopover] ="TooltipEdit" triggers="mouseenter:mouseleave"
+            *ngIf="editMode == false && canBeEdited">
+            <mat-icon>edit_note</mat-icon>
+        </button>
+        <app-smart-multi-select *ngIf="editMode" [singleValue]="true" [(selectedValues)]="editedProperties"
+            style="margin-left: 1rem;" [allValues]="serverSide" [clearButton]="true"
+            [hint]="'select a server-side property'" label="property">
+        </app-smart-multi-select>
+        <mat-form-field appearance="fill" *ngIf="editMode" style="margin-left: 1rem;">
+            <mat-label>Index type</mat-label>
+            <mat-select [(value)]="selectedIndexType">
+                <mat-option *ngFor="let indexType of indexTypes" [value]="indexType">
+                    {{indexType}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <button mat-raised-button color="primary" aria-label="cancel" class="action-button" (click)="editMode=false" [ngbPopover] ="TooltipCancel" triggers="mouseenter:mouseleave"
+            *ngIf="editMode == true">
+            <mat-icon>cancel</mat-icon>
+        </button>
+        <button mat-raised-button color="accent" aria-label="save" class="action-button" (click)="updateSchema()" [ngbPopover] ="TooltipSave" triggers="mouseenter:mouseleave"
+            *ngIf="editMode == true">
+            <mat-icon>save</mat-icon>
+        </button>
     </div>
+    
     <div class="schemas-container">
-        <app-collection-card [name]="summary.name" [items]="summary.itemsCount"
-            [fullText]="summary.fullTextSearch" [layout]="summary.storageLayout"
-            [eviction]="summary.evictionType"
-            *ngIf="summary">
+        <app-collection-card [name]="summary.name" [items]="summary.itemsCount" [fullText]="summary.fullTextSearch"
+            [layout]="summary.storageLayout" [eviction]="summary.evictionType" *ngIf="summary">
         </app-collection-card>
 
         <div class="schema-container" *ngIf="schema">
@@ -39,10 +84,12 @@
                         {{prop.name}}
                     </div>
                     <div class="cell" data-title="Index Type">
-                        {{prop.indexType}}
+                        <span [outerHTML]="prop.indexType | formatIndexType"></span>
                     </div>
                     <div class="cell" data-title="Is Collection">
-                        {{prop.isCollection}}
+                        <mat-icon *ngIf="prop.isCollection" aria-hidden="false"
+                            style="font-size: 16px; font-weight: bold; color:crimson" aria-label="Is collection"
+                            fontIcon="check"></mat-icon>
                     </div>
 
                 </div>
@@ -50,5 +97,6 @@
         </div>
 
     </div>
+    <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
 
 </div>

@@ -381,19 +381,13 @@ namespace Server
         /// <param name="client"></param>
         private void ProcessUniqueIdRequest(Request clientRequest, IClient client)
         {
-            if (PersistenceEngine == null)
-            {
-                client.SendResponse(
-                    new ExceptionResponse(
-                        new CacheException("Unique ids can be generated only by persistent servers")));
-                return;
-            }
+            
 
             switch (clientRequest)
             {
-                case GenerateUniqueIdsRequest generateUniqueIds
-                    when generateUniqueIds.Count > 0 && !string.IsNullOrEmpty(generateUniqueIds.Name) &&
-                         PersistenceEngine != null:
+                case GenerateUniqueIdsRequest { Count: > 0 } generateUniqueIds
+                    when !string.IsNullOrEmpty(generateUniqueIds.Name):
+                         
 
                     // if we generate ids on an empty schema these values are not yet initialized
                     ShardIndex = generateUniqueIds.ShardIndex;
@@ -432,7 +426,7 @@ namespace Server
 
                     break;
 
-                case ResyncUniqueIdsRequest resync when PersistenceEngine != null:
+                case ResyncUniqueIdsRequest resync:
 
                     // if we generate ids on an empty schema these values are not yet initialized
                     ShardIndex = resync.ShardIndex;
@@ -471,6 +465,10 @@ namespace Server
         /// <param name="client"></param>
         private void Dump(DumpRequest request, IClient client)
         {
+            if (DataStores.Count == 0)
+            {
+                throw new CacheException("Can not backup an empty database");
+            }
 
             var lockManager = _serviceContainer.LockManager;
 
@@ -487,10 +485,14 @@ namespace Server
         {
             try
             {
+                
+                var cluster = _serviceContainer.NodeConfig.ClusterName;
                 // a sub directory for each date is created inside the dump path
-                var date = DateTime.Today.ToString("yyyy-MM-dd");
+                var date = DateTime.Now;
 
-                var fullPath = Path.Combine(request.Path, date);
+                var directory = $"{date.ToString("yyyy-MM-dd")}_{date.ToString("HH")}h{date.ToString("mm")}_{ShardCount:D2}nodes_{cluster}";
+                
+                var fullPath = Path.Combine(request.Path, directory);
 
                 if (!Directory.Exists(fullPath))
                     try
@@ -502,7 +504,7 @@ namespace Server
                         // ignore (race condition between nodes)
                     }
 
-                Parallel.ForEach(DataStores.Values, ds => ds.Dump(request.Path, ShardIndex));
+                Parallel.ForEach(DataStores.Values, ds => ds.Dump(fullPath, ShardIndex));
 
 
                 // only the first node in the cluster should dump the schema as all shards have identical copies

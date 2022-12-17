@@ -91,16 +91,13 @@ namespace Client.Tools
             }
         }
 
-        public static void DumpObjects(string path, CollectionSchema collectionSchema, int shardIndex,
+        public static void DumpObjects(string fullPath, CollectionSchema collectionSchema, int shardIndex,
             IEnumerable<PackedObject> objects)
         {
-            if (!Directory.Exists(path)) throw new NotSupportedException("Dump path not found:" + path);
+            if (!Directory.Exists(fullPath)) throw new NotSupportedException("Dump path not found:" + fullPath);
 
             if (shardIndex < 0) throw new ArgumentOutOfRangeException(nameof(shardIndex));
-
-            var date = DateTime.Today.ToString("yyyy-MM-dd");
-
-            var fullPath = Path.Combine(path, date);
+            
 
             if (!Directory.Exists(fullPath))
             {
@@ -165,7 +162,7 @@ namespace Client.Tools
         }
 
         /// <summary>
-        ///     Dumps are stored as subdirectories like "2018-02-15"
+        ///     Dumps are stored as subdirectories like "2018-02-15_..."
         ///     If a sub directory is is specified take it as is. Otherwise take the most recent sub directory
         /// </summary>
         /// <param name="path"></param>
@@ -174,15 +171,18 @@ namespace Client.Tools
         {
             if (!Directory.Exists(path)) throw new NotSupportedException($"The directory {path} does not exist ");
 
-            if (path.Length > 10)
+            // check if the directory is a backup or a backup root
+            var dirName = new DirectoryInfo(path).Name;
+            var parts = dirName.Split('_');
+            if (parts.Length > 1)
             {
-                var subdir = path.Substring(path.Length - 10);
-                var parts = subdir.Split('-');
+                parts = parts[0].Split('-');
                 if (parts.Length == 3)
                     if (int.TryParse(parts[0], out _) && int.TryParse(parts[1], out _) && int.TryParse(parts[2], out _))
                         return path;
             }
 
+            
             return Directory.GetDirectories(path).OrderBy(d => d).Last();
         }
     }

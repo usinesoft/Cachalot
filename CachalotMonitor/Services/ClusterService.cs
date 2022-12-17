@@ -63,6 +63,7 @@ namespace CachalotMonitor.Services
         private readonly Dictionary<string, Model.ConnectionInfo> _connectionHistoryCache = new();
 
         private const string HistoryPath = "history";
+        
         private const string HistoryExtension = "cnx"; 
 
         public void SaveToConnectionHistory(Model.ConnectionInfo info, string name)
@@ -116,5 +117,9 @@ namespace CachalotMonitor.Services
 
         }
 
+        public void Dispose()
+        {
+            Connector?.Dispose();
+        }
     }
 }

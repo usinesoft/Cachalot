@@ -1,18 +1,22 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Client.Parsing
 {
     public static class Tokenizer
     {
+        private const string EscapedQuoteReplacement = "(#)";
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static CharClass GetCharClass(char ch)
         {
             if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
 
+           
             if ("<>:=,()!".Contains(ch))
                 return CharClass.Symbol;
-
+            
             return CharClass.LetterOrDigit;
         }
 
@@ -20,10 +24,12 @@ namespace Client.Parsing
         {
             var result = new List<Token>(1000);
 
+            input = input.Trim().Replace("\\'", EscapedQuoteReplacement);
 
             var previousSplitPosition = 0;
             var previousType = CharClass.Start;
 
+            bool insideString = false;
 
             for (var i = 0; i < input.Length; i++)
             {
@@ -31,35 +37,88 @@ namespace Client.Parsing
 
                 var currentType = GetCharClass(current);
 
-
-                if (currentType != previousType)
+                if (current == '\'') // string delimiter
                 {
-                    if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
+                    if (insideString)
                     {
-                        var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
+                        var text = input.Substring(previousSplitPosition, i - previousSplitPosition +1);
+
+                        var txt = text.Replace(EscapedQuoteReplacement, "'");
                         result.Add(new Token
                         {
-                            NormalizedText = text.ToLower(),
-                            Text = text,
+                            // restore escaped quotes id any
+                            NormalizedText = txt.ToLower(),
+                            Text = txt,
                             TokenType = previousType
                         });
+
+                        previousSplitPosition = i +1;
+                        
                     }
+                    else
+                    {
+                        if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
+                        {
+                            var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
+                            
+                            result.Add(new Token
+                            {
+                                NormalizedText = text.ToLower(),
+                                Text = text,
+                                TokenType = previousType
+                            });
+                        
+                            
+                        }
 
-                    previousType = currentType;
+                        previousType = currentType;
 
-                    previousSplitPosition = i;
+                        previousSplitPosition = i;
+                    }
+                    
+                    insideString = !insideString;
                 }
+                else
+                {
+                    if (currentType != previousType && !insideString)
+                    {
+                        if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
+                        {
+                            var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
+
+                            if (text.Length > 0)
+                            {
+                                result.Add(new Token
+                                {
+                                    NormalizedText = text.ToLower(),
+                                    Text = text,
+                                    TokenType = previousType
+                                });
+                            }
+                        }
+
+                        previousType = currentType;
+
+                        previousSplitPosition = i;
+                    }
+                }
+                
             }
 
             if (previousType != CharClass.Whitespace)
             {
                 var text = input.Substring(previousSplitPosition, input.Length - previousSplitPosition);
-                result.Add(new Token
+
+                if (text.Length > 0)
                 {
-                    NormalizedText = text.ToLower(),
-                    Text = text,
-                    TokenType = previousType
-                });
+                    result.Add(new()
+                    {
+                        NormalizedText = text.ToLower(),
+                        Text = text,
+                        TokenType = previousType
+                    });
+                }
+                
             }
 
 

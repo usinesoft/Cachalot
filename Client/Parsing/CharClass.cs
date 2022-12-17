@@ -5,6 +5,7 @@
         Start,
         LetterOrDigit,
         Symbol,
-        Whitespace
+        Whitespace,
+        StringDelimiter
     }
 }

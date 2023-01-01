@@ -126,59 +126,79 @@ namespace Client.Core
             return true;
         }
 
+
         /// <summary>
-        /// Clients can declare schemas that are simpler than the server side ones. This will not trigger reindexation 
+        /// Compatibility level between two schemas
+        /// </summary>
+        public enum CompatibilityLevel
+        {
+            /// <summary>
+            /// The new one is either identical or less complex that the old one
+            /// </summary>
+            Ok, 
+            /// <summary>
+            /// New indexes are added or dictionary indexes have changed into ordered ones
+            /// </summary>
+            NeedsReindex, 
+            /// <summary>
+            /// Changes detected that require all objects to be repacked
+            /// </summary>
+            NeedsRepacking
+        }
+
+        /// <summary>
+        /// Clients can declare schemas that are simpler than the server side ones. This will not trigger re-indexation 
         /// Client indexes may be a subset of server indexes. 
         /// The <see cref="Layout"/> of the two schemas must be the same
         /// The two schemas must define the same primary key
         /// Client index may be <see cref="IndexType.Dictionary"/> and the corresponding server index <see cref="IndexType.Ordered"/> but NOT the other way around.
         /// Client indexes may be <see cref="IndexType.None"/> and server index <see cref="IndexType.Dictionary"/> or <see cref="IndexType.Ordered"/> but NOT the other way around
         /// </summary>
-        /// <param name="clientSchema"></param>
-        /// <param name="serverSchema"></param>
+        /// <param name="newSchema"></param>
+        /// <param name="oldSchema"></param>
         /// <returns></returns>
-        public static bool AreCompatible(CollectionSchema clientSchema, CollectionSchema serverSchema)
+        public static CompatibilityLevel AreCompatible(CollectionSchema newSchema, CollectionSchema oldSchema)
         {
-            if (clientSchema is null)
+            if (newSchema is null)
             {
-                throw new ArgumentNullException(nameof(clientSchema));
+                throw new ArgumentNullException(nameof(newSchema));
             }
 
-            if (serverSchema is null)
+            if (oldSchema is null)
             {
-                throw new ArgumentNullException(nameof(serverSchema));
+                throw new ArgumentNullException(nameof(oldSchema));
             }
 
             
-            if (!Equals(clientSchema.PrimaryKeyField, serverSchema.PrimaryKeyField))
-                return false;
+            if (!Equals(newSchema.PrimaryKeyField, oldSchema.PrimaryKeyField))
+                return CompatibilityLevel.NeedsRepacking;
 
             
-            if (!Equals(clientSchema.StorageLayout, serverSchema.StorageLayout))
-                return false;
+            if (!Equals(newSchema.StorageLayout, oldSchema.StorageLayout))
+                return CompatibilityLevel.NeedsRepacking;
 
             //check all the fields
-            if (clientSchema.ServerSide.Count > serverSchema.ServerSide.Count)
-                return false;
+            if (newSchema.ServerSide.Count > oldSchema.ServerSide.Count)
+                return CompatibilityLevel.NeedsRepacking;
 
-            for (int i = 1; i < clientSchema.ServerSide.Count; i++)
+            for (int i = 1; i < newSchema.ServerSide.Count; i++)
             {
-                var clientField = clientSchema.ServerSide[i];
-                var serverField = serverSchema.ServerSide[i];
+                var clientField = newSchema.ServerSide[i];
+                var serverField = oldSchema.ServerSide[i];
 
                 if (clientField.Name != serverField.Name)
-                    return false;
+                    return CompatibilityLevel.NeedsRepacking;
 
                 if (clientField.Order != serverField.Order)
-                    return false;
+                    return CompatibilityLevel.NeedsRepacking;
 
                 if (clientField.IndexType > serverField.IndexType)
-                    return false;
+                    return CompatibilityLevel.NeedsReindex;
 
             }
 
 
-            return true;
+            return CompatibilityLevel.Ok;
         }
 
         public KeyInfo KeyByName(string name)

@@ -2,7 +2,7 @@
   "profiles": {
     "StorageAnalyzer": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\release\\ut_server\\root\\4852\\data"
+      "commandLineArgs": "D:\\cachalot\\services\\02\\root\\data"
     }
   }
 }

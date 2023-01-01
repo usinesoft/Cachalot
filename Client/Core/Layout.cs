@@ -19,8 +19,8 @@ namespace Client.Core
         /// </summary>
         Default,
         /// <summary>
-        /// Same as default but the json is compressed - afficient for complex documents where only a small subset of 
-        /// properties is server-side visisble
+        /// Same as default but the json is compressed - efficient for complex documents where only a small subset of 
+        /// properties is server-side visible
         /// </summary>
         Compressed,
         /// <summary>

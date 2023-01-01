@@ -3,8 +3,8 @@
     flex-direction: column;
     gap:3px;
     padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    border-radius: 6px 0 0 0;
+    box-shadow: 1px 0px 4px 0 rgba(0, 0, 0, 0.2), 2px 0px 10px 0 rgba(0, 0, 0, 0.19);
 }
 
 .query-line{

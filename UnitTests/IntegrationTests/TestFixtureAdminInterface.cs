@@ -7,6 +7,7 @@ using Server.Persistence;
 using System;
 using System.IO;
 using System.Linq;
+using Client.Tools;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests
@@ -119,11 +120,13 @@ namespace Tests.IntegrationTests
 
 
                 Assert.IsTrue(Directory.Exists(dumpPath));
-                var todayDumpPath = Path.Combine(dumpPath, DateTime.Today.ToString("yyyy-MM-dd"));
 
-                Assert.IsTrue(Directory.Exists(todayDumpPath),
-                    $"not found {todayDumpPath} current directory = {Directory.GetCurrentDirectory()}");
-                var files = Directory.EnumerateFiles(todayDumpPath).ToList();
+                var fullPath = DumpHelper.NormalizeDumpPath(dumpPath);
+
+                
+                Assert.IsTrue(Directory.Exists(fullPath),
+                    $"not found {fullPath} current directory = {Directory.GetCurrentDirectory()}");
+                var files = Directory.EnumerateFiles(fullPath).ToList();
 
 
                 Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
@@ -182,12 +185,12 @@ namespace Tests.IntegrationTests
                 // less than 1000 items. The dump should now contain one single data file
                 Assert.IsTrue(Directory.Exists(dumpPath));
 
-                var todayDumpPath = Path.Combine(dumpPath, DateTime.Today.ToString("yyyy-MM-dd"));
+                var fullPath = DumpHelper.NormalizeDumpPath(dumpPath);
 
-                Assert.IsTrue(Directory.Exists(todayDumpPath),
-                    $"not found {todayDumpPath} current directory = {Directory.GetCurrentDirectory()}");
+                Assert.IsTrue(Directory.Exists(fullPath),
+                    $"not found {fullPath} current directory = {Directory.GetCurrentDirectory()}");
 
-                var files = Directory.EnumerateFiles(todayDumpPath).ToList();
+                var files = Directory.EnumerateFiles(fullPath).ToList();
 
 
                 Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");

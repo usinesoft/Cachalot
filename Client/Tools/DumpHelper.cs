@@ -171,7 +171,7 @@ namespace Client.Tools
         {
             if (!Directory.Exists(path)) throw new NotSupportedException($"The directory {path} does not exist ");
 
-            // check if the directory is a backup or a backup root
+            // check if the directory is a specific backup or a backup root
             var dirName = new DirectoryInfo(path).Name;
             var parts = dirName.Split('_');
             if (parts.Length > 1)

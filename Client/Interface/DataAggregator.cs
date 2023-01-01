@@ -75,9 +75,8 @@ public partial class
         }
         catch (AggregateException e)
         {
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
 
 
@@ -92,9 +91,8 @@ public partial class
         }
         catch (AggregateException e)
         {
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
     }
 
@@ -106,9 +104,8 @@ public partial class
         }
         catch (AggregateException e)
         {
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
     }
 
@@ -159,9 +156,8 @@ public partial class
         }
         catch (AggregateException e)
         {
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
 
         ids.Sort();
@@ -604,9 +600,8 @@ public partial class
         catch (AggregateException e)
         {
             Parallel.For(0, CacheClients.Count, i => { CacheClients[i].ImportDumpStage3(path); });
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
     }
 
@@ -618,9 +613,8 @@ public partial class
         }
         catch (AggregateException e)
         {
-            if (e.InnerException != null)
-                if (e.InnerException is CacheException ex)
-                    throw ex;
+            if (e.InnerException is CacheException ex)
+                throw ex;
         }
     }
 

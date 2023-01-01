@@ -1,6 +1,9 @@
-﻿using CachalotMonitor.Model;
+﻿using System.Collections.Concurrent;
+using CachalotMonitor.Model;
 using CachalotMonitor.Services;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CachalotMonitor.Controllers;
 
@@ -34,5 +37,48 @@ public class DataController : ControllerBase
         if (query.Sql != null) return new() { Json = _queryService.QueryAsJson(query.Sql, query.FullText) };
 
         throw new ArgumentException("Empty sql");
+    }
+
+    [HttpPost("query/stream")]
+    public async Task<IActionResult> ExecuteQueryAsStream([FromBody]InputQuery query)
+    {
+        var fileName = "data";
+        // get the collection name from query
+        var parts =  query.Sql?.Split(' ', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
+        for (int i = 0; i < parts?.Length; i++)
+        {
+            if (parts[i].ToLower() == "from")
+            {
+                if (parts.Length > i + 1)
+                {
+                    fileName = parts[i + 1];
+                }
+            }
+        }
+        
+        HttpContext.Response.Headers["content-type"] = "application/json";
+        HttpContext.Response.Headers["content-disposition"] = $"attachment; filename={fileName}";
+
+        await _queryService.QueryAsStream(HttpContext.Response.Body, query.Sql, query.FullText);
+
+        await HttpContext.Response.CompleteAsync();
+
+        return new EmptyResult();
+    }
+
+    
+
+    [HttpPost("put/stream/{collectionName}")]
+    public async Task<IActionResult> PutManyAsStream(string collectionName, IFormFile file)
+    {
+        MemoryStream mstream = new MemoryStream();
+        await file.CopyToAsync(mstream);
+
+        // rewind
+        mstream.Position = 0;
+        
+        await _queryService.PutManyAsStream(mstream, collectionName);
+        
+        return new EmptyResult();
     }
 }

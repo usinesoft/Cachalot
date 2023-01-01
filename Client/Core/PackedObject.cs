@@ -507,6 +507,8 @@ namespace Client.Core
         ///     Restore the original object
         /// </summary>
         /// <param name="packedObject"> </param>
+        /// <param name="schema">schema is required only for objects with <see cref="Core.Layout.Flat"/> layout as they do not
+        /// contain json data</param>
         /// <returns> </returns>
         public static T Unpack<T>(PackedObject packedObject, CollectionSchema schema)
         {
@@ -518,6 +520,20 @@ namespace Client.Core
 
             return SerializationHelper.ObjectFromBytes<T>(packedObject.ObjectData, SerializationMode.Json,
                 packedObject.Layout == Layout.Compressed);
+        }
+
+        /// <summary>
+        /// Repack an object with a new schema. Old schema is required only for flat layout as the json is not stored in the object
+        /// and it has to be regenerated
+        /// </summary>
+        /// <param name="packedObject"></param>
+        /// <param name="oldSchema"></param>
+        /// <param name="newSchema"></param>
+        /// <returns></returns>
+        public static PackedObject Repack(PackedObject packedObject,  CollectionSchema oldSchema, CollectionSchema newSchema)
+        {
+            var json = packedObject.GetJson(oldSchema);
+            return PackJson(json, newSchema);
         }
 
         private bool Equals(PackedObject other)

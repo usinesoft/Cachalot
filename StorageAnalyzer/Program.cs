@@ -4,17 +4,14 @@ using System.IO;
 
 namespace StorageAnalyzer
 {
-    class Program
+    partial class Program
     {
         static void Main(string[] args)
         {
             Console.ForegroundColor = ConsoleColor.White;
             Console.BackgroundColor = ConsoleColor.Black;
-            Console.WriteLine("------------------------------------------------------");
-            Console.WriteLine("|     Persistent store and transaction log analyzer  |");
-            Console.WriteLine("------------------------------------------------------");
-            Console.WriteLine();
-
+            Console.WriteLine(Logo);
+            
             if (args.Length == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -54,40 +51,22 @@ namespace StorageAnalyzer
             Console.WriteLine(report1.Analysis());
 
             Console.ForegroundColor = ConsoleColor.White;
-        }
 
-        static bool IsValidBlock(PersistentBlock block)
-        {
-
-            if (block.BeginMarker != PersistentBlock.BeginMarkerValue)
+            if (report1.BlocksWithIssues.Count > 0)
             {
-                return false;
+                Console.WriteLine("There are invalid blocks in the storage. Fix it? (y/n)");
+                var key = Console.ReadKey();
+                if (key.KeyChar == 'y' || key.KeyChar == 'Y')
+                {
+                    Console.WriteLine("Start compacting and repairing storage...");
+                    ReliableStorage.CompactAndRepair(dir, ReliableStorage.StorageFileName, ReliableStorage.TempFileName);
+                    Console.WriteLine("done");
+                }
             }
-
-            if (block.EndMarker != PersistentBlock.EndMarkerValue)
-            {
-                return false;
-            }
-
-
-            return block.HashOk;
         }
 
-        private static long FindNextBeginMarker(long offset, Stream stream)
-        {
-            var reader = new BinaryReader(stream);
-            for (var curOffset = offset; ; curOffset++)
-                try
-                {
-                    stream.Seek(curOffset, SeekOrigin.Begin);
-                    var marker = reader.ReadInt32();
-                    if (marker == PersistentBlock.BeginMarkerValue) return curOffset;
-                }
-                catch (EndOfStreamException)
-                {
-                    return curOffset;
-                }
-        }
+        
+
 
         private static StorageReport AnalyzeStorage(string dir)
         {
@@ -103,12 +82,14 @@ namespace StorageAnalyzer
 
             var storageReport = new StorageReport();
 
+            int index = 0;
+
             // read all the blocks
             while (block.Read(reader, true))
             {
                 storageReport.TotalBlocks++;
 
-                if (!IsValidBlock(block))
+                if (!block.IsValidBlock())
                 {
                     storageReport.BlocksWithIssues.Add(block);
                     storageReport.InvalidBlocks++;
@@ -129,9 +110,9 @@ namespace StorageAnalyzer
                     storageReport.DirtyBlocks++;
                 }
 
-                if (!IsValidBlock(block))
+                if (!block.IsValidBlock())
                 {
-                    FindNextBeginMarker(storage.Position + PersistentBlock.MinSize, storage);
+                    ReliableStorage.FindNextBeginMarker(storage.Position + PersistentBlock.MinSize, storage);
                 }
 
                 // get the most recent transaction committed to this storage
@@ -141,8 +122,9 @@ namespace StorageAnalyzer
                 }
 
                 storageReport.LastPrimaryKey = block.PrimaryKey;
-
-                block = new PersistentBlock();
+                
+                index++;
+                block = new PersistentBlock { Index = index };
             }
 
             storageReport.Size = storage.Position;

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Tests.UnitTests
 {
@@ -593,6 +594,84 @@ namespace Tests.UnitTests
                 Assert.AreEqual(1, storage.BlockCount);
 
                 Assert.AreEqual(0, storage.InactiveBlockCount);
+            }
+        }
+
+        byte[] MakeByteArray(int size)
+        {
+            var result = new byte[size];
+            
+            Random.Shared.NextBytes(result);
+            
+            return result;
+
+        }
+
+        [Test]
+        public void Write_resized_object()
+        {
+            var smallArray1 = MakeByteArray(1000);
+            var smallArray2 = MakeByteArray(1000);
+
+            var largeArray1 = MakeByteArray(10000);
+            var largerArray2 = MakeByteArray(1010);
+
+            // add two new blocks
+            using (var storage = new ReliableStorage(new NullProcessor()))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(0, storage.BlockCount);
+
+                storage.StoreBlock(smallArray1, "a1", 150);
+                storage.StoreBlock(smallArray2, "a2", 150);
+
+
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(0, storage.InactiveBlockCount);
+            }
+
+            var processor = new NullProcessor();
+            
+            // reload and resize the blocks
+            using (var storage = new ReliableStorage(processor))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(2, storage.BlockCount);
+
+                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+
+                
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+
+
+                // We store resized blocks. The first one should be written at the end
+                // and the block at his previous position should be marked as inactive
+                // The second one should be stored in the same position as it is only slightly larger 
+                // and we always reserve 50% of extra space
+
+                storage.StoreBlock(largeArray1, "a1", 150);
+                storage.StoreBlock(largerArray2, "a2", 150);
+
+
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(1, storage.InactiveBlockCount);
+            }
+
+            processor = new NullProcessor();
+            // reload resized blocks
+            using (var storage = new ReliableStorage(processor))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(1, storage.InactiveBlockCount);
+
+                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+
+                // the large one will be at the end as it was written to a new block at the end
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], largeArray1);
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largerArray2);
+                
             }
         }
 

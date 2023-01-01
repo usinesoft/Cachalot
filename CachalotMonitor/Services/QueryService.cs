@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Text;
 using CachalotMonitor.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -28,7 +30,81 @@ class QueryService : IQueryService
 
         return "[]";
     }
-    
+
+    public async Task QueryAsStream(Stream targetStream, string? sql, string? fullTextQuery = null)
+    {
+        await using var writer = new StreamWriter(targetStream, Encoding.UTF8);
+
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery);
+
+        if (result == null)
+            return;
+
+        int count = 0;
+        
+        await writer.WriteAsync('[');
+
+        foreach (var item in result)
+        {
+            if (count != 0)// write the comma after the previous object
+            {
+                await writer.WriteAsync(',');
+            }
+
+            await writer.WriteAsync(item.ToString(Formatting.None));
+
+            count++;
+
+            if (count % 1000 == 0) // flush every 1000 items
+            {
+                await writer.FlushAsync();
+            }
+        }
+        
+        await writer.WriteAsync(']');
+        
+        await writer.FlushAsync();
+
+        
+    }
+
+
+    IEnumerable<JObject> ObjectConsumer(BlockingCollection<JObject> queue)
+    {
+        foreach (var item in queue.GetConsumingEnumerable())
+        {
+            yield return item;
+        }
+    }
+
+
+    public async Task PutManyAsStream(Stream stream, string collectionName)
+    {
+        var streamedObjects = new BlockingCollection<JObject>();
+
+        var consuming = Task.Run(() =>
+        {
+            _clusterService.Connector?.FeedWithJson(collectionName, ObjectConsumer(streamedObjects));
+        });
+
+
+        using var sr = new StreamReader(stream);
+        using var reader = new JsonTextReader(sr);
+        while (await reader.ReadAsync())
+        {
+            if (reader.TokenType == JsonToken.StartObject)
+            {
+                // Load each object from the stream and do something with it
+                var obj = await JObject.LoadAsync(reader);
+                streamedObjects.Add(obj);
+            }
+        }
+
+        streamedObjects.CompleteAdding();
+
+        await consuming;
+    }
+
     public QueryMetadata GetMetadata(string collection, string property)
     {
         try

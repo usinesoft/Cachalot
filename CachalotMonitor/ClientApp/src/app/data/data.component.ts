@@ -170,6 +170,14 @@ export class DataComponent implements OnInit {
     this.getData();
   }
 
+  public exportJson(){
+    
+    this.queryService.DownloadAsStream(this.sql, this.fullTextQuery).subscribe(data => {
+      console.log('result:' + data);
+    });
+  }
+
+
   private getData(force:boolean = false){
     this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
 
@@ -212,5 +220,30 @@ export class DataComponent implements OnInit {
     console.log('display json = ' + r['#json']);
   }
 
+  ignoreLimit:boolean = false;
+
+  working:boolean = false;
+
+  public onFileSelected(event:any){
+    const file:File = event.target.files[0];
+      
+    if (file && this.selectedCollection) {
+        this.fileName = file.name;
+
+        
+        this.working = true;
+        this.queryService.UploadFile(file, this.selectedCollection).subscribe(data=> {
+          this.working = false;
+          console.log('done');
+        }, err => {
+          this.working = false;
+          console.log('eror:' + err);
+        });
+      }
+
+
+  }
+
+  fileName:string|undefined;
 
 }

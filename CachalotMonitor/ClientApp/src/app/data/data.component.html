@@ -1,5 +1,11 @@
 <div class="data-root">
 
+    <ng-template #TooltipExport>
+        <div>
+            <p style="font-size: larger;color: blue;">Export result</p>
+            <p>Download query result as a json file</p>            
+        </div>
+    </ng-template>
 
     <div class="data-selection-container">
         <!--collection selection-->
@@ -10,7 +16,25 @@
                     {{collection|uppercase}}
                 </mat-option>
             </mat-select>
+            <mat-hint>select the collection</mat-hint>
         </mat-form-field>
+        <button mat-raised-button color="primary" aria-label="export" class="action-button" (click)="exportJson()" [ngbPopover] ="TooltipExport" triggers="mouseenter:mouseleave">
+            <mat-icon>ios_share</mat-icon>
+        </button>
+        <mat-checkbox style="margin: 1rem;"  [(ngModel)]="ignoreLimit">ignore limit</mat-checkbox>
+        
+        <mat-divider [vertical]="true"></mat-divider>
+        
+        <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
+
+        <div class="file-upload">
+
+            {{fileName || "Select json file"}}
+
+            <button style="margin-left: 0.5rem;" mat-mini-fab color="primary" class="upload-btn" (click)="fileUpload.click()">
+                <mat-icon>attach_file</mat-icon>
+            </button>
+        </div>
         <!--full-text search (if enabled on the current collection)-->
         <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
             <mat-label>Full-text search</mat-label>

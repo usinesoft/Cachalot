@@ -155,7 +155,7 @@ namespace Server.Persistence
         PackedObject GetItemWithTokenizedFullText(PackedObject item)
         {
 
-            if (item.FullText != null && item.FullText.Length > 0)
+            if (item.FullText is { Length: > 0 })
             {
                 var dataStore = Container.TryGetByName(item.CollectionName);
 

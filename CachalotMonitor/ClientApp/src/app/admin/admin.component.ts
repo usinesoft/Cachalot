@@ -4,6 +4,7 @@ import { connectableObservableDescriptor } from 'rxjs/internal/observable/Connec
 import { AdminService } from '../admin.service';
 import { Process } from '../model/backup';
 import { MonitoringService } from '../monitoring.service';
+import { QueryService } from '../query.service';
 
 @Component({
   selector: 'app-admin',
@@ -15,7 +16,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   private timerSubscription: Subscription | undefined;
 
-  constructor(private service: AdminService, private monitoringService: MonitoringService) { }
+  constructor(private service: AdminService, private monitoringService: MonitoringService, private queryService:QueryService) { }
 
   ngOnInit(): void {
 
@@ -178,6 +179,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.service.truncate(this.selectedCollection!).subscribe(x => {
       this.working = false;
     });
+
+    
   }
+
+  
 
 }

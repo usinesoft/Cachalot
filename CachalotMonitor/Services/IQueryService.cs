@@ -9,6 +9,10 @@ public interface IQueryService
     public string ClientQueryToSql(string collection, AndQuery query);
 
     string QueryAsJson(string? sql, string? fullTextQuery = null);
+    
+    Task QueryAsStream(Stream targetStream, string? sql, string? fullTextQuery = null);
+
+    Task PutManyAsStream(Stream stream, string collectionName);
 }
 
 /// <summary>

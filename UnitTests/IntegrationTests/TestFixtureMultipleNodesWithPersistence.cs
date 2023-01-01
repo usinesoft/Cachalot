@@ -288,8 +288,51 @@ namespace Tests.IntegrationTests
         }
 
         [Test]
+        public void Check_schema_compatibility()
+        {
+            var schema1 = SchemaFactory.New("order")
+                .PrimaryKey("Id")
+                .WithServerSideValue("Category", IndexType.Dictionary)
+                .WithServerSideValue("Amount", IndexType.None)
+                .Build();
+
+            var schema2 = SchemaFactory.New("order")
+                .PrimaryKey("Id")
+                .WithServerSideValue("Category", IndexType.Dictionary)
+                .WithServerSideValue("Amount", IndexType.Ordered)
+                .Build();
+
+            var compatibility = CollectionSchema.AreCompatible(schema2, schema1);
+
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsReindex, compatibility, "new index so it should be reindexed");
+            
+            compatibility = CollectionSchema.AreCompatible(schema1, schema2);
+            
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.Ok, compatibility, "less indexes so nothing to do");
+
+            compatibility = CollectionSchema.AreCompatible(schema2, schema2);
+            
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.Ok, compatibility, "same schema so nothing to do");
+
+            var schema3 = SchemaFactory.New("order")
+                .PrimaryKey("Id")
+                .WithServerSideValue("Category", IndexType.Dictionary)
+                .WithServerSideValue("Amount", IndexType.Ordered)
+                .WithServerSideValue("IsDelivered", IndexType.Dictionary)
+                .Build();
+
+            compatibility = CollectionSchema.AreCompatible(schema3, schema1);
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility, "new server-side value added so full repacking is needed");
+
+            compatibility = CollectionSchema.AreCompatible(schema3, schema2);
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility, "new server-side value added so full repacking is needed");
+        }
+
+        [Test]
         public void Reindex_existing_collection()
         {
+
+            //store objects with a schema
             using (var connector = new Connector(_clientConfig))
             {
                 var description1 = SchemaFactory.New("order")
@@ -330,6 +373,7 @@ namespace Tests.IntegrationTests
                 });
             }
 
+            // change the schema to cause object repacking
             using (var connector = new Connector(_clientConfig))
             {
                 var description1 = SchemaFactory.New("order")
@@ -761,11 +805,8 @@ namespace Tests.IntegrationTests
 
                 var admin = connector.AdminInterface();
 
-                var date = DateTime.Today.ToString("yyyy-MM-dd");
-
-                var fullPath = Path.Combine(dumpPath, date);
-
-                admin.InitializeFromDump(fullPath);
+                
+                admin.InitializeFromDump(dumpPath);
 
                 var dataSource = connector.DataSource<Event>();
 

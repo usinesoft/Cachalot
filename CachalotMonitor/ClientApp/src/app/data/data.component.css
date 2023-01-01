@@ -1,14 +1,14 @@
 .data-root{
     display: flex;
     flex-direction: column;
-    gap:5px; 
+    gap:1px; 
     max-height: 100%;  
 }
 
 .query-container{
     display: flex;
     direction: row;
-    gap:3px;
+    gap:2px;
     margin-top: 0.5rem;
 }
 
@@ -18,9 +18,8 @@
   align-items: baseline;
   gap:3px;
   padding: 1rem;
-  border-radius: 6px;
-  margin-top: 0.5rem;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  border-radius: 0 0 6px 6px;  
+  box-shadow: 2px 2px 6px 0 rgba(0, 0, 0, 0.2), 4px 4px 14px 0 rgba(0, 0, 0, 0.19);
 }
 
 .result-container{
@@ -28,23 +27,22 @@
     direction: column;
     overflow: scroll;
     border-radius: 6px;
-    margin-top: 0.5rem;
-    padding: 1rem;
+    margin-top: 1rem;
     flex-grow: 2;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.2), 2px 2px 10px 0 rgba(0, 0, 0, 0.19);
 }
 
 .data-selection-container{
     display: flex;
     flex-direction: row;
-    gap:3px;    
+    gap:2px;    
 }
 
 .sql-container{
     
-    padding: 1rem;  
-    border-radius: 6px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    padding: 0.5rem;  
+    border-radius: 0 6px 0 0;
+    box-shadow: 2px 0px 4px 0 rgba(0, 0, 0, 0.2), 4px 0px 10px 0 rgba(0, 0, 0, 0.19);
     font-family: Consolas;
     white-space: pre-wrap;
     position: relative;    
@@ -52,8 +50,8 @@
 
 .sql-copy{
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0;
+    right: 0.2rem;
 }
 
 .json-copy{
@@ -62,3 +60,19 @@
     right: 2px;
 }
 
+.action-button{
+    /* font-size: 3rem; */
+    height: 3.5rem;
+    margin-left: 1rem;
+    margin-top: 2px;
+    /* margin-top: 5px; */
+}
+
+.file-input {
+    display: none;
+  }
+
+  .file-upload{
+    margin-left: 1rem;
+    margin-top: 0.6rem;
+  }

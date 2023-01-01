@@ -209,10 +209,11 @@ namespace Server
                 if (dataStore != null) //type already registered
                 {
                     //if schema changed reindex if the new one is more complex
-                    if(!CollectionSchema.AreCompatible(typeDescription, dataStore.CollectionSchema))                    
+                    var compatibility = CollectionSchema.AreCompatible(typeDescription, dataStore.CollectionSchema);
+                    if(compatibility != CollectionSchema.CompatibilityLevel.Ok)                    
                     {
 
-                        var newDataStore = DataStore.Reindex(dataStore, typeDescription);
+                        var newDataStore = DataStore.Reindex(dataStore, typeDescription, compatibility == CollectionSchema.CompatibilityLevel.NeedsRepacking);
 
                         DataStores[collectionName] = newDataStore;
 

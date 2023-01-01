@@ -37,6 +37,7 @@
     "popper.js": "^1.16.0",
     "run-script-os": "^1.1.6",
     "rxjs": "~6.6.0",
+    "streamsaver": "^2.0.5",
     "tslib": "^2.4.0",
     "zone.js": "^0.11.6"
   },
@@ -47,6 +48,7 @@
     "@types/jasmine": "~3.6.0",
     "@types/jasminewd2": "~2.0.8",
     "@types/node": "^12.20.55",
+    "@types/streamsaver": "^2.0.1",
     "jasmine-core": "~3.8.0",
     "karma": "^6.3.20",
     "karma-chrome-launcher": "^3.1.1",

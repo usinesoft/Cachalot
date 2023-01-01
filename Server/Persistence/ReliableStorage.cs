@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Client.Core;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -8,7 +9,7 @@ namespace Server.Persistence
     public class ReliableStorage : IDisposable
     {
         public const string StorageFileName = "datastore.bin";
-        private const string TempFileName = "datastore.tmp";
+        public const string TempFileName = "datastore.tmp";
         private readonly string _backupPath;
 
 
@@ -129,7 +130,7 @@ namespace Server.Persistence
 
         private void MarkInvalidBlocksAsDirty(InvalidBlockException e)
         {
-            var nextOffset = FindNextBeginMarker(e.Offset + PersistentBlock.MinSize);
+            var nextOffset = FindNextBeginMarker(e.Offset + PersistentBlock.MinSize, StorageStream);
 
             var size = nextOffset - e.Offset;
 
@@ -168,15 +169,20 @@ namespace Server.Persistence
             }
         }
 
-        private long FindNextBeginMarker(long offset)
+        public static long FindNextBeginMarker(long offset, Stream stream)
         {
-            var reader = new BinaryReader(StorageStream);
+            var reader = new BinaryReader(stream);
             for (var curOffset = offset; ; curOffset++)
                 try
                 {
-                    StorageStream.Seek(curOffset, SeekOrigin.Begin);
+                    stream.Seek(curOffset, SeekOrigin.Begin);
                     var marker = reader.ReadInt32();
-                    if (marker == PersistentBlock.BeginMarkerValue) return curOffset;
+                    if (marker == PersistentBlock.BeginMarkerValue)
+                    {
+                        stream.Seek(curOffset, SeekOrigin.Begin);// rewind the stream
+                        return curOffset;
+                    }
+                    
                 }
                 catch (EndOfStreamException)
                 {
@@ -198,7 +204,7 @@ namespace Server.Persistence
                 offset = block.Offset + block.StorageSize;
                 // get information for deleted blocks too as there may be an incomplete delete transaction to 
                 // reprocess
-                if (block.BlockStatus == BlockStatus.Active || block.BlockStatus == BlockStatus.Deleted)
+                if (block.BlockStatus is BlockStatus.Active or BlockStatus.Deleted)
                 {
                     BlockInfoByPrimaryKey[block.PrimaryKey] =
                         new BlockInfo(block.Offset, block.LastTransactionId);
@@ -217,47 +223,63 @@ namespace Server.Persistence
             StorageSize = offset;
         }
 
-        /// <summary>
-        ///     Remove dirty blocks thus compacting the storage
-        /// </summary>
-        public void CleanStorage()
+
+        public static long CompactAndRepair(string dataPath, string dataFile, string tempFile)
         {
             if (File.Exists(TempFileName)) File.Delete(TempFileName);
 
-            var fullPath = Path.Combine(DataPath, StorageFileName);
-            var tempPath = Path.Combine(DataPath, TempFileName);
+            var fullPath = Path.Combine(dataPath, StorageFileName);
+            var tempPath = Path.Combine(dataPath, TempFileName);
 
+            long storageSize = 0;
             using (var tempStream = new FileStream(tempPath, FileMode.Create))
             {
                 var writer = new BinaryWriter(tempStream);
-                StorageStream.Dispose();
+                
+                var readStream = new FileStream(fullPath, FileMode.OpenOrCreate);
 
-                StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
-
-                var reader = new BinaryReader(StorageStream);
+                var reader = new BinaryReader(readStream);
 
                 var block = new PersistentBlock();
                 long offset = 0;
 
 
                 // read all the blocks
-                while (block.Read(reader))
-                    if (block.BlockStatus == BlockStatus.Active)
+                while (block.Read(reader, true))
+                    if (block.BlockStatus == BlockStatus.Active && block.IsValidBlock())
                     {
-                        offset = (int)StorageStream.Position;
+                        offset = (int)readStream.Position;
                         block.Write(writer);
                     }
+                    else
+                    {
+                        
+                    }
 
-                StorageSize = offset;
+                storageSize = offset;
 
                 writer.Flush();
-                StorageStream.Dispose();
+                readStream.Dispose();
             }
 
             File.Delete(fullPath);
 
             File.Move(tempPath, fullPath);
 
+            return storageSize;
+        }
+
+        /// <summary>
+        ///     Remove dirty blocks thus compacting the storage
+        /// </summary>
+        public void CleanStorage()
+        {
+            
+            StorageStream.Dispose();
+
+            StorageSize =  CompactAndRepair(DataPath, StorageFileName, TempFileName);
+
+            var fullPath = Path.Combine(DataPath, StorageFileName);
 
             StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
 

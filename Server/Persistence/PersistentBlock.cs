@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Text;
+using Client.Core;
 
 namespace Server.Persistence
 {
@@ -10,6 +12,9 @@ namespace Server.Persistence
     /// </summary>
     public class PersistentBlock
     {
+
+        public int Index { get; set; }
+
         public const int BeginMarkerValue = 0xABCD;
 
         public const int EndMarkerValue = 0xDCBA;
@@ -57,6 +62,22 @@ namespace Server.Persistence
 
         internal int Hash { get; set; }
 
+        public bool IsValidBlock()
+        {
+            if (BeginMarker != PersistentBlock.BeginMarkerValue)
+            {
+                return false;
+            }
+
+            if (EndMarker != PersistentBlock.EndMarkerValue)
+            {
+                return false;
+            }
+
+
+            return HashOk;
+        }
+
         /// <summary>
         ///     Create a valid but dirty block that fills the specified size
         ///     Used in the recovery procedure for corrupted data files
@@ -91,8 +112,11 @@ namespace Server.Persistence
             {
                 BeginMarker = reader.ReadInt32();
 
-                if (BeginMarker != BeginMarkerValue && !silent)
-                    throw new InvalidBlockException(offset) { BeginMarkerKo = true };
+                if (BeginMarker != BeginMarkerValue)
+                    if(silent) 
+                        return true;
+                    else 
+                        throw new InvalidBlockException(offset) { BeginMarkerKo = true };
 
                 insideBlock = true;
 
@@ -103,7 +127,7 @@ namespace Server.Persistence
 
                 BlockStatus = (BlockStatus)reader.ReadInt32();
 
-                LastTransactionId = reader.ReadInt32();
+                LastTransactionId = reader.ReadInt32(); // I know its read twice. But we keep going to preserve compatibility
                 UsedDataSize = reader.ReadInt32();
                 ReservedDataSize = reader.ReadInt32();
 
@@ -127,20 +151,29 @@ namespace Server.Persistence
 
                 if (Hash != FastHash(_rawData))
                 {
+                    //var content = SerializationHelper.ObjectFromBytes<PackedObject>(_rawData,
+                    //    SerializationMode.ProtocolBuffers,
+                    //    false);
+
                     HashOk = false;
                     if (!silent) throw new InvalidBlockException(offset) { HashKo = true };
+                    return true;
                 }
 
 
-                if (EndMarker != EndMarkerValue && !silent)
-                    throw new InvalidBlockException(offset) { EndMarkerKo = true };
+                if (EndMarker != EndMarkerValue)
+                {
+                    if (!silent) throw new InvalidBlockException(offset) { EndMarkerKo = true };
+                    return true;
+                }
+                    
 
 
                 return true;
             }
             catch (EndOfStreamException)
             {
-                if (insideBlock) throw new InvalidBlockException(offset) { IncompleteBlock = true };
+                if (insideBlock && !silent) throw new InvalidBlockException(offset) { IncompleteBlock = true };
 
                 // ignore otherwise: end of stream
                 return false;
@@ -199,7 +232,16 @@ namespace Server.Persistence
 
         public override string ToString()
         {
-            return $"{nameof(LastTransactionId)}: {LastTransactionId}, {nameof(BlockStatus)}: {BlockStatus}, {nameof(UsedDataSize)}: {UsedDataSize}, {nameof(ReservedDataSize)}: {ReservedDataSize}, {nameof(HashOk)}: {HashOk}";
+            return $@"
+{nameof(Index)}: {Index:N0}
+{nameof(PrimaryKey)}: {PrimaryKey}
+{nameof(Offset)}: {Offset:N0}
+{nameof(LastTransactionId)}: {LastTransactionId}
+{nameof(BlockStatus)}: {BlockStatus}
+{nameof(UsedDataSize)}: {UsedDataSize} 
+{nameof(ReservedDataSize)}: {ReservedDataSize}
+{nameof(HashOk)}: {HashOk}
+";
         }
     }
 }

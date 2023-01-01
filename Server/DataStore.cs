@@ -406,9 +406,24 @@ namespace Server
 
         /// <summary>
         ///     Reindex a data store while conserving the primary key. Used internally to reindex data when type description changed
+        /// <param name="oldSchema">this parameter is not null only if the object needs to be repackaged</param>
         /// </summary>
-        private void InternalReindex()
+        private void InternalReindex(CollectionSchema oldSchema)
         {
+
+            if (oldSchema != null) // we need to repack all the objects
+            {
+                var newPrimaryIndex = new Dictionary<KeyValue, PackedObject>();
+                foreach (var packedObject in DataByPrimaryKey)
+                {
+                    var newObject = PackedObject.Repack(packedObject.Value, oldSchema, CollectionSchema);
+                    newPrimaryIndex[newObject.PrimaryKey] = newObject;
+
+                    KeyValuePool.ProcessPackedObject(newObject);
+                }
+
+                DataByPrimaryKey = newPrimaryIndex;
+            }
             
             //////////////////////////////
             // create empty indexes
@@ -441,6 +456,7 @@ namespace Server
 
             foreach (var p in DataByPrimaryKey)
             {
+                
                 foreach (var index in _dataByIndexKey)
                     index.Value.Put(p.Value);
 
@@ -482,7 +498,7 @@ namespace Server
         }
 
 
-        public static DataStore Reindex(DataStore old, CollectionSchema newDescription)
+        public static DataStore Reindex(DataStore old, CollectionSchema newDescription, bool needsRepacking)
         {
 
             var reindexed = new DataStore
@@ -494,8 +510,7 @@ namespace Server
             };
 
             
-
-            reindexed.InternalReindex();
+            reindexed.InternalReindex(needsRepacking? old.CollectionSchema:null);
 
 
             return reindexed;

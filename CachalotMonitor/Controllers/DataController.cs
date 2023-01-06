@@ -71,13 +71,8 @@ public class DataController : ControllerBase
     [HttpPost("put/stream/{collectionName}")]
     public async Task<IActionResult> PutManyAsStream(string collectionName, IFormFile file)
     {
-        MemoryStream mstream = new MemoryStream();
-        await file.CopyToAsync(mstream);
-
-        // rewind
-        mstream.Position = 0;
         
-        await _queryService.PutManyAsStream(mstream, collectionName);
+        await _queryService.PutManyAsStream(file.OpenReadStream(), collectionName);
         
         return new EmptyResult();
     }

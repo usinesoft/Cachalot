@@ -4,6 +4,7 @@ import { interval, Subscription } from 'rxjs';
 import { ClusterInformation, ClusterNode, CollectionSummary, ConnectionData, ConnectionResponse } from '../model/connection-data';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MonitoringService } from '../monitoring.service';
+import { ScreenStateService } from '../screen-state.service';
 
 
 @Component({
@@ -20,7 +21,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private timerSubscription: Subscription | undefined;
 
 
-  constructor(private service:MonitoringService, private snackBar: MatSnackBar) {
+  constructor(private service:MonitoringService, private snackBar: MatSnackBar, private stateService:ScreenStateService) {
     var defaultNode = new ClusterNode();
     defaultNode.host = 'localhost';
     defaultNode.port = 48401;
@@ -107,6 +108,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   public connect() {
     this.service.connect(this.connection);
+    this.stateService.clearScreenState();
+    
   }
 
   public connectWithHistory(entry:string) {

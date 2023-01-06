@@ -108,7 +108,7 @@ namespace Client.Parsing
             return query;
         }
 
-        private static void ParseWhere(Node @where, OrQuery query, CollectionSchema schema)
+        private static void ParseWhere(Node where, OrQuery query, CollectionSchema schema)
         {
             var orNodes = where.Children.Where(c => c.Token == "or").ToList();
 
@@ -133,7 +133,7 @@ namespace Client.Parsing
                     var op = ParseOperator(node.Token, operands.LastOrDefault());
 
 
-                    if (op == QueryOperator.In || op == QueryOperator.NotIn)
+                    if (op is QueryOperator.In or QueryOperator.NotIn)
                     {
                         var metadata = schema.KeyByName(operands[0]);
                         if (metadata != null)
@@ -156,7 +156,7 @@ namespace Client.Parsing
                         }
                     }
 
-                    else if (op == QueryOperator.Contains || op == QueryOperator.NotContains) // for contains operator the collection property should be at the left side
+                    else if (op is QueryOperator.Contains or QueryOperator.NotContains) // for contains operator the collection property should be at the left side
                     {
                         var metadata = schema.KeyByName(operands[0]);
 
@@ -165,7 +165,7 @@ namespace Client.Parsing
                         andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
 
                     }
-                    else if (op == QueryOperator.StrStartsWith || op == QueryOperator.StrEndsWith || op == QueryOperator.StrContains) // for string operators the property should be at the left side
+                    else if (op is QueryOperator.StrStartsWith or QueryOperator.StrEndsWith or QueryOperator.StrContains) // for string operators the property should be at the left side
                     {
                         var metadata = schema.KeyByName(operands[0]);
 
@@ -195,7 +195,7 @@ namespace Client.Parsing
                             }
 
 
-                            object value = JExtensions.SmartParse(operands[0]); ;
+                            var value = JExtensions.SmartParse(operands[0]); 
 
                             andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), Reverse(op)));
 

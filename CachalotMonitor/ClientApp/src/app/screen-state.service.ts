@@ -13,6 +13,9 @@ export class ScreenStateService {
 
   public schema:SchemaScreenState = new  SchemaScreenState;
 
-  
+  public clearScreenState():void{
+    this.data = new DataScreenState;
+    this.schema = new SchemaScreenState;
+  }
 
 }

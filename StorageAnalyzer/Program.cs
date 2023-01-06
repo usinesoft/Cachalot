@@ -1,5 +1,6 @@
 ﻿using Server.Persistence;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace StorageAnalyzer
@@ -15,7 +16,7 @@ namespace StorageAnalyzer
             if (args.Length == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Usage storageanalyzer data_directory ");
+                Console.WriteLine("Usage: storageanalyzer data_directory ");
                 return;
             }
 
@@ -54,7 +55,7 @@ namespace StorageAnalyzer
 
             if (report1.BlocksWithIssues.Count > 0)
             {
-                Console.WriteLine("There are invalid blocks in the storage. Fix it? (y/n)");
+                Console.WriteLine("There are invalid blocks in the storage. Fix it? (y/n)"); 
                 var key = Console.ReadKey();
                 if (key.KeyChar == 'y' || key.KeyChar == 'Y')
                 {
@@ -84,6 +85,8 @@ namespace StorageAnalyzer
 
             int index = 0;
 
+            var primaryKeys = new HashSet<string>();
+
             // read all the blocks
             while (block.Read(reader, true))
             {
@@ -93,6 +96,12 @@ namespace StorageAnalyzer
                 {
                     storageReport.BlocksWithIssues.Add(block);
                     storageReport.InvalidBlocks++;
+                    
+                }
+
+                if (block.IsValidBlock() && !primaryKeys.Add(block.PrimaryKey))
+                {
+                    storageReport.DuplicatePrimaryKeys.Add(block.PrimaryKey);
                 }
 
                 if (block.BlockStatus == BlockStatus.Active)

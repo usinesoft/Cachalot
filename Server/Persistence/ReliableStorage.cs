@@ -1,435 +1,475 @@
-﻿using Client.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
-namespace Server.Persistence
+namespace Server.Persistence;
+
+public class ReliableStorage : IDisposable
 {
-    public class ReliableStorage : IDisposable
+    public const string StorageFileName = "datastore.bin";
+    
+    /// <summary>
+    /// Temporary copy o the data file used for recovery (after drop or if restore fails)
+    /// </summary>
+    public const string TempFileName = "datastore.tmp";
+    
+    private readonly string _backupPath;
+
+
+    private Thread _backupInitThread;
+    
+    private BackupStorage _backupStorage;
+
+    /// <summary>
+    /// Internally used for statistics
+    /// </summary>
+    public static int StoredInPlace { get; set; }
+
+    /// <summary>
+    /// Internally used for statistics
+    /// </summary>
+    public static int Relocated { get; set; }
+
+    protected string DataPath { get; }
+
+    public int CorruptedBlocks { get; private set; }
+
+    private IPersistentObjectProcessor ObjectProcessor { get; }
+    public bool IsBackup { get; }
+
+    public int InactiveBlockCount { get; private set; }
+
+    public long StorageSize { get; private set; }
+
+    public int BlockCount => BlockInfoByPrimaryKey.Count;
+
+    public ISet<string> Keys => new HashSet<string>(BlockInfoByPrimaryKey.Keys);
+
+    protected Dictionary<string, BlockInfo> BlockInfoByPrimaryKey { get; } = new();
+
+    protected Stream StorageStream { get; private set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="objectProcessor">an object processor is responsible to transform raw data blocks into useful objects</param>
+    /// <param name="workingDirectory"></param>
+    /// <param name="backupPath"></param>
+    /// <param name="isBackup"></param>
+    public ReliableStorage(IPersistentObjectProcessor objectProcessor, string workingDirectory = null,
+                           string backupPath = null, bool isBackup = false)
     {
-        public const string StorageFileName = "datastore.bin";
-        public const string TempFileName = "datastore.tmp";
-        private readonly string _backupPath;
+        if (isBackup && backupPath == null) throw new ArgumentException("For a backup storage, backup path must be specified");
 
+        _backupPath = backupPath;
 
-        private Thread _backupInitThread;
-        private BackupStorage _backupStorage;
+        // the backup path is an absolute path. The data path is relative to the working directory
+        DataPath = isBackup ? _backupPath :
+            workingDirectory != null ? Path.Combine(workingDirectory, Constants.DataPath) : Constants.DataPath;
 
-        public ReliableStorage(IPersistentObjectProcessor objectProcessor, string workingDirectory = null,
-            string backupPath = null, bool isBackup = false)
+        ObjectProcessor = objectProcessor;
+
+        IsBackup = isBackup;
+
+        if (!Directory.Exists(DataPath)) Directory.CreateDirectory(DataPath);
+
+        var fullPath = Path.Combine(DataPath, StorageFileName);
+
+        StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+    }
+
+    public void Dispose()
+    {
+        StorageStream.Dispose();
+
+        _backupStorage?.Dispose();
+    }
+
+    public void LightRestart()
+    {
+        var fullPath = Path.Combine(DataPath, StorageFileName);
+
+        StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+    }
+
+    public void LoadPersistentData(bool useObjectProcessor = true)
+    {
+        bool IsPrimaryStorage()
         {
-            _backupPath = backupPath;
-
-            // the backup path is an absolute path. The data path is relative to the working directory
-            DataPath = isBackup ? _backupPath :
-                workingDirectory != null ? Path.Combine(workingDirectory, Constants.DataPath) : Constants.DataPath;
-
-            ObjectProcessor = objectProcessor;
-            IsBackup = isBackup;
-
-            if (!Directory.Exists(DataPath)) Directory.CreateDirectory(DataPath);
-
-            var fullPath = Path.Combine(DataPath, StorageFileName);
-
-            StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+            return !IsBackup && _backupPath != null;
         }
 
-        public void LightRestart()
+        // initialize the backup storage in parallel
+        if (IsPrimaryStorage())
         {
+            _backupStorage = new(_backupPath);
 
-            var fullPath = Path.Combine(DataPath, StorageFileName);
+            _backupInitThread = new(() => { _backupStorage.LoadPersistentData(); });
 
-            StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+            _backupInitThread.Start();
         }
 
+        var success = false;
 
-        protected string DataPath { get; }
+        var needsRecovery = false;
 
-        public int CorruptedBlocks { get; private set; }
+        StorageStream.Seek(0, SeekOrigin.Begin);
 
-        private IPersistentObjectProcessor ObjectProcessor { get; }
-        public bool IsBackup { get; }
-
-        public int InactiveBlockCount { get; private set; }
-
-        public long StorageSize { get; private set; }
-
-        public int BlockCount => BlockInfoByPrimaryKey.Count;
-
-        public ISet<string> Keys => new HashSet<string>(BlockInfoByPrimaryKey.Keys);
-
-        protected Dictionary<string, BlockInfo> BlockInfoByPrimaryKey { get; } = new Dictionary<string, BlockInfo>();
-
-        protected Stream StorageStream { get; private set; }
-
-        public void Dispose()
-        {
-            StorageStream.Dispose();
-
-            _backupStorage?.Dispose();
-        }
-
-        public void LoadPersistentData(bool useObjectProcessor = true)
-        {
-            bool IsPrimaryStorage()
+        while (!success)
+            try
             {
-                return !IsBackup && _backupPath != null;
+                LoadAll(useObjectProcessor);
+
+                GC.Collect();
+
+                success = true;
+            }
+            catch (InvalidBlockException e)
+            {
+                needsRecovery = true;
+                MarkInvalidBlocksAsDirty(e);
             }
 
-            // initialize the backup storage in parallel
-            if (IsPrimaryStorage())
+
+        // wait for the backup to be initialized
+        if (IsPrimaryStorage()) _backupInitThread.Join();
+
+        // The storage was repaired but blocks have been lost. If a backup is available retrieve the 
+        // missing block from the backup
+        if (needsRecovery && _backupStorage != null)
+        {
+            var missingBlockKeys = new HashSet<string>(_backupStorage.Keys);
+
+            missingBlockKeys.ExceptWith(Keys);
+
+            foreach (var blockKey in missingBlockKeys)
             {
-                _backupStorage = new BackupStorage(_backupPath);
-
-                _backupInitThread = new Thread(() => { _backupStorage.LoadPersistentData(); });
-
-                _backupInitThread.Start();
-            }
-
-            var success = false;
-
-            var needsRecovery = false;
-
-            StorageStream.Seek(0, SeekOrigin.Begin);
-
-            while (!success)
-                try
-                {
-                    LoadAll(useObjectProcessor);
-
-                    GC.Collect();
-
-                    success = true;
-                }
-                catch (InvalidBlockException e)
-                {
-                    needsRecovery = true;
-                    MarkInvalidBlocksAsDirty(e);
-                }
-
-
-            // wait for the backup to be initialized
-            if (IsPrimaryStorage()) _backupInitThread.Join();
-
-            // The storage was repaired but blocks have been lost. If a backup is available retrieve the 
-            // missing block from the backup
-            if (needsRecovery && _backupStorage != null)
-            {
-                var missingBlockKeys = new HashSet<string>(_backupStorage.Keys);
-
-                missingBlockKeys.ExceptWith(Keys);
-
-                foreach (var blockKey in missingBlockKeys)
-                {
-                    var block = _backupStorage.ReadBlock(blockKey);
-                    StoreBlock(block.RawData, block.PrimaryKey, block.LastTransactionId);
-                }
+                var block = _backupStorage.ReadBlock(blockKey);
+                StoreBlock(block.RawData, block.PrimaryKey, block.LastTransactionId);
             }
         }
+    }
 
-        private void MarkInvalidBlocksAsDirty(InvalidBlockException e)
+    private void MarkInvalidBlocksAsDirty(InvalidBlockException e)
+    {
+        var nextOffset = FindNextBeginMarker(e.Offset + PersistentBlock.MinSize, StorageStream);
+
+        var size = nextOffset - e.Offset;
+
+        var dirtyBlock = PersistentBlock.MakeDirtyBlock(size);
+
+        StorageStream.Seek(e.Offset, SeekOrigin.Begin);
+
+        var writer = new BinaryWriter(StorageStream);
+
+        dirtyBlock.Write(writer);
+
+        InactiveBlockCount++;
+
+        CorruptedBlocks++;
+    }
+
+
+    /// <summary>
+    ///     For recovery tests only. Creates a corrupted block on-purpose
+    /// </summary>
+    /// <param name="primaryKey"></param>
+    public void MakeCorruptedBlock(string primaryKey)
+    {
+        if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var info))
         {
-            var nextOffset = FindNextBeginMarker(e.Offset + PersistentBlock.MinSize, StorageStream);
+            var block = new PersistentBlock();
+            StorageStream.Seek(info.Offset, SeekOrigin.Begin);
+            var reader = new BinaryReader(StorageStream);
+            block.Read(reader);
 
-            var size = nextOffset - e.Offset;
-
-            var dirtyBlock = PersistentBlock.MakeDirtyBlock(size);
-
-            StorageStream.Seek(e.Offset, SeekOrigin.Begin);
+            block.Hash = block.Hash + 1; // the hash will not match so the block is corrupted
+            StorageStream.Seek(info.Offset, SeekOrigin.Begin);
 
             var writer = new BinaryWriter(StorageStream);
-
-            dirtyBlock.Write(writer);
-
-            InactiveBlockCount++;
-
-            CorruptedBlocks++;
+            block.Write(writer);
         }
+    }
 
-
-        /// <summary>
-        ///     For recovery tests only
-        /// </summary>
-        /// <param name="primaryKey"></param>
-        public void MakeCorruptedBlock(string primaryKey)
-        {
-            if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var info))
+    public static long FindNextBeginMarker(long offset, Stream stream)
+    {
+        var reader = new BinaryReader(stream);
+        for (var curOffset = offset;; curOffset++)
+            try
             {
-                var block = new PersistentBlock();
-                StorageStream.Seek(info.Offset, SeekOrigin.Begin);
-                var reader = new BinaryReader(StorageStream);
-                block.Read(reader);
-
-                block.Hash = block.Hash + 1; // the hash will not match so the block is corrupted
-                StorageStream.Seek(info.Offset, SeekOrigin.Begin);
-
-                var writer = new BinaryWriter(StorageStream);
-                block.Write(writer);
-            }
-        }
-
-        public static long FindNextBeginMarker(long offset, Stream stream)
-        {
-            var reader = new BinaryReader(stream);
-            for (var curOffset = offset; ; curOffset++)
-                try
+                stream.Seek(curOffset, SeekOrigin.Begin);
+                var marker = reader.ReadInt32();
+                if (marker == PersistentBlock.BeginMarkerValue)
                 {
-                    stream.Seek(curOffset, SeekOrigin.Begin);
-                    var marker = reader.ReadInt32();
-                    if (marker == PersistentBlock.BeginMarkerValue)
-                    {
-                        stream.Seek(curOffset, SeekOrigin.Begin);// rewind the stream
-                        return curOffset;
-                    }
-                    
-                }
-                catch (EndOfStreamException)
-                {
+                    stream.Seek(curOffset, SeekOrigin.Begin); // rewind the stream
                     return curOffset;
                 }
+            }
+            catch (EndOfStreamException)
+            {
+                return curOffset;
+            }
+    }
+
+    private void LoadAll(bool useObjectProcessor)
+    {
+        var reader = new BinaryReader(StorageStream);
+
+        var block = new PersistentBlock();
+        
+        // read all the blocks
+        while (block.Read(reader))
+        {
+            // get information for deleted blocks too as there may be an incomplete delete transaction to 
+            // reprocess
+            if (block.BlockStatus is BlockStatus.Active or BlockStatus.Deleted)
+            {
+                BlockInfoByPrimaryKey[block.PrimaryKey] =
+                    new(block.Offset, block.LastTransactionId);
+
+                // only active blocks contain objects 
+                if (useObjectProcessor && block.BlockStatus == BlockStatus.Active)
+                    ObjectProcessor.Process(block.RawData);
+            }
+
+            if (block.BlockStatus != BlockStatus.Active) InactiveBlockCount++;
         }
 
-        private void LoadAll(bool useObjectProcessor)
+        if (useObjectProcessor) ObjectProcessor.EndProcess(DataPath);
+
+        StorageSize = StorageStream.Position;
+    }
+
+
+    public static void CompactAndRepair(string dataPath, string dataFile, string tempFile)
+    {
+        if (File.Exists(TempFileName)) File.Delete(TempFileName);
+
+        var fullPath = Path.Combine(dataPath, StorageFileName);
+        var tempPath = Path.Combine(dataPath, TempFileName);
+
+        
+        using (var tempStream = new FileStream(tempPath, FileMode.Create))
         {
-            var reader = new BinaryReader(StorageStream);
+            var writer = new BinaryWriter(tempStream);
+
+            var readStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+
+            var reader = new BinaryReader(readStream);
 
             var block = new PersistentBlock();
-            long offset = 0;
 
 
             // read all the blocks
-            while (block.Read(reader))
+            while (block.Read(reader, true))
             {
-                offset = block.Offset + block.StorageSize;
-                // get information for deleted blocks too as there may be an incomplete delete transaction to 
-                // reprocess
-                if (block.BlockStatus is BlockStatus.Active or BlockStatus.Deleted)
+                // if a corrupted block was found try to find the begin-marker of the next block
+                if (!block.IsValidBlock())
                 {
-                    BlockInfoByPrimaryKey[block.PrimaryKey] =
-                        new BlockInfo(block.Offset, block.LastTransactionId);
+                    ServerLog.LogWarning($"Corrupted block was found: primary-key={block.PrimaryKey}");
 
-                    // only active blocks contain objects 
-                    if (useObjectProcessor && block.BlockStatus == BlockStatus.Active)
-                        ObjectProcessor.Process(block.RawData);
+                    FindNextBeginMarker(readStream.Position, readStream);
+                }
+                else if (block.BlockStatus == BlockStatus.Active)
+                {
+                    block.Write(writer);
                 }
 
-                if (block.BlockStatus != BlockStatus.Active) InactiveBlockCount++;
-
+                block = new();
             }
 
-            if (useObjectProcessor) ObjectProcessor.EndProcess(DataPath);
-
-            StorageSize = offset;
-        }
-
-
-        public static long CompactAndRepair(string dataPath, string dataFile, string tempFile)
-        {
-            if (File.Exists(TempFileName)) File.Delete(TempFileName);
-
-            var fullPath = Path.Combine(dataPath, StorageFileName);
-            var tempPath = Path.Combine(dataPath, TempFileName);
-
-            long storageSize = 0;
-            using (var tempStream = new FileStream(tempPath, FileMode.Create))
-            {
-                var writer = new BinaryWriter(tempStream);
-                
-                var readStream = new FileStream(fullPath, FileMode.OpenOrCreate);
-
-                var reader = new BinaryReader(readStream);
-
-                var block = new PersistentBlock();
-                long offset = 0;
-
-
-                // read all the blocks
-                while (block.Read(reader, true))
-                    if (block.BlockStatus == BlockStatus.Active && block.IsValidBlock())
-                    {
-                        offset = (int)readStream.Position;
-                        block.Write(writer);
-                    }
-                    else
-                    {
-                        
-                    }
-
-                storageSize = offset;
-
-                writer.Flush();
-                readStream.Dispose();
-            }
-
-            File.Delete(fullPath);
-
-            File.Move(tempPath, fullPath);
-
-            return storageSize;
-        }
-
-        /// <summary>
-        ///     Remove dirty blocks thus compacting the storage
-        /// </summary>
-        public void CleanStorage()
-        {
             
-            StorageStream.Dispose();
-
-            StorageSize =  CompactAndRepair(DataPath, StorageFileName, TempFileName);
-
-            var fullPath = Path.Combine(DataPath, StorageFileName);
-
-            StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
-
-            InactiveBlockCount = 0;
+            writer.Flush();
+            readStream.Dispose();
         }
 
+        File.Delete(fullPath);
 
-        public void DeleteBlock(string primaryKey, int transactionId)
+        File.Move(tempPath, fullPath);
+        
+    }
+
+    /// <summary>
+    ///     Remove dirty blocks thus compacting the storage
+    /// </summary>
+    public void CleanStorage()
+    {
+        StorageStream.Dispose();
+
+        CompactAndRepair(DataPath, StorageFileName, TempFileName);
+
+        var fullPath = Path.Combine(DataPath, StorageFileName);
+
+        StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+
+        InactiveBlockCount = 0;
+    }
+
+
+    public void DeleteBlock(string primaryKey, int transactionId)
+    {
+        if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo))
         {
-            if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo))
-            {
-                StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
+            StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
 
-                var reader = new BinaryReader(StorageStream);
-                var block = new PersistentBlock();
-                block.Read(reader);
-                if (block.BlockStatus != BlockStatus.Active)
-                    // if the same id ok. We are re executing a transaction that was not marked as Processed. 
-                    // It happens if the server crashes during the update of persistence blocks. The transaction is simply played
-                    // again when the server is restarted
-                    if (block.LastTransactionId != transactionId)
-                        throw new NotSupportedException(
-                            $"Trying to delete an inactive block for primary key {primaryKey}");
+            var reader = new BinaryReader(StorageStream);
+            var block = new PersistentBlock();
+            block.Read(reader);
+            if (block.BlockStatus != BlockStatus.Active)
+                // if the same id ok. We are re executing a transaction that was not marked as Processed. 
+                // It happens if the server crashes during the update of persistence blocks. The transaction is simply played
+                // again when the server is restarted
+                if (block.LastTransactionId != transactionId)
+                    throw new NotSupportedException(
+                        $"Trying to delete an inactive block for primary key {primaryKey}");
 
-                block.BlockStatus = BlockStatus.Deleted;
-                block.LastTransactionId = transactionId;
+            block.BlockStatus = BlockStatus.Deleted;
+            block.LastTransactionId = transactionId;
 
-                StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
-                var writer = new BinaryWriter(StorageStream);
-                block.Write(writer);
-                writer.Flush();
-
-                BlockInfoByPrimaryKey.Remove(primaryKey);
-
-                InactiveBlockCount++;
-
-                _backupStorage?.DeleteBlock(primaryKey, transactionId);
-            }
-            else
-            {
-                throw new NotSupportedException($"Active block not found for primary key {primaryKey}");
-            }
-        }
-
-        /// <summary>
-        ///     Add a new bloc or update an existing one (depending if the primary key is already stored)
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="primaryKey"></param>
-        /// <param name="transactionId"></param>
-        public void StoreBlock(byte[] data, string primaryKey, int transactionId)
-        {
-            var block = new PersistentBlock
-            {
-                RawData = data,
-                PrimaryKey = primaryKey,
-                BlockStatus = BlockStatus.Active,
-                LastTransactionId = transactionId,
-                UsedDataSize = data.Length
-            };
-
-            if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo))
-            {
-                // load the old version of the block
-                StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
-
-                var reader = new BinaryReader(StorageStream);
-
-                var oldBlock = new PersistentBlock();
-
-                var validBlock = true;
-                try
-                {
-                    oldBlock.Read(reader);
-                }
-                catch (Exception)
-                {
-                    validBlock = false;
-                }
-
-                // if enough space is available do in-place update
-                if (validBlock && oldBlock.ReservedDataSize > block.UsedDataSize)
-                {
-                    block.ReservedDataSize = oldBlock.ReservedDataSize;
-
-                    WriteBlock(block, blockInfo.Offset);
-                }
-                else // the old block is marked as deleted and the new version is added at the end of the stream
-                {
-                    if (validBlock)
-                    {
-                        oldBlock.BlockStatus = BlockStatus.Dirty;
-
-                        InactiveBlockCount++;
-
-                        WriteBlock(oldBlock, blockInfo.Offset);
-
-                    }
-
-                    block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
-                    StorageSize = WriteBlock(block, StorageSize);
-
-                    BlockInfoByPrimaryKey[primaryKey] = new BlockInfo(StorageSize, block.LastTransactionId);
-                }
-            }
-            else // a new object not already in the persistent storage
-            {
-                // reserve some more space to allow for in-place updating
-                block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
-
-                var offset = StorageSize;
-                StorageSize = WriteBlock(block, StorageSize);
-
-                BlockInfoByPrimaryKey[primaryKey] = new BlockInfo(offset, block.LastTransactionId);
-            }
-
-            _backupStorage?.StoreBlock(data, primaryKey, transactionId);
-        }
-
-
-        /// <summary>
-        ///     Write a block and return the offset after the block
-        /// </summary>
-        /// <param name="block"></param>
-        /// <param name="offset"></param>
-        /// <returns></returns>
-        private long WriteBlock(PersistentBlock block, long offset)
-        {
-            StorageStream.Seek(offset, SeekOrigin.Begin);
+            StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
             var writer = new BinaryWriter(StorageStream);
             block.Write(writer);
             writer.Flush();
 
-            return StorageStream.Position;
-        }
+            BlockInfoByPrimaryKey.Remove(primaryKey);
 
-        protected class BlockInfo
+            InactiveBlockCount++;
+
+            _backupStorage?.DeleteBlock(primaryKey, transactionId);
+        }
+        else
         {
-            public BlockInfo(long offset, long transactionId)
+            throw new NotSupportedException($"Active block not found for primary key {primaryKey}");
+        }
+    }
+
+    /// <summary>
+    ///     Add a new bloc or update an existing one (depending if the primary key is already stored)
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="primaryKey"></param>
+    /// <param name="transactionId"></param>
+    public void StoreBlock(byte[] data, string primaryKey, int transactionId)
+    {
+        var block = new PersistentBlock
+        {
+            RawData = data,
+            PrimaryKey = primaryKey,
+            BlockStatus = BlockStatus.Active,
+            LastTransactionId = transactionId,
+            UsedDataSize = data.Length
+        };
+
+        
+         if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo)) // updating an object
+        {
+            // load the old version of the block
+            StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
+
+            var reader = new BinaryReader(StorageStream);
+
+            var oldBlock = new PersistentBlock();
+
+            bool validBlock;
+            try
             {
-                Offset = offset;
-                TransactionId = transactionId;
+                oldBlock.Read(reader);
+
+                validBlock = oldBlock.IsValidBlock();
+            }
+            catch (Exception)
+            {
+                validBlock = false;
             }
 
-            public long Offset { get; }
+            bool wasUpdatedInPlace;
+            switch (validBlock)
+            {
+                // If enough space is available do in-place update
+                case true when oldBlock.ReservedDataSize > block.UsedDataSize:
+                    block.ReservedDataSize = oldBlock.ReservedDataSize;
 
-            /// <summary>
-            ///     The id of the last transaction that modified the block
-            /// </summary>
-            public long TransactionId { get; }
+                    WriteBlock(block, blockInfo.Offset);
+                    wasUpdatedInPlace = true;
+                    StoredInPlace++;
+                    break;
+                // Not enough space to store the new version in-place
+                // Add it at the end as a new block and mark the old block as dirty
+                case true:
+                    // mark old block as dirty so it will be removed during the next cleanup
+                    oldBlock.BlockStatus = BlockStatus.Dirty;
+
+                    InactiveBlockCount++;
+
+                    WriteBlock(oldBlock, blockInfo.Offset);
+
+                    // store the object in a new block at the end of the storage
+                    block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
+                    StorageSize = WriteBlock(block, StorageSize);
+
+                    wasUpdatedInPlace = false;
+                    Relocated++;
+                    break;
+                // The old block is not valid, this means the storage media has issues
+                // We write the new block at the end of the storage
+                case false:
+                    block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
+                    StorageSize = WriteBlock(block, StorageSize);
+                    wasUpdatedInPlace = false;
+                    break;
+            }
+
+            if (!wasUpdatedInPlace)
+            {
+                BlockInfoByPrimaryKey[primaryKey] = new(StorageSize, block.LastTransactionId);    
+            }
+            
         }
+        else // a new object not already in the persistent storage
+        {
+            // reserve some more space to allow for in-place updating
+            block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
+
+            var offset = StorageSize;
+            StorageSize = WriteBlock(block, StorageSize);
+
+            BlockInfoByPrimaryKey[primaryKey] = new(offset, block.LastTransactionId);
+        }
+
+        _backupStorage?.StoreBlock(data, primaryKey, transactionId);
+    }
+
+
+    /// <summary>
+    ///     Write a block and return the offset after the block
+    /// </summary>
+    /// <param name="block"></param>
+    /// <param name="offset"></param>
+    /// <returns></returns>
+    private long WriteBlock(PersistentBlock block, long offset)
+    {
+        StorageStream.Seek(offset, SeekOrigin.Begin);
+        var writer = new BinaryWriter(StorageStream);
+        block.Write(writer);
+        writer.Flush();
+
+        return StorageStream.Position;
+    }
+
+    protected class BlockInfo
+    {
+        public BlockInfo(long offset, long transactionId)
+        {
+            Offset = offset;
+            TransactionId = transactionId;
+        }
+
+        public long Offset { get; }
+
+        /// <summary>
+        ///     The id of the last transaction that modified the block
+        /// </summary>
+        public long TransactionId { get; }
     }
 }

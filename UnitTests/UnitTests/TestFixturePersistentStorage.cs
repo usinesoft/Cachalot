@@ -184,18 +184,17 @@ namespace Tests.UnitTests
                 var processor = new NullProcessor();
 
 
-                using (var storage = new ReliableStorage(processor))
-                {
-                    storage.LoadPersistentData();
-                    w.Start();
-                    storage.CleanStorage();
-                    w.Stop();
+                using var storage = new ReliableStorage(processor);
 
-                    Assert.AreEqual(0, storage.InactiveBlockCount);
+                storage.LoadPersistentData();
+                w.Start();
+                storage.CleanStorage();
+                w.Stop();
 
-                    Console.WriteLine(
-                        $"Storage cleaning took {w.ElapsedMilliseconds} milliseconds");
-                }
+                Assert.AreEqual(0, storage.InactiveBlockCount);
+
+                Console.WriteLine(
+                    $"Storage cleaning took {w.ElapsedMilliseconds} milliseconds");
             }
 
             info = new FileInfo(Path.Combine(Constants.DataPath, ReliableStorage.StorageFileName));
@@ -608,7 +607,7 @@ namespace Tests.UnitTests
         }
 
         [Test]
-        public void Write_resized_object()
+        public void Write_resized_bigger_object()
         {
             var smallArray1 = MakeByteArray(1000);
             var smallArray2 = MakeByteArray(1000);
@@ -632,7 +631,7 @@ namespace Tests.UnitTests
 
             var processor = new NullProcessor();
             
-            // reload and resize the blocks
+            // reload and resize the blocks 
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
@@ -676,6 +675,73 @@ namespace Tests.UnitTests
         }
 
         [Test]
+        public void Write_resized_smaller_object()
+        {
+            var smallArray1 = MakeByteArray(1000);
+            var smallArray2 = MakeByteArray(1000);
+
+            var largeArray1 = MakeByteArray(10000);
+            MakeByteArray(1010);
+
+            // add two new blocks
+            using (var storage = new ReliableStorage(new NullProcessor()))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(0, storage.BlockCount);
+
+                storage.StoreBlock(largeArray1, "a1", 150);
+                storage.StoreBlock(smallArray2, "a2", 150);
+
+
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(0, storage.InactiveBlockCount);
+            }
+
+            var processor = new NullProcessor();
+            
+            // reload and resize the blocks 
+            using (var storage = new ReliableStorage(processor))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(2, storage.BlockCount);
+
+                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+
+                
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largeArray1);
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+
+
+                // We store one resized block and one unchanged
+                // The resized block is smaller so it should be stored in the same position
+                
+
+                storage.StoreBlock(smallArray1, "a1", 150);
+                storage.StoreBlock(smallArray2, "a2", 150);
+
+
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(0, storage.InactiveBlockCount);
+            }
+
+            processor = new NullProcessor();
+            // reload resized blocks
+            using (var storage = new ReliableStorage(processor))
+            {
+                storage.LoadPersistentData();
+                Assert.AreEqual(2, storage.BlockCount);
+                Assert.AreEqual(0, storage.InactiveBlockCount);
+
+                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+
+                
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
+                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+                
+            }
+        }
+
+        [Test]
         public void Write_then_reload_object()
         {
             var data = new byte[] { 1, 2, 3 };
@@ -700,6 +766,66 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(1, processor.ProcessedBlocks.Count);
             CollectionAssert.AreEqual(data, processor.ProcessedBlocks[0]);
+        }
+
+
+        [Test]
+        public void Random_stress_test()
+        {
+            // init with a seed that makes it reproducible the same day
+            var rgen = new Random(DateTime.Today.DayOfYear);
+
+            const int iterations = 100;
+
+            ReliableStorage.Relocated = 0;
+            ReliableStorage.StoredInPlace = 0;
+
+            for (int i = 0; i < iterations; i++)
+            {
+                var key1 = rgen.Next(10) + 1;
+                
+                var length1 = rgen.Next(10000) + 1;
+                
+                var data1 = MakeByteArray(length1);
+                data1[0] = (byte)key1;
+                
+                
+                using (var storage = new ReliableStorage(new NullProcessor()))
+                {
+                    
+                    storage.LoadPersistentData();
+
+                    storage.StoreBlock(data1, key1.ToString(), 150);
+                    
+
+                }
+                
+                var processor = new NullProcessor();
+
+                using (var storage = new ReliableStorage(processor))
+                {
+                    storage.LoadPersistentData();
+                    
+                    var reloaded = processor.ProcessedBlocks.Single(x=>x[0] == key1);
+
+                    CollectionAssert.AreEqual(data1, reloaded);
+
+                    storage.CleanStorage();
+                }
+            }
+
+            var proc = new NullProcessor();
+            using (var storage = new ReliableStorage(proc))
+            {
+                storage.LoadPersistentData();
+                Console.WriteLine($"blocks={storage.BlockCount} inactive={storage.InactiveBlockCount} corrupted={storage.CorruptedBlocks} storage size={storage.StorageSize}");
+                Console.WriteLine($"in-place={ReliableStorage.StoredInPlace} relocated={ReliableStorage.Relocated}");
+            }
+
+            
+
+            
+
         }
     }
 }

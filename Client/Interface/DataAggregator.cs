@@ -249,6 +249,10 @@ public partial class
                                 "Error while writing an object to the cache",
                                 exResponse.Message, exResponse.CallStack);
                     }
+
+                    //allow objects to be collected as the task is retained
+                    put.Items.Clear();
+
                 }, request);
 
 

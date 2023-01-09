@@ -1,4 +1,5 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,129 @@ namespace Client.Tools
 
             return schema;
         }
+
+        private List<Func<string, object>> Parsers { get; } = new();
+
+        private object BoolParser(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (bool.TryParse(value, out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private object IntParser(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (int.TryParse(value, out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private object FloatParser(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (double.TryParse(value, out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private object DateParser(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (DateTime.TryParse(value, out var result))
+            {
+                return result;
+            }
+
+            if (DateTimeOffset.TryParse(value, out var resultOff))
+            {
+                return resultOff;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Set parsing code for each column for faster parsing
+        /// </summary>
+        public void GenerateParsers()
+        {
+            Parsers.Clear();
+
+            foreach (var columnInformation in Columns)
+            {
+                switch (columnInformation.ColumnType)
+                {
+                    case KeyValue.OriginalType.Null:
+                        Parsers.Add(x=> null);
+                        break;
+                    case KeyValue.OriginalType.Boolean:
+                        Parsers.Add(BoolParser);
+                        break;
+                    case KeyValue.OriginalType.SomeInteger:
+                        Parsers.Add(IntParser);
+                        break;
+                    case KeyValue.OriginalType.Date:
+                        Parsers.Add(DateParser);
+                        break;
+                    case KeyValue.OriginalType.String:
+                        Parsers.Add(x=> x);
+                        break;
+
+                    case KeyValue.OriginalType.SomeFloat:
+                        Parsers.Add(FloatParser);
+                        break;
+                }
+            }
+        }
+
+        public IList<KeyValue> ParseLine(string line)
+        {
+            var result = new List<KeyValue>();
+
+            var stringValues = CsvHelper.SplitCsvLine(line, Separator);
+
+            if (stringValues.Count != Parsers.Count)
+            {
+                throw new ArgumentException($"Line does not match schema: line has {stringValues.Count} columns, schema has {Parsers.Count}");
+            }
+
+            for (int i = 0; i < stringValues.Count; i++)
+            {
+                var value = Parsers[i](stringValues[i]);
+                result.Add(new KeyValue(value));
+            }
+            
+
+            return result;
+        }
+
 
         public string AnalysisReport()
         {

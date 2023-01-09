@@ -56,13 +56,13 @@ namespace Client.Core
                     break;
                 }
 
-                if (!firstPosition && (c == '-' || c == '/'))
+                if (!firstPosition && c is '-' or '/')
                 {
                     type = KeyValue.OriginalType.Date;
                     break;
                 }
 
-                if (c == '.' || c == ',')
+                if (c is '.' or ',')
                 {
                     type = KeyValue.OriginalType.SomeFloat;
                     break;
@@ -71,56 +71,29 @@ namespace Client.Core
                 firstPosition = false;
             }
 
-            if (type == KeyValue.OriginalType.String)
+            return type switch
             {
-                if (valueAsString == "null")
-                {
-                    return null;
-                }
+                KeyValue.OriginalType.String when valueAsString == "null" => null,
 
-                if (bool.TryParse(valueAsString, out var bv))
-                {
-                    return bv;
-                }
-
-                return valueAsString;
-            }
-
-            if (type == KeyValue.OriginalType.SomeFloat)
-            {
-                if (double.TryParse(valueAsString, NumberStyles.Any, CultureInfo.InvariantCulture, out var fv))
-                {
-                    return fv;
-                }
-
-                return valueAsString;
-            }
-
-            if (type == KeyValue.OriginalType.Date)
-            {
+                KeyValue.OriginalType.String when bool.TryParse(valueAsString, out var bv) => bv,
                 
-                if (DateTime.TryParse(valueAsString, out var dt))
-                {
-                    return dt;
-                }
-
-                if (DateTimeOffset.TryParse(valueAsString, out var dv))
-                {
-                    return dv;
-                }
-
-                return valueAsString;
-            }
-
-            if (type == KeyValue.OriginalType.SomeInteger)
-            {
-                if (int.TryParse(valueAsString, out var vi))
-                {
-                    return vi;
-                }
-            }
-
-            return valueAsString;
+                KeyValue.OriginalType.String => valueAsString,
+                
+                KeyValue.OriginalType.SomeFloat when double.TryParse(valueAsString, NumberStyles.Any,
+                    CultureInfo.InvariantCulture, out var fv) => fv,
+                
+                KeyValue.OriginalType.SomeFloat => valueAsString,
+                
+                KeyValue.OriginalType.Date when DateTime.TryParse(valueAsString, out var dt) => dt,
+                
+                KeyValue.OriginalType.Date when DateTimeOffset.TryParse(valueAsString, out var dv) => dv,
+                
+                KeyValue.OriginalType.Date => valueAsString,
+                
+                KeyValue.OriginalType.SomeInteger when int.TryParse(valueAsString, out var vi) => vi,
+                
+                _ => valueAsString
+            };
         }
     }
 }

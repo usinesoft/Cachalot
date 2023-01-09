@@ -76,3 +76,14 @@
     margin-left: 1rem;
     margin-top: 0.6rem;
   }
+
+  .file-download{
+    margin-left: 1rem;
+    margin-top: 0.6rem;
+  }
+
+  .actions{
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+  }

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Client.Tools;
 
 // ReSharper disable AssignNullToNotNullAttribute
 
@@ -451,13 +452,13 @@ namespace Cachalot.Linq
         /// <summary>
         /// Feed with CSV data lines (exclude header)
         /// </summary>
-        /// <param name="collectionName"></param>
-        /// <param name="lines"></param>
-        /// <param name="separator"></param>
-        public void FeedWithCsvLines(string collectionName, IEnumerable<string> lines, char separator = ',')
+        /// <param name="collectionName">the collection that will store the dta</param>
+        /// <param name="lines">data lines of a csv (skip header)</param>
+        /// <param name="csvSchema">contains information about the csv structure</param>
+        public void FeedWithCsvLines(string collectionName, IEnumerable<string> lines, CsvSchema csvSchema)
         {
             
-            Client.FeedMany(collectionName, this.PackCsv(lines, collectionName, separator), false);
+            Client.FeedMany(collectionName, this.PackCsv(lines, collectionName, csvSchema), false);
         }
 
 

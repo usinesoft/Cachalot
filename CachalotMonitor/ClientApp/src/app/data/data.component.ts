@@ -26,24 +26,24 @@ export class DataComponent implements OnInit {
   // dynamic data not stored in the state service
 
   public sql: string | undefined;
-  
+
   public data: any[] = [];
-  
+
   public schema: Schema | undefined;
-  
+
   public summary: CollectionSummary | undefined;
-  
+
   // all the queriable properties of the current collection
   public properties: string[] = [];
 
   // all collections
   public collections: string[] = [];
-  
+
   // all ordered indexes
   public orderByProperties: string[] = [];
 
 
-  fullTextQuery:string|undefined;
+  fullTextQuery: string | undefined;
 
 
   public get visibleColumns(): string[] {
@@ -57,56 +57,68 @@ export class DataComponent implements OnInit {
 
   }
 
-  public search(){
+  public search() {
     this.getData(true);
   }
 
 
   // single value but the data-binding needs a collection
-  public get take(): string[]{    
+  public get take(): string[] {
     return [this.stateService.data.currentQuery!.take];
   }
 
-  public set take(v:string[]){
-    if(v.length == 1){
-      this.stateService.data.currentQuery!.take = v[0];      
+  public set take(v: string[]) {
+    if (v.length == 1) {
+      this.stateService.data.currentQuery!.take = v[0];
       this.getData();
-    }    
+    }
   }
 
-  public get descending(): boolean{
-    return this.stateService.data.currentQuery?.descending??false;
+  public get descending(): boolean {
+    return this.stateService.data.currentQuery?.descending ?? false;
   }
-  public set descending(v:boolean){
+  public set descending(v: boolean) {
     this.stateService.data.currentQuery!.descending = v;
     this.getData();
   }
 
   public set selectedCollection(value: string | undefined) {
-    this.stateService.data.collectionName = value;
 
-    if (value) {
+    console.log(this.stateService.data.collectionName + '-->' + value);
+    if (this.stateService.data.collectionName != value && value) {
+      this.stateService.data.collectionName = value;
+
+
       this.updateOnCollectionChange(value);
+
+
+      var nq = new AndQuery;
+      nq.simpleQueries.push(new SimpleQuery);
+      this.currentQuery = nq;
     }
 
-    var nq = new AndQuery;
-    nq.simpleQueries.push(new SimpleQuery);
-    this.currentQuery = nq;
+
+
+  }
+
+
+  private init(collection:string){
+    this.schema = this.monitoringService.clusterInfo?.schema.find(s => s.collectionName == collection);
+    this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s => s.name == collection);
+    this.properties = this.schema?.serverSide.map(x => x.name) ?? [];
+    this.orderByProperties = this.schema?.serverSide.filter(x => x.indexType == 'Ordered').map(x => x.name) ?? [];
+    this.fullTextQuery = undefined;
 
   }
 
   private updateOnCollectionChange(collection: string | undefined) {
     if (collection) {
 
-      this.schema = this.monitoringService.clusterInfo?.schema.find(s => s.collectionName == collection);
-      this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s => s.name == collection);
-      this.properties = this.schema?.serverSide.map(x => x.name) ?? [];
+      this.init(collection);
 
+      console.log('update on collection changed');
+    
       this.visibleColumns = this.properties.slice(0, 10);
-      
-
-      this.orderByProperties = this.schema?.serverSide.filter(x => x.indexType == 'Ordered').map(x => x.name) ?? [];
-      this.fullTextQuery = undefined;
     }
 
   }
@@ -115,21 +127,21 @@ export class DataComponent implements OnInit {
     return this.stateService.data.collectionName;
   }
 
-  
+
 
   // the one selected for result ordering
-  public get orderBy(): string[]{
-    if(this.stateService.data.currentQuery?.orderBy){
+  public get orderBy(): string[] {
+    if (this.stateService.data.currentQuery?.orderBy) {
       return [this.stateService.data.currentQuery.orderBy];
     }
-    return [];    
+    return [];
   }
 
-  public set orderBy(v:string[]){
-    
-      this.stateService.data.currentQuery!.orderBy = v[0];
-      this.getData();
-    
+  public set orderBy(v: string[]) {
+
+    this.stateService.data.currentQuery!.orderBy = v[0];
+    this.getData();
+
   }
 
   constructor(private monitoringService: MonitoringService, private queryService: QueryService, private stateService: ScreenStateService) { }
@@ -138,22 +150,22 @@ export class DataComponent implements OnInit {
 
     this.collections = this.monitoringService.clusterInfo?.schema.map(s => s.collectionName) ?? [];
 
-    if(this.selectedCollection){
-      this.updateOnCollectionChange(this.selectedCollection);
+    if (this.selectedCollection) {
+      this.init(this.selectedCollection);
       this.getData();
-    }    
-    else{
+    }
+    else {
       this.selectedCollection = this.collections[0];
     }
   }
 
-  public asJson(x:any):string{
+  public asJson(x: any): string {
     return JSON.stringify(this.cleanup(x), null, 2);
   }
 
   // when displaying as json remove tha properties starting with # which are only used for display
-  public cleanup(x:any):any{
-    var cloneObj = {...x};
+  public cleanup(x: any): any {
+    var cloneObj = { ...x };
     delete cloneObj['#'];
     delete cloneObj['#json'];
     return cloneObj;
@@ -165,27 +177,27 @@ export class DataComponent implements OnInit {
   }
 
   public set currentQuery(v: AndQuery | undefined) {
-    
+
     this.stateService.data.currentQuery = v;
     this.getData();
   }
 
-  public exportJson(){
-    
+  public exportJson() {
+
     this.queryService.DownloadAsStream(this.sql, this.fullTextQuery).subscribe(data => {
       console.log('result:' + data);
     });
   }
 
 
-  private getData(force:boolean = false){
+  private getData(force: boolean = false) {
     this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
 
       let oldSql = this.sql;
       this.sql = data.sql;
 
       let shouldFetchData = force; // if forced
-      if(!shouldFetchData){ // if sql changed
+      if (!shouldFetchData) { // if sql changed
         shouldFetchData = data.sql != undefined && data.sql != oldSql;
       }
 
@@ -211,7 +223,7 @@ export class DataComponent implements OnInit {
     }, err => this.sql = err);
 
   }
-  
+
 
   // display json detail for line
   public switchDisplay(r: any) {
@@ -220,30 +232,30 @@ export class DataComponent implements OnInit {
     console.log('display json = ' + r['#json']);
   }
 
-  ignoreLimit:boolean = false;
+  ignoreLimit: boolean = false;
 
-  working:boolean = false;
+  working: boolean = false;
 
-  public onFileSelected(event:any){
-    const file:File = event.target.files[0];
-      
+  public onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+
     if (file && this.selectedCollection) {
-        this.fileName = file.name;
+      this.fileName = file.name;
 
-        
-        this.working = true;
-        this.queryService.UploadFile(file, this.selectedCollection).subscribe(data=> {
-          this.working = false;
-          console.log('done');
-        }, err => {
-          this.working = false;
-          console.log('eror:' + err);
-        });
-      }
+
+      this.working = true;
+      this.queryService.UploadFile(file, this.selectedCollection).subscribe(data => {
+        this.working = false;
+        console.log('done');
+      }, err => {
+        this.working = false;
+        console.log('eror:' + err);
+      });
+    }
 
 
   }
 
-  fileName:string|undefined;
+  fileName: string | undefined;
 
 }

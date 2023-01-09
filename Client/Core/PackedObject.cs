@@ -422,29 +422,27 @@ namespace Client.Core
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
-        public static PackedObject PackCsv(int primaryKey, string line, string collectionName, char separator = ',')
+        public static PackedObject PackCsv(int primaryKey, string line, string collectionName, CsvSchema csvSchema)
         {
-
-            var values = CsvHelper.SplitCsvLine(line, separator);
+            
+            var values = csvSchema.ParseLine(line);
 
             var result = new PackedObject
             {
                 Values = new KeyValue[values.Count + 1], // +1 for the primary key
-
-
+                
                 CollectionValues = Array.Empty<KeyValues>()
             };
 
             // set the primary key
-            result.Values[0] = new KeyValue(primaryKey);
+            result.Values[0] = new(primaryKey);
 
+            
             // process server-side values
             int pos = 1;
             foreach (var value in values)
             {
-                var kv = KeyValueParsingPool.FromString(value);//CsvHelper.GetTypedValue(value);
-                
-                result.Values[pos] = kv;
+                result.Values[pos] = value;
 
                 pos++;
 

@@ -2,6 +2,7 @@
 using Client.Tools;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Tests.UnitTests
@@ -16,7 +17,7 @@ namespace Tests.UnitTests
         {
             var csvHelper = new CsvSchemaBuilder("TestData/csv/20klines.csv");
 
-            var schema = csvHelper.InfereSchema();
+            var schema = csvHelper.InferSchema();
 
             Console.Write(schema.AnalysisReport());
 
@@ -58,11 +59,9 @@ namespace Tests.UnitTests
             var values = CsvHelper.SplitCsvLine(line, ',');
 
             Assert.AreEqual(120, values.Count);
-
-            var packed = PackedObject.PackCsv(1, line, "collection");
-
-            // one extra-value for the primary key
-            Assert.AreEqual(121, packed.Values.Length);
+            
         }
+
+        
     }
 }

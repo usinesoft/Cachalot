@@ -8,7 +8,7 @@ namespace Client.Tools
 {
 
     /// <summary>
-    /// Infer a <see cref="CollectionSchema"/> by analysing a fragment of CSV file.
+    /// Infer a <see cref="CollectionSchema"/> by analyzing a fragment of CSV file.
     /// For this case, tha layout is always <see cref="Layout.Flat"/> 
     /// </summary>
     public class CsvSchemaBuilder
@@ -22,19 +22,27 @@ namespace Client.Tools
         /// </summary>
         private class BucketMetrics
         {
-            public BucketMetrics(int max, double avg, int bucketIndex)
+            public BucketMetrics(int max, double avg)
             {
                 Max = max;
                 Avg = avg;
-                BucketIndex = bucketIndex;
             }
 
             public int Max { get; }
             public double Avg { get; }
-            public int BucketIndex { get; }
         }
 
         public string FilePath { get; set; }
+
+        /// <summary>
+        /// For each column contains the indexes of the lines by corresponding value
+        /// It is used to infer the optimum indexing policy
+        /// </summary>
+        private List<Dictionary<KeyValue, HashSet<int>>> Buckets { get; } = new();
+
+        private List<List<string>> LinesCache { get; } = new();
+
+        public char Separator { get; private set; }
 
         public CsvSchemaBuilder(string filePath)
         {
@@ -51,14 +59,13 @@ namespace Client.Tools
         /// Generate a schema based on heuristics that process a fragment of the file 
         /// </summary>
         /// <param name="linesToUse"></param>
+        /// <param name="findCompositeKey">If true also find the most discriminant combination of two keys</param>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public CsvSchema InfereSchema(int linesToUse = 10_000)
+        public CsvSchema InferSchema(int linesToUse = 10_000, bool findCompositeKey = true)
         {
 
-
             var schema = new CsvSchema();
-
 
             if (!File.Exists(FilePath))
             {
@@ -89,6 +96,10 @@ namespace Client.Tools
                 ProcessLine(line, schema, i);
             }
 
+            schema.GenerateParsers();
+
+
+
             ReportProgress("Lines parsed");
 
 
@@ -99,28 +110,26 @@ namespace Client.Tools
                 schema.Columns[i].MaxLinesInBucket = metrics.Max;
             }
 
-            ReportProgress("Determining the most discriminant composite key");
-
-            (var col1, var col2, var max) = DetermineMostDiscriminantCompositeKey(schema);
-
-            if (col1 != col2) // both are zero if no composite key is better then the most discriminant single column
+            if (findCompositeKey)
             {
-                schema.MostDiscriminantColumns.Add(schema.Columns[col1]);
-                schema.MostDiscriminantColumns.Add(schema.Columns[col2]);
+                ReportProgress("Determining the most discriminant composite key");
 
-                ReportProgress($"Most discriminant composite key: {schema.Columns[col1]}");
+                var (col1, col2, _) = DetermineMostDiscriminantCompositeKey(schema);
+
+                if (col1 != col2) // both are zero if no composite key is better then the most discriminant single column
+                {
+                    schema.MostDiscriminantColumns.Add(schema.Columns[col1]);
+                    schema.MostDiscriminantColumns.Add(schema.Columns[col2]);
+
+                    ReportProgress($"Most discriminant composite key: {schema.Columns[col1]}");
+                }
             }
+            
 
             schema.Separator = Separator;
 
             return schema;
         }
-
-        /// <summary>
-        /// For each column contains the indexes of the lines by corresponding value
-        /// It is used to infere the otimum indexing policy
-        /// </summary>
-        List<Dictionary<KeyValue, HashSet<int>>> Buckets { get; } = new List<Dictionary<KeyValue, HashSet<int>>>();
 
         private void InitBuckets(CsvSchema schema)
         {
@@ -171,8 +180,7 @@ namespace Client.Tools
 
                         var composite = $"{val1}-{val2}";
 
-                        int count = 0;
-                        countByCompositeKey.TryGetValue(composite, out count);
+                        countByCompositeKey.TryGetValue(composite, out var count);
                         countByCompositeKey[composite] = count + 1;
 
                     }
@@ -247,14 +255,12 @@ namespace Client.Tools
                         continue;
                     }
 
-                    throw new FormatException($"Inconsistent tipe:value '{values[i]}' of type {newType} found on column of type {oldType} ");
+                    throw new FormatException($"Inconsistent type:value '{values[i]}' of type {newType} found on column of type {oldType} ");
                 }
             }
 
 
         }
-
-        List<List<string>> LinesCache { get; set; } = new List<List<string>>();
 
 
         private void ProcessLine(string line, CsvSchema schema, int lineIndex)
@@ -263,7 +269,7 @@ namespace Client.Tools
             var stringValues = CsvHelper.SplitCsvLine(line, Separator);
             LinesCache.Add(stringValues);
 
-            List<KeyValue> values = stringValues.Select(x => CsvHelper.GetTypedValue(x)).ToList();
+            List<KeyValue> values = stringValues.Select(CsvHelper.GetTypedValue).ToList();
 
             if (schema.Columns.Count != values.Count)
             {
@@ -280,8 +286,6 @@ namespace Client.Tools
 
 
         }
-
-        public char Separator { get; private set; }
 
         private void ProcessHeader(string header, CsvSchema result)
         {
@@ -337,7 +341,7 @@ namespace Client.Tools
             int max = Buckets[bucket].Max(x => x.Value.Count);
             double avg = Buckets[bucket].Average(x => x.Value.Count);
 
-            return new BucketMetrics(max, avg, bucket);
+            return new BucketMetrics(max, avg);
         }
 
 

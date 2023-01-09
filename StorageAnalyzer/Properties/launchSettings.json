@@ -2,7 +2,7 @@
   "profiles": {
     "StorageAnalyzer": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\git\\Cachalot\\bin\\Debug\\Server\\net6.0\\root\\data"
+      "commandLineArgs": "D:\\cachalot\\services\\02\\root\\data"
     }
   }
 }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading;
-using Client.Tools;
 
 namespace Client.Core;
 
@@ -9,11 +8,11 @@ public static class KeyValuePool
     private const int PoolSize = 10_000_000;
 
     // shared null value
-    private static readonly KeyValue Null = new KeyValue(null);
+    private static readonly KeyValue Null = new(null);
     
-    private static readonly KeyValue True = new KeyValue(true);
+    private static readonly KeyValue True = new(true);
 
-    private static readonly KeyValue False = new KeyValue(false);
+    private static readonly KeyValue False = new(false);
 
     private static int _hits;
     
@@ -64,7 +63,7 @@ public static class KeyValuePool
             KeyValue.OriginalType.Date => _datePool,
             KeyValue.OriginalType.String => _stringPool,
             
-            _ => throw new System.Exception("Shoud not get here")
+            _ => throw new System.Exception("Should not get here")
 
         }; ;
 
@@ -109,31 +108,4 @@ public static class KeyValuePool
             ProcessPackedObject(o);
         }
     }
-}
-
-public static class KeyValueParsingPool
-{
-    private static readonly Dictionary<string, KeyValue> Cache = new ();
-
-    public static KeyValue FromString(string value)
-    {
-        lock (Cache)
-        {
-            if (Cache.TryGetValue(value, out var kv))
-            {
-                return kv;
-            }
-
-            kv = CsvHelper.GetTypedValue(value);
-            Cache[value] = kv;
-            return kv;
-        }
-    }
-
-    public static void Clear()
-    {
-        Cache.Clear();
-    }
-
-
 }

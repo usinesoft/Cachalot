@@ -1,0 +1,27 @@
+to do cachalot
+----------------
+
+
+
+- display statisctics after query
+- display error if backup directory not found
+- monitoring during server start-up
+- smart combo for field selection in and query
+
+- smart DateTime formating in generated json
+
+- un nouvel index n'est plus affiché quand on change d'onglet mais on le retrouve si on redemarre
+- investigate . in double values (sql query)
+- add max/min to pivot
+- add messages on monitor starting: URL for the monitoring page
+- order host:port before using the connection string
+- add guard to prevent navigation if no connection
+
+done
+-----------------
+- when we connect to new cluster reset the current collection
+- real streaming server-side when uploading (no more memory stream)
+- remember visible properties when tab changes
+- disable import if @activity
+x two stage file import: attach and start
+- parsing of the csv file : remove the pool

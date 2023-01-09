@@ -1,26 +1,35 @@
 ﻿
-
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 using Cachalot.Extensions;
 using Cachalot.Linq;
 using Client.Core;
 using Client.Tools;
 
-Console.WriteLine("------------------------------");
-Console.WriteLine(" CSV import tool for Cachalot");
-Console.WriteLine("------------------------------");
 
-if (args.Length == 1) // just simulate reading
+Console.WriteLine(Logo);
+
+
+// With a single argument (the csv file) it just reads the csv file and pack the lines
+// Used mostly internally for performance tests
+if (args.Length == 1)
 {
 
+    Console.WriteLine("In this mode you will only simulate reading a csv file. No data will be sent to the server");
+    Console.WriteLine("SYNTAX: csvimport connection_string csv_file target_collection");
 
     var watch = new Stopwatch();
 
     watch.Start();
+    var csvSchema = new CsvSchemaBuilder(args[0]).InferSchema(10000, false);
+
+    watch.Stop();
+    Console.WriteLine($"Schema inference took {watch.ElapsedMilliseconds} ms");
+    
+
+    watch.Restart();
     int count = 0;
-    foreach (var packedObject in PackCsv(ReadLines(args[0]), "test"))
+    foreach (var _ in PackCsv(ReadLines(args[0]), "test", csvSchema))
     {
         count++;
         if (count % 50000 == 0)
@@ -33,7 +42,7 @@ if (args.Length == 1) // just simulate reading
     watch.Stop();
     
     Console.WriteLine();
-    Console.WriteLine($"Took {watch.ElapsedMilliseconds} ms");
+    Console.WriteLine($"Took {watch.ElapsedMilliseconds/1000} seconds to parse {count} lines");
 
     return;
 }
@@ -50,13 +59,13 @@ var connectionString = args[0];
 var csvFile = args[1];
 var collection = args[2];
 
-IEnumerable<PackedObject> PackCsv(IEnumerable<string> lines, string collectionName, char separator = ',')
+IEnumerable<PackedObject> PackCsv(IEnumerable<string> lines, string collectionName, CsvSchema csvSchema)
 {
     int primaryKey = 100; 
 
     foreach (var line in lines)
     {
-        yield return PackedObject.PackCsv(primaryKey, line, collectionName, separator);
+        yield return PackedObject.PackCsv(primaryKey, line, collectionName, csvSchema);
 
         primaryKey++;
     }
@@ -83,7 +92,7 @@ IEnumerable<string> ReadLines(string csvFileName)
 
 try
 {
-    
+    // passing "--internal" as connection string loads the csv into an in-process server
     using var connector = connectionString == "--internal" ? new Connector(): new Connector(connectionString);
 
     var watch = new Stopwatch();
@@ -91,44 +100,49 @@ try
     
     var schema = connector.GetCollectionSchema(collection);
 
+    const int linesToAnalyze = 10_000;
+
+    Console.WriteLine($"Analyzing the first {linesToAnalyze} lines from the csv file...");
+
+    watch.Start();
+    // analyze the csv data
+    var csvSchema = new CsvSchemaBuilder(csvFile).InferSchema(linesToAnalyze, false);
+    watch.Stop();
+
+    Console.WriteLine($"Done.Took {watch.ElapsedMilliseconds:F2} ms");
+
+    Console.WriteLine();
+
     if(schema == null)
     {
-        Console.WriteLine($"No schema defined for collection {collection}. Trying to infere one from the csv data...");
-
-        watch.Start();
-        var csvSchema = new CsvSchemaBuilder(csvFile).InfereSchema();
-        watch.Stop();
-
-        Console.WriteLine();
-        Console.WriteLine($"Done.Took {watch.ElapsedMilliseconds:F2}");
-
-        Console.Write(csvSchema.AnalysisReport());
+        Console.WriteLine($"No schema defined for collection {collection}. It will be inferred from data");
+        
+        //Console.Write(csvSchema.AnalysisReport());
 
         schema = csvSchema.ToCollectionSchema();
         connector.DeclareCollection(collection, schema);
     }
     else
     {
-
         Console.WriteLine("Collection already defined. Using existing schema");
     }
 
     Console.WriteLine();
-    Console.WriteLine($"Start feeding data...");
+    Console.WriteLine("Start feeding data...");
 
 
-    connector.Progress += Connector_Progress;
+    connector.Progress += ConnectorProgress;
 
     watch.Restart();
     
-    connector.FeedCsv(csvFile, collection);
+    connector.FeedCsv(csvFile, collection, csvSchema);
         
     watch.Stop();
 
     Console.WriteLine();
     Console.WriteLine($"done in {watch.ElapsedMilliseconds / 1000.0:F2} seconds");
 
-    KeyValueParsingPool.Clear();
+    
 
   
 
@@ -153,7 +167,7 @@ catch(Exception ex)
     Console.WriteLine(ex.ToString());
 }
 
-void Connector_Progress(object? sender, Cachalot.Linq.ProgressEventArgs e)
+void ConnectorProgress(object? sender, Cachalot.Linq.ProgressEventArgs e)
 {
     if(e.Type == Cachalot.Linq.ProgressEventArgs.ProgressNotification.Progress)
     {

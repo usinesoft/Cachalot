@@ -1,6 +1,7 @@
 import { LayoutModule } from '@angular/cdk/layout';
 import { Component, OnInit } from '@angular/core';
 import { CollectionSummary } from '../model/connection-data';
+import { ExecutionPlan, QueryExecutionPlan } from '../model/execution-plan';
 import { AndQuery, SimpleQuery } from '../model/query';
 import { Schema } from '../model/schema';
 import { MonitoringService } from '../monitoring.service';
@@ -82,15 +83,17 @@ export class DataComponent implements OnInit {
     this.getData();
   }
 
+  public get selectedCollection(): string | undefined {
+    return this.stateService.data.collectionName;
+  }
+
   public set selectedCollection(value: string | undefined) {
 
     console.log(this.stateService.data.collectionName + '-->' + value);
     if (this.stateService.data.collectionName != value && value) {
+
       this.stateService.data.collectionName = value;
-
-
       this.updateOnCollectionChange(value);
-
 
       var nq = new AndQuery;
       nq.simpleQueries.push(new SimpleQuery);
@@ -108,7 +111,10 @@ export class DataComponent implements OnInit {
     this.properties = this.schema?.serverSide.map(x => x.name) ?? [];
     this.orderByProperties = this.schema?.serverSide.filter(x => x.indexType == 'Ordered').map(x => x.name) ?? [];
     this.fullTextQuery = undefined;
-
+    if(this.visibleColumns.length == 0){
+      this.visibleColumns = this.properties.slice(0, 10);
+    }
+    
   }
 
   private updateOnCollectionChange(collection: string | undefined) {
@@ -123,10 +129,7 @@ export class DataComponent implements OnInit {
 
   }
 
-  public get selectedCollection(): string | undefined {
-    return this.stateService.data.collectionName;
-  }
-
+  
 
 
   // the one selected for result ordering
@@ -189,7 +192,20 @@ export class DataComponent implements OnInit {
     });
   }
 
+  lastQueryId:string|undefined;
 
+  clientTimeInMilliseconds:number = 0;
+
+  executionPlan:ExecutionPlan|undefined;
+  
+  public get queryPlan():QueryExecutionPlan|undefined{
+    var plans = this.executionPlan?.queryPlans;
+    if(plans){
+      return plans[0];
+    }
+    return undefined;
+  }
+  
   private getData(force: boolean = false) {
     this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
 
@@ -202,6 +218,8 @@ export class DataComponent implements OnInit {
       }
 
       if (shouldFetchData) {
+        this.executionPlan = undefined;
+        
         this.queryService.ExecuteQuery(data.sql, this.fullTextQuery).subscribe(d => {
           if (d.json) {
             this.data = JSON.parse(d.json);
@@ -216,6 +234,16 @@ export class DataComponent implements OnInit {
 
             }
             console.log(this.data.length + ' items received');
+            this.clientTimeInMilliseconds = d.clientTimeInMilliseconds;
+            this.lastQueryId = d.queryId;
+            console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
+
+            // wait one second before asking for the execution plan as the @ACTIVITY table is updated asynchronously
+            setTimeout(() => {
+              this.queryService.GetExecutionPlan(this.lastQueryId!).subscribe({
+                next:(data) => this.executionPlan = data
+              });
+            }, 1000);
           }
 
         });

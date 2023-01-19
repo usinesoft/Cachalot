@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using Client.Interface;
+using Client.Tools;
 
 #endregion
 
@@ -168,14 +169,14 @@ namespace Client.Core
 
                 case OriginalType.Date:
                     if (_data.Length == 0)//no offset
-                        return new DateTime(_hashCode).ToString(CultureInfo.InvariantCulture);
+                        return SmartDateTimeConverter.FormatDate( new DateTime(_hashCode));
 
                     var offset = BitConverter.ToInt64(_data, 0);
-                    return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString();
+                    return new DateTimeOffset(_hashCode, new TimeSpan(offset)).ToString("yyyy-MM-dd");
 
                 case OriginalType.String:
                     return StringValue;
-
+                     
                 case OriginalType.Null:
                     return "null";
 

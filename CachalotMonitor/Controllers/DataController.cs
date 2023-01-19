@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using CachalotMonitor.Model;
 using CachalotMonitor.Services;
+using Client.Core;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -25,18 +27,45 @@ public class DataController : ControllerBase
     }
 
     [HttpPost("query/sql/{collection}")]
-    public SqlResponse GetQueryMetadata(string collection, [FromBody]AndQuery clientQuery)
+    public SqlResponse GetQueryAsSql(string collection, [FromBody]AndQuery clientQuery)
     {
         var sql = _queryService.ClientQueryToSql(collection, clientQuery);
         return new() { Sql = sql };
     }
 
+    [HttpGet("query/plan/{queryId}")]
+    public ExecutionPlan? GetExecutionPlan(Guid queryId)
+    {
+        return _queryService.GetExecutionPlan(queryId);
+    }
+
     [HttpPost("query/execute")]
     public DataResponse ExecuteQuery([FromBody]InputQuery query)
     {
-        if (query.Sql != null) return new() { Json = _queryService.QueryAsJson(query.Sql, query.FullText) };
 
-        throw new ArgumentException("Empty sql");
+        var result = new DataResponse();
+
+        var watch = new Stopwatch();
+
+        var queryId = Guid.NewGuid();
+        try
+        {
+            watch.Start();
+            result.Json = _queryService.QueryAsJson(query.Sql, query.FullText, queryId);
+        }
+        catch (Exception ex)
+        {
+            result.Error = ex.Message;
+        }
+        finally
+        {
+            watch.Stop();
+            result.ClientTimeInMilliseconds = (int)watch.ElapsedMilliseconds;
+            result.QueryId = queryId;
+        }
+
+        
+        return result;
     }
 
     [HttpPost("query/stream")]

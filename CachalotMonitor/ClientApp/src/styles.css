@@ -44,6 +44,7 @@ section.ngx-json-viewer{
   min-width: 50rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   display: table;
+  table-layout: auto;
 }
 
 .row {
@@ -83,6 +84,9 @@ td {
   padding: 6px 12px;
   display: table-cell;
   padding: 0.3rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 th{

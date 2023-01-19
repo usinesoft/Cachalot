@@ -36,7 +36,7 @@ namespace Server.HostServices.Logger
         public DataStore ActivityTable { get; set; }
 
         public void LogActivity(string type, string collectionName, int executionTimeInMicroseconds, string detail,
-            string query = null, ExecutionPlan plan = null)
+                                string query = null, ExecutionPlan plan = null, Guid queryId = default)
         {
             // log in the file
             Log(LogLevel.Info, $"{detail} took {executionTimeInMicroseconds} μs");
@@ -47,7 +47,7 @@ namespace Server.HostServices.Logger
 
             lock (_messageQueue)
             {
-                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(collectionName, type, executionTimeInMicroseconds, detail, query, plan));
+                if (_messageQueue.Count < MaxMessagesInQueue) _messageQueue.Enqueue(item: new Item(collectionName, type, executionTimeInMicroseconds, detail, query, plan, queryId));
             }
 
         }
@@ -229,11 +229,12 @@ namespace Server.HostServices.Logger
             /// <param name="detail">sql-like description</param>
             /// <param name="query">query without parameters value</param>
             /// <param name="plan"></param>
-            public Item(string collection, string type, int executionTimeInMicroseconds, string detail, string query, ExecutionPlan plan = null)
+            /// <param name="queryId">optional unique id used to find a query in the activity log</param>
+            public Item(string collection, string type, int executionTimeInMicroseconds, string detail, string query, ExecutionPlan plan = null, Guid queryId = default)
             {
                 Entry = new LogEntry
                 {
-                    Id = Guid.NewGuid(),
+                    Id = queryId == default ? Guid.NewGuid(): queryId,
                     ExecutionPlan = plan,
                     Type = type,
                     Detail = detail,

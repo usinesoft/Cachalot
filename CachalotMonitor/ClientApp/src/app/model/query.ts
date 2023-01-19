@@ -38,4 +38,6 @@ export class SqlResponse{
 
 export class DataResponse{
     json:string|undefined;
+    clientTimeInMilliseconds:number = 0;
+    queryId:string|undefined;
 }

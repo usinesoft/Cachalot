@@ -128,7 +128,8 @@ namespace Server.Queries
 
             queryExecutionPlan.StartPlanning();
             var indexesToUse = GetIndexesForQuery(query);
-            queryExecutionPlan.EndPlanning(indexesToUse.Select(r => r.Index.Name).ToList());
+            var indexesUsed = indexesToUse.OrderBy(p => p.Ranking).Take(2).ToArray();
+            queryExecutionPlan.EndPlanning(indexesUsed.Select(r => r.Index.Name).ToList());
 
             // this will contain all queries that have can not be resolved by indexes and need to be checked manually 
             var restOfTheQuery = query.Clone();
@@ -157,7 +158,7 @@ namespace Server.Queries
             {
                 queryExecutionPlan.StartIndexUse();
 
-                foreach (var plan in indexesToUse.OrderBy(p => p.Ranking).Take(2)) // no more than two indexes
+                foreach (var plan in indexesUsed) // no more than two indexes
                 {
                     if (result == null)
                     {
@@ -332,7 +333,7 @@ namespace Server.Queries
                 if (!query.CollectionName.Equals(LogEntry.Table, StringComparison.InvariantCultureIgnoreCase)) // do not log queries on @ACTIVITY table itself
                 {
                     var type = query.CountOnly ? LogEntry.Eval : LogEntry.Select;
-                    _log?.LogActivity(type, query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan);
+                    _log?.LogActivity(type, query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(), query.Description(), executionPlan, query.QueryId);
 
                 }
 
@@ -519,7 +520,7 @@ namespace Server.Queries
                     }
                     else
                     {
-                        client.SendMany(result, new int[0], null);
+                        client.SendMany(result, Array.Empty<int>(), null);
                     }
 
                 }

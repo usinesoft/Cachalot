@@ -2,11 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AndQuery, DataResponse, QueryMetadata, SearchRequest, SqlResponse } from './model/query';
-
 import streamSaver from 'streamsaver';
-
-
-import { environment } from 'src/environments/environment';
+import { ExecutionPlan } from './model/execution-plan';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +22,11 @@ export class QueryService {
     return this.http.post<SqlResponse>(this.baseUrl + `Data/query/sql/${collection}`, query);
   }
 
-  public DownloadAsStream(sql: string | undefined, fullTextQuery: string | undefined):Observable<boolean>{
+  public GetExecutionPlan(queryId: string): Observable<ExecutionPlan> {
+    return this.http.get<ExecutionPlan>(this.baseUrl + `Data/query/plan/${queryId}`);
+  }
+
+  public DownloadAsStream(sql: string | undefined, fullTextQuery: string | undefined): Observable<boolean> {
     var request = new SearchRequest();
     request.sql = sql;
     request.fullText = fullTextQuery;

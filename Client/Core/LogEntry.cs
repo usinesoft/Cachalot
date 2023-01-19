@@ -34,6 +34,7 @@ namespace Client.Core
         [ServerSideValue(IndexType.Dictionary)]
         public string CollectionName { get; set; }
 
+        
         [ServerSideValue(IndexType.Ordered)]
         public int ExecutionTimeInMicroseconds { get; set; }
 

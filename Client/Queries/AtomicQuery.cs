@@ -430,7 +430,7 @@ namespace Client.Queries
                     result += $"({v1}, {v2}]";
                 }
             }
-            else if (Operator == QueryOperator.In || Operator == QueryOperator.NotIn)
+            else if (Operator is QueryOperator.In or QueryOperator.NotIn)
             {
                 if (InValues.Count >= 4)
                 {
@@ -478,8 +478,7 @@ namespace Client.Queries
         }
 
         public bool IsComparison =>
-            Operator == QueryOperator.Eq || Operator == QueryOperator.Le || Operator == QueryOperator.Lt || Operator == QueryOperator.Ge ||
-            Operator == QueryOperator.Gt || Operator.IsRangeOperator();
+            Operator is QueryOperator.Eq or QueryOperator.Le or QueryOperator.Lt or QueryOperator.Ge or QueryOperator.Gt || Operator.IsRangeOperator();
 
         /// <summary>
         ///     Check if an object matches the query

@@ -95,6 +95,18 @@ namespace Client.Interface
 
                 Servers.Add(new ServerConfig { Host = host, Port = port });
             }
+
+            // sort the servers by hostname then by port; shards should not depend of the order in the connection string
+            if (Servers.Count > 1)
+            {
+                var orderedServers =  Servers.OrderBy(s => s.Host).ThenBy(s => s.Port).ToList();
+
+                Servers.Clear();
+                foreach (var server in orderedServers)
+                {
+                    Servers.Add(server);
+                }
+            }
         }
 
 
@@ -115,11 +127,7 @@ namespace Client.Interface
 
             var firstChar = value[0];
 
-            if (firstChar == 't' || firstChar == 'y' || firstChar == '1')
-                return true;
-
-
-            return false;
+            return firstChar is 't' or 'y' or '1';
         }
 
 

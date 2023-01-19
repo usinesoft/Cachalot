@@ -30,6 +30,7 @@
     margin-top: 1rem;
     flex-grow: 2;
     box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.2), 2px 2px 10px 0 rgba(0, 0, 0, 0.19);
+    
 }
 
 .data-selection-container{
@@ -87,3 +88,47 @@
     flex-direction: row;
     align-items: baseline;
   }
+
+  .info-cell{
+    color: lightblue;
+    min-width: 12rem;
+    padding: 5px;
+  }
+
+  .dark-popover{
+    background-color: darkblue;
+    opacity: 1;
+  }
+
+  :host ::ng-deep .popover {
+    background-color: white;
+    opacity: 1;
+    -webkit-box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.74); 
+    box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.74);
+    max-width: 50rem;
+  }
+
+  .plan-detail-table td:nth-child(1){ 
+    width: 8rem;
+ }
+
+  .plan-detail-table td:nth-child(2){ 
+     color: darkblue;
+     width: 5rem;
+  }
+
+  .plan-detail-table td:nth-child(3){ 
+    color: darkgray;
+ }
+
+ .plan-table td:nth-child(1){ 
+  width: 8rem;
+}
+  .plan-table td:nth-child(2){ 
+    color: darkblue;
+    width: 5rem;
+ }
+
+ .plan-table td:nth-child(3){ 
+  color: darkgray;
+}

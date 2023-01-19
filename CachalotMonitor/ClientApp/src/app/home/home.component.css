@@ -47,6 +47,7 @@
 
 .server-button{
     margin: 10px;
+    max-height: 3rem;
 }
 
 .server-info{

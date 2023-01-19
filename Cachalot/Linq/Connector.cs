@@ -376,7 +376,7 @@ namespace Cachalot.Linq
             return new DataAdmin(Client);
         }
 
-        public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null)
+        public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
         {
             var parsed = new Parser().ParseSql(sql);
 
@@ -396,6 +396,8 @@ namespace Cachalot.Linq
             var query = parsed.ToQuery(schema);
 
             query.FullTextSearch = fullTextQuery;
+
+            query.QueryId = queryId;
 
 
             if (query.CountOnly)        

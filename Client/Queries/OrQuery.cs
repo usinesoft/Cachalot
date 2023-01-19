@@ -1,5 +1,6 @@
 #region
 
+using System;
 using Client.Core;
 using JetBrains.Annotations;
 using ProtoBuf;
@@ -77,6 +78,11 @@ namespace Client.Queries
         /// </summary>
         [field: ProtoMember(11)] public bool ByPrimaryKey { get; set; }
 
+        /// <summary>
+        /// Optional unique id that can be used to trace the query in the activity log
+        /// </summary>
+        [field: ProtoMember(12)] public Guid QueryId { get; set; }
+
 
         #endregion
 
@@ -125,7 +131,7 @@ namespace Client.Queries
             if (SelectClause.Count > 0)
             {
                 sb.Append(string.Join(',', SelectClause.Select(x => x.Name)));
-                sb.Append(",");
+                sb.Append(" ");
             }
 
             sb.Append("FROM");

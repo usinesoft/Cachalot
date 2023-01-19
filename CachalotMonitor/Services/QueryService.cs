@@ -1,7 +1,9 @@
 ﻿using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Text;
+using Cachalot.Linq;
 using CachalotMonitor.Model;
+using Client.Core;
+using Client.Tools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -12,20 +14,23 @@ class QueryService : IQueryService
 {
     readonly IClusterService _clusterService;
 
+    private DataSource<LogEntry>? ActivityTable { get; }
     public QueryService(IClusterService clusterService)
     {
-        _clusterService = clusterService;
+        _clusterService = clusterService ?? throw new ArgumentNullException(nameof(clusterService));
+        
+        ActivityTable = clusterService.Connector?.DataSource<LogEntry>("@ACTIVITY");
     }
 
 
-    public string QueryAsJson(string? sql, string? fullTextQuery = null)
+    public string QueryAsJson(string? sql, string? fullTextQuery = null, Guid queryId = default)
     {
-        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery).ToList() ;
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToList() ;
 
         if (result != null)
         {
             var ja = new JArray(result);
-            return ja.ToString(Formatting.None, new IsoDateTimeConverter{DateTimeFormat = "yyyy-MM-dd"});
+            return ja.ToString(Formatting.None, new SmartDateTimeConverter());
         }
 
         return "[]";
@@ -103,6 +108,11 @@ class QueryService : IQueryService
         streamedObjects.CompleteAdding();
 
         await consuming;
+    }
+
+    public ExecutionPlan? GetExecutionPlan(Guid queryId)
+    {
+        return ActivityTable?[queryId]?.ExecutionPlan;
     }
 
     public QueryMetadata GetMetadata(string collection, string property)

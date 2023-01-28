@@ -95,11 +95,7 @@
     padding: 5px;
   }
 
-  .dark-popover{
-    background-color: darkblue;
-    opacity: 1;
-  }
-
+  
   :host ::ng-deep .popover {
     background-color: white;
     opacity: 1;

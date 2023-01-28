@@ -64,36 +64,36 @@
 
         <div class="schema-container" *ngIf="schema">
 
-            <div class="table">
+            <table class="table">
 
-                <div class="row header black">
-                    <div class="cell">
-                        Name
-                    </div>
-                    <div class="cell">
+                <thead class="row header black">
+                    <th class="cell">
+                        Queryable properties
+                    </th>
+                    <th class="cell">
                         Index Type
-                    </div>
-                    <div class="cell">
+                    </th>
+                    <th class="cell">
                         Is Collection
-                    </div>
+                    </th>
 
-                </div>
+                </thead>
 
-                <div class="row" *ngFor="let prop of schema.serverSide">
-                    <div class="cell" data-title="Name">
+                <tr class="row" *ngFor="let prop of schema.serverSide">
+                    <td class="cell" data-title="Name">
                         {{prop.name}}
-                    </div>
-                    <div class="cell" data-title="Index Type">
+                    </td>
+                    <td class="cell" data-title="Index Type">
                         <span [outerHTML]="prop.indexType | formatIndexType"></span>
-                    </div>
-                    <div class="cell" data-title="Is Collection">
+                    </td>
+                    <td class="cell" data-title="Is Collection">
                         <mat-icon *ngIf="prop.isCollection" aria-hidden="false"
                             style="font-size: 16px; font-weight: bold; color:crimson" aria-label="Is collection"
                             fontIcon="check"></mat-icon>
-                    </div>
+                    </td>
 
-                </div>
-            </div>
+                </tr>
+            </table>
         </div>
 
     </div>

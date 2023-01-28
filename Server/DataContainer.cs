@@ -63,13 +63,7 @@ namespace Server
         public INodeConfig Config { get; }
         public bool IsReadOnly { get; internal set; }
 
-        public void StartProcessingClientRequests()
-        {
-        }
-
-        public void Stop()
-        {
-        }
+       
 
         /// <summary>
         ///     Dispatch the request to the appropriate consumer.

@@ -30,8 +30,13 @@ namespace Channel
 
         public int Init(int port = 0)
         {
-            _listener = new TcpListener(new IPEndPoint(IPAddress.IPv6Any, port));
-            _listener.Server.DualMode = true;
+            _listener = new TcpListener(new IPEndPoint(IPAddress.IPv6Any, port))
+            {
+                Server =
+                {
+                    DualMode = true
+                }
+            };
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             _listener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
 

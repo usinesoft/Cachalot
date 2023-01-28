@@ -1,12 +1,32 @@
 <div class="data-root">
 
+    <!--Tooltip templates-->
     <ng-template #TooltipExport>
         <div>
             <p style="font-size: larger;color: blue;">Export result</p>
-            <p>Download query result as a json file</p>
+            <p>Download query result as a json file.</p>
         </div>
     </ng-template>
 
+    <ng-template #TooltipImport>
+        <div>
+            <p style="font-size: larger;color: blue;">Import JSON data</p>
+            <p>Import data from a json file.</p>
+            <p>The file may contain a single object or a JSON array.</p>
+            <p>New objects are inserted, existent objects are updated.</p>
+        </div>
+    </ng-template>
+
+    <ng-template #TooltipIgnoreLimit>
+        <div>
+            <p style="font-size: larger;color: blue;">Ignore the TAKE clause</p>
+            <p>This applies to JSON export.</p>
+            <p>All the query result will be exported.</p>
+            
+        </div>
+    </ng-template>
+
+    <!--Execution plan as a big tooltip-->
     <ng-template #TooltipPlan>
         <div>
             <p style="font-size: larger;color: blue;">Execution plan</p>
@@ -135,7 +155,8 @@
                 triggers="mouseenter:mouseleave">
                 <mat-icon>ios_share</mat-icon>
             </button>
-            <mat-checkbox style="margin: 1rem;" [(ngModel)]="ignoreLimit">ignore limit</mat-checkbox>
+            <mat-checkbox style="margin: 1rem;" [(ngModel)]="ignoreLimit"  [ngbPopover]="TooltipIgnoreLimit"
+            triggers="mouseenter:mouseleave">ignore limit</mat-checkbox>
 
         </div>
 
@@ -150,7 +171,7 @@
                 {{fileName || "Select json file to import"}}
 
                 <button style="margin-left: 0.5rem;" mat-raised-button color="warn" class="upload-btn"
-                    (click)="fileUpload.click()">
+                    (click)="fileUpload.click()"  [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
                     <mat-icon>attach_file</mat-icon>
                 </button>
             </div>

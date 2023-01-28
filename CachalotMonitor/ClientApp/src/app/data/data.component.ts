@@ -187,7 +187,15 @@ export class DataComponent implements OnInit {
 
   public exportJson() {
 
-    this.queryService.DownloadAsStream(this.sql, this.fullTextQuery).subscribe(data => {
+    let sql = this.sql;
+    if(this.ignoreLimit){
+      var start = sql?.indexOf('TAKE');
+      if(start != -1){
+        sql = sql?.substring(0, start);
+      }
+    }
+
+    this.queryService.DownloadAsStream(sql, this.fullTextQuery).subscribe(data => {
       console.log('result:' + data);
     });
   }

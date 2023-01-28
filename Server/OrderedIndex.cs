@@ -46,13 +46,19 @@ namespace Server
         }
 
 
-        public override IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
+        public override IEnumerable<PackedObject> GetAll(bool descendingOrder = false, int maxCount = 0)
         {
+            int count = 0;
+
             if (!descendingOrder)
             {
                 foreach (var packedObject in _data)
                 {
                     yield return packedObject;
+                    count++;
+
+                    if(maxCount > 0 && count > maxCount)
+                        yield break;
                 }
             }
             else
@@ -60,6 +66,10 @@ namespace Server
                 for (int i = _data.Count - 1; i >= 0; i--)
                 {
                     yield return _data[i];
+                    count++;
+
+                    if(maxCount > 0 && count > maxCount)
+                        yield break;
                 }
             }
 

@@ -446,6 +446,41 @@ namespace Tests.UnitTests
                 Assert.AreEqual(max.Amount, result[0].Amount);
             }
 
+            // order small subset (it will be ordered without index)
+            {
+
+                var pks = objects.Select(x => x.Id).Take(10).ToList();
+
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => pks.Contains(o.Id));
+
+                
+                q.OrderByProperty = "Amount";
+
+                var qm = new QueryManager(ds);
+
+                var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+
+
+                // check sorted ascending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                }
+
+
+                q.OrderByIsDescending = true;
+
+                result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
+                Console.WriteLine(qm.ExecutionPlan.ToString());
+                
+
+                // check sorted descending
+                for (int i = 0; i < result.Count - 1; i++)
+                {
+                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                }
+            }
 
         }
 

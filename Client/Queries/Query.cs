@@ -1,5 +1,6 @@
 ﻿using Client.Core;
 using ProtoBuf;
+using ProtoBuf.WellKnownTypes;
 
 namespace Client.Queries
 {
@@ -23,7 +24,19 @@ namespace Client.Queries
         /// <param name="item"></param>
         /// <returns></returns>
         public abstract bool Match(PackedObject item);
+
+        public static Query Empty { get; } = new EmptyQuery();
     }
+
+    public class EmptyQuery : Query
+    {
+        public sealed override bool IsValid => true;
+        public sealed override bool Match(PackedObject item)
+        {
+            return true;
+        }
+    }
+
 
 
 }

@@ -6,6 +6,7 @@ using Client.Queries;
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 #endregion
 
@@ -50,7 +51,7 @@ namespace Server
         /// <returns></returns>
         public abstract ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
 
-        public virtual IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
+        public virtual IEnumerable<PackedObject> GetAll(bool descendingOrder = false, int maxCount = 0)
         {
             throw new NotImplementedException();
         }
@@ -82,7 +83,7 @@ namespace Server
         /// Used only in full scan mode
         /// </summary>
         /// <returns></returns>
-        IEnumerable<PackedObject> GetAll(bool descendingOrder = false);
+        IEnumerable<PackedObject> GetAll(bool descendingOrder = false, int maxCount = 0);
 
         int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
     }
@@ -128,13 +129,14 @@ namespace Server
             return result;
         }
 
-        public IEnumerable<PackedObject> GetAll(bool descendingOrder = false)
+        public IEnumerable<PackedObject> GetAll(bool descendingOrder = false, int maxCount = 0)
         {
             if (descendingOrder)
             {
                 throw new NotSupportedException("Descending order can be used only on ordered indexes");
             }
-            return _dictionary.Values;
+            
+            return maxCount == 0? _dictionary.Values:_dictionary.Values.Take(maxCount);
         }
 
         public int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)

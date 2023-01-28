@@ -59,63 +59,62 @@ namespace Server
         /// <param name="e"></param>
         private void HandleRequestReceived(object sender, RequestEventArgs e)
         {
-
             Dbg.Trace("request received ");
 
-            if (e.Request is ImportDumpRequest importRequest)
+            switch (e.Request)
             {
-                ManageImportRequest(importRequest, e.Client);
-            }
-            else if (e.Request is StopRequest)
-            {
-                ServerLog.LogWarning("stop request received");
-                OnStopRequired();
-            }
-            else if (e.Request is SwitchModeRequest switchModeRequest)
-            {
-                Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
-                _dataContainer.IsReadOnly = Mode == ServerMode.ReadOnly;
-                e.Client.SendResponse(new NullResponse());
-            }
-            else if (e.Request is DropRequest)
-            {
-                try
-                {
-                    ServerLog.LogWarning("drop request received");
-                    ManageDropRequest();
-                    ServerLog.LogWarning("all data was deleted");
+                case ImportDumpRequest importRequest:
+                    ManageImportRequest(importRequest, e.Client);
+                    break;
+                case StopRequest:
+                    ServerLog.LogWarning("stop request received");
+                    OnStopRequired();
+                    break;
+                case SwitchModeRequest switchModeRequest:
+                    Mode = switchModeRequest.NewMode == 1 ? ServerMode.ReadOnly : ServerMode.Normal;
+                    _dataContainer.IsReadOnly = Mode == ServerMode.ReadOnly;
                     e.Client.SendResponse(new NullResponse());
-                }
-                catch (Exception exception)
+                    break;
+                case DropRequest:
+                    try
+                    {
+                        ServerLog.LogWarning("drop request received");
+                        ManageDropRequest();
+                        ServerLog.LogWarning("all data was deleted");
+                        e.Client.SendResponse(new NullResponse());
+                    }
+                    catch (Exception exception)
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(exception));
+                    }
+
+                    break;
+                default:
                 {
-                    e.Client.SendResponse(new ExceptionResponse(exception));
+                    if (Mode == ServerMode.DuringDumpImport)
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(
+                            new NotSupportedException("Database is not available while restoring data from dump")));
+                        return;
+                    }
+
+                    if (Mode == ServerMode.ReadOnly && e.Request is DataRequest { AccessType: DataAccessType.Write })
+                    {
+                        e.Client.SendResponse(new ExceptionResponse(
+                            new NotSupportedException("Database is in read-only mode")));
+                        return;
+                    }
+
+                    //as the data container does not have access to the channel
+                    //let it know how many connections are active 
+                    var activeConnections = Channel.Connections;
+                    _dataContainer.ActiveConnections = activeConnections;
+                    _dataContainer.StartTime = _startTime;
+
+
+                    _dataContainer.DispatchRequest(e.Request, e.Client);
+                    break;
                 }
-            }
-            else
-            {
-                if (Mode == ServerMode.DuringDumpImport)
-                {
-                    e.Client.SendResponse(new ExceptionResponse(
-                        new NotSupportedException("Database is not available while restoring data from dump")));
-                    return;
-                }
-
-                if (Mode == ServerMode.ReadOnly && e.Request is DataRequest dataRequest &&
-                    dataRequest.AccessType == DataAccessType.Write)
-                {
-                    e.Client.SendResponse(new ExceptionResponse(
-                        new NotSupportedException("Database is in read-only mode")));
-                    return;
-                }
-
-                //as the data container does not have access to the channel
-                //let it know how many connections are active 
-                var activeConnections = Channel.Connections;
-                _dataContainer.ActiveConnections = activeConnections;
-                _dataContainer.StartTime = _startTime;
-
-
-                _dataContainer.DispatchRequest(e.Request, e.Client);
             }
         }
 
@@ -144,9 +143,7 @@ namespace Server
 
             _persistenceEngine?.LightStart(true);
 
-            _dataContainer.StartProcessingClientRequests();
-
-
+           
             _persistenceEngine?.DeleteRollbackData();
             Mode = ServerMode.Normal;
         }
@@ -163,7 +160,7 @@ namespace Server
 
                         Mode = ServerMode.DuringDumpImport;
                         _persistenceEngine?.Stop();
-                        _dataContainer.Stop(); // this will wait for pending activity
+                        
                         _persistenceEngine?.StoreDataForRollback();
                         break;
 
@@ -231,8 +228,7 @@ namespace Server
                     case 2: // all good
                         _persistenceEngine?.LightStart();
 
-                        _dataContainer.StartProcessingClientRequests();
-
+                       
                         _persistenceEngine?.DeleteRollbackData();
                         Mode = ServerMode.Normal;
                         break;
@@ -253,8 +249,7 @@ namespace Server
 
                         Mode = ServerMode.Normal;
 
-                        _dataContainer.StartProcessingClientRequests();
-
+                        
                         break;
 
                     default:
@@ -307,15 +302,12 @@ namespace Server
                 _persistenceEngine.Start();
             }
 
-            _dataContainer.StartProcessingClientRequests();
+            
         }
 
         public void Stop()
         {
-            Dbg.Trace("begin data container stop ");
-            _dataContainer.Stop();
-            Dbg.Trace("end data container stop ");
-
+            
             Dbg.Trace("begin persistence engine stop ");
             _persistenceEngine?.Stop();
             Dbg.Trace("end persistence engine stop ");

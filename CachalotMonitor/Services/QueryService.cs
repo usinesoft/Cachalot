@@ -5,7 +5,6 @@ using CachalotMonitor.Model;
 using Client.Core;
 using Client.Tools;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace CachalotMonitor.Services;
@@ -22,7 +21,7 @@ class QueryService : IQueryService
         ActivityTable = clusterService.Connector?.DataSource<LogEntry>("@ACTIVITY");
     }
 
-
+    
     public string QueryAsJson(string? sql, string? fullTextQuery = null, Guid queryId = default)
     {
         var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToList() ;
@@ -112,7 +111,24 @@ class QueryService : IQueryService
 
     public ExecutionPlan? GetExecutionPlan(Guid queryId)
     {
-        return ActivityTable?[queryId]?.ExecutionPlan;
+
+        if (ActivityTable != null)
+        {
+            var entries =  ActivityTable.Where(x => x.Id == queryId).ToList();
+
+            // aggregate matches from all servers
+            var totalMatched = entries.Sum(x => x.ExecutionPlan.MatchedItems);
+
+            // return one of the execution plans
+            if (entries.Count > 0)
+            {
+                entries[0].ExecutionPlan.MatchedItems = totalMatched;
+                return entries[0].ExecutionPlan;
+            }
+
+        }
+
+        return null;
     }
 
     public QueryMetadata GetMetadata(string collection, string property)
@@ -138,7 +154,7 @@ class QueryService : IQueryService
 
                     
                     // query distinct values of the property
-                    var result = _clusterService.Connector?.SqlQueryAsJson($"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 1}").ToList();
+                    var result = _clusterService.Connector?.SqlQueryAsJson($"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 10}").ToList();
 
                     if (result?.Count == 0) // only if the table is empty
                         return metadata;
@@ -409,7 +425,20 @@ class QueryService : IQueryService
                 throw new NotSupportedException($"Inconsistent type for property {property}");
             }
 
-            var val = jt.Value.Value<string>();
+            var jtk = jt.Value;
+            string? val = null;
+            
+            
+            if (jtk.Type == JTokenType.Date)
+            {
+                var date = jtk.Value<DateTime>();
+                val = SmartDateTimeConverter.FormatDate(date);
+            }
+            else if (jtk.Type != JTokenType.Null)
+            {
+                val = jtk.Value<string>();
+            }
+        
             if (!string.IsNullOrEmpty(val))
             {
                 values.Add(val);

@@ -101,6 +101,17 @@ namespace Client.Interface
             {
                 var orderedServers =  Servers.OrderBy(s => s.Host).ThenBy(s => s.Port).ToList();
 
+                // check for duplicates
+                for (int i = 0; i < orderedServers.Count-1; i++)
+                {
+                    if (orderedServers[i].Host == orderedServers[i + 1].Host &&
+                        orderedServers[i].Port == orderedServers[i + 1].Port)
+                    {
+                        throw new CacheException($"Duplicate host:port in the connection string {orderedServers[i].Host}:{orderedServers[i].Port}");
+                    }
+                }
+
+
                 Servers.Clear();
                 foreach (var server in orderedServers)
                 {

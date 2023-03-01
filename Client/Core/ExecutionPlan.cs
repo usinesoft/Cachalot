@@ -13,6 +13,8 @@ namespace Client.Core
 
         readonly Stopwatch _watch = new Stopwatch();
 
+        public int MatchedItems { get; set; }
+
         public int TotalTimeInMicroseconds { get; set; }
 
         public void Begin()

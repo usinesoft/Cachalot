@@ -390,7 +390,8 @@ public partial class
         Dbg.Trace($"GetMany for session {sessionId}");
 
         // do not work too hard if it is a simple query by primary key
-        if (query.ByPrimaryKey)
+        // System tables (@ACTIVITY) may have the same id on multiple nodes
+        if (!query.CollectionName.StartsWith("@") && query.ByPrimaryKey)
         {
             var primaryKey = query.Elements[0].Elements[0].Value;
 

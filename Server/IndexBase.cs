@@ -61,8 +61,9 @@ namespace Server
         /// </summary>
         /// <param name="values">value(s) to search for</param>
         /// <param name="op">operator to apply to the value</param>
+        /// <param name="fastEstimate">quick estimation used for planning (makes a difference only for ordered indexes)</param>
         /// <returns>number of elements matching the key values and the operator or int.MaxValue</returns>
-        public abstract int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
+        public abstract int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq, bool fastEstimate = false);
 
 
         public abstract void RemoveOne(PackedObject item);
@@ -85,7 +86,15 @@ namespace Server
         /// <returns></returns>
         IEnumerable<PackedObject> GetAll(bool descendingOrder = false, int maxCount = 0);
 
-        int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq);
+        /// <summary>
+        /// Count exact (or quickly estimate if <see cref="fastEstimate"/>) the number of items matching the atomic query
+        /// 
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="op"></param>
+        /// <param name="fastEstimate">Used in the planning phase to choose the indexes to use</param>
+        /// <returns></returns>
+        int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq, bool fastEstimate = false);
     }
 
 
@@ -114,7 +123,7 @@ namespace Server
             if (op != QueryOperator.Eq)
                 throw new ArgumentException("Only equality operator can be applied on a unique index");
 
-            HashSet<PackedObject> result = new HashSet<PackedObject>();
+            var result = new HashSet<PackedObject>();
 
 
             foreach (var keyValue in values)
@@ -139,7 +148,14 @@ namespace Server
             return maxCount == 0? _dictionary.Values:_dictionary.Values.Take(maxCount);
         }
 
-        public int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
+        /// <summary>
+        /// Operator and fastEstimate are ignored for dictionary indexes
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="op"></param>
+        /// <param name="fastEstimate"></param>
+        /// <returns></returns>
+        public int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq, bool fastEstimate = false)
         {
             int result = 0;
 

@@ -35,6 +35,9 @@ import { AndQueryComponent } from './and-query/and-query.component';
 import { SmartMultiSelectComponent } from './smart-multi-select/smart-multi-select.component';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { AdminComponent } from './admin/admin.component';
+import { ExecutionPlanComponent } from './execution-plan/execution-plan.component';
+import {MatDialogModule} from '@angular/material/dialog';
+
 
 
 @NgModule({
@@ -52,7 +55,8 @@ import { AdminComponent } from './admin/admin.component';
     SimpleQueryComponent,
     AndQueryComponent,
     SmartMultiSelectComponent,
-    AdminComponent
+    AdminComponent,
+    ExecutionPlanComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -82,7 +86,9 @@ import { AdminComponent } from './admin/admin.component';
       { path: 'schema', component: SchemaComponent },
       { path: 'data', component: DataComponent },
     ]),
-    BrowserAnimationsModule
+    BrowserAnimationsModule,
+    MatDialogModule
+    
   ],
   providers: [],
   bootstrap: [AppComponent]

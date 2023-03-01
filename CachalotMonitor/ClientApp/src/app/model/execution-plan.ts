@@ -15,4 +15,5 @@ export interface ExecutionPlan {
     distinctTimeInMicroseconds: number;
     mergeTimeInMicroseconds: number;
     orderTimeInMicroseconds: number;
+    matchedItems:number;
 }

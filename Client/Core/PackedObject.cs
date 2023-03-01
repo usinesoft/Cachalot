@@ -470,7 +470,7 @@ namespace Client.Core
             sb.AppendLine(" {");
 
 
-            if (Values != null && Values.Length > 0)
+            if (Values is { Length: > 0 })
             {
                 sb.Append("  values:");
                 foreach (var key in Values)
@@ -481,7 +481,7 @@ namespace Client.Core
                 sb.AppendLine();
             }
 
-            if (FullText != null && FullText.Length > 0)
+            if (FullText is { Length: > 0 })
             {
                 sb.AppendLine("  full text:");
                 foreach (var key in FullText)

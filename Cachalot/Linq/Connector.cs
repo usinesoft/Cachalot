@@ -288,7 +288,7 @@ namespace Cachalot.Linq
 
         public void Dispose()
         {
-            Client.Dispose();
+            Client?.Dispose();
             Client = null;
 
             if (_server != null)
@@ -337,7 +337,7 @@ namespace Cachalot.Linq
         {
             return Client.GetClusterInformation();
         }
-
+         
 
         /// <summary>
         ///     Special collection containing the server-side activity log

@@ -2,7 +2,7 @@
   "profiles": {
     "BookingMarketplace": {
       "commandName": "Project",
-      "commandLineArgs": "localhost:48411+localhost:48412"
+      "commandLineArgs": "localhost:48401"
     }
   }
 }

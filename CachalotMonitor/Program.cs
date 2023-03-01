@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
 using CachalotMonitor.Services;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Hosting.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,4 +57,25 @@ app.MapControllers();
 
 app.MapFallbackToFile("index.html");
 
-app.Run();
+app.Start();
+
+var server = app.Services.GetService<IServer>();
+if (server != null)
+{
+    var addressFeature = server.Features.Get<IServerAddressesFeature>();
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("Server started successfully");
+    foreach (var address in addressFeature?.Addresses ?? Array.Empty<string>())
+    {
+
+        Console.WriteLine("Your monitoring page is available at:");
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine(address);
+        
+    }
+}
+
+
+app.WaitForShutdown();
+//app.Run();

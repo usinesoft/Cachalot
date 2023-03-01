@@ -1,0 +1,61 @@
+<div  mat-dialog-content>
+    <h1>Execution plan (matched items {{executionPlan?.matchedItems}})</h1>
+   
+    <table class="plan-table">
+        <tr>
+            <td>Client time</td>
+            <td>{{data.clientTimeInMilliseconds}} ms</td>
+            <td>~ Server time + network + serialization</td>                    
+        </tr>
+        <tr>
+            <td>Server time</td>
+            <td>{{executionPlan?.totalTimeInMicroseconds}} &#181;s</td>
+            <td>~ Sort time + Planning time + Index time + Scan time</td>                                        
+        </tr>
+        <tr>
+            <td>Sort time</td>
+            <td>{{executionPlan?.orderTimeInMicroseconds}} &#181;s</td>                    
+        </tr>
+    </table>
+    <p style="font-weight: bolder;margin-top: 1rem;">Details</p>
+    <table *ngIf="queryPlan" class="plan-detail-table">
+        
+        <tr>
+            <td>Full scan</td>
+            <td>{{queryPlan.fullScan}}</td>
+            <td>True if no index can be used</td>                    
+        </tr>
+        <tr>
+            <td>Simple query</td>
+            <td>{{queryPlan.simpleQueryStrategy}}</td>
+            <td>No planning is required (one expression)</td>                                        
+        </tr>
+        <tr>
+            <td>Planning time</td>
+            <td>{{queryPlan.planningTimeInMicroseconds}} &#181;s</td>                    
+            <td>Selection of best indexes to use</td>
+        </tr>
+        <tr>
+            <td>Index time</td>
+            <td>{{queryPlan.indexTimeInMicroseconds}} &#181;s</td>                    
+            <td>Index search</td>
+        </tr>
+        <tr>
+            <td>Scan time</td>
+            <td>{{queryPlan.scanTimeInMicroseconds}} &#181;s</td>
+            <td>Test the values issued from index search</td>
+        </tr>
+        
+    </table>
+    <p style="font-weight: bolder;;margin-top: 1rem;">Used indexes</p>
+    <ol>
+        <li *ngFor="let idx of queryPlan?.usedIndexes">
+            {{idx}}
+        </li>
+    </ol>
+
+
+</div>
+<div mat-dialog-actions>
+    <button mat-button mat-dialog-close>Close</button>
+</div>

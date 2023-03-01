@@ -73,8 +73,7 @@ public class QueryManager : IRequestManager
             if (index == null)
                 continue;
 
-            if (atomicQuery.Operator == QueryOperator.Eq || atomicQuery.Operator == QueryOperator.In ||
-                atomicQuery.Operator == QueryOperator.Contains)
+            if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In or QueryOperator.Contains)
             {
                 // for primary or unique key we do not need more than one index 
                 if (index.IndexType == IndexType.Primary)
@@ -88,7 +87,7 @@ public class QueryManager : IRequestManager
             {
                 if (index.IndexType == IndexType.Ordered)
                 {
-                    var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
+                    var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator, true);
 
                     result.Add(new(index, atomicQuery, indexResultCount));
                 }
@@ -98,24 +97,21 @@ public class QueryManager : IRequestManager
         return result;
     }
 
-    private List<PackedObject> ProcessAndQuery(AndQuery query, ExecutionPlan executionPlan, string orderByProperty,
+    private List<PackedObject> ProcessAndQuery(AndQuery query, QueryExecutionPlan queryExecutionPlan, string orderByProperty,
                                                 bool descending, int maxItems)
     {
-        if (query.Elements.Count == 1)
-            return ProcessSimpleQuery(query.Elements[0], executionPlan, orderByProperty, descending, maxItems);
-
-        var queryExecutionPlan = new QueryExecutionPlan(query.ToString());
-
-        // this method can be called in parallel. The only common data is the global execution plan
-        lock (executionPlan)
+        queryExecutionPlan.StartPlanning();
+        var indexesThatCanBeUsed = GetIndexesForQuery(query);
+        var indexesUsed = indexesThatCanBeUsed.OrderBy(p => p.Ranking).Take(2).ToArray();
+        // remove the second index if it matches much more items than the first one
+        if (indexesUsed.Length > 1)
         {
-            executionPlan.QueryPlans.Add(queryExecutionPlan);
+            if (indexesUsed[1].Ranking > indexesUsed[0].Ranking * 4)
+            {
+                indexesUsed = new[] { indexesUsed[0] };
+            }
         }
 
-
-        queryExecutionPlan.StartPlanning();
-        var indexesToUse = GetIndexesForQuery(query);
-        var indexesUsed = indexesToUse.OrderBy(p => p.Ranking).Take(2).ToArray();
         queryExecutionPlan.EndPlanning(indexesUsed.Select(r => r.Index.Name).ToList());
 
         // this will contain all queries that have can not be resolved by indexes and need to be checked manually 
@@ -126,10 +122,10 @@ public class QueryManager : IRequestManager
         var finalResult = new List<PackedObject>();
 
 
-        if (indexesToUse.Count == 1) // only one index can be used so do not bother with extra logic
+        if (indexesUsed.Length == 1) // only one index can be used so do not bother with extra logic
         {
             queryExecutionPlan.StartIndexUse();
-            var plan = indexesToUse[0];
+            var plan = indexesUsed[0];
 
             queryExecutionPlan.Trace($"single index: {plan.ResolvedQuery.PropertyName}");
 
@@ -140,7 +136,7 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.EndIndexUse();
         }
-        else if (indexesToUse.Count > 1)
+        else if (indexesUsed.Length > 1)
         {
             queryExecutionPlan.StartIndexUse();
 
@@ -173,6 +169,7 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.StartScan();
 
+            
             var res = SmartFullScan(restOfTheQuery, orderByProperty, descending, maxItems).ToList();
 
             queryExecutionPlan.EndScan();
@@ -186,7 +183,7 @@ public class QueryManager : IRequestManager
             if (restOfTheQuery.Elements.Count == 0) // empty query left; fully resolved by indexes
                 return result.ToList();
 
-            queryExecutionPlan.StartScan();
+            queryExecutionPlan.StartScan(); 
 
             foreach (var item in result)
                 if (restOfTheQuery.Match(item))
@@ -213,28 +210,34 @@ public class QueryManager : IRequestManager
 
     private IList<PackedObject> InternalProcessQuery(OrQuery query)
     {
-        var executionPlan = new ExecutionPlan();
+        ExecutionPlan = new ExecutionPlan();
 
         try
         {
-            executionPlan.Begin();
+            ExecutionPlan.Begin();
 
             // an empty query should return everything
             if (query.IsEmpty())
+            {
+                ExecutionPlan.QueryPlans.Add(new(query.ToString()));
+                 
                 return SmartFullScan(Query.Empty, query.OrderByProperty, query.OrderByIsDescending, query.Take)
                     .ToList();
+            }
 
             // simplified processing if it is an atomic query
             var atomicQuery = AsAtomic(query);
 
             if (atomicQuery != null)
             {
-                var res = ProcessSimpleQuery(atomicQuery, executionPlan, query.OrderByProperty,
+                ExecutionPlan.QueryPlans.Add(new(query.ToString()));
+
+                var res = ProcessSimpleQuery(atomicQuery, query.OrderByProperty,
                     query.OrderByIsDescending, query.Take);
 
                 // full-scan queries are already ordered
-                if (query.OrderByProperty != null && !executionPlan.QueryPlans[0].FullScan)
-                    return OrderBy(res, query.OrderByProperty, query.OrderByIsDescending, executionPlan);
+                if (query.OrderByProperty != null && !ExecutionPlan.QueryPlans[0].FullScan)
+                    return OrderBy(res, query.OrderByProperty, query.OrderByIsDescending);
                 else
                     return res;
             }
@@ -244,13 +247,15 @@ public class QueryManager : IRequestManager
             if (query.Elements.Count == 1)
             {
                 var andQuery = query.Elements[0];
+                
+                ExecutionPlan.QueryPlans.Add(new(query.ToString()));
 
-                var result = ProcessAndQuery(andQuery, executionPlan, query.OrderByProperty, query.OrderByIsDescending,
+                var result = ProcessAndQuery(andQuery,ExecutionPlan.QueryPlans[0], query.OrderByProperty, query.OrderByIsDescending,
                     query.Take);
 
                 // full-scan queries are already ordered
-                if (query.OrderByProperty != null && !executionPlan.QueryPlans[0].FullScan)
-                    return OrderBy(result, query.OrderByProperty, query.OrderByIsDescending, executionPlan);
+                if (query.OrderByProperty != null && !ExecutionPlan.QueryPlans[0].FullScan)
+                    return OrderBy(result, query.OrderByProperty, query.OrderByIsDescending);
 
                 return result;
             }
@@ -260,14 +265,19 @@ public class QueryManager : IRequestManager
 
             var results = new List<PackedObject>[query.Elements.Count];
 
+            foreach (var andQuery in query.Elements)
+            {
+                ExecutionPlan.QueryPlans.Add(new QueryExecutionPlan(andQuery.ToString()));
+            }
+
             Parallel.For(0, query.Elements.Count, i =>
             {
                 var andQuery = query.Elements[i];
-                results[i] = ProcessAndQuery(andQuery, executionPlan, query.OrderByProperty, query.OrderByIsDescending,
+                results[i] = ProcessAndQuery(andQuery, ExecutionPlan.QueryPlans[i], query.OrderByProperty, query.OrderByIsDescending,
                     query.Take);
             });
 
-            executionPlan.BeginMerge();
+            ExecutionPlan.BeginMerge();
 
             // merge the results (they may contain duplicates)
             foreach (var result in results)
@@ -276,33 +286,33 @@ public class QueryManager : IRequestManager
                 else
                     orResult.UnionWith(result);
 
-            executionPlan.EndMerge();
+            ExecutionPlan.EndMerge();
 
             if (query.OrderByProperty != null)
-                return OrderBy(orResult!.ToList(), query.OrderByProperty, query.OrderByIsDescending, executionPlan);
+                return OrderBy(orResult!.ToList(), query.OrderByProperty, query.OrderByIsDescending);
 
 
             return orResult!.ToList();
         }
         finally
         {
-            executionPlan.End();
-            ExecutionPlan = executionPlan;
+            ExecutionPlan.End();
+            ExecutionPlan = ExecutionPlan;
 
             if (!query.CollectionName.Equals(LogEntry.Table,
                     StringComparison.InvariantCultureIgnoreCase)) // do not log queries on @ACTIVITY table itself
             {
                 var type = query.CountOnly ? LogEntry.Eval : LogEntry.Select;
-                _log?.LogActivity(type, query.CollectionName, executionPlan.TotalTimeInMicroseconds, query.ToString(),
-                    query.Description(), executionPlan, query.QueryId);
+                _log?.LogActivity(type, query.CollectionName, ExecutionPlan.TotalTimeInMicroseconds, query.ToString(),
+                    query.Description(), ExecutionPlan, query.QueryId);
             }
         }
     }
 
     private List<PackedObject> OrderBy(List<PackedObject> selectedItems, string orderByProperty,
-                                        in bool orderByIsDescending, ExecutionPlan executionPlan)
+                                        in bool orderByIsDescending)
     {
-        executionPlan.BeginOrderBy();
+        ExecutionPlan.BeginOrderBy();
 
         var allCount = _dataStore.DataByPrimaryKey.Count;
         var selectedCount = selectedItems.Count;
@@ -316,7 +326,7 @@ public class QueryManager : IRequestManager
             OrderByWithIndex(selectedItems, orderByProperty, orderByIsDescending);
 
 
-        executionPlan.EndOrderBy();
+        ExecutionPlan.EndOrderBy();
 
         return result;
     }
@@ -386,17 +396,18 @@ public class QueryManager : IRequestManager
     ///     Faster processing for simple query (that contains a single test).
     /// </summary>
     /// <param name="atomicQuery"></param>
-    /// <param name="executionPlan">the global execution plan</param>
     /// <param name="orderByProperty">null if no order-by operator</param>
     /// <param name="descending"></param>
     /// <param name="maxItems"></param>
     /// <returns></returns>
-    private List<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, ExecutionPlan executionPlan,
-                                                   string orderByProperty, bool descending, int maxItems)
+    private List<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, string orderByProperty, bool descending, int maxItems)
     {
-        var queryExecutionPlan = new QueryExecutionPlan(atomicQuery.ToString());
-        executionPlan.QueryPlans.Add(queryExecutionPlan);
-
+        if (ExecutionPlan.QueryPlans.Count == 0)
+        {
+            ExecutionPlan.QueryPlans.Add(new QueryExecutionPlan(atomicQuery.ToString()));
+        }
+        
+        var queryExecutionPlan = ExecutionPlan.QueryPlans[0];
         queryExecutionPlan.SimpleQueryStrategy = true;
 
         if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In)
@@ -456,8 +467,8 @@ public class QueryManager : IRequestManager
         try
         {
             queryExecutionPlan.StartScan();
-            // manage special case for ordered queries
 
+            // manage special case for ordered queries
             return SmartFullScan(atomicQuery, orderByProperty, descending, maxItems).ToList();
         }
         finally
@@ -477,6 +488,8 @@ public class QueryManager : IRequestManager
     /// <exception cref="CacheException"></exception>
     private IEnumerable<PackedObject> SmartFullScan(Query query, string orderByProperty, bool descending, int maxItems)
     {
+        ExecutionPlan.MatchedItems = _dataStore.DataByPrimaryKey.Count;
+
         if (orderByProperty == null)
             return maxItems != 0
                 ? _dataStore.PrimaryIndex.GetAll().Where(query.Match).Take(maxItems)
@@ -620,6 +633,11 @@ public class QueryManager : IRequestManager
 
         // also used only in cache mode
         if (result.Count > 0) _dataStore.IncrementHitCount();
+        
+        // here it may not be initialized if pure full-text query
+        ExecutionPlan ??= new ExecutionPlan();
+
+        ExecutionPlan.MatchedItems = result.Count;
 
         // limit the result if needed
         if (query.Take != 0 && query.Take < result.Count) result = result.Take(query.Take).ToList();

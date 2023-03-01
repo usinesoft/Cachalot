@@ -101,7 +101,7 @@ namespace Server
             return result;
         }
 
-        public override int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
+        public override int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq, bool fastEstimate = false)
         {
             if (op != QueryOperator.Eq && op != QueryOperator.In && op != QueryOperator.Contains)
                 return int.MaxValue;// to avoid this index being used for optimization

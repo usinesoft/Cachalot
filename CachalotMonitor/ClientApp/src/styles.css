@@ -22,7 +22,40 @@ body {
  
 }
 
+/*-----------------------------sncakbar----------------------------------*/
 
+.green-snackbar {
+  background: rgb(65, 134, 65);
+  color: white;
+  align-content: center;
+  
+}
+.green-snackbar button {
+  background-color: rgb(65, 134, 65);
+  color: white;
+  border: none;
+}
+
+.green-snackbar span {
+  margin:auto;
+  text-align: center;
+}
+
+.red-snackbar {
+  background: #F44336;
+  color: white;
+}
+
+.red-snackbar button {
+  background-color: #F44336;
+  color: white !important;
+  border: none;
+}
+
+.red-snackbar span {
+  margin:auto;
+  text-align: center;
+}
 
 /*---------------------------------------------table----------------------*/
 

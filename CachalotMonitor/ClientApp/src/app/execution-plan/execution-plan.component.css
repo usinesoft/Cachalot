@@ -1,0 +1,24 @@
+.plan-detail-table td:nth-child(1){ 
+    width: 8rem;
+ }
+
+  .plan-detail-table td:nth-child(2){ 
+     color: #222222;
+     width: 5rem;
+  }
+
+  .plan-detail-table td:nth-child(3){ 
+    color: #444444;
+ }
+
+ .plan-table td:nth-child(1){ 
+  width: 8rem;
+}
+  .plan-table td:nth-child(2){ 
+    color: darkblue;
+    width: 5rem;
+ }
+
+ .plan-table td:nth-child(3){ 
+  color: #444444;
+}

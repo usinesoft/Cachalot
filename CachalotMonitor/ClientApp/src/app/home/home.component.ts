@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { interval, Subscription } from 'rxjs';
 import { ClusterInformation, ClusterNode, CollectionSummary, ConnectionData, ConnectionResponse } from '../model/connection-data';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MonitoringService } from '../monitoring.service';
 import { ScreenStateService } from '../screen-state.service';
-
+//import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-home',
@@ -84,6 +84,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     
     this.service.getConnectionHistory();
 
+    
   }
 
 

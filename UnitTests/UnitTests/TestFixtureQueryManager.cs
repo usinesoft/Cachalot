@@ -233,7 +233,7 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(100_000, result.Count);
             Assert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count, "this query should have been decomposed in two queries");
-            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
+            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan, "can not use index, as the it is not ordered");
 
 
             // empty query. Should return everything

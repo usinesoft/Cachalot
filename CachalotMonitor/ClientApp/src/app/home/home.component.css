@@ -1,100 +1,106 @@
-.connection-container{
-    display:flex;
+.connection-container {
+    display: flex;
     flex-direction: column;
 }
 
 .servers-container {
-    display:flex;
+    display: flex;
     flex-direction: column;
     padding: 1rem;
-    
+
     min-width: 50rem;
 }
 
+.title {
+    font-size: 1.2rem;
+    margin: 0;
+    padding-left: 12px;
+}
+
 .server-container {
-    display:flex;
+    display: flex;
     flex-direction: row;
     align-items: stretch;
     margin-top: 10px;
-    
+
 }
 
-.actions-container{
-    display:flex;
+.actions-container {
+    display: flex;
     flex-direction: row;
     padding: 2rem;
-    
+
     min-width: 20rem;
     align-items: center;
 }
 
-.status-container{
-    display:flex;
+.status-container {
+    display: flex;
     flex-direction: row;
     padding: 1rem;
-    
+
     min-width: 20rem;
 
     align-items: stretch;
     margin-top: 10px;
 }
 
-.home-container{
+.home-container {
     display: flex;
     flex-direction: column;
-    
+
 }
 
-.server-button{
+.server-button {
     margin: 10px;
     max-height: 3rem;
 }
 
-.server-info{
+.server-info {
     padding: 1rem;
-   
+
     color: azure;
     min-width: 20rem;
     min-height: 30rem;
-    
+
     border-radius: 10px;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
-.server-info-persistent{
-   
+.server-info-persistent {
+
     background-color: green;
-   
+
 }
 
-.server-info-not-persistent{
-   
+.server-info-not-persistent {
+
     background-color: darkgreen;
-    
+
 }
 
-.server-info-readonly{
-    
+.server-info-readonly {
+
     background-color: blue;
-    
+
 }
 
-.server-info-error{
+.server-info-error {
     background-color: red;
 }
 
-.cluster-container{
+.cluster-container {
 
-    display:flex;
+    display: flex;
     flex-direction: row;
     padding: 1rem;
     gap: 1rem;
     min-width: 100%;
 }
 
-.cluster-status-container{
+.cluster-status-container {
 
-    display:flex;
+    display: flex;
     flex-direction: row;
     padding: 1rem;
     gap: 1rem;
@@ -102,15 +108,15 @@
     min-width: 100%;
 }
 
-.status-icon{
-    font-size: 2rem;     
+.status-icon {
+    font-size: 2rem;
     height: 3rem;
     width: 3rem;
 }
 
-.collections-container{
+.collections-container {
 
-    display:flex;
+    display: flex;
     flex-direction: row;
     padding: 1rem;
     gap: 1rem;
@@ -119,32 +125,44 @@
     align-content: stretch;
 }
 
-.collection-info{
+.collection-info {
     padding: 0.3rem;
-   
+
     color: black;
     background-color: cornsilk;
     min-width: 20rem;
     min-height: 10rem;
-    
+
     border-radius: 10px;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 
-td{
+td {
     margin-left: 1rem;
     padding-left: 1rem;
     padding-top: 0.2rem;
 }
 
-th{
+th {
     margin-left: 1rem;
     padding-left: 1rem;
     padding-top: 0.2rem;
 }
 
-h3{
+h3 {
     color: black;
     padding: 1rem;
 }
 
+:host ::ng-deep .popover {
+    background-color: #FFFF99;
+    opacity: 1;
+    box-shadow: 2px 2px 6px 0 rgba(0, 0, 0, 0.2), 4px 4px 14px 0 rgba(0, 0, 0, 0.19);
+    max-width: 50rem;
+}
+
+:host ::ng-deep .popover h3 {
+    font-size: larger;
+    font-weight: bold;
+    color: #222222;
+}

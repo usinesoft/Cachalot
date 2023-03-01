@@ -1,8 +1,34 @@
 <!--CONNECTION AREA--------------------------------------------------------------------------------------------------------->
 <div class="home-container">
+  <!--Tooltip templates-->
+  <ng-template #TooltipAdd>
+    <div>      
+      <p>Add a new server.</p>
+    </div>
+  </ng-template>
+  <ng-template #TooltipRemove>
+    <div>      
+      <p>Remove this server.</p>
+    </div>
+  </ng-template>
+  <ng-template #TooltipConnect>
+    <div>      
+      <p>Connect to cluster.</p>
+    </div>
+  </ng-template>
+  <ng-template #TooltipConnectH>
+    <div>      
+      <p>Connect to cluster from connection history.</p>
+    </div>
+  </ng-template>
+  <ng-template #TooltipDisconnect>
+    <div>      
+      <p>Disconnect.</p>
+    </div>
+  </ng-template>
   <div class="connection-container">
     <div class="servers-container" *ngIf="!connected">
-      <h3>Connect to a cluster of servers</h3>
+      <p class="title">Connect to a cluster of servers</p>
       <mat-progress-bar mode="indeterminate" *ngIf="working || disconnecting"></mat-progress-bar>
       <div *ngFor="let server of connection.nodes; index as i" class="server-container">
         <!--host-->
@@ -10,9 +36,6 @@
           <mat-label>hostname</mat-label>
           <input matInput type="text" [(ngModel)]="server.host">
           <mat-hint>may be DNS name or IP address</mat-hint>
-          <button *ngIf="server.host" matSuffix mat-icon-button aria-label="Clear" (click)="server.host=''">
-            <mat-icon>close</mat-icon>
-          </button>
         </mat-form-field>
         <!--port-->
         <mat-form-field appearance="fill">
@@ -22,11 +45,11 @@
         </mat-form-field>
         <!--add/remove-->
         <button *ngIf="i==0" class="server-button" mat-mini-fab color="primary" aria-label="add" (click)="addServer()"
-          matTooltip="Add a server">
+        [ngbPopover]="TooltipAdd" triggers="mouseenter:mouseleave">
           <mat-icon>add</mat-icon>
         </button>
         <button *ngIf="i!=0" class="server-button" mat-mini-fab color="warn" aria-label="remove"
-          (click)="removeServer(server)" matTooltip="remove this server">
+          (click)="removeServer(server)" [ngbPopover]="TooltipRemove" triggers="mouseenter:mouseleave">
           <mat-icon>remove</mat-icon>
         </button>
 
@@ -34,13 +57,12 @@
     </div>
     <!--actions and history-->
     <div class="actions-container" *ngIf="!connected">
-      <button mat-raised-button color="primary" aria-label="Connect" matTooltip="connect to cluster"
+      <button mat-raised-button color="primary" aria-label="Connect" [ngbPopover]="TooltipConnect" triggers="mouseenter:mouseleave"
         [disabled]="!canConnect" (click)="connect()">
         <mat-icon>electrical_services</mat-icon>
       </button>
       <button style="margin-left: 1rem;" *ngFor='let h of history' mat-raised-button color="primary"
-        aria-label="Connect" matTooltip="connect to cluster from connection history" 
-        (click)="connectWithHistory(h)">
+        aria-label="Connect" [ngbPopover]="TooltipConnectH" triggers="mouseenter:mouseleave" (click)="connectWithHistory(h)">
         <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
       </button>
     </div>
@@ -55,22 +77,24 @@
           <mat-icon>content_copy</mat-icon>
         </button>
       </mat-form-field>
-      <button mat-raised-button color="warn" aria-label="Disconnect" matTooltip="disconnect" class="server-button"
-        (click)="disconnect()" [disabled] = 'disconnecting'>
+      <button mat-raised-button color="warn" aria-label="Disconnect" [ngbPopover]="TooltipDisconnect" triggers="mouseenter:mouseleave" class="server-button"
+        (click)="disconnect()" [disabled]='disconnecting'>
         <mat-icon>electrical_services</mat-icon>
       </button>
     </div>
   </div>
 
   <!--CLUSTER VIEW - SERVERS--------------------------------------------------------------------------------------------------------->
-  
+
   <div *ngIf="clusterInformation" class="cluster-status-container">
-    <div>      
+    <div>
       <!-- <mat-icon style="color:green" class="status-icon" *ngIf="clusterInformation.status == 'Ok'">check_circle</mat-icon> -->
-      <mat-icon style="color:orange" class="status-icon" *ngIf="clusterInformation.status == 'Warning'">warning</mat-icon>
+      <mat-icon style="color:orange" class="status-icon"
+        *ngIf="clusterInformation.status == 'Warning'">warning</mat-icon>
       <mat-icon style="color:red" class="status-icon" *ngIf="clusterInformation.status == 'Error'">error</mat-icon>
     </div>
-    <div *ngIf="clusterInformation.status != 'Ok' && clusterInformation.status != 'NotConnected'" style="font-size:1.2rem ;">{{clusterInformation.statusReason}}</div>
+    <div *ngIf="clusterInformation.status != 'Ok' && clusterInformation.status != 'NotConnected'"
+      style="font-size:1.2rem ;">{{clusterInformation.statusReason}}</div>
   </div>
   <div *ngIf="clusterInformation" class="cluster-container">
 
@@ -128,14 +152,11 @@
   </div>
   <!--CLUSTER VIEW - COLLECTIONS--------------------------------------------------------------------------------------------------------->
 
-  <div class="collections-container" *ngIf="clusterInformation">    
-    <app-collection-card [name]="collection?.name" 
-    [items] = "collection?.itemsCount" 
-    [fullText] = "collection?.fullTextSearch" 
-    [layout] = "collection?.storageLayout" 
-    [eviction] = "collection?.evictionType" 
-    *ngFor="let collection of clusterInformation?.collectionsSummary; trackBy:identifyCollection"></app-collection-card>
+  <div class="collections-container" *ngIf="clusterInformation">
+    <app-collection-card [name]="collection?.name" [items]="collection?.itemsCount"
+      [fullText]="collection?.fullTextSearch" [layout]="collection?.storageLayout" [eviction]="collection?.evictionType"
+      *ngFor="let collection of clusterInformation?.collectionsSummary; trackBy:identifyCollection"></app-collection-card>
   </div>
-  
+
 
 </div>

@@ -194,7 +194,7 @@ namespace Server
             _data = newList;
         }
 
-        public override int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)
+        public override int GetCount(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq, bool fastEstimate = false)
         {
             if (values.Count == 0)
                 throw new ArgumentException("Empty list of keys passed to GetCount on index " + Name);
@@ -209,20 +209,17 @@ namespace Server
             if (values.Count == 2 && !op.IsRangeOperator())
                 throw new ArgumentException("Two keys passed to GetCount on ordered index " + Name + " for operator " +
                                             op);
-
-
             
-
 
             var result = 0;
             switch (op)
             {
                 case QueryOperator.Le:
-                    result = CountAllLe(values[0]);
+                    result = CountAllLe(values[0], fastEstimate);
                     break;
 
                 case QueryOperator.Lt:
-                    result = CountAllLs(values[0]);
+                    result = CountAllLs(values[0], fastEstimate);
                     break;
 
                 case QueryOperator.Eq:
@@ -230,27 +227,27 @@ namespace Server
                     break;
 
                 case QueryOperator.Ge:
-                    result = CountAllGe(values[0]);
+                    result = CountAllGe(values[0], fastEstimate);
                     break;
 
                 case QueryOperator.Gt:
-                    result = CountAllGt(values[0]);
+                    result = CountAllGt(values[0], fastEstimate);
                     break;
 
                 case QueryOperator.GeLe:
-                    result = CountAllGeLe(values[0], values[1]);
+                    result = CountAllGeLe(values[0], values[1], fastEstimate);
                     break;
 
                 case QueryOperator.GeLt:
-                    result = CountAllGeLt(values[0], values[1]);
+                    result = CountAllGeLt(values[0], values[1], fastEstimate);
                     break;
 
                 case QueryOperator.GtLe:
-                    result = CountAllGtLe(values[0], values[1]);
+                    result = CountAllGtLe(values[0], values[1], fastEstimate);
                     break;
 
                 case QueryOperator.GtLt:
-                    result = CountAllGtLt(values[0], values[1]);
+                    result = CountAllGtLt(values[0], values[1], fastEstimate);
                     break;
             }
 
@@ -368,8 +365,9 @@ namespace Server
         ///     count values Less than or equal to the specified value
         /// </summary>
         /// <param name="key"></param>
+        /// <param name="fastEstimate"></param>
         /// <returns></returns>
-        private int CountAllLe(KeyValue key)
+        private int CountAllLe(KeyValue key, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -377,7 +375,8 @@ namespace Server
 
             var index = FindIndexLe(key, 0, _data.Count - 1);
 
-            if (index != -1 && index < _data.Count - 1)
+
+            if (index != -1 && index < _data.Count - 1 && !fastEstimate)
                 while (_data[index].Values[_keyIndex].CompareTo(_data[index + 1].Values[_keyIndex]) == 0)
                 {
                     index++;
@@ -543,7 +542,7 @@ namespace Server
             }
         }
 
-        private int CountAllLs(KeyValue key)
+        private int CountAllLs(KeyValue key, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -552,7 +551,11 @@ namespace Server
 
             if (index != -1)
             {
-                while (index > 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index--;
+                if (!fastEstimate)
+                {
+                    while (index > 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index--;
+                }
+                
 
                 if (index == 0 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
                     return 0;
@@ -705,14 +708,14 @@ namespace Server
                     result.Add(_data[i]);
         }
 
-        private int CountAllGe(KeyValue key)
+        private int CountAllGe(KeyValue key, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
 
             var index = FindIndexGe(key, 0, _data.Count - 1);
 
-            if (index > 0)
+            if (index > 0 && !fastEstimate)
                 while (_data[index].Values[_keyIndex].CompareTo(_data[index - 1].Values[_keyIndex]) == 0)
                 {
                     index--;
@@ -797,7 +800,7 @@ namespace Server
         }
 
 
-        private int CountAllGt(KeyValue key)
+        private int CountAllGt(KeyValue key, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -809,7 +812,11 @@ namespace Server
                 return 0;
 
             //this is useful if the found index is the index of the exact value
-            while (index < _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index++;
+            if (!fastEstimate)
+            {
+                while (index < _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0) index++;
+            }
+            
 
             // manage the case of the exact value being present but no bigger one
             if (index == _data.Count - 1 && _data[index].Values[_keyIndex].CompareTo(key) == 0)
@@ -916,7 +923,7 @@ namespace Server
                         break;
         }
 
-        private int CountAllGeLe(KeyValue start, KeyValue end)
+        private int CountAllGeLe(KeyValue start, KeyValue end, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -926,7 +933,7 @@ namespace Server
 
             if (indexStart == -1) return 0;
 
-            if (indexStart > 0)
+            if (indexStart > 0 && !fastEstimate)
                 while (_data[indexStart].Values[_keyIndex].CompareTo(_data[indexStart - 1].Values[_keyIndex]) ==
                        0)
                 {
@@ -953,7 +960,7 @@ namespace Server
             return indexEnd - indexStart + 1;
         }
 
-        private int CountAllGtLe(KeyValue start, KeyValue end)
+        private int CountAllGtLe(KeyValue start, KeyValue end, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -969,7 +976,7 @@ namespace Server
 
             if (indexEnd == -1) return 0;
 
-            if (indexEnd < _data.Count - 1)
+            if (indexEnd < _data.Count - 1 && !fastEstimate)
                 while (_data[indexEnd].Values[_keyIndex].CompareTo(_data[indexEnd + 1].Values[_keyIndex]) == 0)
                 {
                     indexEnd++;
@@ -981,7 +988,7 @@ namespace Server
             return indexEnd - indexStart + 1;
         }
 
-        private int CountAllGeLt(KeyValue start, KeyValue end)
+        private int CountAllGeLt(KeyValue start, KeyValue end, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;
@@ -991,7 +998,7 @@ namespace Server
 
             if (indexStart == -1) return 0;
 
-            if (indexStart > 0)
+            if (indexStart > 0 && !fastEstimate)
                 while (_data[indexStart].Values[_keyIndex].CompareTo(_data[indexStart - 1].Values[_keyIndex]) ==
                        0)
                 {
@@ -1011,7 +1018,7 @@ namespace Server
             return indexEnd - indexStart + 1;
         }
 
-        private int CountAllGtLt(KeyValue start, KeyValue end)
+        private int CountAllGtLt(KeyValue start, KeyValue end, bool fastEstimate = false)
         {
             if (_data.Count == 0)
                 return 0;

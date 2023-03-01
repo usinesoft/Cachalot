@@ -1,5 +1,7 @@
 import { LayoutModule } from '@angular/cdk/layout';
 import { Component, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { ExecutionPlanComponent } from '../execution-plan/execution-plan.component';
 import { CollectionSummary } from '../model/connection-data';
 import { ExecutionPlan, QueryExecutionPlan } from '../model/execution-plan';
 import { AndQuery, SimpleQuery } from '../model/query';
@@ -147,7 +149,7 @@ export class DataComponent implements OnInit {
 
   }
 
-  constructor(private monitoringService: MonitoringService, private queryService: QueryService, private stateService: ScreenStateService) { }
+  constructor(private monitoringService: MonitoringService, private queryService: QueryService, private stateService: ScreenStateService, public dialog: MatDialog) { }
 
   ngOnInit(): void {
 
@@ -204,14 +206,14 @@ export class DataComponent implements OnInit {
 
   clientTimeInMilliseconds:number = 0;
 
-  executionPlan:ExecutionPlan|undefined;
   
-  public get queryPlan():QueryExecutionPlan|undefined{
-    var plans = this.executionPlan?.queryPlans;
-    if(plans){
-      return plans[0];
-    }
-    return undefined;
+  public openPlan():void{
+    this.dialog.open(ExecutionPlanComponent, {
+      data: {
+        queryId: this.lastQueryId,
+        clientTimeInMilliseconds: this.clientTimeInMilliseconds
+      }
+    });
   }
   
   private getData(force: boolean = false) {
@@ -226,7 +228,7 @@ export class DataComponent implements OnInit {
       }
 
       if (shouldFetchData) {
-        this.executionPlan = undefined;
+        
         
         this.queryService.ExecuteQuery(data.sql, this.fullTextQuery).subscribe(d => {
           if (d.json) {
@@ -245,13 +247,7 @@ export class DataComponent implements OnInit {
             this.clientTimeInMilliseconds = d.clientTimeInMilliseconds;
             this.lastQueryId = d.queryId;
             console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
-
-            // wait one second before asking for the execution plan as the @ACTIVITY table is updated asynchronously
-            setTimeout(() => {
-              this.queryService.GetExecutionPlan(this.lastQueryId!).subscribe({
-                next:(data) => this.executionPlan = data
-              });
-            }, 1000);
+        
           }
 
         });

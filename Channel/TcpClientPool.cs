@@ -38,31 +38,7 @@ namespace Channel
 
                 client.Connect(_address, _port);
 
-                //var connectDone = new ManualResetEvent (false);
-
-                //var endConnect = new AsyncCallback (o => {
-
-                //    try
-                //    {
-                //        var state = (TcpClient) o.AsyncState;
-                //        state.EndConnect(o);
-                //    }
-                //    catch (Exception)
-                //    {
-                //        // ignore
-                //    }
-                //    finally
-                //    {
-                //        connectDone.Set ();    
-                //    }
-
-                //});
-
-
-                //client.BeginConnect(_address, _port, endConnect, client);
-                //connectDone.WaitOne (TimeSpan.FromMilliseconds(Constants.ConnectionTimeoutInMilliseconds));
-
-
+                
                 if (!client.Connected)
                     return null;
 

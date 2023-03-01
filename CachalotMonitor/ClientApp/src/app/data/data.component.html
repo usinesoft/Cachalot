@@ -3,88 +3,32 @@
     <!--Tooltip templates-->
     <ng-template #TooltipExport>
         <div>
-            <p style="font-size: larger;color: blue;">Export result</p>
+            <h3 >Export result</h3>
             <p>Download query result as a json file.</p>
         </div>
     </ng-template>
 
     <ng-template #TooltipImport>
         <div>
-            <p style="font-size: larger;color: blue;">Import JSON data</p>
-            <p>Import data from a json file.</p>
-            <p>The file may contain a single object or a JSON array.</p>
-            <p>New objects are inserted, existent objects are updated.</p>
+            <h3>Import JSON data</h3>
+            <p> Import data from a json file. The file may contain<br> 
+                a single object or a JSON array.<br>
+                New objects are inserted, existent objects are updated.
+            </p>
         </div>
     </ng-template>
 
     <ng-template #TooltipIgnoreLimit>
         <div>
-            <p style="font-size: larger;color: blue;">Ignore the TAKE clause</p>
-            <p>This applies to JSON export.</p>
-            <p>All the query result will be exported.</p>
+            <h3>Ignore the TAKE clause</h3>
+            <p>This applies to JSON export.<br>
+               All the query result will be exported.
+            </p>
             
         </div>
     </ng-template>
 
-    <!--Execution plan as a big tooltip-->
-    <ng-template #TooltipPlan>
-        <div>
-            <p style="font-size: larger;color: blue;">Execution plan</p>
-           
-            <table class="plan-table">
-                <tr>
-                    <td>Client time</td>
-                    <td>{{clientTimeInMilliseconds}} ms</td>
-                    <td>~ Server time + network + serialization</td>                    
-                </tr>
-                <tr>
-                    <td>Server time</td>
-                    <td>{{executionPlan?.totalTimeInMicroseconds}} &#181;s</td>
-                    <td>~ Sort time + Planning time + Index time + Scan time</td>                                        
-                </tr>
-                <tr>
-                    <td>Sort time</td>
-                    <td>{{executionPlan?.orderTimeInMicroseconds}} &#181;s</td>                    
-                </tr>
-            </table>
-            <p style="font-weight: bolder;">Details</p>
-            <table *ngIf="queryPlan" class="plan-detail-table">
-                
-                <tr>
-                    <td>Full scan</td>
-                    <td>{{queryPlan.fullScan}}</td>
-                    <td>True if no index can be used</td>                    
-                </tr>
-                <tr>
-                    <td>Simple query</td>
-                    <td>{{queryPlan.simpleQueryStrategy}}</td>
-                    <td>No planning is required (one expression)</td>                                        
-                </tr>
-                <tr>
-                    <td>Planning time</td>
-                    <td>{{queryPlan.planningTimeInMicroseconds}} &#181;s</td>                    
-                    <td>Selection of best indexes to use</td>
-                </tr>
-                <tr>
-                    <td>Index time</td>
-                    <td>{{queryPlan.indexTimeInMicroseconds}} &#181;s</td>                    
-                    <td>Index search</td>
-                </tr>
-                <tr>
-                    <td>Scan time</td>
-                    <td>{{queryPlan.scanTimeInMicroseconds}} &#181;s</td>
-                    <td>Test the values issued from index search</td>
-                </tr>
-                
-            </table>
-            <p style="font-weight: bolder;">Used indexes</p>
-            <ol>
-                <li *ngFor="let idx of queryPlan?.usedIndexes">
-                    {{idx}}
-                </li>
-            </ol>
-        </div>
-    </ng-template>
+    
 
     <div class="data-selection-container">
         <!--collection selection-->
@@ -187,8 +131,7 @@
             <!--header-->
             <thead class="row header black mat-primary">
                 <th class="cell info-cell" colspan="2">
-                    <a style="cursor: pointer;" *ngIf="clientTimeInMilliseconds" [ngbPopover]="TooltipPlan"
-                    triggers="mouseenter">
+                    <a style="cursor: pointer;" *ngIf="clientTimeInMilliseconds" (click) = "openPlan()">
                         client time={{clientTimeInMilliseconds}} ms                                                                        
                     </a> 
                 </th>

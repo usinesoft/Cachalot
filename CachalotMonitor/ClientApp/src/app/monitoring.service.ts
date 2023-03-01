@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ClusterInformation, ConnectionData, ConnectionResponse } from './model/connection-data';
 import { SchemaUpdateRequest } from './model/schema';
@@ -25,7 +26,26 @@ export class MonitoringService {
 
 
   // initialization
-  constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string) { }
+  constructor(private http: HttpClient, private snackBar: MatSnackBar, @Inject('BASE_URL') private baseUrl: string) { }
+
+
+  displayError(message:string, detail?:string):void{
+    let fullMessage = message;
+    if(detail){
+      fullMessage += ':' + detail
+    }
+    this.snackBar.open(fullMessage, "", {duration:3000, panelClass: 'red-snackbar'});
+  }
+
+  displaySuccess(message:string, detail?:string):void{
+    let fullMessage = message;
+    if(detail){
+      fullMessage += ':' + detail
+    }
+    this.snackBar.open(fullMessage, "", {duration:2000, panelClass: 'green-snackbar'});
+  }
+
+
 
 
   ///////////////////////////////////////////
@@ -35,12 +55,20 @@ export class MonitoringService {
     this.working = true;
     this.http.post<ConnectionResponse>(this.baseUrl + 'Admin/connect', connection).subscribe(result => {
 
+      this.working = false;
       if (result.connectionString) {
         this.connectionString = result.connectionString;
 
         this.updateClusterStatus('connect');
-      };
-    }, err => this.working = false);
+        this.displaySuccess('connected');
+      }
+      else{
+        this.displayError(result.errorMessage ?? 'connection error');
+      }
+    }, err => {
+      this.working = false;
+      this.displayError(err ?? 'connection error');
+    });
 
   }
 
@@ -64,10 +92,13 @@ export class MonitoringService {
     this.http.post<ConnectionResponse>(this.baseUrl + 'Admin/connect/' + connectionNameFromHistory, null).subscribe(result => {
       if (result.connectionString) {
         this.connectionString = result.connectionString;
-
+        this.displaySuccess('connected');
         this.updateClusterStatus('connect with history');
-      };
-    });
+
+      }else{
+        this.displayError(result.errorMessage ?? 'connection error');
+      }
+    }, err=> this.displayError('connection error') );
 
   }
 
@@ -76,7 +107,6 @@ export class MonitoringService {
 
   public updateClusterStatus(caller:string): void {
     
-
     console.log(`update cluster status called by ${caller}`);
 
     console.log(`CALL disconnecting = ${this.disconnecting} clusterInfo = ${this.clusterInfo}`);

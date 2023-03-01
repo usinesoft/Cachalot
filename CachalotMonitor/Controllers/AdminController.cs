@@ -1,6 +1,7 @@
 ﻿using CachalotMonitor.Model;
 using CachalotMonitor.Services;
 using Client.Interface;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
@@ -40,10 +41,11 @@ namespace CachalotMonitor.Controllers
                 if (clusterInfo.Status == ClusterInformation.ClusterStatus.Ok)
                 {
                     ClusterService.SaveToConnectionHistory(connectionInfo, clusterInfo.ServersStatus[0].ClusterName);
+                    return new ConnectionResponse { ConnectionString = connectionString };
                 }
 
+                return new ConnectionResponse { ErrorMessage = clusterInfo.StatusReason };
                 
-                return new ConnectionResponse { ConnectionString = connectionString };
 
             }
             catch (Exception ex) 
@@ -77,10 +79,15 @@ namespace CachalotMonitor.Controllers
                 var connectionString = ClusterService.Connect(info);
 
                 // works like a high level ping
-                var _  = GetClusterInformation();
-                
-                return new ConnectionResponse { ConnectionString = connectionString };
+                var clusterInfo  = GetClusterInformation();
+                if (clusterInfo.Status == ClusterInformation.ClusterStatus.Ok)
+                {
+                    return new ConnectionResponse { ConnectionString = connectionString };
+                }
 
+                return new ConnectionResponse { ErrorMessage = clusterInfo.StatusReason };
+                
+                
             }
             catch (Exception ex) 
             {

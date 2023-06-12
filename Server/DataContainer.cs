@@ -586,6 +586,7 @@ namespace Server
                 var currentProcess = Process.GetCurrentProcess();
 
                 var assembly = Assembly.GetAssembly(typeof(Server));
+                
                 response.ServerProcessInfo = new ServerInfo
                 {
                     TransactionLag = PersistenceEngine?.PendingTransactions ?? 0,
@@ -594,6 +595,7 @@ namespace Server
                     Bits = IntPtr.Size * 8,
                     Threads = currentProcess.Threads.Count,
                     WorkingSet = currentProcess.WorkingSet64,
+                    NonFragmentedMemory = GC.GetTotalMemory(false),
                     VirtualMemory = currentProcess.VirtualMemorySize64,
                     IsPersistent = Config.IsPersistent,
                     Host = Environment.MachineName,
@@ -603,7 +605,7 @@ namespace Server
                     ClusterName = Config.ClusterName,
                     SoftwareVersion =
                         assembly != null
-                            ? assembly.GetName().Version.ToString()
+                            ? assembly.GetName().Version?.ToString()
                             : ""
                 };
 

@@ -86,6 +86,9 @@ namespace Tests.UnitTests
             q1 = MakeQuery(schema, "IsDeleted", QueryOperator.Lt, true);
             Assert.IsTrue(q1.Match(packed));
 
+            q1 = MakeQuery(schema, "Nominal", QueryOperator.Lt, 150);
+            Assert.IsTrue(q1.Match(packed));
+
 
             // IN
 

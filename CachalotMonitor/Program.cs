@@ -14,6 +14,14 @@ builder.Services.AddCors(options =>
             builder.AllowAnyMethod();
             builder.AllowAnyHeader();
         });
+
+    options.AddPolicy(name: "linux-server",
+        builder =>
+        {
+            builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "51.15.23.61");
+            builder.AllowAnyMethod();
+            builder.AllowAnyHeader();
+        });
 });
 
 

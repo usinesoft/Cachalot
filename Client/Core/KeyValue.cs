@@ -502,9 +502,18 @@ namespace Client.Core
 
         private bool Equals(KeyValue other)
         {
+            if(Type is OriginalType.SomeFloat or OriginalType.SomeInteger)
+                if (other.Type is OriginalType.SomeFloat or OriginalType.SomeInteger)
+                {
+                    return Math.Abs(NumericValue - other.NumericValue) < double.Epsilon;
+                }
+
+
             if (_hashCode != other._hashCode)
                 return false;
 
+
+            
             if (this.Type != other.Type)
             {
                 return false;

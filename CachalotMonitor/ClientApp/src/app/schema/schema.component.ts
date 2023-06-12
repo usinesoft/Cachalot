@@ -1,14 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
 import { CollectionSummary } from '../model/connection-data';
-import { Schema, SchemaUpdateRequest } from '../model/schema';
+import { Schema, SchemaUpdateRequest, ServerSide } from '../model/schema';
 import { MonitoringService } from '../monitoring.service';
 import { ScreenStateService } from '../screen-state.service';
 
 @Component({
   selector: 'app-schema',
   templateUrl: './schema.component.html',
-  styleUrls: ['./schema.component.css']
+  styleUrls: ['./schema.component.scss']
 })
 export class SchemaComponent implements OnInit {
 
@@ -66,8 +65,8 @@ export class SchemaComponent implements OnInit {
 
 
     if(value){
-      this.schema = this.monitoringService. clusterInfo?.schema.find(s=>s.collectionName == value);
-      this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s=>s.name == value);
+      this.schema = this.monitoringService. clusterInformation.getValue()?.schema.find(s=>s.collectionName == value);
+      this.summary = this.monitoringService.clusterInformation.getValue()?.collectionsSummary.find(s=>s.name == value);
       this.serverSide = this.schema?.serverSide.map(x=> x.name) ?? [];
     }
     
@@ -76,7 +75,7 @@ export class SchemaComponent implements OnInit {
   updateAfterSave(){
     this.monitoringService.updateOnce().subscribe(data => {
       this.schema = data.schema.find(s=>s.collectionName == this.selectedCollection);      
-      this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s=>s.name == this.selectedCollection);
+      this.summary = this.monitoringService.clusterInformation.getValue()?.collectionsSummary.find(s=>s.name == this.selectedCollection);
       this.serverSide = this.schema?.serverSide.map(x=> x.name) ?? [];
     });
 
@@ -87,6 +86,21 @@ export class SchemaComponent implements OnInit {
   }
 
   public working:boolean = false;
+
+
+  public upgrade(prop:ServerSide){
+    if(prop.indexType == 'Dictionary'){
+      prop.indexType = 'Ordered';
+    }
+    else{
+      prop.indexType = 'Dictionary';
+    }
+
+    this.editedProperty= prop.name;
+    this._selectedIndexType = prop.indexType;
+
+    this.updateSchema();
+  }
 
   public updateSchema(){
     let request:SchemaUpdateRequest = {collectionName:this.selectedCollection!, propertyName:this.editedProperty!, indexType : this._selectedIndexType! };
@@ -104,7 +118,7 @@ export class SchemaComponent implements OnInit {
   summary:CollectionSummary|undefined;
   
   ngOnInit(): void {
-     this.collections = this.monitoringService.clusterInfo?.schema.map(s=> s.collectionName) ?? [];
+     this.collections = this.monitoringService.clusterInformation.getValue()?.schema.map(s=> s.collectionName) ?? [];
 
      if(this.stateService.schema.collectionName){
       this.selectedCollection = this.stateService.schema.collectionName;

@@ -169,7 +169,7 @@ namespace Client.Parsing
                     {
                         var metadata = schema.KeyByName(operands[0]);
 
-                        object value = operands[1].Trim('%');
+                        object value = operands[1].Trim('\'', '"').Trim('%');
 
                         andQuery.Elements.Add(new AtomicQuery(metadata, new KeyValue(value), op));
 
@@ -250,6 +250,7 @@ namespace Client.Parsing
                 case "like":
                     if (valueAfter != null)
                     {
+                        valueAfter = valueAfter.Trim('\'', '"');
                         if (valueAfter.StartsWith("%") && valueAfter.EndsWith("%"))
                         {
                             return QueryOperator.StrContains;

@@ -83,5 +83,17 @@ namespace Tests.UnitTests
             }
         }
 
+        [Test]
+        public void Equality_float_and_int()
+        {
+            var kv1 = new KeyValue(1000M);
+            var kv2 = new KeyValue(1000);
+            
+            Assert.AreEqual(KeyValue.OriginalType.SomeFloat, kv1.Type);
+            Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv2.Type);
+
+            Assert.AreEqual(kv1, kv2);
+        }
+
     }
 }

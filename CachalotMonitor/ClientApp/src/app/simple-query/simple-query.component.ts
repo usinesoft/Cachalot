@@ -5,7 +5,7 @@ import { QueryService } from '../query.service';
 @Component({
   selector: 'app-simple-query',
   templateUrl: './simple-query.component.html',
-  styleUrls: ['./simple-query.component.css']
+  styleUrls: ['./simple-query.component.scss']
 })
 export class SimpleQueryComponent implements OnInit {
 
@@ -164,8 +164,9 @@ export class SimpleQueryComponent implements OnInit {
   }
   public set searchText(v : string|undefined) {
     this._searchText = v;
-    if(v){
-      this.filteredValues = this.values.filter(x => x.toLowerCase().indexOf(v) > -1)
+    let normalized = v?.toLowerCase();
+    if(normalized){
+      this.filteredValues = this.values.filter(x => x.toLowerCase().indexOf(normalized!) > -1)
     }
     else{
       this.filteredValues = [...this.values];

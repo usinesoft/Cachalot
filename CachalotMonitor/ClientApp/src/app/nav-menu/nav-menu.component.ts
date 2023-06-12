@@ -4,22 +4,11 @@ import { MonitoringService } from '../monitoring.service';
 @Component({
   selector: 'app-nav-menu',
   templateUrl: './nav-menu.component.html',
-  styleUrls: ['./nav-menu.component.css']
+  styleUrls: ['./nav-menu.component.scss']
 })
 export class NavMenuComponent {
   
   isExpanded = false;
-
-
-
-  // public get connected(): boolean {
-
-  //   if (!this.service.clusterInfo) {
-  //     return false;
-  //   }
-
-  //   return this.service.clusterInfo?.status != 'NotConnected';
-  // }
 
 
   public cluster:string|null = null;

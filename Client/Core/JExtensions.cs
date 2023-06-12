@@ -50,7 +50,7 @@ namespace Client.Core
             // try an educated guess to avoid useless TryParse
             foreach (char c in valueAsString)
             {
-                if (char.IsLetter(c))
+                if (char.IsLetter(c) || c == '\'') // strings may be quoted or not
                 {
                     type = KeyValue.OriginalType.String;
                     break;
@@ -77,7 +77,7 @@ namespace Client.Core
 
                 KeyValue.OriginalType.String when bool.TryParse(valueAsString, out var bv) => bv,
                 
-                KeyValue.OriginalType.String => valueAsString,
+                KeyValue.OriginalType.String => valueAsString.Trim('\'', '"'),
                 
                 KeyValue.OriginalType.SomeFloat when double.TryParse(valueAsString, NumberStyles.Any,
                     CultureInfo.InvariantCulture, out var fv) => fv,

@@ -1,5 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+
+
+
 /* Provide sufficient contrast against white background */
 a {
   color: #0366d6;
@@ -9,17 +11,50 @@ code {
   color: #e01a76;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
-}
 
 html, body { height: 100%; }
 body {
   
   margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; 
  
+}
+
+
+
+/*-----------------------------navbar----------------------------------*/
+
+.sidenav-container {
+  height: 93vh;
+  
+}
+.sidenav-content {
+  display: flex;
+  height: 100%;  
+  justify-content: center;
+  
+}
+.simple-sidenav {
+   user-select: none;   
+}
+.full-width {
+  width: 100%;
+}
+.menu-button {
+  transition: 300ms ease-in-out;
+  transform: rotate(0deg);
+}
+.menu-button.rotated {
+  transform: rotate(180deg);
+}
+.submenu {
+  overflow-y: hidden;
+  transition: transform 300ms ease;
+  transform: scaleY(0);
+  transform-origin: top;
+  padding-left: 30px;
+}
+.submenu.expanded {
+  transform: scaleY(1);
 }
 
 /*-----------------------------sncakbar----------------------------------*/
@@ -55,6 +90,11 @@ body {
 .red-snackbar span {
   margin:auto;
   text-align: center;
+}
+
+
+.toolbar-spacer {
+  flex: 1 1 auto;
 }
 
 /*---------------------------------------------table----------------------*/

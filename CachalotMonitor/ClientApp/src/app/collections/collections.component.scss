@@ -1,0 +1,15 @@
+:host{  
+    min-width: 90%;
+    padding: 1rem;
+  }
+
+.collections-container {
+
+    display: flex;
+    flex-direction: row;
+    padding: 1rem;
+    gap: 1rem;
+    min-width: 100%;
+    // align-items: stretch;
+    // align-content: stretch;
+  }

@@ -13,7 +13,7 @@ import { ScreenStateService } from '../screen-state.service';
 @Component({
   selector: 'app-data',
   templateUrl: './data.component.html',
-  styleUrls: ['./data.component.css']
+  styleUrls: ['./data.component.scss']
 })
 export class DataComponent implements OnInit {
 
@@ -108,8 +108,8 @@ export class DataComponent implements OnInit {
 
 
   private init(collection:string){
-    this.schema = this.monitoringService.clusterInfo?.schema.find(s => s.collectionName == collection);
-    this.summary = this.monitoringService.clusterInfo?.collectionsSummary.find(s => s.name == collection);
+    this.schema = this.monitoringService.clusterInformation.getValue()?.schema.find(s => s.collectionName == collection);
+    this.summary = this.monitoringService.clusterInformation.getValue()?.collectionsSummary.find(s => s.name == collection);
     this.properties = this.schema?.serverSide.map(x => x.name) ?? [];
     this.orderByProperties = this.schema?.serverSide.filter(x => x.indexType == 'Ordered').map(x => x.name) ?? [];
     this.fullTextQuery = undefined;
@@ -151,9 +151,13 @@ export class DataComponent implements OnInit {
 
   constructor(private monitoringService: MonitoringService, private queryService: QueryService, private stateService: ScreenStateService, public dialog: MatDialog) { }
 
+  public refresh():void{
+    this.getData(true);
+  }
+
   ngOnInit(): void {
 
-    this.collections = this.monitoringService.clusterInfo?.schema.map(s => s.collectionName) ?? [];
+    this.collections = this.monitoringService.clusterInformation.getValue()?.schema.map(s => s.collectionName) ?? [];
 
     if (this.selectedCollection) {
       this.init(this.selectedCollection);

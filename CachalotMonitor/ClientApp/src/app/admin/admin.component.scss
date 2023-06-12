@@ -1,3 +1,10 @@
+@import '../../variables.scss';
+
+:host{  
+  min-width: 90%;
+  padding: 1rem;
+}
+
 .admin-root{
     display: flex;
     flex-direction: column;
@@ -22,11 +29,8 @@
     display: flex;
     flex-direction: column;
     margin-top: 1rem;
-    padding: 1rem;;
-    /* max-height: 30vh;
-    overflow-y: scroll; */
-    border-radius: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    
+    @include borders;
 }
 
 
@@ -37,13 +41,12 @@
     margin-top: 1rem;
     
     background-position-x: 210px;
+    background-position-y:-100px ;
     background-image: url('../../assets/warning.png');
     background-size:cover ;
     background-repeat: no-repeat;
     padding: 1rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-    position: relative;
+    @include borders;
 
 }
 

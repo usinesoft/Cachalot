@@ -10,7 +10,7 @@ import { ScreenStateService } from '../screen-state.service';
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit, OnDestroy {
 
@@ -21,7 +21,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private timerSubscription: Subscription | undefined;
 
 
-  constructor(private service:MonitoringService, private snackBar: MatSnackBar, private stateService:ScreenStateService) {
+  constructor(private service: MonitoringService, private snackBar: MatSnackBar, private stateService: ScreenStateService) {
     var defaultNode = new ClusterNode();
     defaultNode.host = 'localhost';
     defaultNode.port = 48401;
@@ -29,77 +29,59 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
 
-  public get connected():boolean {
+  public get connected(): boolean {
 
-    if(!this.service.clusterInfo){
+    if (!this.service.clusterInformation.getValue()) {
       return false;
     }
 
-    return  this.service.clusterInfo?.status != 'NotConnected';
+    return this.service.clusterInformation.getValue()?.status != 'NotConnected';
   }
 
-  public get working():boolean {
+  public get working(): boolean {
     return this.service.working;
   }
 
-  public get disconnecting():boolean {
+  public get disconnecting(): boolean {
     return this.service.disconnecting;
   }
 
-  
 
-
-  public get connectionString():string|undefined{
+  public get connectionString(): string | undefined {
     return this.service.connectionString;
   }
 
-  public get clusterInformation():ClusterInformation|undefined{
-    return this.service.clusterInfo;
+  public get clusterInformation(): ClusterInformation | null {
+    return this.service.clusterInformation.getValue();
   }
 
-  public get history():string[]{
+  public get history(): string[] {
     return this.service.history;
   }
 
-  public identifyCollection(index:Number, collection:CollectionSummary) {
+  public identifyCollection(index: Number, collection: CollectionSummary) {
     return collection.name;
- }
+  }
 
   ngOnInit() {
 
-
-    // init the timer
-    let tick:number = 0;
     this.timerSubscription = interval(400)
-      .subscribe(x => {  
+      .subscribe(x => {
         this.onFastTimer();
 
-        if(tick%5 == 0){
-          this.onSlowTimer();
-        }
-
-        tick++;
       });
 
-    
+
     this.service.getConnectionHistory();
 
-    
+
   }
 
 
   //every 400 ms
-  private onFastTimer():void{
+  private onFastTimer(): void {
     this.checkCanConnect();
   }
-
-  // every 2 seconds
-  private onSlowTimer():void{
-    if(this.connected && !this.disconnecting){
-      this.service.updateClusterStatus('slow timer');
-    }
-  }
-
 
 
   ngOnDestroy(): void {
@@ -110,17 +92,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   public connect() {
     this.service.connect(this.connection);
     this.stateService.clearScreenState();
-    
+
   }
 
-  public connectWithHistory(entry:string) {
+  public connectWithHistory(entry: string) {
     this.service.connectWithHistory(entry);
   }
 
   public disconnect() {
 
     this.service.disconnect();
-    
+
   }
 
   public addServer() {

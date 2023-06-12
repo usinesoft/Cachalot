@@ -1,6 +1,28 @@
-<body>
-  <app-nav-menu></app-nav-menu>
-  <div class="container" style="height: calc(100% - 100px)">
+
+<mat-toolbar color="primary" class="example-toolbar">
+  <button mat-icon-button (click)="isExpanded = !isExpanded"><mat-icon>menu</mat-icon></button>
+  <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor</a>
+  <span class="cluster" *ngIf="cluster">&nbsp;[{{cluster}}]</span>
+  
+  
+  
+</mat-toolbar>
+<mat-sidenav-container class="sidenav-container" autosize>
+  <mat-sidenav #sidenav class="simple-sidenav" mode="side" opened="true" (mouseenter)="mouseenter()"
+    (mouseleave)="mouseleave()">
+    <mat-nav-list>
+      
+        <a mat-list-item [routerLink]="['/']">Cluster</a>
+        <a mat-list-item [routerLink]="'/collections'"> Collections </a>
+        <a mat-list-item [routerLink]="'/schema'"> Schema </a>
+        <a mat-list-item [routerLink]="'/data'"> Data </a>
+        <a mat-list-item [routerLink]="'/admin'"> Admin </a>
+        
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <div class="sidenav-content">
     <router-outlet></router-outlet>
   </div>
-</body>
+
+</mat-sidenav-container>

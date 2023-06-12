@@ -1,0 +1,92 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+@import '../../variables.scss';
+
+@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+
+@import '~@angular/material/theming';
+
+@include mat-core();
+
+
+:host{  
+    min-width: 90%;
+    padding: 1rem;
+  }
+
+.root-container{
+    display: flex;
+    flex-direction: row;   
+    gap:5px; 
+    max-height: 100%;   
+    align-items: flex-start;
+}
+
+.column-container{
+    display: flex;
+    flex-direction: column;   
+    gap:5px; 
+    max-height: 100%;   
+}
+
+.schema-selection-container{
+    display: flex;
+    flex-direction: row;   
+    /* align-items: baseline;  */
+}
+
+.schemas-container{
+    display: flex;
+    flex-direction: row;    
+}
+
+mat-toolbar{
+    @include borders;
+    margin-bottom: 1.5rem;
+}
+
+.schema-container{
+  display: flex;
+  direction: column;
+  overflow: auto;  
+  margin-left: 1rem;  
+  flex-grow: 2;
+  max-height: 80vh;
+//   box-shadow: 1px 2px 4px 0 rgba(0, 0, 0, 0.2), 2px 4px 10px 0 rgba(0, 0, 0, 0.19);
+    @include borders;
+}
+
+.action-button{
+    /* font-size: 3rem; */
+    height: 3.5rem;
+    margin-left: 1rem;
+    margin-top: 2px;
+    /* margin-top: 5px; */
+}
+
+:host ::ng-deep .popover {
+    background-color: #FFFF99;
+    opacity: 1;
+    box-shadow: 2px 2px 6px 0 rgba(0, 0, 0, 0.2), 4px 4px 14px 0 rgba(0, 0, 0, 0.19);
+    max-width: 50rem;
+}
+
+:host ::ng-deep .popover h3 {
+    font-size: larger;
+    font-weight: bold;
+    color: #222222;
+}
+
+@mixin color($theme){
+    // Get the color config from the theme.
+    $color-config: mat.get-color-config($theme);
+    // Get the primary color palette from the color-config.
+    $primary-palette: map.get($color-config, 'primary');
+    $accent-palette: map.get($color-config, 'accent');
+    
+    mat-icon[up]{
+        color:  mat.get-color-from-palette($accent-palette, 100);
+    }
+  }
+
+

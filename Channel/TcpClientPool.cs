@@ -9,7 +9,8 @@ using System.Net.Sockets;
 
 namespace Channel
 {
-    public class TcpClientPool : PoolStrategy<TcpClient>
+    public class 
+        TcpClientPool : PoolStrategy<TcpClient>
     {
         private readonly IPAddress _address;
 
@@ -60,6 +61,9 @@ namespace Channel
 
             try
             {
+                if(!tcp.Connected)
+                    return false;
+
                 var stream = tcp.GetStream();
                 stream.WriteByte(Constants.PingCookie); // ping 
                 var pingAnswer = stream.ReadByte();
@@ -79,6 +83,11 @@ namespace Channel
         {
             if (resource != null)
             {
+                // proactive close request
+                var stream = resource.GetStream();
+                stream.WriteByte(Constants.CloseCookie);
+                stream.Flush();
+
                 resource.Client.Close();
                 resource.Close();
             }

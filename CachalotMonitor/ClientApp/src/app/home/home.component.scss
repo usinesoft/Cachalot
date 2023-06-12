@@ -1,3 +1,8 @@
+:host{  
+    min-width: 90%;
+    padding: 1rem;
+  }
+
 .connection-container {
     display: flex;
     flex-direction: column;
@@ -12,23 +17,23 @@
 }
 
 .title {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     margin: 0;
-    padding-left: 12px;
+    padding-bottom: 1rem;
 }
 
 .server-container {
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    margin-top: 10px;
+    margin-top: 1rem;
 
 }
 
 .actions-container {
     display: flex;
     flex-direction: row;
-    padding: 2rem;
+    padding: 1rem;
 
     min-width: 20rem;
     align-items: center;
@@ -36,7 +41,7 @@
 
 .status-container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     padding: 1rem;
 
     min-width: 20rem;

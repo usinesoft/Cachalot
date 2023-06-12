@@ -3,7 +3,7 @@
     <!--Tooltip templates-->
     <ng-template #TooltipExport>
         <div>
-            <h3 >Export result</h3>
+            <h3>Export result</h3>
             <p>Download query result as a json file.</p>
         </div>
     </ng-template>
@@ -11,7 +11,7 @@
     <ng-template #TooltipImport>
         <div>
             <h3>Import JSON data</h3>
-            <p> Import data from a json file. The file may contain<br> 
+            <p> Import data from a json file. The file may contain<br>
                 a single object or a JSON array.<br>
                 New objects are inserted, existent objects are updated.
             </p>
@@ -22,105 +22,132 @@
         <div>
             <h3>Ignore the TAKE clause</h3>
             <p>This applies to JSON export.<br>
-               All the query result will be exported.
+                All the query result will be exported.
             </p>
-            
+
         </div>
     </ng-template>
 
-    
 
-    <div class="data-selection-container">
-        <!--collection selection-->
-        <mat-form-field appearance="fill">
-            <mat-label>Collections</mat-label>
-            <mat-select [(value)]="selectedCollection">
-                <mat-option *ngFor="let collection of collections" [value]="collection">
-                    {{collection|uppercase}}
-                </mat-option>
-            </mat-select>
-            <mat-hint>select the collection</mat-hint>
-        </mat-form-field>
 
-        <!--full-text search (if enabled on the current collection)-->
-        <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
-            <mat-label>Full-text search</mat-label>
-            <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery">
-            <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
-            <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
-                (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
-                <mat-icon>close</mat-icon>
-            </button>
-            <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Search" (click)="search()">
-                <mat-icon>search</mat-icon>
-            </button>
-        </mat-form-field>
+    <div class="input-container">
+        <div class="data-selection-container">
+            <!--collection selection-->
+            <mat-form-field appearance="fill">
+                <mat-label>Collections</mat-label>
+                <mat-select [(value)]="selectedCollection">
+                    <mat-option *ngFor="let collection of collections" [value]="collection">
+                        {{collection|uppercase}}
+                    </mat-option>
+                </mat-select>
+                <mat-hint>select the collection</mat-hint>
+                
+                <button mat-button *ngIf="selectedCollection" matSuffix mat-icon-button aria-label="Refresh"
+                    (click)="refresh();$event.stopPropagation()" style="margin-left: 2rem;">
+                    <mat-icon tooltip="refresh">refresh</mat-icon>
+                </button>
+                <button mat-button *ngIf="selectedCollection" color="primary"  matSuffix mat-icon-button aria-label="Export"
+                    (click)="exportJson();$event.stopPropagation()">
+                    <mat-icon>download</mat-icon>
+                </button>
+                
+                <button  mat-icon-button matSuffix color="warn" 
+                            (click)="fileUpload.click();$event.stopPropagation()" [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
+                            <mat-icon>attach_file</mat-icon>
+                </button>
+
+            </mat-form-field>
+
+
+            <mat-toolbar style="max-width: 3rem;background: transparent;">
+
+                <input type="file"  class="file-input" (change)="onFileSelected($event);$event.stopPropagation()" #fileUpload>
+
+                <!-- <button *ngIf = "selectedCollection" mat-icon-button color="primary" aria-label="refresh" (click)="refresh()" class="toolbar-item">
+                    <mat-icon>refresh</mat-icon>
+                </button>
+
+                <button mat-icon-button color="primary" aria-label="export" (click)="exportJson()" class="toolbar-item"
+                    [ngbPopover]="TooltipExport" triggers="mouseenter:mouseleave">
+                    <mat-icon>ios_share</mat-icon>
+                </button> -->
+                <mat-checkbox  [(ngModel)]="ignoreLimit" [ngbPopover]="TooltipIgnoreLimit" style="margin:1rem; font-size: 1rem;font-weight: 400;"
+                    triggers="mouseenter:mouseleave">ignore limit</mat-checkbox>
+
+                <!--upload is disabled on system collections (starting with @)-->
+                <!-- <ng-container *ngIf="!selectedCollection?.startsWith('@')">
+                    <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
+
+                    <div class="file-upload" style="font-size: 1rem;font-weight: 400;">
+
+                        {{fileName || "file to import"}}
+
+                        <button style="margin-left: 0.5rem;" mat-icon-button color="warn" class="toolbar-item"
+                            (click)="fileUpload.click()" [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
+                            <mat-icon>attach_file</mat-icon>
+                        </button>
+                    </div>
+                </ng-container> -->
+            </mat-toolbar>
+
+        </div>
     </div>
 
     <!--QUERY both structured and translated to sql-->
-    <div class="query-container" *ngIf="schema">
-        <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
-            style="flex-grow: 2;">
-        </app-and-query>
-        <div class="sql-container" style="flex-grow: 1;">
+    <div class="input-container" style="margin-top: 1rem;">
+        <div class="query-container" *ngIf="schema">
+            <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
+                style="flex-grow: 2;">
+            </app-and-query>
+            <div class="sql-container" style="flex-grow: 1;">
 
-            <p>{{sql}}</p>
-            <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy" [cdkCopyToClipboard]="sql">
-                <mat-icon>content_copy</mat-icon>
-            </button>
-        </div>
-    </div>
-
-    <!--other params like visible columns and order-by-->
-    <div class="params-container" *ngIf="schema">
-        <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
-            [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
-            style="flex-grow: 2; min-width: 20rem;"></app-smart-multi-select>
-
-        <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take" [allValues]="['10','50','100', '1000']"
-            [hint]="'limit displayed items'" label="Take">
-        </app-smart-multi-select>
-
-        <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
-            [allValues]="orderByProperties" [clearButton]="true"
-            [hint]="'select column to order by (must be ordered index)'" label="Order by">
-        </app-smart-multi-select>
-        <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
-            <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
-        </div>
-
-
-
-    </div>
-
-    <div class="actions">
-        <div class="file-download">
-            <button mat-raised-button color="primary" aria-label="export" (click)="exportJson()" [ngbPopover]="TooltipExport"
-                triggers="mouseenter:mouseleave">
-                <mat-icon>ios_share</mat-icon>
-            </button>
-            <mat-checkbox style="margin: 1rem;" [(ngModel)]="ignoreLimit"  [ngbPopover]="TooltipIgnoreLimit"
-            triggers="mouseenter:mouseleave">ignore limit</mat-checkbox>
-
-        </div>
-
-        <mat-divider [vertical]="true" style="margin:1rem"></mat-divider>
-
-        <!--upload is disabled on system collections (starting with @)-->
-        <ng-container *ngIf="!selectedCollection?.startsWith('@')">
-            <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
-
-            <div class="file-upload">
-
-                {{fileName || "Select json file to import"}}
-
-                <button style="margin-left: 0.5rem;" mat-raised-button color="warn" class="upload-btn"
-                    (click)="fileUpload.click()"  [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
-                    <mat-icon>attach_file</mat-icon>
+                <p>{{sql}}</p>
+                <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
+                    [cdkCopyToClipboard]="sql">
+                    <mat-icon>content_copy</mat-icon>
                 </button>
             </div>
-        </ng-container>
+        </div>
+
+        <!--other params like visible columns and order-by-->
+        <div class="params-container" *ngIf="schema">
+            <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
+                [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
+                style="flex-grow: 2; min-width: 20rem;"></app-smart-multi-select>
+
+            <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take"
+                [allValues]="['10','50','100', '1000']" [hint]="'limit displayed items'" label="Take">
+            </app-smart-multi-select>
+
+            <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
+                [allValues]="orderByProperties" [clearButton]="true"
+                [hint]="'select column to order by (must be ordered index)'" label="Order by">
+            </app-smart-multi-select>
+            <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
+                <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
+            </div>
+
+
+        </div>
+        <!--full-text search (if enabled on the current collection)-->
+        <div class="params-container">
+            <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
+                <mat-label>Full-text search</mat-label>
+                <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery">
+                <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
+                <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
+                    (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
+                    <mat-icon>close</mat-icon>
+                </button>
+                <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Search"
+                    (click)="search()">
+                    <mat-icon>search</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
     </div>
+
+
     <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
     <!--result of the query-->
 
@@ -131,9 +158,9 @@
             <!--header-->
             <thead class="row header black mat-primary">
                 <th class="cell info-cell" colspan="2">
-                    <a style="cursor: pointer;" *ngIf="clientTimeInMilliseconds" (click) = "openPlan()">
-                        client time={{clientTimeInMilliseconds}} ms                                                                        
-                    </a> 
+                    <a style="cursor: pointer;" (click)="openPlan()">
+                        client time={{clientTimeInMilliseconds}} ms
+                    </a>
                 </th>
                 <th class="cell" *ngFor="let col of visibleColumns">
                     {{col}}

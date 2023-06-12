@@ -55,14 +55,14 @@ export class IndexPipe implements PipeTransform {
   transform(longName: string|undefined) {
     switch(longName){
       case 'Primary':
-        return this.sanitized.bypassSecurityTrustHtml('<b style="color:red">primary</b>');
+        return this.sanitized.bypassSecurityTrustHtml('<div style="color:#B00020;font-weight:500;">primary</div>');
 
       case 'Ordered':
-        return this.sanitized.bypassSecurityTrustHtml('<span style="color:blue">ordered</span>');
+        return this.sanitized.bypassSecurityTrustHtml('<span style="color:#6200EE;font-weight:500;">ordered</span>');
         
       
       case 'Dictionary':
-        return this.sanitized.bypassSecurityTrustHtml('<span style="color:green">dictionary</span>');
+        return this.sanitized.bypassSecurityTrustHtml('<span style="color:#018786;font-weight:500;">dictionary</span>');
       
         default:
           return '';

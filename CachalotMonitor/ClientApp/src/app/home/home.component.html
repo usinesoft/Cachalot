@@ -2,27 +2,27 @@
 <div class="home-container">
   <!--Tooltip templates-->
   <ng-template #TooltipAdd>
-    <div>      
+    <div>
       <p>Add a new server.</p>
     </div>
   </ng-template>
   <ng-template #TooltipRemove>
-    <div>      
+    <div>
       <p>Remove this server.</p>
     </div>
   </ng-template>
   <ng-template #TooltipConnect>
-    <div>      
+    <div>
       <p>Connect to cluster.</p>
     </div>
   </ng-template>
   <ng-template #TooltipConnectH>
-    <div>      
+    <div>
       <p>Connect to cluster from connection history.</p>
     </div>
   </ng-template>
   <ng-template #TooltipDisconnect>
-    <div>      
+    <div>
       <p>Disconnect.</p>
     </div>
   </ng-template>
@@ -42,27 +42,29 @@
           <mat-label>port</mat-label>
           <input matInput type="number" [(ngModel)]="server.port">
           <mat-hint>TCP port</mat-hint>
+          <!--add/remove-->
+          <button *ngIf="i==0"  matSuffix mat-icon-button color="primary" style="height: auto;" aria-label="add"
+            (click)="addServer()" [ngbPopover]="TooltipAdd" triggers="mouseenter:mouseleave">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button *ngIf="i!=0"  matSuffix color="warn" mat-icon-button style="height: auto;" aria-label="remove"
+            (click)="removeServer(server)" [ngbPopover]="TooltipRemove" triggers="mouseenter:mouseleave">
+            <mat-icon>remove</mat-icon>
+          </button>
         </mat-form-field>
-        <!--add/remove-->
-        <button *ngIf="i==0" class="server-button" mat-mini-fab color="primary" aria-label="add" (click)="addServer()"
-        [ngbPopover]="TooltipAdd" triggers="mouseenter:mouseleave">
-          <mat-icon>add</mat-icon>
-        </button>
-        <button *ngIf="i!=0" class="server-button" mat-mini-fab color="warn" aria-label="remove"
-          (click)="removeServer(server)" [ngbPopover]="TooltipRemove" triggers="mouseenter:mouseleave">
-          <mat-icon>remove</mat-icon>
-        </button>
+
 
       </div>
     </div>
     <!--actions and history-->
     <div class="actions-container" *ngIf="!connected">
-      <button mat-raised-button color="primary" aria-label="Connect" [ngbPopover]="TooltipConnect" triggers="mouseenter:mouseleave"
-        [disabled]="!canConnect" (click)="connect()">
+      <button mat-raised-button color="primary" aria-label="Connect" [ngbPopover]="TooltipConnect"
+        triggers="mouseenter:mouseleave" [disabled]="!canConnect" (click)="connect()">
         <mat-icon>electrical_services</mat-icon>
       </button>
       <button style="margin-left: 1rem;" *ngFor='let h of history' mat-raised-button color="primary"
-        aria-label="Connect" [ngbPopover]="TooltipConnectH" triggers="mouseenter:mouseleave" (click)="connectWithHistory(h)">
+        aria-label="Connect" [ngbPopover]="TooltipConnectH" triggers="mouseenter:mouseleave"
+        (click)="connectWithHistory(h)">
         <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
       </button>
     </div>
@@ -76,11 +78,12 @@
           [cdkCopyToClipboard]="connectionString">
           <mat-icon>content_copy</mat-icon>
         </button>
+        <button matSuffix color="warn" mat-icon-button aria-label="Disconnect" [ngbPopover]="TooltipDisconnect"
+          triggers="mouseenter:mouseleave" class="server-button" (click)="disconnect()" [disabled]='disconnecting'>
+          <mat-icon>electrical_services</mat-icon>
+        </button>
       </mat-form-field>
-      <button mat-raised-button color="warn" aria-label="Disconnect" [ngbPopover]="TooltipDisconnect" triggers="mouseenter:mouseleave" class="server-button"
-        (click)="disconnect()" [disabled]='disconnecting'>
-        <mat-icon>electrical_services</mat-icon>
-      </button>
+
     </div>
   </div>
 
@@ -100,17 +103,8 @@
 
     <div *ngFor="let node of clusterInformation.serversStatus" class="server-info"
       [ngClass]="{'server-info-error': node.connectionError, 'server-info-not-persistent':!node.isReadOnly&&!node.isPersistent&&!node.connectionError,'server-info-readonly':node.isReadOnly&&!node.connectionError, 'server-info-persistent':!node.isReadOnly&&!node.connectionError}">
-      <h3>{{node.host}}</h3>
+      <h3>{{node.host}}:{{node.port}}&nbsp;[{{node.clusterName}}]</h3>
       <table>
-
-        <tr>
-          <td>Cluster</td>
-          <td>{{node.clusterName}}</td>
-        </tr>
-        <tr>
-          <td>Port</td>
-          <td>{{node.port}}</td>
-        </tr>
         <tr>
           <td>Startup time</td>
           <td>{{node.startTime|date:'short'}}</td>
@@ -138,25 +132,13 @@
         <tr>
           <td>Is read-only</td>
           <td>{{node.isReadOnly}}</td>
-        </tr>
-        <tr>
-          <td>Memory limit</td>
-          <td>{{node.memoryLimitInGigabytes }} GB</td>
-        </tr>
+        </tr>        
         <tr>
           <td>Used memory</td>
-          <td>{{node.workingSet|formatSize:false }}</td>
+          <td>{{node.workingSet|formatSize:false }}/{{node.memoryLimitInGigabytes }} GB</td>
         </tr>
       </table>
     </div>
   </div>
-  <!--CLUSTER VIEW - COLLECTIONS--------------------------------------------------------------------------------------------------------->
-
-  <div class="collections-container" *ngIf="clusterInformation">
-    <app-collection-card [name]="collection?.name" [items]="collection?.itemsCount"
-      [fullText]="collection?.fullTextSearch" [layout]="collection?.storageLayout" [eviction]="collection?.evictionType"
-      *ngFor="let collection of clusterInformation?.collectionsSummary; trackBy:identifyCollection"></app-collection-card>
-  </div>
-
-
+  
 </div>

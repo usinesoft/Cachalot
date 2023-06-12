@@ -1,0 +1,5 @@
+<div class="collections-container" *ngIf="cluster">
+    <app-collection-card [name]="collection?.name" [items]="collection?.itemsCount"
+      [fullText]="collection?.fullTextSearch" [layout]="collection?.storageLayout" [eviction]="collection?.evictionType"
+      *ngFor="let collection of cluster?.collectionsSummary; trackBy:identifyCollection"></app-collection-card>
+</div>

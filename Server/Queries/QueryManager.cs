@@ -97,20 +97,16 @@ public class QueryManager : IRequestManager
         return result;
     }
 
-    private List<PackedObject> ProcessAndQuery(AndQuery query, QueryExecutionPlan queryExecutionPlan, string orderByProperty,
-                                                bool descending, int maxItems)
+    private List<PackedObject> ProcessAndQuery(AndQuery query, QueryExecutionPlan queryExecutionPlan,
+                                               OrQuery parentQuery)
     {
         queryExecutionPlan.StartPlanning();
         var indexesThatCanBeUsed = GetIndexesForQuery(query);
         var indexesUsed = indexesThatCanBeUsed.OrderBy(p => p.Ranking).Take(2).ToArray();
         // remove the second index if it matches much more items than the first one
         if (indexesUsed.Length > 1)
-        {
             if (indexesUsed[1].Ranking > indexesUsed[0].Ranking * 4)
-            {
                 indexesUsed = new[] { indexesUsed[0] };
-            }
-        }
 
         queryExecutionPlan.EndPlanning(indexesUsed.Select(r => r.Index.Name).ToList());
 
@@ -169,8 +165,8 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.StartScan();
 
-            
-            var res = SmartFullScan(restOfTheQuery, orderByProperty, descending, maxItems).ToList();
+
+            var res = SmartFullScan(parentQuery).ToList();
 
             queryExecutionPlan.EndScan();
 
@@ -183,7 +179,7 @@ public class QueryManager : IRequestManager
             if (restOfTheQuery.Elements.Count == 0) // empty query left; fully resolved by indexes
                 return result.ToList();
 
-            queryExecutionPlan.StartScan(); 
+            queryExecutionPlan.StartScan();
 
             foreach (var item in result)
                 if (restOfTheQuery.Match(item))
@@ -210,7 +206,7 @@ public class QueryManager : IRequestManager
 
     private IList<PackedObject> InternalProcessQuery(OrQuery query)
     {
-        ExecutionPlan = new ExecutionPlan();
+        ExecutionPlan = new();
 
         try
         {
@@ -220,8 +216,8 @@ public class QueryManager : IRequestManager
             if (query.IsEmpty())
             {
                 ExecutionPlan.QueryPlans.Add(new(query.ToString()));
-                 
-                return SmartFullScan(Query.Empty, query.OrderByProperty, query.OrderByIsDescending, query.Take)
+
+                return SmartFullScan(query)
                     .ToList();
             }
 
@@ -232,8 +228,7 @@ public class QueryManager : IRequestManager
             {
                 ExecutionPlan.QueryPlans.Add(new(query.ToString()));
 
-                var res = ProcessSimpleQuery(atomicQuery, query.OrderByProperty,
-                    query.OrderByIsDescending, query.Take);
+                var res = ProcessSimpleQuery(atomicQuery, query);
 
                 // full-scan queries are already ordered
                 if (query.OrderByProperty != null && !ExecutionPlan.QueryPlans[0].FullScan)
@@ -247,11 +242,10 @@ public class QueryManager : IRequestManager
             if (query.Elements.Count == 1)
             {
                 var andQuery = query.Elements[0];
-                
+
                 ExecutionPlan.QueryPlans.Add(new(query.ToString()));
 
-                var result = ProcessAndQuery(andQuery,ExecutionPlan.QueryPlans[0], query.OrderByProperty, query.OrderByIsDescending,
-                    query.Take);
+                var result = ProcessAndQuery(andQuery, ExecutionPlan.QueryPlans[0], query);
 
                 // full-scan queries are already ordered
                 if (query.OrderByProperty != null && !ExecutionPlan.QueryPlans[0].FullScan)
@@ -265,16 +259,12 @@ public class QueryManager : IRequestManager
 
             var results = new List<PackedObject>[query.Elements.Count];
 
-            foreach (var andQuery in query.Elements)
-            {
-                ExecutionPlan.QueryPlans.Add(new QueryExecutionPlan(andQuery.ToString()));
-            }
+            foreach (var andQuery in query.Elements) ExecutionPlan.QueryPlans.Add(new(andQuery.ToString()));
 
             Parallel.For(0, query.Elements.Count, i =>
             {
                 var andQuery = query.Elements[i];
-                results[i] = ProcessAndQuery(andQuery, ExecutionPlan.QueryPlans[i], query.OrderByProperty, query.OrderByIsDescending,
-                    query.Take);
+                results[i] = ProcessAndQuery(andQuery, ExecutionPlan.QueryPlans[i], query);
             });
 
             ExecutionPlan.BeginMerge();
@@ -310,7 +300,7 @@ public class QueryManager : IRequestManager
     }
 
     private List<PackedObject> OrderBy(List<PackedObject> selectedItems, string orderByProperty,
-                                        in bool orderByIsDescending)
+                                       in bool orderByIsDescending)
     {
         ExecutionPlan.BeginOrderBy();
 
@@ -318,12 +308,12 @@ public class QueryManager : IRequestManager
         var selectedCount = selectedItems.Count;
 
         // for small subsets it is faster to sort without scanning the index
-        bool doNotUseIndex = selectedCount * Math.Log2(selectedCount) * 3 < allCount; //3 was found empirically
+        var doNotUseIndex = selectedCount * Math.Log2(selectedCount) < allCount;
 
-        
-        var result = doNotUseIndex ? 
-            OrderByWithoutIndex(selectedItems, orderByProperty, orderByIsDescending) : 
-            OrderByWithIndex(selectedItems, orderByProperty, orderByIsDescending);
+
+        var result = doNotUseIndex
+            ? OrderByWithoutIndex(selectedItems, orderByProperty, orderByIsDescending)
+            : OrderByWithIndex(selectedItems, orderByProperty, orderByIsDescending);
 
 
         ExecutionPlan.EndOrderBy();
@@ -334,10 +324,7 @@ public class QueryManager : IRequestManager
     private List<PackedObject> OrderByWithoutIndex(List<PackedObject> items, string orderByProperty, bool descending)
     {
         var property = _dataStore.CollectionSchema.KeyByName(orderByProperty);
-        if (property == null)
-        {
-            throw new CacheException($"The property {orderByProperty} not found");
-        }
+        if (property == null) throw new CacheException($"The property {orderByProperty} not found");
 
         var index = property.Order;
 
@@ -346,7 +333,7 @@ public class QueryManager : IRequestManager
             var xv = x.Values[index];
             var yv = y.Values[index];
             var result = xv.CompareTo(yv);
-            return descending? -result: result;
+            return descending ? -result : result;
         });
 
         return items;
@@ -362,11 +349,10 @@ public class QueryManager : IRequestManager
 
         if (index.IndexType == IndexType.Ordered)
         {
-
             foreach (var o in index.GetAll(descending))
                 if (set.Contains(o))
                     result.Add(o);
-            
+
             return result;
         }
 
@@ -396,17 +382,12 @@ public class QueryManager : IRequestManager
     ///     Faster processing for simple query (that contains a single test).
     /// </summary>
     /// <param name="atomicQuery"></param>
-    /// <param name="orderByProperty">null if no order-by operator</param>
-    /// <param name="descending"></param>
-    /// <param name="maxItems"></param>
+    /// <param name="parentQuery"></param>
     /// <returns></returns>
-    private List<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, string orderByProperty, bool descending, int maxItems)
+    private List<PackedObject> ProcessSimpleQuery(AtomicQuery atomicQuery, OrQuery parentQuery)
     {
-        if (ExecutionPlan.QueryPlans.Count == 0)
-        {
-            ExecutionPlan.QueryPlans.Add(new QueryExecutionPlan(atomicQuery.ToString()));
-        }
-        
+        if (ExecutionPlan.QueryPlans.Count == 0) ExecutionPlan.QueryPlans.Add(new(atomicQuery.ToString()));
+
         var queryExecutionPlan = ExecutionPlan.QueryPlans[0];
         queryExecutionPlan.SimpleQueryStrategy = true;
 
@@ -469,7 +450,7 @@ public class QueryManager : IRequestManager
             queryExecutionPlan.StartScan();
 
             // manage special case for ordered queries
-            return SmartFullScan(atomicQuery, orderByProperty, descending, maxItems).ToList();
+            return SmartFullScan(parentQuery).ToList();
         }
         finally
         {
@@ -478,28 +459,37 @@ public class QueryManager : IRequestManager
     }
 
     /// <summary>
-    /// If the result must be ordered use an ordered index, otherwise use the primary index
+    ///     If the result must be ordered use an ordered index, otherwise use the primary index
     /// </summary>
-    /// <param name="query"></param>
-    /// <param name="orderByProperty"></param>
-    /// <param name="descending"></param>
-    /// <param name="maxItems"></param>
     /// <returns></returns>
     /// <exception cref="CacheException"></exception>
-    private IEnumerable<PackedObject> SmartFullScan(Query query, string orderByProperty, bool descending, int maxItems)
+    private IEnumerable<PackedObject> SmartFullScan(OrQuery orQuery)
     {
         ExecutionPlan.MatchedItems = _dataStore.DataByPrimaryKey.Count;
 
-        if (orderByProperty == null)
-            return maxItems != 0
-                ? _dataStore.PrimaryIndex.GetAll().Where(query.Match).Take(maxItems)
-                : _dataStore.PrimaryIndex.GetAll().Where(query.Match);
+        var atomicQuery = AsAtomic(orQuery);
 
-        var index = _dataStore.TryGetIndex(orderByProperty);
-        if (index is not OrderedIndex)
-            throw new CacheException($"Order by can be applied only on ordered indexes, {orderByProperty} is not one");
+         
+        var query = (Query)atomicQuery ?? orQuery; // matching with atomic query is slightly faster
 
-        return index.GetAll(descending, maxItems).Where(query.Match);
+        // if not ORDER BY use the primary index
+        List<PackedObject> result = orQuery.OrderByProperty == null
+            ? _dataStore.PrimaryIndex.GetAll().Where(query.Match).ToList()
+            : null;
+
+        // otherwise use an ordered index
+        if (result == null)
+        {
+            var index = _dataStore.TryGetIndex(orQuery.OrderByProperty);
+            if (index is not OrderedIndex)
+                throw new CacheException(
+                    $"Order by can be applied only on ordered indexes, {orQuery.OrderByProperty} is not one");
+
+            result = index.GetAll(orQuery.OrderByIsDescending).Where(query.Match).ToList();
+        }
+
+        // this will apply DISTINCT and TAKE (if required)
+        return PostProcessResult(orQuery, result);
     }
 
 
@@ -633,9 +623,9 @@ public class QueryManager : IRequestManager
 
         // also used only in cache mode
         if (result.Count > 0) _dataStore.IncrementHitCount();
-        
+
         // here it may not be initialized if pure full-text query
-        ExecutionPlan ??= new ExecutionPlan();
+        ExecutionPlan ??= new();
 
         ExecutionPlan.MatchedItems = result.Count;
 

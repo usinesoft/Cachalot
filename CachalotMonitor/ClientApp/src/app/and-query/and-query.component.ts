@@ -4,7 +4,7 @@ import { AndQuery, SimpleQuery } from '../model/query';
 @Component({
   selector: 'app-and-query',
   templateUrl: './and-query.component.html',
-  styleUrls: ['./and-query.component.css']
+  styleUrls: ['./and-query.component.scss']
 })
 export class AndQueryComponent implements OnInit {
 

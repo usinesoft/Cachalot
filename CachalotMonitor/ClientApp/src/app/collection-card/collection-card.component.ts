@@ -5,7 +5,7 @@ import { ScreenStateService } from '../screen-state.service';
 @Component({
   selector: 'app-collection-card',
   templateUrl: './collection-card.component.html',
-  styleUrls: ['./collection-card.component.css']
+  styleUrls: ['./collection-card.component.scss']
 })
 export class CollectionCardComponent implements OnInit {
 

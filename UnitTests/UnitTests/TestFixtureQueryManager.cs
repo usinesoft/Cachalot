@@ -1,5 +1,6 @@
 ﻿using Client.Core;
 using Client.Messages;
+using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
@@ -240,6 +241,173 @@ namespace Tests.UnitTests
             result = qm.ProcessQuery(OrQuery.Empty<AllKindsOfProperties>());
             Assert.AreEqual(100_000, result.Count);
             Console.WriteLine(qm.ExecutionPlan);
+        }
+
+
+        [Test]
+        public void BorderlineQueries()
+        {
+            ////////////////////////////////////////////////////
+            // check sort on unique result with order-by clause
+
+            {
+                var schema = TypedSchemaFactory.FromType<Order>();
+            
+                var objects = Order.GenerateTestData(10);
+
+                // set the amounts in order
+                var amount = 10;
+                foreach (var order in objects)
+                {
+                    order.Amount = amount;
+                    order.Quantity = amount;
+
+                    amount += 10;
+                }
+
+                var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+            
+                var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+
+                ds.InternalPutMany(packed, true);
+
+                Expression<Func<Order, bool>> where = o=>o.Quantity == objects[9].Quantity;
+
+                var query = ExpressionTreeHelper.PredicateToQuery(where, schema.CollectionName);
+                query.OrderByProperty = "Amount";
+                query.Take = 2;
+
+                var qm = new QueryManager(ds);
+                var result = qm.ProcessQuery(query);
+
+                Assert.AreEqual(1, result.Count);
+            }
+
+            //////////////////////////////////////////////////////////
+            // Check distinct and take without condition
+
+            {
+                var schema = TypedSchemaFactory.FromType<Order>();
+            
+                var objects = Order.GenerateTestData(10);
+
+                // set two different categories 
+                for (int i = 0; i < objects.Count; i++)
+                {
+                    objects[i].Category = i < 5 ? "geek" : "sf";
+                }
+
+                var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+            
+                var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+
+                ds.InternalPutMany(packed, true);
+
+                
+
+                var query = new OrQuery(schema.CollectionName);
+                query.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
+                query.Take = 3;
+                query.Distinct = true;
+
+                var qm = new QueryManager(ds);
+                var result = qm.ProcessQuery(query);
+
+                Assert.AreEqual(2, result.Count);
+            }
+
+            //////////////////////////////////////////////////////////
+            // Do not use ordered index for in clauses
+            {
+                var schema = TypedSchemaFactory.FromType<Order>();
+            
+                var objects = Order.GenerateTestData(10);
+                
+                var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+            
+                var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+
+                ds.InternalPutMany(packed, true);
+
+                {
+                    
+                    var parsingResult =
+                        new Parser().ParseSql(
+                            $"select from order where amount in ({objects[0].Amount}, {objects[1].Amount})");
+
+                    var query = parsingResult.ToQuery(schema);
+
+
+                    var qm = new QueryManager(ds);
+                    var result = qm.ProcessQuery(query);
+
+                    Assert.AreEqual(2, result.Count);
+                }
+
+                {
+                    
+                    var parsingResult =
+                        new Parser().ParseSql(
+                            $"select from order where amount in ({objects[0].Amount}, {objects[1].Amount}, {objects[2].Amount}) and category={objects[0].Category}");
+
+                    var query = parsingResult.ToQuery(schema);
+
+
+                    var qm = new QueryManager(ds);
+                    var result = qm.ProcessQuery(query);
+
+                    Assert.IsTrue(result.Count >= 1);
+                }
+
+                {
+                    
+                    var parsingResult =
+                        new Parser().ParseSql(
+                            $"select from order where amount not in ({objects[0].Amount}, {objects[1].Amount}, {objects[2].Amount}) and category={objects[0].Category}");
+
+                    var query = parsingResult.ToQuery(schema);
+
+
+                    var qm = new QueryManager(ds);
+                    var result = qm.ProcessQuery(query);
+
+                    Assert.IsTrue(result.Count >= 1);
+                }
+            }
+
+          
+
+
+        }
+
+        [Test]
+        [TestCase("like", "'%gee%'")]
+        [TestCase("like", "'gee%'")]
+        [TestCase("like", "'%geek%'")]
+        [TestCase("like", "'%eek'")]
+        [TestCase("=", "geek")]
+        [TestCase("=", "'geek'")]
+        public void Like_operator_in_sql(string @operator, string value)
+        {
+            var schema = TypedSchemaFactory.FromType<Order>();
+            
+            var objects = Order.GenerateTestData(100);
+
+                
+            var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
+            
+            var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
+
+            ds.InternalPutMany(packed, true);
+
+            var parsingResult = new Parser().ParseSql($"select from order where category {@operator} {value}");
+
+            var query = parsingResult.ToQuery(schema);
+
+            var qm = new QueryManager(ds);
+            var result = qm.ProcessQuery(query);
+
+            Assert.IsTrue(result.Count > 0);
         }
 
 

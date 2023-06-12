@@ -215,7 +215,7 @@ class QueryService : IQueryService
 
             if (query.DataType == PropertyType.SomeFloat)
             {
-                return $"{value}.";
+                return $"{value}";
             }
 
             if (query.PropertyIsCollection)

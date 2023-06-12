@@ -37,6 +37,10 @@ import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { AdminComponent } from './admin/admin.component';
 import { ExecutionPlanComponent } from './execution-plan/execution-plan.component';
 import {MatDialogModule} from '@angular/material/dialog';
+import {MatToolbarModule} from '@angular/material/toolbar'
+import {MatSidenavModule} from '@angular/material/sidenav'
+import {MatListModule} from '@angular/material/list';
+import { CollectionsComponent } from './collections/collections.component'
 
 
 
@@ -56,7 +60,8 @@ import {MatDialogModule} from '@angular/material/dialog';
     AndQueryComponent,
     SmartMultiSelectComponent,
     AdminComponent,
-    ExecutionPlanComponent
+    ExecutionPlanComponent,
+    CollectionsComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -82,12 +87,16 @@ import {MatDialogModule} from '@angular/material/dialog';
     MatSlideToggleModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent, pathMatch: 'full' },
+      { path: 'collections', component: CollectionsComponent },
       { path: 'admin', component: AdminComponent },
       { path: 'schema', component: SchemaComponent },
       { path: 'data', component: DataComponent },
     ]),
     BrowserAnimationsModule,
-    MatDialogModule
+    MatDialogModule,
+    MatToolbarModule,
+    MatSidenavModule,
+    MatListModule
     
   ],
   providers: [],

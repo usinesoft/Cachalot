@@ -4,7 +4,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 @Component({
   selector: 'app-smart-multi-select',
   templateUrl: './smart-multi-select.component.html',
-  styleUrls: ['./smart-multi-select.component.css']
+  styleUrls: ['./smart-multi-select.component.scss']
 })
 export class SmartMultiSelectComponent implements OnInit {
 
@@ -134,7 +134,9 @@ export class SmartMultiSelectComponent implements OnInit {
   public set searchText(v: string | undefined) {
     this._searchText = v;
     if (v) {
-      this.filteredValues = this.allValues.filter(x => x.toLowerCase().indexOf(v) > -1)
+      let normalized = v.toLowerCase();
+      console.log('searching ' + normalized);
+      this.filteredValues = this.allValues.filter(x => x.toLowerCase().indexOf(normalized) > -1)
     }
     else {
       this.filteredValues = [...this.allValues];

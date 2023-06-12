@@ -6,6 +6,11 @@
         /// Prefix of a ping message
         /// </summary>
         public static readonly byte PingCookie = 55;
+        
+        /// <summary>
+        /// Proactive close request
+        /// </summary>
+        public static readonly byte CloseCookie = 75;
 
         /// <summary>
         /// prefix of a request message 

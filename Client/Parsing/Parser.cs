@@ -262,7 +262,7 @@ namespace Client.Parsing
 
         private string TryNormalizeValue(string value)
         {
-            value = value.Trim('\'', '"');
+            //value = value.Trim('\'', '"');
 
             var commas = value.Count(c => c == ',');
 

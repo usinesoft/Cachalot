@@ -200,12 +200,14 @@ namespace Server
                 throw new ArgumentException("Empty list of keys passed to GetCount on index " + Name);
 
 
-            if (values.Count > 2)
-                throw new ArgumentException("More than two keys passed to GetCount on ordered index  " + Name);
-
             if (op == QueryOperator.In)
                 return int.MaxValue; // can not count efficiently so do not use me as index
 
+
+            if (values.Count > 2)
+                throw new ArgumentException("More than two keys passed to GetCount on ordered index  " + Name);
+
+            
             if (values.Count == 2 && !op.IsRangeOperator())
                 throw new ArgumentException("Two keys passed to GetCount on ordered index " + Name + " for operator " +
                                             op);

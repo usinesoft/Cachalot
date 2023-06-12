@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Client.Interface;
 
 namespace Channel
 {
@@ -132,7 +133,7 @@ namespace Channel
                     var buffer = new byte[1];
                     var bytesCount = await clientStream.ReadAsync(buffer, 0, 1);
 
-                    if (bytesCount == -1) // connection closed
+                    if (bytesCount == 0) // connection closed
                         break;
 
                     var inputType = buffer[0];
@@ -144,6 +145,11 @@ namespace Channel
                     if (inputType == Constants.PingCookie)
                     {
                         clientStream.WriteByte(Constants.PingCookie);
+                    }
+
+                    else if (inputType == Constants.CloseCookie)
+                    {
+                        break;
                     }
                     else
                     {
@@ -185,6 +191,7 @@ namespace Channel
             {
                 lock (_connectedClients)
                 {
+                    
                     _connectedClients.Remove(client);
                     Interlocked.Decrement(ref _connections);
                 }

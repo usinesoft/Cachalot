@@ -220,7 +220,8 @@ public class OrQuery : Query
     /// <returns></returns>
     public override bool Match(PackedObject item)
     {
-        return Elements.Any(t => t.Match(item));
+        // an empty query matches everything
+        return IsEmpty() || Elements.Any(t => t.Match(item));
     }
 
     #endregion

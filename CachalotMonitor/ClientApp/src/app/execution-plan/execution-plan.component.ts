@@ -6,7 +6,7 @@ import { QueryService } from '../query.service';
 @Component({
   selector: 'app-execution-plan',
   templateUrl: './execution-plan.component.html',
-  styleUrls: ['./execution-plan.component.css']
+  styleUrls: ['./execution-plan.component.scss']
 })
 export class ExecutionPlanComponent implements OnInit {
 

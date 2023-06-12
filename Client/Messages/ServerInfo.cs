@@ -72,7 +72,9 @@ namespace Client.Messages
         [ProtoMember(14)]
         private string _clusterName;
 
-        
+        [ProtoMember(15)]
+        private long _nonFragmentedMemory;
+
 
         /// <summary>
         ///     32 or 64 bits server process
@@ -162,5 +164,11 @@ namespace Client.Messages
         public bool ConnectionError => _connectedClients == 0;
 
         public string ClusterName { get => _clusterName; set => _clusterName = value; }
+
+        public long NonFragmentedMemory
+        {
+            get => _nonFragmentedMemory;
+            set => _nonFragmentedMemory = value;
+        }
     }
 }

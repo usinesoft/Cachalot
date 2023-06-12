@@ -11,6 +11,7 @@ export interface Schema {
     jsonName: string
     order: number
     isCollection: boolean
+    confirmMode:boolean
   }
 
   export interface SchemaUpdateRequest{

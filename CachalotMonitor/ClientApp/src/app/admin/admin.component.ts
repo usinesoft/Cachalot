@@ -9,7 +9,7 @@ import { QueryService } from '../query.service';
 @Component({
   selector: 'app-admin',
   templateUrl: './admin.component.html',
-  styleUrls: ['./admin.component.css']
+  styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements OnInit, OnDestroy {
 
@@ -21,7 +21,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
 
     // filter out system tables (starting with @)
-    this.collections = this.monitoringService.clusterInfo?.schema.map(s => s.collectionName).filter(c => c[0] != '@') ?? [];
+    this.collections = this.monitoringService.clusterInformation.getValue()?.schema.map(s => s.collectionName).filter(c => c[0] != '@') ?? [];
 
     this.service.getBackupDirectory().subscribe(data => {
       this._backupPath = data.backupDirectory;

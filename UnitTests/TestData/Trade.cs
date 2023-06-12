@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace Tests.TestData
 {
+   
+
+
     [Serializable]
     public class Trade : IEquatable<Trade>
     {

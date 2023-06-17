@@ -5,7 +5,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
-import { NavMenuComponent } from './nav-menu/nav-menu.component';
+
 import { HomeComponent } from './home/home.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -46,8 +46,7 @@ import { CollectionsComponent } from './collections/collections.component'
 
 @NgModule({
   declarations: [
-    AppComponent,
-    NavMenuComponent,
+    AppComponent,    
     HomeComponent,    
     FormatSizePipe,
     IndexPipe,

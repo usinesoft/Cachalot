@@ -5,6 +5,7 @@
 export const environment = {
   production: false,
   rootUrl:'http://localhost:48481/'
+  //rootUrl:null
 };
 
 /*

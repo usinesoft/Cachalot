@@ -18,6 +18,14 @@
         </div>
     </ng-template>
 
+    <ng-template #TooltipExport>
+        <div>
+            <h3>Export JSON data</h3>
+            <p> Export query result as JSON
+            </p>
+        </div>
+    </ng-template>
+
     <ng-template #TooltipIgnoreLimit>
         <div>
             <h3>Ignore the TAKE clause</h3>
@@ -43,7 +51,7 @@
                 <mat-hint>select the collection</mat-hint>
                 
                 <button mat-button *ngIf="selectedCollection" matSuffix mat-icon-button aria-label="Refresh"
-                    (click)="refresh();$event.stopPropagation()" style="margin-left: 2rem;">
+                    (click)="refresh();$event.stopPropagation()" style="margin-left: 2rem;" [ngbPopover]="TooltipExport" triggers="mouseenter:mouseleave">
                     <mat-icon tooltip="refresh">refresh</mat-icon>
                 </button>
                 <button mat-button *ngIf="selectedCollection" color="primary"  matSuffix mat-icon-button aria-label="Export"
@@ -63,31 +71,10 @@
 
                 <input type="file"  class="file-input" (change)="onFileSelected($event);$event.stopPropagation()" #fileUpload>
 
-                <!-- <button *ngIf = "selectedCollection" mat-icon-button color="primary" aria-label="refresh" (click)="refresh()" class="toolbar-item">
-                    <mat-icon>refresh</mat-icon>
-                </button>
-
-                <button mat-icon-button color="primary" aria-label="export" (click)="exportJson()" class="toolbar-item"
-                    [ngbPopover]="TooltipExport" triggers="mouseenter:mouseleave">
-                    <mat-icon>ios_share</mat-icon>
-                </button> -->
+                
                 <mat-checkbox  [(ngModel)]="ignoreLimit" [ngbPopover]="TooltipIgnoreLimit" style="margin:1rem; font-size: 1rem;font-weight: 400;"
                     triggers="mouseenter:mouseleave">ignore limit</mat-checkbox>
-
-                <!--upload is disabled on system collections (starting with @)-->
-                <!-- <ng-container *ngIf="!selectedCollection?.startsWith('@')">
-                    <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
-
-                    <div class="file-upload" style="font-size: 1rem;font-weight: 400;">
-
-                        {{fileName || "file to import"}}
-
-                        <button style="margin-left: 0.5rem;" mat-icon-button color="warn" class="toolbar-item"
-                            (click)="fileUpload.click()" [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
-                            <mat-icon>attach_file</mat-icon>
-                        </button>
-                    </div>
-                </ng-container> -->
+                
             </mat-toolbar>
 
         </div>

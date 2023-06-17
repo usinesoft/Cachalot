@@ -68,7 +68,7 @@ namespace Tests.UnitTests
         [Test]
         [TestCase("select from persons where a== b", "a", "=", "b", 0)]
         [TestCase("select from persons where a = b", "a", "=", "b", 0)]
-        [TestCase("select from persons where a = 'b'", "a", "=", "b", 0)]
+        [TestCase("select from persons where a = 'b'", "a", "=", "'b'", 0)]
         [TestCase("select from persons where a = 'b' and c < 15", "c", "<", "15", 1)]
         public void Parsing_with_single_expression(string expression, string a, string op, string b, int nth )
         {
@@ -117,7 +117,7 @@ namespace Tests.UnitTests
             Assert.IsNotNull(vop);
 
             Assert.AreEqual("a", va);
-            Assert.AreEqual("select b from c", vb);
+            Assert.AreEqual("'select b from c'", vb);
             Assert.AreEqual("=", vop);
 
             Console.WriteLine(result);
@@ -144,7 +144,7 @@ namespace Tests.UnitTests
             Assert.IsNotNull(vop);
 
             Assert.AreEqual("a", va);
-            Assert.AreEqual("rue d'Antin", vb);
+            Assert.AreEqual("'rue d'Antin'", vb);
             Assert.AreEqual("=", vop);
 
             Console.WriteLine(result);

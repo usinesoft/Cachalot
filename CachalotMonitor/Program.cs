@@ -22,6 +22,22 @@ builder.Services.AddCors(options =>
             builder.AllowAnyMethod();
             builder.AllowAnyHeader();
         });
+
+    options.AddPolicy(name: "cachalotdb",
+        builder =>
+        {
+            builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "cachalotdb.com");
+            builder.AllowAnyMethod();
+            builder.AllowAnyHeader();
+        });
+
+    options.AddPolicy(name: "cachalot-db",
+        builder =>
+        {
+            builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "cachalot-db.com");
+            builder.AllowAnyMethod();
+            builder.AllowAnyHeader();
+        });
 });
 
 

@@ -10,8 +10,14 @@ export function getBaseUrl() {
   if(environment.rootUrl){
     return environment.rootUrl;
   }
+
+
+  let root = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/`;
+  console.log('root=' + root);
+
   
-  return document.getElementsByTagName('base')[0].href;
+  return root;
+  //return document.getElementsByTagName('base')[0].href;
 }
 
 const providers = [

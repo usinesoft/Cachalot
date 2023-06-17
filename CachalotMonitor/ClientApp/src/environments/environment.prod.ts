@@ -1,4 +1,4 @@
 export const environment = {
   production: true,  
-  rootUrl:'http://51.15.23.61:48481/'
+  rootUrl:null // this will force to redirect to the page origin
 };

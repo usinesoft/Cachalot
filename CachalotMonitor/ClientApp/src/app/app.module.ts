@@ -23,10 +23,9 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormatSizePipe, EvictionPipe, IndexPipe, CheckPipe } from './pipes';
 import { CollectionCardComponent } from './collection-card/collection-card.component';
 import { TooltipModule } from 'ng2-tooltip-directive';
-import { NgbModule} from '@ng-bootstrap/ng-bootstrap';
-import { CommonModule} from '@angular/common';
-import { MatProgressBarModule} from '@angular/material/progress-bar';
-import { MatSelectModule} from '@angular/material/select';
+import { CommonModule } from '@angular/common';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
 import { SchemaComponent } from './schema/schema.component';
 import { DataComponent } from './data/data.component';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
@@ -36,18 +35,20 @@ import { SmartMultiSelectComponent } from './smart-multi-select/smart-multi-sele
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 import { AdminComponent } from './admin/admin.component';
 import { ExecutionPlanComponent } from './execution-plan/execution-plan.component';
-import {MatDialogModule} from '@angular/material/dialog';
-import {MatToolbarModule} from '@angular/material/toolbar'
-import {MatSidenavModule} from '@angular/material/sidenav'
-import {MatListModule} from '@angular/material/list';
-import { CollectionsComponent } from './collections/collections.component'
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatToolbarModule } from '@angular/material/toolbar'
+import { MatSidenavModule } from '@angular/material/sidenav'
+import { MatListModule } from '@angular/material/list';
+import { CollectionsComponent } from './collections/collections.component';
+import { ServerCardComponent } from './server-card/server-card.component'
+import { NgApexchartsModule } from 'ng-apexcharts'
 
 
 
 @NgModule({
   declarations: [
-    AppComponent,    
-    HomeComponent,    
+    AppComponent,
+    HomeComponent,
     FormatSizePipe,
     IndexPipe,
     EvictionPipe,
@@ -60,7 +61,8 @@ import { CollectionsComponent } from './collections/collections.component'
     SmartMultiSelectComponent,
     AdminComponent,
     ExecutionPlanComponent,
-    CollectionsComponent
+    CollectionsComponent,
+    ServerCardComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -76,7 +78,6 @@ import { CollectionsComponent } from './collections/collections.component'
     ClipboardModule,
     MatSnackBarModule,
     TooltipModule,
-    NgbModule,
     CommonModule,
     MatProgressBarModule,
     MatSelectModule,
@@ -95,8 +96,10 @@ import { CollectionsComponent } from './collections/collections.component'
     MatDialogModule,
     MatToolbarModule,
     MatSidenavModule,
-    MatListModule
+    MatListModule,
+    NgApexchartsModule,
     
+
   ],
   providers: [],
   bootstrap: [AppComponent]

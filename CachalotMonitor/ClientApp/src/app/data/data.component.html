@@ -18,13 +18,6 @@
         </div>
     </ng-template>
 
-    <ng-template #TooltipExport>
-        <div>
-            <h3>Export JSON data</h3>
-            <p> Export query result as JSON
-            </p>
-        </div>
-    </ng-template>
 
     <ng-template #TooltipIgnoreLimit>
         <div>
@@ -38,46 +31,52 @@
 
 
 
-    <div class="input-container">
-        <div class="data-selection-container">
-            <!--collection selection-->
-            <mat-form-field appearance="fill">
-                <mat-label>Collections</mat-label>
-                <mat-select [(value)]="selectedCollection">
-                    <mat-option *ngFor="let collection of collections" [value]="collection">
-                        {{collection|uppercase}}
-                    </mat-option>
-                </mat-select>
-                <mat-hint>select the collection</mat-hint>
-                
-                <button mat-button *ngIf="selectedCollection" matSuffix mat-icon-button aria-label="Refresh"
-                    (click)="refresh();$event.stopPropagation()" style="margin-left: 2rem;" [ngbPopover]="TooltipExport" triggers="mouseenter:mouseleave">
-                    <mat-icon tooltip="refresh">refresh</mat-icon>
-                </button>
-                <button mat-button *ngIf="selectedCollection" color="primary"  matSuffix mat-icon-button aria-label="Export"
-                    (click)="exportJson();$event.stopPropagation()">
-                    <mat-icon>download</mat-icon>
-                </button>
-                
-                <button  mat-icon-button matSuffix color="warn" 
-                            (click)="fileUpload.click();$event.stopPropagation()" [ngbPopover]="TooltipImport" triggers="mouseenter:mouseleave">
-                            <mat-icon>attach_file</mat-icon>
-                </button>
-
-            </mat-form-field>
+    <!-- <div class="input-container"> -->
+    <div class="data-selection-container">
+        <!--collection selection-->
+        <mat-form-field appearance="fill">
+            <mat-label>Collections</mat-label>
+            <mat-select [(value)]="selectedCollection">
+                <mat-option *ngFor="let collection of collections" [value]="collection">
+                    {{collection|uppercase}}
+                </mat-option>
+            </mat-select>
+            <mat-hint>select the collection</mat-hint>
 
 
-            <mat-toolbar style="max-width: 3rem;background: transparent;">
+        </mat-form-field>
 
-                <input type="file"  class="file-input" (change)="onFileSelected($event);$event.stopPropagation()" #fileUpload>
 
-                
-                <mat-checkbox  [(ngModel)]="ignoreLimit" [ngbPopover]="TooltipIgnoreLimit" style="margin:1rem; font-size: 1rem;font-weight: 400;"
-                    triggers="mouseenter:mouseleave">ignore limit</mat-checkbox>
-                
-            </mat-toolbar>
+        <mat-toolbar style="max-width: 3rem;background: transparent;">
 
-        </div>
+            
+
+            <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh"
+                (click)="refresh()" style="margin-left: 2rem;">
+                <mat-icon tooltip="refresh" placement="bottom">refresh</mat-icon>
+            </button>
+            
+            <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
+                (click)="exportJson()" [tooltip]="ttExport" placement="bottom"
+                >
+                <mat-icon>download</mat-icon>
+            </button>
+
+            <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport"  placement="bottom">
+                <mat-icon>attach_file</mat-icon>
+            </button>
+
+            <input type="file" class="file-input" (change)="onFileSelected($event)"
+                #fileUpload>
+
+
+            <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="ttIgnoreLimits" placement="bottom"
+                style="margin:1rem; font-size: 1rem;font-weight: 400;" >ignore
+                limit</mat-checkbox>
+
+        </mat-toolbar>
+
+        <!-- </div> -->
     </div>
 
     <!--QUERY both structured and translated to sql-->
@@ -120,16 +119,13 @@
         <div class="params-container">
             <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
                 <mat-label>Full-text search</mat-label>
-                <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery">
+                <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery" (keyup.enter)="onEnter()">
                 <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
                 <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
                     (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
                     <mat-icon>close</mat-icon>
                 </button>
-                <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Search"
-                    (click)="search()">
-                    <mat-icon>search</mat-icon>
-                </button>
+
             </mat-form-field>
         </div>
     </div>

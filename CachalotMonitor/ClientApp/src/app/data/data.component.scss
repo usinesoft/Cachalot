@@ -13,6 +13,7 @@
 
 .query-container{
     display: flex;
+    flex-wrap: wrap;
     direction: row;
     gap:2px;
     margin-top: 0.5rem;

@@ -34,9 +34,9 @@
         </div>
     </ng-template>
     
-    <img *ngIf="layout=='Flat'" mat-card-image src="../../assets/flat.png" alt="flat layout" [ngbPopover] ="HtmlContentFlat" triggers="mouseenter:mouseleave" contentType="template">
-    <img *ngIf="layout=='Default'" mat-card-image src="../../assets/default.png" alt="default layout" [ngbPopover] ="HtmlContentDefault" triggers="mouseenter:mouseleave" contentType="template">
-    <img *ngIf="layout=='Compressed'" mat-card-image src="../../assets/compressed.png" alt="compressed layout" [ngbPopover] ="HtmlContentCompressed" triggers="mouseenter:mouseleave" contentType="template">
+    <img *ngIf="layout=='Flat'" mat-card-image src="../../assets/flat.png" alt="flat layout" [tooltip] ="$any(HtmlContentFlat)" triggers="mouseenter:mouseleave" contentType="template">
+    <img *ngIf="layout=='Default'" mat-card-image src="../../assets/default.png" alt="default layout" [tooltip] ="$any(HtmlContentDefault)" triggers="mouseenter:mouseleave" contentType="template">
+    <img *ngIf="layout=='Compressed'" mat-card-image src="../../assets/compressed.png" alt="compressed layout" [tooltip] ="$any(HtmlContentCompressed)" triggers="mouseenter:mouseleave" contentType="template">
         <table style="padding: 1rem; min-width: 100%;font-weight: lighter;">
 
             <tr>

@@ -36,13 +36,13 @@ namespace CachalotMonitor.Services
                 cx.Append('+');
             }
 
-            var connectionString = cx.ToString().TrimEnd('+');
+            ConnectionString = cx.ToString().TrimEnd('+');
 
             Connector?.Dispose();
 
-            Connector = new Connector(connectionString);
+            Connector = new Connector(ConnectionString);
 
-            return connectionString;
+            return ConnectionString;
 
         }
 
@@ -61,6 +61,7 @@ namespace CachalotMonitor.Services
         }
 
         private readonly Dictionary<string, Model.ConnectionInfo> _connectionHistoryCache = new();
+        public string? ConnectionString { get; private set; }
 
         private const string HistoryPath = "history";
         

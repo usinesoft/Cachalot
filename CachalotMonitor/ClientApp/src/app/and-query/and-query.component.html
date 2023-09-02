@@ -1,7 +1,7 @@
 <div class="and-query-container">
     
     <div class="query-line" *ngFor="let q of query.simpleQueries; index as i">        
-        <button mat-mini-fab color="warn" style="margin:0.5rem" aria-label="remove line" matTooltip="remove this line" [disabled]="query.simpleQueries.length == 1"
+        <button mat-icon-button color="warn" style="margin:0.5rem" aria-label="remove line" tooltip="remove this line" [disabled]="query.simpleQueries.length == 1"
             (click)="removeLine(q)">
             <mat-icon>delete</mat-icon>
         </button>
@@ -10,7 +10,7 @@
             <p style="margin:1rem">AND</p>
         </div>
         <div *ngIf="i == query.simpleQueries.length-1">
-            <button mat-mini-fab color="primary" style="margin:0.5rem" aria-label="add line" matTooltip="add a new line"
+            <button mat-icon-button color="primary" style="margin:0.5rem" aria-label="add line" tooltip="add a new line"
             (click)="newLine()">
             AND
         </button>

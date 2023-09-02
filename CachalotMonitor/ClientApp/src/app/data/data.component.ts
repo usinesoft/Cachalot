@@ -1,9 +1,7 @@
-import { LayoutModule } from '@angular/cdk/layout';
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ExecutionPlanComponent } from '../execution-plan/execution-plan.component';
 import { CollectionSummary } from '../model/connection-data';
-import { ExecutionPlan, QueryExecutionPlan } from '../model/execution-plan';
 import { AndQuery, SimpleQuery } from '../model/query';
 import { Schema } from '../model/schema';
 import { MonitoringService } from '../monitoring.service';
@@ -131,7 +129,30 @@ export class DataComponent implements OnInit {
 
   }
 
+
+  ///////////////////////////////////
+  // formatted tooltips
+
+  public ttIgnoreLimits = `<div class="cool-tooltip">
+                            <h3>Ignore the TAKE clause</h3>
+                            <p>This applies to JSON export.<br>
+                                All the query result will be exported.
+                            </p>
+                          </div>`;
+
+  public ttExport = `<div>
+                        <h3>Export result</h3>
+                        <p>Download query result as a json file.</p>
+                    </div>`;
+
   
+  public ttImport = `<div>
+                        <h3>Import JSON data</h3>
+                        <p> Import data from a json file. The file may contain<br>
+                            a single object or a JSON array.<br>
+                            New objects are inserted, existent objects are updated.
+                        </p>
+                    </div>`;
 
 
   // the one selected for result ordering
@@ -191,6 +212,9 @@ export class DataComponent implements OnInit {
     this.getData();
   }
 
+  public onEnter(){
+    this.refresh();
+  }
   public exportJson() {
 
     let sql = this.sql;
@@ -200,6 +224,8 @@ export class DataComponent implements OnInit {
         sql = sql?.substring(0, start);
       }
     }
+
+    console.log('SQL for download:' + sql);
 
     this.queryService.DownloadAsStream(sql, this.fullTextQuery).subscribe(data => {
       console.log('result:' + data);

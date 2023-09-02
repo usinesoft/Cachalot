@@ -195,6 +195,29 @@ public static class Streamer
         writer.Flush();
     }
 
+    public static void ToStreamMany(Stream stream, ICollection<JObject> items)
+    {
+        var bufferedStream = new BufferedStream(stream);
+        var writer = new BinaryWriter(bufferedStream);
+
+
+        var itemCount = items.Count;
+        writer.Write(itemCount);
+
+        foreach (var item in items)
+        {
+            var data = SerializationHelper.ObjectToBytes(items, SerializationMode.Json, false);
+
+            writer.Write(false);
+            writer.Write(false);
+            writer.Write(0); // no rank
+            writer.Write(data.Length);
+            writer.Write(data);
+        }
+
+        writer.Flush();
+    }
+
 
     public static IEnumerable<RankedItem> EnumerableFromStream(Stream stream)
     {

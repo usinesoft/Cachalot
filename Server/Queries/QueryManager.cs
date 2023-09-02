@@ -8,6 +8,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
+using Newtonsoft.Json.Linq;
 
 namespace Server.Queries;
 
@@ -217,6 +218,14 @@ public class QueryManager : IRequestManager
             {
                 ExecutionPlan.QueryPlans.Add(new(query.ToString()));
 
+                // special processing for distinct clause on a single column
+                if (query.Distinct && query.SelectClause.Count == 1)
+                {
+                    ExecutionPlan.SimpleDistinct = true;
+
+                    //TODO simple distinct
+                }
+
                 return SmartFullScan(query)
                     .ToList();
             }
@@ -287,8 +296,7 @@ public class QueryManager : IRequestManager
         finally
         {
             ExecutionPlan.End();
-            ExecutionPlan = ExecutionPlan;
-
+            
             if (!query.CollectionName.Equals(LogEntry.Table,
                     StringComparison.InvariantCultureIgnoreCase)) // do not log queries on @ACTIVITY table itself
             {
@@ -505,6 +513,26 @@ public class QueryManager : IRequestManager
                 .Select(s => s.Name)
                 .ToArray());
 
+            // faster processing for simple distinct queries
+            if (query.IsEmpty() && query.Distinct && query.SelectClause.Count == 1)
+            {
+                var propertyName = query.SelectClause [0].Name;
+                var values = SimpleDistinct(propertyName, query.Take);
+
+                //pack values as Json objects
+                List<JObject> valuesList = new List<JObject>(values.Count);
+                foreach (var value in values)
+                {
+                    var jo = new JObject { value.ToJson(propertyName) };
+                    valuesList.Add(jo);
+                }
+
+
+                client.SendMany(valuesList);
+
+                return;
+            }
+
             var result = ProcessQuery(query);
 
             var aliases = query.SelectClause.Select(s => s.Alias).ToArray();
@@ -596,6 +624,64 @@ public class QueryManager : IRequestManager
     }
 
     /// <summary>
+    /// Used for distinct queries without where clause and having single column in select clause
+    /// They can be processed much faster than the generic case
+    /// </summary>
+    /// <param name="column"></param>
+    /// <param name="take">if greater than 0 limit the length of the result </param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    private IList<KeyValue> SimpleDistinct(string column, int take)
+    {
+        if (take == 0)
+        {
+            take = int.MaxValue;
+        }
+
+        var metadata = _dataStore.CollectionSchema.ServerSide
+            .FirstOrDefault(x => x.Name.Equals(column, StringComparison.InvariantCultureIgnoreCase));
+
+        if (metadata == null)
+            throw new ArgumentException($"Unknown property {column}");
+            
+        var unique = new HashSet<KeyValue>();
+
+        // if a dictionary index is available use it
+        var index = _dataStore.TryGetIndex(column);
+
+        if (index is { IndexType: IndexType.Dictionary })
+        {
+            var dictionary = index as DictionaryIndex;
+            return dictionary!.Keys.Take(take).ToList();
+        }
+
+        // otherwise proceed to full scan
+        if (metadata.IsCollection)
+        {
+            foreach (var packedObject in _dataStore.DataByPrimaryKey.Values)
+            {
+                var values = packedObject.CollectionValues[metadata.Order];
+                foreach (var keyValue in values.Values)
+                {
+                    unique.Add(keyValue);
+                }
+            }
+                
+        }
+        else // scalar value
+        {
+            foreach (var packedObject in _dataStore.DataByPrimaryKey.Values)
+            {
+                var value = packedObject.Values[metadata.Order];
+                unique.Add(value);
+            }
+                
+        }
+
+        return unique.Take(take).ToList();
+    }
+
+    /// <summary>
     ///     Apply distinct and take operators.
     /// </summary>
     /// <param name="query"></param>
@@ -603,13 +689,22 @@ public class QueryManager : IRequestManager
     /// <returns></returns>
     private IList<PackedObject> PostProcessResult(OrQuery query, IList<PackedObject> result)
     {
-        if (query.Distinct)
+        
+        if (query.Distinct && !ExecutionPlan.SimpleDistinct) // simple distinct already processed
         {
+
+            if (query.SelectClause.Count == 0)
+            {
+                throw new NotSupportedException("DISTINCT clause requires a projection");
+            }
+            
             var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause
                 .Select(s => s.Name)
                 .ToArray());
 
             result = Distinct(result, ExecutionPlan, indexOfSelectedProperties);
+            
+            
         }
 
 

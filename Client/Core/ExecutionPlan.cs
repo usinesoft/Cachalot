@@ -47,6 +47,8 @@ namespace Client.Core
         /// </summary>
         public int OrderTimeInMicroseconds { get; set; }
 
+        public bool SimpleDistinct { get; set; }
+
         public override string ToString()
         {
             var result = new StringBuilder();

@@ -52,7 +52,8 @@ namespace Client.Messages
         ///     Physical memory allocated for the server process
         /// </summary>
         [ProtoMember(9)] private long _workingSet;
-
+        
+        
 
         /// <summary>
         /// Transactions present in the transaction log but not yet applied to the persistent storage
@@ -75,6 +76,9 @@ namespace Client.Messages
         [ProtoMember(15)]
         private long _nonFragmentedMemory;
 
+        [ProtoMember(16)] private int _runningThreads;
+        
+        [ProtoMember(17)] private int _waitingThreads;
 
         /// <summary>
         ///     32 or 64 bits server process
@@ -146,6 +150,18 @@ namespace Client.Messages
         {
             get => _threads;
             set => _threads = value;
+        }
+
+        public int RunningThreads
+        {
+            get => _runningThreads;
+            set => _runningThreads = value;
+        }
+
+        public int WaitingThreads
+        {
+            get => _waitingThreads;
+            set => _waitingThreads = value;
         }
 
         public string SoftwareVersion

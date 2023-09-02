@@ -15,9 +15,11 @@ namespace WindowsService
 
         protected override void OnStart(string[] args)
         {
-
+            
             if (!OperatingSystem.IsWindows())
                 throw new NotSupportedException("The service works only on Windows");
+
+            base.OnStart(args);
 
             var exeDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
@@ -27,11 +29,12 @@ namespace WindowsService
 
             _service = new HostedService(HostServices.Log, _stopEvent);
 
+            
             // allow for longer startup times
-            Task.Factory.StartNew(() => _service.Start(null));
+            Task.Factory.StartNew(() => _service.Start(args.Length > 0 ? args[0]:null));
 
             
-            base.OnStart(args);
+            
         }
 
         protected override void OnStop()

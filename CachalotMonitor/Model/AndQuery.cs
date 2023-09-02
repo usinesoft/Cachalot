@@ -1,4 +1,8 @@
-﻿namespace CachalotMonitor.Model;
+﻿using Client.Interface;
+
+namespace CachalotMonitor.Model;
+
+
 
 public class AndQuery
 {

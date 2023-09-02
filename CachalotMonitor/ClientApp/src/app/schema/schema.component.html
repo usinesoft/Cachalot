@@ -106,23 +106,23 @@
                     </td>
                     <td class="cell" data-title="Is Collection">
                         <mat-icon *ngIf="prop.isCollection" aria-hidden="false"
-                            style="font-size: 16px; font-weight: bold; color:crimson" fontIcon="check"></mat-icon>
+                            style="font-weight: bold; color:crimson" fontIcon="check"></mat-icon>
                     </td>
                     <td class="cell" data-title="Actions">
                         <ng-container *ngIf = "!working">
                             <mat-icon color="primary"
-                                *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || prop.indexType == 'Dictionary')"
-                                aria-hidden="false" style="font-size: 16px; font-weight: bold; cursor: pointer;"
+                                *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || (prop.indexType == 'Dictionary' && !prop.isCollection))"
+                                aria-hidden="false" style=" font-weight: bold; cursor: pointer;"
                                 fontIcon="arrow_upward" tooltip="upgrade index"
                                 (click)="prop.confirmMode=true"></mat-icon>
                             <mat-icon *ngIf="prop.confirmMode" aria-hidden="false"
-                                style="font-size: 16px; font-weight: bold; cursor: pointer;" fontIcon="check"
+                                style=" font-weight: bold; cursor: pointer;" fontIcon="check"
                                 tooltip="confirm" (click)="upgrade(prop)"></mat-icon>
                             <mat-icon *ngIf="prop.confirmMode" aria-hidden="false" color="accent"
-                                style="font-size: 16px; font-weight: bold; cursor: pointer;" fontIcon="close"
+                                style=" font-weight: bold; cursor: pointer;" fontIcon="close"
                                 tooltip="cancel" (click)="prop.confirmMode=false"></mat-icon>
                             <mat-icon *ngIf="prop.indexType == 'Primary' || prop.indexType == 'Ordered'"
-                                style="font-size: 16px; font-weight: bold;color:rgba(255, 255, 255, 0) "
+                                style=" font-weight: bold;color:rgba(255, 255, 255, 0) "
                                 fontIcon="arrow_upward"></mat-icon>
                         </ng-container>
                         <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>

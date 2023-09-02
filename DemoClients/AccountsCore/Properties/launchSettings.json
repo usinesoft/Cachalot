@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Accounts": {
+      "commandName": "Project",
+      "commandLineArgs": "DESKTOP-FALICC8:54321+DESKTOP-FALICC8:54322"
+    }
+  }
+}

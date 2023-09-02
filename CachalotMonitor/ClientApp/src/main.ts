@@ -13,6 +13,7 @@ export function getBaseUrl() {
 
 
   let root = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/`;
+  
   console.log('root=' + root);
 
   

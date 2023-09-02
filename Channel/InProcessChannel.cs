@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 
 #endregion
 
@@ -69,6 +70,13 @@ namespace Channel
             public void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases)
             {
                 Streamer.ToStreamMany(_stream, items, selectedIndexes, aliases);
+                _stream.Seek(0, SeekOrigin.Begin);
+                _dataReceived.Set();
+            }
+
+            public void SendMany(ICollection<JObject> items)
+            {
+                Streamer.ToStreamMany(_stream, items);
                 _stream.Seek(0, SeekOrigin.Begin);
                 _dataReceived.Set();
             }

@@ -1,5 +1,6 @@
 using Client.Core;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace Client.ChannelInterface
 {
@@ -23,6 +24,11 @@ namespace Client.ChannelInterface
         /// <param name="aliases">names of the properties sent to the client</param>
         void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases);
 
+        /// <summary>
+        /// Send raw Json objects
+        /// </summary>
+        /// <param name="items"></param>
+        void SendMany(ICollection<JObject> items);
 
         /// <summary>
         ///     Wait for client confirmation (used in two-stage transactions).
@@ -31,5 +37,6 @@ namespace Client.ChannelInterface
         /// <returns></returns>
         bool? ShouldContinue();
 
+        
     }
 }

@@ -30,7 +30,7 @@
         <div class="actions">
             <ng-template #TooltipFeed>
                 <div>
-                    <p style="font-size: larger;color: blue;">Feed from backup</p>
+                    <h3>Feed from backup</h3>
                     <p>Feed all data from a backup in an existing database</p>
                     <p>If the database is not empty, existing data is <u>replaced</u>, new data is inserted.</p>
                     <p>May be used to restore a database on which nodes were added or removed or to feed data between
@@ -41,8 +41,8 @@
                 </div>
             </ng-template>
             <ng-template #TooltipRestore>
-                <div>
-                    <p style="font-size: larger;color: blue;">Restore from backup</p>
+                <div>                    
+                    <h3>Restore from backup</h3>
                     <p>Reset the database to a previous state. All current data is lost.</p>
                     <p>It is fast (all nodes are restored in parallel) but it requires the number of nodes to be the
                         same as in the backup.</p>
@@ -52,15 +52,15 @@
                 </div>
             </ng-template>
             <ng-template #TooltipDrop>
-                <div>
-                    <p style="font-size: larger;color: blue;">Drop the database</p>
+                <div>                    
+                    <h3>Drop the database</h3>
                     <p>Delete all data and schema information.</p>
                     <p>Used to reset database after tests or before using "Feed from backup"</p>
                 </div>
             </ng-template>
             <ng-template #TooltipTruncate>
-                <div>
-                    <p style="font-size: larger;color: blue;">Truncate the {{selectedCollection}} collection</p>
+                <div>                    
+                    <h3>Truncate the {{selectedCollection}} collection</h3>
                     <p>All data will be deleted.</p>
                     <p>Schema information (queryable properties and indexes) is conserved</p>
                 </div>
@@ -77,14 +77,14 @@
             </mat-form-field>
 
             <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button" aria-label="restore"
-                (click)="actionToConfirm='restore'" [disabled]="working" [ngbPopover]="TooltipRestore"
+                (click)="actionToConfirm='restore'" [disabled]="working" [tooltip]="$any(TooltipRestore)"
                 triggers="mouseenter:mouseleave">
                 <mat-icon>cloud_download</mat-icon>
                 restore from backup
             </button>
             <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button"
                 aria-label="feed from backup" (click)="actionToConfirm='recreate'" [disabled]="working"
-                [ngbPopover]="TooltipFeed" triggers="mouseenter:mouseleave">
+                [tooltip]="$any(TooltipFeed)" triggers="mouseenter:mouseleave">
                 <mat-icon>reply</mat-icon>
                 feed from backup
             </button>
@@ -101,12 +101,12 @@
             </mat-form-field>
 
             <button *ngIf="selectedCollection" mat-raised-button color="warn" class="dangerous-button"
-                aria-label="truncate" (click)="actionToConfirm='truncate'" [ngbPopover]="TooltipTruncate"
+                aria-label="truncate" (click)="actionToConfirm='truncate'" [tooltip]="$any(TooltipTruncate)"
                 triggers="mouseenter:mouseleave" [disabled]="working">
                 <mat-icon>delete</mat-icon>
                 truncate collection
             </button>
-            <button mat-raised-button color="warn" class="dangerous-button" aria-label="drop" [ngbPopover]="TooltipDrop"
+            <button mat-raised-button color="warn" class="dangerous-button" aria-label="drop" [tooltip]="$any(TooltipDrop)"
                 triggers="mouseenter:mouseleave" (click)="actionToConfirm='drop'" [disabled]="working">
                 <mat-icon>delete_forever</mat-icon>
                 DROP DATABASE
@@ -170,11 +170,11 @@
                             </div>
                         </ng-template>
                         <mat-icon *ngIf="r.status=='Failed'" style="width:2rem;height:2rem;color:brown"
-                            [ngbPopover]="TooltipError" triggers="mouseenter:mouseleave">info</mat-icon>
+                            [tooltip]="$any(TooltipError)" triggers="mouseenter:mouseleave">info</mat-icon>
                     </td>
-                    <td><button mat-mini-fab color="accent" aria-label="remove from history"
+                    <td><button mat-icon-button color="accent" aria-label="remove from history"
                             style="width: 2rem;height:2rem;padding:0"
-                            matTooltip="remove this entry from hitory (the backup will not be deleted)"
+                            tooltip="remove this entry from hitory (the backup will not be deleted)"
                             (click)="removeFromHistory(r.processId)">
                             <mat-icon style="font-size: 1.2rem;">delete</mat-icon>
                         </button>

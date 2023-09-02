@@ -4,7 +4,7 @@
 
 /* Provide sufficient contrast against white background */
 a {
-  color: #0366d6;
+  color: wheat;
 }
 
 code {
@@ -162,9 +162,19 @@ td {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  background-color: transparent;
+}
+
+.cell{
+  background-color: transparent;
 }
 
 th{
   padding: 0.5rem;
   font-weight: 500;
+}
+
+/*-----------*/
+::ng-deep .cool-tooltip{
+  text-align: left;
 }

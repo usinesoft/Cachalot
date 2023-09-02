@@ -218,9 +218,16 @@ class QueryService : IQueryService
                 return $"{value}";
             }
 
-            if (query.PropertyIsCollection)
+            if (query.PropertyIsCollection )
             {
-                return $"'{value}'";
+                if (query.DataType == PropertyType.String)
+                {
+                    return $"'{value}'";
+                }
+                else
+                {
+                    return $"{value}";
+                }
             }
 
             return value;

@@ -178,6 +178,8 @@ namespace Tests.UnitTests
 
         }
 
+   
+
         [Test]
         public void Packing_a_binary_object_and_its_json_should_give_identical_results_with_default_index_type()
         {

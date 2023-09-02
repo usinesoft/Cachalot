@@ -12,6 +12,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Client.Interface;
+using Newtonsoft.Json.Linq;
 
 namespace Channel
 {
@@ -213,6 +214,22 @@ namespace Channel
 
             #region IClient Members
 
+            public void SendMany(ICollection<JObject> items)
+            {
+                Stream stream = _tcpClient.GetStream();
+                
+                var memStream = new MemoryStream();
+                Streamer.ToStreamMany(memStream, items);
+                Task.Run( ()=>
+                {
+                        
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    stream.Write(memStream.GetBuffer(), 0,
+                        (int)memStream.Length);
+                });
+                
+            }
+
             public bool? ShouldContinue()
             {
                 try
@@ -276,13 +293,13 @@ namespace Channel
                     {
                         var memStream = new MemoryStream();
                         Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);
-                        ThreadPool.QueueUserWorkItem(delegate (object state)
+                        Task.Run( ()=>
                         {
-                            var networkStream = (Stream)state;
+                            
                             memStream.Seek(0, SeekOrigin.Begin);
-                            networkStream.Write(memStream.GetBuffer(), 0,
+                            stream.Write(memStream.GetBuffer(), 0,
                                 (int)memStream.Length);
-                        }, stream);
+                        });
                     }
                     else
                     {

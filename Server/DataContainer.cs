@@ -586,6 +586,8 @@ namespace Server
                 var currentProcess = Process.GetCurrentProcess();
 
                 var assembly = Assembly.GetAssembly(typeof(Server));
+
+               
                 
                 response.ServerProcessInfo = new ServerInfo
                 {
@@ -609,6 +611,18 @@ namespace Server
                             : ""
                 };
 
+                foreach (ProcessThread thread in currentProcess.Threads)
+                {
+                    switch (thread.ThreadState)
+                    {
+                        case ThreadState.Running:
+                            response.ServerProcessInfo.RunningThreads++;
+                            break;
+                        case ThreadState.Wait:
+                            response.ServerProcessInfo.WaitingThreads++;
+                            break;
+                    }
+                }
 
                 client.SendResponse(response);
             }

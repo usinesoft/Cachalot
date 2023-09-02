@@ -26,7 +26,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: "cachalotdb",
         builder =>
         {
-            builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "cachalotdb.com");
+            builder.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("cachalotdb.com"));
             builder.AllowAnyMethod();
             builder.AllowAnyHeader();
         });
@@ -34,7 +34,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: "cachalot-db",
         builder =>
         {
-            builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "cachalot-db.com");
+            builder.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("cachalot-db.com"));
             builder.AllowAnyMethod();
             builder.AllowAnyHeader();
         });
@@ -101,5 +101,5 @@ if (server != null)
 }
 
 
-app.WaitForShutdown();
+await app.WaitForShutdownAsync();
 //app.Run();

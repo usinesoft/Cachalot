@@ -11,8 +11,11 @@ using System.Linq;
 
 namespace Server
 {
-    public class DictionaryIndex : IndexBase
+    public sealed class DictionaryIndex : IndexBase
     {
+
+        public IList<KeyValue> Keys => _data.Keys.ToList();
+
         /// <summary>
         ///     Double indexation: first by key value then by primary key
         /// </summary>
@@ -27,7 +30,7 @@ namespace Server
 
         public DictionaryIndex(KeyInfo keyInfo) : base(keyInfo)
         {
-            _data = new Dictionary<KeyValue, HashSet<PackedObject>>();
+            _data = new();
         }
 
         public override IndexType IndexType => IndexType.Dictionary;
@@ -65,7 +68,7 @@ namespace Server
         {
             if (!_data.TryGetValue(key, out var byPrimaryKey))
             {
-                byPrimaryKey = new HashSet<PackedObject>();
+                byPrimaryKey = new();
                 _data[key] = byPrimaryKey;
             }
 
@@ -76,6 +79,7 @@ namespace Server
 
         public override void EndFill()
         {
+            // nothing to do
         }
 
         public override ISet<PackedObject> GetMany(IList<KeyValue> values, QueryOperator op = QueryOperator.Eq)

@@ -1,0 +1,75 @@
+.server-card {
+    min-width: 20rem;
+    min-height: 30rem;
+    padding: 0;
+}
+
+.card-header{    
+    padding:8px ;    
+    color:white;
+    border-radius:4px 4px 0 0;
+    border-bottom: 1px solid black;
+  }
+
+.card-title  {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    color: white;   
+    font-size: 1rem;    
+    margin-top: 0.3rem;
+}
+
+.card-subtitle  {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    color: white;
+    margin-bottom: 0;
+}
+
+
+
+.card-content  {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;    
+    padding: 8px;
+}
+
+
+
+
+.server-info-persistent {
+
+    background-color: green;
+
+}
+
+.server-info-not-persistent {
+
+    background-color: darkgreen;
+
+}
+
+.server-info-readonly {
+
+    background-color: blue;
+
+}
+
+.server-info-error {
+    background-color: red;
+}
+
+td{
+    padding: 0.2rem;
+}
+
+td:first-child{
+    font-weight: 500;
+}
+
+td:nth-child(2){
+    padding-left: 1rem;
+}

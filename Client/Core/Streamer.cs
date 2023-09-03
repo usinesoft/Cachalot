@@ -206,11 +206,11 @@ public static class Streamer
 
         foreach (var item in items)
         {
-            var data = SerializationHelper.ObjectToBytes(items, SerializationMode.Json, false);
+            var data = SerializationHelper.ObjectToBytes(item, SerializationMode.Json, false);
 
             writer.Write(false);
             writer.Write(false);
-            writer.Write(0); // no rank
+            writer.Write((double)0); // no rank
             writer.Write(data.Length);
             writer.Write(data);
         }

@@ -1509,6 +1509,32 @@ namespace Tests.IntegrationTests
             Assert.AreEqual(resultWithLinq.Count, resultWithPrecompiled.Count);
         }
 
+        [Test]
+        public void Distinct_for_single_property()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<AllKindsOfProperties>();
+
+            var collection = connector.DataSource<AllKindsOfProperties>();
+
+            collection.Put(new AllKindsOfProperties{InstrumentName = "instr01", Tags = new List<string>{"a", "b", "c"}});
+            collection.Put(new AllKindsOfProperties{InstrumentName = "instr02", Tags = new List<string>{"x", "y", "c"}});
+            collection.Put(new AllKindsOfProperties{InstrumentName = "instr02", Tags = new List<string>{"x", "y", "z"}});
+
+            // scalar property (indexed)
+            var ji = connector.SqlQueryAsJson("select distinct InstrumentName from AllKindsOfProperties").ToList();
+            Assert.AreEqual(2, ji.Count);
+
+            var instruments = collection.Select(x => x.InstrumentName).Distinct().ToList();
+            Assert.AreEqual(2, instruments.Count);
+
+            // collection property (indexed)
+            var jt = connector.SqlQueryAsJson("select distinct tags from AllKindsOfProperties").ToList();
+            Assert.AreEqual(6, jt.Count);
+            
+        }
+
 
         [Test]
         public void Update_items_with_put_many()

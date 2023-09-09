@@ -1,5 +1,9 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
+using Client.Tools;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
+using Tests.TestTools;
 
 namespace Tests.UnitTests
 {
@@ -93,6 +97,69 @@ namespace Tests.UnitTests
             Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv2.Type);
 
             Assert.AreEqual(kv1, kv2);
+        }
+
+
+        [Test]
+        public void Date_does_not_use_local_timezone()
+        {
+            KeyValue date = null;
+
+            DateTime testValue = DateTime.MinValue;
+
+            string fmt1 = null;
+
+            using (var tz = new FakeLocalTimeZone(TimeZoneInfo.Utc))
+            {
+                testValue = DateTime.Today;
+
+                fmt1 = SmartDateTimeConverter.FormatDate(testValue);
+
+                date = new KeyValue(testValue);
+            }
+
+            using (var tz = new FakeLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+            {
+                var tst = date!.DateValue!.Value!.UtcDateTime;
+
+                Assert.AreEqual(testValue, tst);
+
+                var fmt2 = SmartDateTimeConverter.FormatDate(tst);
+
+                Assert.AreEqual(fmt1, fmt2);
+
+            }
+        }
+
+        [Test]
+        public void Date_with_time_does_not_use_local_timezone()
+        {
+            KeyValue date = null;
+
+            DateTime testValue = DateTime.MinValue;
+
+            string fmt1 = null;
+
+            using (var tz = new FakeLocalTimeZone(TimeZoneInfo.Utc))
+            {
+                testValue = DateTime.Now;
+
+                fmt1 = SmartDateTimeConverter.FormatDate(testValue);
+
+                date = new KeyValue(testValue);
+            }
+
+            using (var tz = new FakeLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time")))
+            {
+                var tst = date!.DateValue!.Value!.UtcDateTime;
+
+                Assert.AreEqual(testValue, tst);
+
+                var fmt2 = SmartDateTimeConverter.FormatDate(tst);
+
+                Assert.AreEqual(fmt1, fmt2);
+
+            }
         }
 
     }

@@ -106,7 +106,7 @@ namespace Client.Core
                 }
 
                 if (_data.Length == 0)//no offset
-                    return new DateTimeOffset(new DateTime(_hashCode));
+                    return new DateTimeOffset(_hashCode, TimeSpan.Zero);
 
                 var offset = BitConverter.ToInt64(_data, 0);
                 
@@ -485,7 +485,7 @@ namespace Client.Core
                 }
 
 
-                FromDateTimeWithTimeZone(new DateTimeOffset(dt));
+                FromDateTimeWithTimeZone(new DateTimeOffset(dt.Ticks, TimeSpan.Zero));
 
                 return;
             }

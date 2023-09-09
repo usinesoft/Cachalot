@@ -498,12 +498,23 @@ class QueryService : IQueryService
 
     private static void MetadataForCollectionProperty(string property, List<JObject> result, QueryMetadata metadata)
     {
+        if (result == null) throw new ArgumentNullException(nameof(result));
         metadata.PropertyIsCollection = true;
 
-        metadata.PropertyType = PropertyType.String; // does not really matter for collections
-    
-        // only "contains" and "not contains" for collections
+        var type = (((JProperty)result[0].First!)!).Value.Type;
 
+        metadata.PropertyType = type switch
+        {
+            JTokenType.Boolean => PropertyType.Boolean,
+            JTokenType.Date => PropertyType.Date,
+            JTokenType.Float => PropertyType.SomeFloat,
+            JTokenType.Integer => PropertyType.SomeInteger,
+            _ => PropertyType.String
+        };
+
+        metadata.PossibleValues = result.Select(x => SmartDateTimeConverter.FormatDate((DateTime)(((JProperty )x.First!)!).Value)).ToArray();
+        
+        // only "contains" and "not contains" for collections
         metadata.AvailableOperators = new[] { "contains", "not contains" };
         
         

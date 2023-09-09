@@ -185,6 +185,12 @@ namespace CachalotMonitor.Controllers
             AdminService.TruncateTable(collection);
         }
 
+        [HttpDelete("drop/{collection}")]
+        public void DropCollection(string collection)
+        {
+            ClusterService.Connector?.DropCollection(collection);
+        }
+
         [HttpDelete("drop")]
         public void Drop()
         {

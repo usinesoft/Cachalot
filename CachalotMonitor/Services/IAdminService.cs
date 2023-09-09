@@ -37,4 +37,5 @@ public interface IAdminService:IDisposable
 
     void DeleteProcess(Guid id);
 
+    
 }

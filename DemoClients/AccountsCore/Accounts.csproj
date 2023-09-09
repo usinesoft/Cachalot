@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Cachalot.Client" Version="2.4.1" />
+    <PackageReference Include="Cachalot.Client" Version="2.4.4" />
   </ItemGroup>
 
   <ItemGroup>

@@ -289,6 +289,16 @@ namespace Server
                         var mgr = new DeleteManager(dataStore, PersistenceEngine);
 
                         mgr.ProcessRequest(removeManyRequest, client);
+
+                        if (removeManyRequest.Drop) 
+                        {
+                            // remove the data store for the collection
+                            DataStores.Remove(removeManyRequest.CollectionName);
+
+                            // delete schema information after truncate
+                            _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+
+                        }
                     }
                     else if (dataRequest is PutRequest putRequest)
                     {

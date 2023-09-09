@@ -27,6 +27,7 @@ namespace Server.Queries
                 {
                     int removed = RemoveMany(removeManyRequest.Query);
 
+                    
                     client?.SendResponse(new ItemsCountResponse { ItemsCount = removed });
                 }
                 catch (Exception e)

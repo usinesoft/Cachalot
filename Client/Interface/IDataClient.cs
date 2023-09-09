@@ -68,8 +68,9 @@ namespace Client.Interface
         ///     This method is transactional only on a single node cluster
         /// </summary>
         /// <param name="query"></param>
+        /// <param name="drop">if true and empty query remove the collection schema after truncate</param>
         /// <returns>number of items effectively removed</returns>
-        int RemoveMany(OrQuery query);
+        int RemoveMany(OrQuery query, bool drop = false);
 
         /// <summary>
         ///     Compute a pivot table server-side
@@ -83,9 +84,10 @@ namespace Client.Interface
         /// <summary>
         ///     Clears one collection and also resets the hit ratio in pure cache mode. The schema information is preserved
         ///     It is much faster than <see cref="DataClient.RemoveMany" /> with a query that matches all data
+        ///     If <paramref name="drop"/> is true also remove schema information
         /// </summary>
         /// <returns></returns>
-        int Truncate(string collectionName);
+        int Truncate(string collectionName, bool drop = false);
 
         /// <summary>
         ///     Retrieve multiple objects a json using a precompiled query.

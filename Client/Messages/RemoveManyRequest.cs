@@ -14,12 +14,21 @@ namespace Client.Messages
         {
         }
 
-        public RemoveManyRequest(OrQuery query)
+        public RemoveManyRequest(OrQuery query, bool drop = false)
             : base(DataAccessType.Write, query.CollectionName)
         {
             Query = query;
+            Drop = drop;
         }
 
+        /// <summary>
+        /// The query matching the items to delete. If empty delete all (truncate)
+        /// </summary>
         [field: ProtoMember(1)] public OrQuery Query { get; }
+
+        /// <summary>
+        /// If TRUE Also remove schema information
+        /// </summary>
+        [field: ProtoMember(2)] public bool Drop { get; }
     }
 }

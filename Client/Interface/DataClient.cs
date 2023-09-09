@@ -216,19 +216,24 @@ namespace Client.Interface
             }
         }
 
-        public int RemoveMany(OrQuery query)
+        public int RemoveMany(OrQuery query, bool drop = false)
         {
             if (query == null)
                 throw new ArgumentNullException(nameof(query));
 
-            var request = new RemoveManyRequest(query);
+            if (drop && !query.IsEmpty())
+            {
+                throw new ArgumentException($"Invalid request. Drop table with a non empty query");
+            }
+
+            var request = new RemoveManyRequest(query, drop);
 
             var response = Channel.SendRequest(request);
 
             if (response is ExceptionResponse exResponse)
                 throw new CacheException("Error in RemoveMany", exResponse.Message, exResponse.CallStack);
 
-            if (!(response is ItemsCountResponse countResponse))
+            if (response is not ItemsCountResponse countResponse)
                 throw new CacheException("Invalid type of response received in RemoveMany()");
 
             return countResponse.ItemsCount;
@@ -255,10 +260,10 @@ namespace Client.Interface
             return pivotResponse.Root;
         }
 
-        public int Truncate(string collectionName)
+        public int Truncate(string collectionName, bool drop = false)
         {
             // as we pass an empty query, it will be treated as a special request by the server
-            return RemoveMany(new OrQuery(collectionName));
+            return RemoveMany(new OrQuery(collectionName), drop);
         }
 
 

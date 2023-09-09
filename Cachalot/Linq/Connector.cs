@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Xml.Serialization;
+using Client.Queries;
 using Client.Tools;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -360,6 +362,11 @@ namespace Cachalot.Linq
 
             return new DataSource<T>(this, collectionName, GetCollectionSchema(collectionName));
 
+        }
+
+        public void DropCollection(string collectionName = null)
+        {
+            Client.RemoveMany(new OrQuery(collectionName), true);
         }
 
 

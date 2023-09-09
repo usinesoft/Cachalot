@@ -1,6 +1,6 @@
-﻿using Server.Persistence;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
+using Server.Persistence;
 
 namespace StorageAnalyzer
 {
@@ -21,10 +21,11 @@ namespace StorageAnalyzer
         public long ProcessedCount { get; set; }
 
 
+        public List<TransactionLog.TransactionData> ProcessingTransactions { get; } =
+            new List<TransactionLog.TransactionData>();
 
-        public List<TransactionLog.TransactionData> ProcessingTransactions { get; } = new List<TransactionLog.TransactionData>();
-
-        public List<TransactionLog.TransactionData> TransactionsWithIssues { get; } = new List<TransactionLog.TransactionData>();
+        public List<TransactionLog.TransactionData> TransactionsWithIssues { get; } =
+            new List<TransactionLog.TransactionData>();
 
         public string Analysis()
         {
@@ -34,22 +35,17 @@ namespace StorageAnalyzer
             {
                 result.AppendLine("transactions with issues:");
                 foreach (var transactionsWithIssue in TransactionsWithIssues)
-                {
-                    result.AppendLine("  " + transactionsWithIssue.ToString());
-                }
+                    result.AppendLine("  " + transactionsWithIssue);
 
                 result.AppendLine();
             }
 
             if (ProcessingTransactions.Count > 0)
             {
-
                 result.AppendLine("transactions not fully committed:");
 
                 foreach (var transactionsWithIssue in ProcessingTransactions)
-                {
                     result.AppendLine("  " + transactionsWithIssue);
-                }
 
                 result.AppendLine();
             }

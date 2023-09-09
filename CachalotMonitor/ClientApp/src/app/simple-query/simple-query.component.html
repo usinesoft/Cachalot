@@ -1,49 +1,50 @@
 <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
 <div class="query-container">
 
-    <!--property-->
-    <mat-form-field appearance="fill">
-        <mat-label>Property</mat-label>
-        <mat-select [(value)]="selectedProperty">
-            <mat-option *ngFor="let property of properties" [value]="property">
-                {{property}}
-            </mat-option>
-        </mat-select>
-    </mat-form-field>
-    <!--operator-->
-    <mat-form-field appearance="fill" style="max-width: 6rem;">
-        <mat-label>Operator</mat-label>
-        <mat-select [(value)]="operator">
-            <mat-option *ngFor="let op of operators" [value]="op">
-                {{op}}
-            </mat-option>
-        </mat-select>
-    </mat-form-field>
-    <!--value(s)-->
-    <mat-form-field appearance="fill" *ngIf="multipleValuesAllowed && canSelectValues && hasValue" style="flex-grow:2">
-        <mat-label>Value(s)</mat-label>
-        <mat-select placeholder="Value(s)" [multiple]="true" [(ngModel)]="selectedValues" #multiSelect>
-            
-            <!--search box only if more than 10 values-->
-            <mat-option *ngIf="values.length > 10">
-                <ngx-mat-select-search [(ngModel)]="searchText" placeholderLabel="Search..."
-                    noEntriesFoundLabel="'no matching value'"></ngx-mat-select-search>
-            </mat-option>
-            <mat-option class="clear" *ngIf="values.length > 10">
-                <mat-icon (click)="clearAll()" fontIcon="clear_all" style="color: red;" tooltip="clear selection"></mat-icon>
-                <!-- <mat-icon (click)="selectAll()" fontIcon="check_all" style="color: green;" tooltip="select all"></mat-icon> -->
-            </mat-option>
-            <mat-option *ngFor="let val of filteredValues " [value]="val">
-                {{val}}
-            </mat-option>
-        </mat-select>
-        <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>
-    </mat-form-field>
-    <mat-form-field appearance="fill" *ngIf="(!multipleValuesAllowed || !canSelectValues) && hasValue "
-        style="flex-grow:2">
-        <mat-label>Value</mat-label>
-        <input matInput placeholder="Value" [(ngModel)]="singleValue">
-        <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>
-    </mat-form-field>
+  <!--property-->
+  <mat-form-field appearance="fill">
+    <mat-label>Property</mat-label>
+    <mat-select [(value)]="selectedProperty">
+      <mat-option *ngFor="let property of properties" [value]="property">
+        {{property}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <!--operator-->
+  <mat-form-field appearance="fill" style="max-width: 6rem;">
+    <mat-label>Operator</mat-label>
+    <mat-select [(value)]="operator">
+      <mat-option *ngFor="let op of operators" [value]="op">
+        {{op}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <!--value(s)-->
+  <mat-form-field appearance="fill" *ngIf="multipleValuesAllowed && canSelectValues && hasValue" style="flex-grow: 2">
+    <mat-label>Value(s)</mat-label>
+    <mat-select placeholder="Value(s)" [multiple]="true" [(ngModel)]="selectedValues" #multiSelect>
+
+      <!--search box only if more than 10 values-->
+      <mat-option *ngIf="values.length > 10">
+        <ngx-mat-select-search [(ngModel)]="searchText" placeholderLabel="Search..."
+                               noEntriesFoundLabel="'no matching value'">
+        </ngx-mat-select-search>
+      </mat-option>
+      <mat-option class="clear" *ngIf="values.length > 10">
+        <mat-icon (click)="clearAll()" fontIcon="clear_all" style="color: red;" tooltip="clear selection"></mat-icon>
+        <!-- <mat-icon (click)="selectAll()" fontIcon="check_all" style="color: green;" tooltip="select all"></mat-icon> -->
+      </mat-option>
+      <mat-option *ngFor="let val of filteredValues " [value]="val">
+        {{val}}
+      </mat-option>
+    </mat-select>
+    <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>
+  </mat-form-field>
+  <mat-form-field appearance="fill" *ngIf="(!multipleValuesAllowed || !canSelectValues) && hasValue "
+                  style="flex-grow: 2">
+    <mat-label>Value</mat-label>
+    <input matInput placeholder="Value" [(ngModel)]="singleValue">
+    <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>
+  </mat-form-field>
 
 </div>

@@ -26,33 +26,30 @@ public class QueryManager : IRequestManager
     private readonly ILog _log;
 
 
-    /// <summary>
-    ///     Internally used to select the most efficient indexes for a query
-    /// </summary>
-    private class IndexRanking
-    {
-        public IndexRanking(IReadOnlyIndex index, AtomicQuery resolvedQuery, int ranking)
-        {
-            Index = index;
-            ResolvedQuery = resolvedQuery;
-            Ranking = ranking;
-        }
-
-        public IReadOnlyIndex Index { get; }
-
-        public AtomicQuery ResolvedQuery { get; }
-
-        /// <summary>
-        ///     Number of objects resolved by this index. Lower is better (more discriminant index)
-        /// </summary>
-        public int Ranking { get; }
-    }
-
-
     public QueryManager(DataStore dataStore, ILog log = null)
     {
         _dataStore = dataStore;
         _log = log;
+    }
+
+
+    public ExecutionPlan ExecutionPlan { get; private set; }
+
+    public void ProcessRequest(Request request, IClient client)
+    {
+        switch (request)
+        {
+            case GetRequest getRequest:
+                ProcessGetRequest(getRequest, client);
+                break;
+            case EvalRequest evalRequest:
+                ProcessEvalRequest(evalRequest, client);
+                break;
+
+            case PivotRequest pivotRequest:
+                ProcessPivotRequest(pivotRequest, client);
+                break;
+        }
     }
 
 
@@ -220,11 +217,9 @@ public class QueryManager : IRequestManager
 
                 // special processing for distinct clause on a single column
                 if (query.Distinct && query.SelectClause.Count == 1)
-                {
                     ExecutionPlan.SimpleDistinct = true;
 
-                    //TODO simple distinct
-                }
+                //TODO simple distinct
 
                 return SmartFullScan(query)
                     .ToList();
@@ -296,7 +291,7 @@ public class QueryManager : IRequestManager
         finally
         {
             ExecutionPlan.End();
-            
+
             if (!query.CollectionName.Equals(LogEntry.Table,
                     StringComparison.InvariantCultureIgnoreCase)) // do not log queries on @ACTIVITY table itself
             {
@@ -477,11 +472,11 @@ public class QueryManager : IRequestManager
 
         var atomicQuery = AsAtomic(orQuery);
 
-         
+
         var query = (Query)atomicQuery ?? orQuery; // matching with atomic query is slightly faster
 
         // if not ORDER BY use the primary index
-        List<PackedObject> result = orQuery.OrderByProperty == null
+        var result = orQuery.OrderByProperty == null
             ? _dataStore.PrimaryIndex.GetAll().Where(query.Match).ToList()
             : null;
 
@@ -500,9 +495,6 @@ public class QueryManager : IRequestManager
         return PostProcessResult(orQuery, result);
     }
 
-
-    public ExecutionPlan ExecutionPlan { get; private set; }
-
     private void ProcessGetRequest(GetRequest request, IClient client)
     {
         try
@@ -516,11 +508,11 @@ public class QueryManager : IRequestManager
             // faster processing for simple distinct queries
             if (query.IsEmpty() && query.Distinct && query.SelectClause.Count == 1)
             {
-                var propertyName = query.SelectClause [0].Name;
+                var propertyName = query.SelectClause[0].Name;
                 var values = SimpleDistinct(propertyName, query.Take);
 
                 //pack values as Json objects
-                List<JObject> valuesList = new List<JObject>(values.Count);
+                var valuesList = new List<JObject>(values.Count);
                 foreach (var value in values)
                 {
                     var jo = new JObject { value.ToJson(propertyName) };
@@ -624,8 +616,8 @@ public class QueryManager : IRequestManager
     }
 
     /// <summary>
-    /// Used for distinct queries without where clause and having single column in select clause
-    /// They can be processed much faster than the generic case
+    ///     Used for distinct queries without where clause and having single column in select clause
+    ///     They can be processed much faster than the generic case
     /// </summary>
     /// <param name="column"></param>
     /// <param name="take">if greater than 0 limit the length of the result </param>
@@ -633,17 +625,14 @@ public class QueryManager : IRequestManager
     /// <exception cref="ArgumentException"></exception>
     private IList<KeyValue> SimpleDistinct(string column, int take)
     {
-        if (take == 0)
-        {
-            take = int.MaxValue;
-        }
+        if (take == 0) take = int.MaxValue;
 
         var metadata = _dataStore.CollectionSchema.ServerSide
             .FirstOrDefault(x => x.Name.Equals(column, StringComparison.InvariantCultureIgnoreCase));
 
         if (metadata == null)
             throw new ArgumentException($"Unknown property {column}");
-            
+
         var unique = new HashSet<KeyValue>();
 
         // if a dictionary index is available use it
@@ -657,26 +646,17 @@ public class QueryManager : IRequestManager
 
         // otherwise proceed to full scan
         if (metadata.IsCollection)
-        {
             foreach (var packedObject in _dataStore.DataByPrimaryKey.Values)
             {
                 var values = packedObject.CollectionValues[metadata.Order];
-                foreach (var keyValue in values.Values)
-                {
-                    unique.Add(keyValue);
-                }
+                foreach (var keyValue in values.Values) unique.Add(keyValue);
             }
-                
-        }
         else // scalar value
-        {
             foreach (var packedObject in _dataStore.DataByPrimaryKey.Values)
             {
                 var value = packedObject.Values[metadata.Order];
                 unique.Add(value);
             }
-                
-        }
 
         return unique.Take(take).ToList();
     }
@@ -689,22 +669,15 @@ public class QueryManager : IRequestManager
     /// <returns></returns>
     private IList<PackedObject> PostProcessResult(OrQuery query, IList<PackedObject> result)
     {
-        
         if (query.Distinct && !ExecutionPlan.SimpleDistinct) // simple distinct already processed
         {
+            if (query.SelectClause.Count == 0) throw new NotSupportedException("DISTINCT clause requires a projection");
 
-            if (query.SelectClause.Count == 0)
-            {
-                throw new NotSupportedException("DISTINCT clause requires a projection");
-            }
-            
             var indexOfSelectedProperties = _dataStore.CollectionSchema.IndexesOfNames(query.SelectClause
                 .Select(s => s.Name)
                 .ToArray());
 
             result = Distinct(result, ExecutionPlan, indexOfSelectedProperties);
-            
-            
         }
 
 
@@ -729,23 +702,6 @@ public class QueryManager : IRequestManager
 
 
         return result;
-    }
-
-    public void ProcessRequest(Request request, IClient client)
-    {
-        switch (request)
-        {
-            case GetRequest getRequest:
-                ProcessGetRequest(getRequest, client);
-                break;
-            case EvalRequest evalRequest:
-                ProcessEvalRequest(evalRequest, client);
-                break;
-
-            case PivotRequest pivotRequest:
-                ProcessPivotRequest(pivotRequest, client);
-                break;
-        }
     }
 
     private void ProcessPivotRequest(PivotRequest pivotRequest, IClient client)
@@ -809,5 +765,28 @@ public class QueryManager : IRequestManager
     private IList<PackedObject> ProcessFullTextQuery(string query, int take)
     {
         return _dataStore.FullTextSearch(query, take);
+    }
+
+
+    /// <summary>
+    ///     Internally used to select the most efficient indexes for a query
+    /// </summary>
+    private class IndexRanking
+    {
+        public IndexRanking(IReadOnlyIndex index, AtomicQuery resolvedQuery, int ranking)
+        {
+            Index = index;
+            ResolvedQuery = resolvedQuery;
+            Ranking = ranking;
+        }
+
+        public IReadOnlyIndex Index { get; }
+
+        public AtomicQuery ResolvedQuery { get; }
+
+        /// <summary>
+        ///     Number of objects resolved by this index. Lower is better (more discriminant index)
+        /// </summary>
+        public int Ranking { get; }
     }
 }

@@ -1,34 +1,29 @@
 using System;
 using System.Diagnostics;
 
-namespace AdminConsole.Commands
+namespace AdminConsole.Commands;
+
+public class ConsoleProfiler
 {
-    public class ConsoleProfiler
+    private readonly Stopwatch _watch = new();
+    private string _currentAction;
+
+    public bool IsActive { get; set; } = false;
+
+
+    public long TotalTimeMilliseconds => _watch.ElapsedMilliseconds;
+
+    public void Start(string action)
     {
-        private string _currentAction;
+        _currentAction = action;
 
-        readonly Stopwatch _watch = new Stopwatch();
+        _watch.Restart();
+    }
 
-        public bool IsActive { get; set; } = false;
+    public void End()
+    {
+        _watch.Stop();
 
-        public void Start(string action)
-        {
-            _currentAction = action;
-
-            _watch.Restart();
-        }
-
-        public void End()
-        {
-            _watch.Stop();
-
-            if (IsActive)
-            {
-                Console.WriteLine($"{_currentAction} took {_watch.ElapsedMilliseconds} ms");
-            }
-        }
-
-
-        public long TotalTimeMilliseconds => _watch.ElapsedMilliseconds;
+        if (IsActive) Console.WriteLine($"{_currentAction} took {_watch.ElapsedMilliseconds} ms");
     }
 }

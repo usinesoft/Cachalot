@@ -1,11 +1,8 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using CachalotMonitor.Model;
 using CachalotMonitor.Services;
 using Client.Core;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace CachalotMonitor.Controllers;
 
@@ -27,7 +24,7 @@ public class DataController : ControllerBase
     }
 
     [HttpPost("query/sql/{collection}")]
-    public SqlResponse GetQueryAsSql(string collection, [FromBody]AndQuery clientQuery)
+    public SqlResponse GetQueryAsSql(string collection, [FromBody] AndQuery clientQuery)
     {
         var sql = _queryService.ClientQueryToSql(collection, clientQuery);
         return new() { Sql = sql };
@@ -40,9 +37,8 @@ public class DataController : ControllerBase
     }
 
     [HttpPost("query/execute")]
-    public DataResponse ExecuteQuery([FromBody]InputQuery query)
+    public DataResponse ExecuteQuery([FromBody] InputQuery query)
     {
-
         var result = new DataResponse();
 
         var watch = new Stopwatch();
@@ -64,27 +60,21 @@ public class DataController : ControllerBase
             result.QueryId = queryId;
         }
 
-        
+
         return result;
     }
 
     [HttpPost("query/stream")]
-    public async Task<IActionResult> ExecuteQueryAsStream([FromBody]InputQuery query)
+    public async Task<IActionResult> ExecuteQueryAsStream([FromBody] InputQuery query)
     {
         var fileName = "data";
         // get the collection name from query
-        var parts =  query.Sql?.Split(' ', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries);
-        for (int i = 0; i < parts?.Length; i++)
-        {
+        var parts = query.Sql?.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        for (var i = 0; i < parts?.Length; i++)
             if (parts[i].ToLower() == "from")
-            {
                 if (parts.Length > i + 1)
-                {
                     fileName = parts[i + 1];
-                }
-            }
-        }
-        
+
         HttpContext.Response.Headers["content-type"] = "application/json";
         HttpContext.Response.Headers["content-disposition"] = $"attachment; filename={fileName}";
 
@@ -95,14 +85,12 @@ public class DataController : ControllerBase
         return new EmptyResult();
     }
 
-    
 
     [HttpPost("put/stream/{collectionName}")]
     public async Task<IActionResult> PutManyAsStream(string collectionName, IFormFile file)
     {
-        
         await _queryService.PutManyAsStream(file.OpenReadStream(), collectionName);
-        
+
         return new EmptyResult();
     }
 }

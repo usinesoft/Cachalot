@@ -1,51 +1,50 @@
+using System;
+using System.Linq.Expressions;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Clauses.StreamedData;
-using System;
-using System.Linq.Expressions;
 
-namespace Client.Core.Linq
+namespace Client.Core.Linq;
+
+public class FullTextSearchResultOperator
+    : SequenceTypePreservingResultOperatorBase
+
 {
-    public class FullTextSearchResultOperator
-        : SequenceTypePreservingResultOperatorBase
+    public FullTextSearchResultOperator(Expression parameter)
 
     {
-        public FullTextSearchResultOperator(Expression parameter)
-
-        {
-            Parameter = parameter;
-        }
+        Parameter = parameter;
+    }
 
 
-        public Expression Parameter { get; private set; }
+    public Expression Parameter { get; private set; }
 
 
-        public override string ToString()
+    public override string ToString()
 
-        {
-            return "Full text search";
-        }
-
-
-        public override ResultOperatorBase Clone(CloneContext cloneContext)
-
-        {
-            return new FullTextSearchResultOperator(Parameter);
-        }
+    {
+        return "Full text search";
+    }
 
 
-        public override void TransformExpressions(
-            Func<Expression, Expression> transformation)
+    public override ResultOperatorBase Clone(CloneContext cloneContext)
 
-        {
-            Parameter = transformation(Parameter);
-        }
+    {
+        return new FullTextSearchResultOperator(Parameter);
+    }
 
 
-        public override StreamedSequence ExecuteInMemory<T>(StreamedSequence input)
+    public override void TransformExpressions(
+        Func<Expression, Expression> transformation)
 
-        {
-            return input; // sequence is not changed by this operator
-        }
+    {
+        Parameter = transformation(Parameter);
+    }
+
+
+    public override StreamedSequence ExecuteInMemory<T>(StreamedSequence input)
+
+    {
+        return input; // sequence is not changed by this operator
     }
 }

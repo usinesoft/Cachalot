@@ -1,11 +1,11 @@
-﻿using Cachalot.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
+using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
-using System;
-using System.IO;
-using System.Linq;
 using Tests.TestData;
 using Tests.TestData.Events;
 
@@ -24,7 +24,6 @@ namespace Tests.UnitTests
         [Test]
         public void Expression_tree_processing()
         {
-
             var towns = new[] { "Paris", "Nice" };
 
             // not supposed to be optimal; improving coverage (constant at left + extension at root level)
@@ -36,7 +35,8 @@ namespace Tests.UnitTests
             Assert.AreEqual("Toronto", query.Elements.Last().Elements.Single().Value.ToString());
 
             // check reversed "Contains" at root
-            query = UtExtensions.PredicateToQuery<Home>(h => h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                h.AvailableDates.Contains(DateTime.Today) || h.Town == "Nowhere");
             Assert.AreEqual(2, query.Elements.Count);
 
             Assert.AreEqual(QueryOperator.Contains, query.Elements.First().Elements.Single().Operator);
@@ -90,24 +90,28 @@ namespace Tests.UnitTests
             Assert.AreEqual(1, query.Elements[0].Elements.Count);
             Assert.AreEqual(QueryOperator.NotIn, query.Elements[0].Elements[0].Operator);
 
-            query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today) && h.Town == "Paris");
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                !h.AvailableDates.Contains(DateTime.Today) && h.Town == "Paris");
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
             Assert.IsTrue(query.Elements[0].Elements.Any(q => q.Operator == QueryOperator.NotContains));
 
-            query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" && !h.AvailableDates.Contains(DateTime.Today));
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                h.Town == "Paris" && !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(2, query.Elements[0].Elements.Count);
             Assert.IsTrue(query.Elements[0].Elements.Any(q => q.Operator == QueryOperator.NotContains));
 
-            query = UtExtensions.PredicateToQuery<Home>(h => !h.AvailableDates.Contains(DateTime.Today) || h.Town == "Paris");
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                !h.AvailableDates.Contains(DateTime.Today) || h.Town == "Paris");
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
             Assert.IsTrue(query.Elements.Any(q => q.Elements[0].Operator == QueryOperator.NotContains));
 
-            query = UtExtensions.PredicateToQuery<Home>(h => h.Town == "Paris" || !h.AvailableDates.Contains(DateTime.Today));
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                h.Town == "Paris" || !h.AvailableDates.Contains(DateTime.Today));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(2, query.Elements.Count);
             Assert.IsTrue(query.Elements.Any(q => q.Elements.Any(e => e.Operator == QueryOperator.NotContains)));
@@ -127,18 +131,21 @@ namespace Tests.UnitTests
             Assert.AreEqual(QueryOperator.StrContains, query.Elements[0].Elements[0].Operator);
 
 
-            query = UtExtensions.PredicateToQuery<Home>(h => h.Town.Contains("p") || h.Town.StartsWith("P") || h.Town.EndsWith("p"));
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                h.Town.Contains("p") || h.Town.StartsWith("P") || h.Town.EndsWith("p"));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(3, query.Elements.Count);
 
-            query = UtExtensions.PredicateToQuery<Home>(h => h.Town.Contains("p") && h.Town.StartsWith("P") && h.Town.EndsWith("p"));
+            query = UtExtensions.PredicateToQuery<Home>(h =>
+                h.Town.Contains("p") && h.Town.StartsWith("P") && h.Town.EndsWith("p"));
             Assert.IsTrue(query.IsValid);
             Assert.AreEqual(1, query.Elements.Count);
             Assert.AreEqual(3, query.Elements[0].Elements.Count);
             Console.WriteLine(query);
 
             // we are not trying to parse everything
-            Assert.Throws<NotSupportedException>(() => UtExtensions.PredicateToQuery<Home>(h => h.Town.IndexOf("p", StringComparison.InvariantCulture) == 2));
+            Assert.Throws<NotSupportedException>(() =>
+                UtExtensions.PredicateToQuery<Home>(h => h.Town.IndexOf("p", StringComparison.InvariantCulture) == 2));
         }
 
 
@@ -151,14 +158,14 @@ namespace Tests.UnitTests
             Assert.AreEqual("Town", q.SelectClause[0].Name);
             Assert.AreEqual("Town", q.SelectClause[0].Alias);
 
-            q = UtExtensions.Select<Home>(h => new { Town = h.Town, Adress = h.Address });
+            q = UtExtensions.Select<Home>(h => new { h.Town, Adress = h.Address });
             Assert.AreEqual(2, q.SelectClause.Count);
             Assert.AreEqual("Town", q.SelectClause[0].Name);
 
             Assert.IsFalse(q.Distinct);
 
             // check with distinct clause
-            q = UtExtensions.Select<Home>(h => new { Town = h.Town, Adress = h.Address }, true);
+            q = UtExtensions.Select<Home>(h => new { h.Town, Adress = h.Address }, true);
 
             Assert.IsTrue(q.Distinct);
 
@@ -172,9 +179,6 @@ namespace Tests.UnitTests
         }
 
 
-
-
-
         [Test]
         public void Between_operator_optimization()
         {
@@ -183,7 +187,6 @@ namespace Tests.UnitTests
 
             using (var connector = new Connector(config))
             {
-
                 connector.DeclareCollection<Trade>();
 
                 var trades = connector.DataSource<Trade>();
@@ -245,7 +248,6 @@ namespace Tests.UnitTests
 
                 try
                 {
-
                     var trades = connector.DataSource<Trade>();
 
                     QueryExecutor.Probe(query =>
@@ -256,7 +258,7 @@ namespace Tests.UnitTests
                     });
 
                     var result =
-                        Enumerable.ToList(trades.Where(t => t.Folder == "TF").FullTextSearch("something funny"));
+                        trades.Where(t => t.Folder == "TF").FullTextSearch("something funny").ToList();
 
                     // disable the monitoring
                     QueryExecutor.Probe(null);
@@ -270,7 +272,7 @@ namespace Tests.UnitTests
 
                     try
                     {
-                        result = Enumerable.ToList(trades.Where(t => t.Folder == "TF").OnlyIfComplete());
+                        result = trades.Where(t => t.Folder == "TF").OnlyIfComplete().ToList();
                     }
                     catch (Exception)
                     {
@@ -358,15 +360,15 @@ namespace Tests.UnitTests
 
                 dataSource.PutMany(new[]
                 {
-                    new Trade(1, 5465, "TATA", DateTime.Now.Date, 150) {Accounts = {44, 45, 46}},
+                    new Trade(1, 5465, "TATA", DateTime.Now.Date, 150) { Accounts = { 44, 45, 46 } },
                     new Trade(3, 5467, "TATA", DateTime.Now.Date.AddDays(-1), 150)
                     {
-                        FixingDates = {DateTime.Today, DateTime.Today.AddMonths(3)}
+                        FixingDates = { DateTime.Today, DateTime.Today.AddMonths(3) }
                     },
-                    new Trade(2, 5466, "TOTO", DateTime.Now.Date, 200) {Accounts = {44, 48, 49}},
+                    new Trade(2, 5466, "TOTO", DateTime.Now.Date, 200) { Accounts = { 44, 48, 49 } },
                     new Trade(4, 5476, "TITO", DateTime.Now.Date, 250)
                     {
-                        FixingDates = {DateTime.Today, DateTime.Today.AddMonths(6)}
+                        FixingDates = { DateTime.Today, DateTime.Today.AddMonths(6) }
                     }
                 });
 
@@ -477,7 +479,8 @@ namespace Tests.UnitTests
 
                 {
                     var list = dataSource
-                        .Where(t => t.Folder == "TATA" && t.ValueDate <= DateTime.Today || t.Folder == "TOTO").ToList();
+                        .Where(t => (t.Folder == "TATA" && t.ValueDate <= DateTime.Today) || t.Folder == "TOTO")
+                        .ToList();
                     Assert.AreEqual(list.Count, 3);
                 }
 

@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace AdminConsole.ConsoleUtils.ConsoleActions
+namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public interface IConsoleAction
 {
-    public interface IConsoleAction
-    {
-        void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo);
-    }
+    void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo);
 }

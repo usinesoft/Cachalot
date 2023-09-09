@@ -1,37 +1,35 @@
-﻿using Client.Core;
+﻿using System;
+using System.Linq;
+using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
-using System;
-using System.Linq;
 using Tests.TestData;
 
 namespace Tests.UnitTests
 {
-
     [TestFixture]
     public class TestFixtureQueries
     {
-
-        AtomicQuery MakeQuery(CollectionSchema schema, string name, QueryOperator op, object value)
+        private AtomicQuery MakeQuery(CollectionSchema schema, string name, QueryOperator op, object value)
         {
             return new AtomicQuery(schema.KeyByName(name), new KeyValue(value), op);
         }
 
-        AtomicQuery MakeInQuery(CollectionSchema schema, string name, params object[] values)
+        private AtomicQuery MakeInQuery(CollectionSchema schema, string name, params object[] values)
         {
             return new AtomicQuery(schema.KeyByName(name), values.Select(v => new KeyValue(v)).ToList());
         }
 
-        AtomicQuery MakeNinQuery(CollectionSchema schema, string name, params object[] values)
+        private AtomicQuery MakeNinQuery(CollectionSchema schema, string name, params object[] values)
         {
-            return new AtomicQuery(schema.KeyByName(name), values.Select(v => new KeyValue(v)).ToList(), QueryOperator.NotIn);
+            return new AtomicQuery(schema.KeyByName(name), values.Select(v => new KeyValue(v)).ToList(),
+                QueryOperator.NotIn);
         }
 
         [Test]
         public void Atomic_query_match()
         {
-
             var item = new AllKindsOfProperties
             {
                 Id = 13,
@@ -100,15 +98,12 @@ namespace Tests.UnitTests
             Assert.IsFalse(q1.Match(packed));
 
 
-
             // NOT IN
             q1 = MakeNinQuery(schema, "InstrumentName", "Swap", "Flute");
             Assert.IsFalse(q1.Match(packed));
 
             q1 = MakeNinQuery(schema, "InstrumentName", "Piano", "Flute");
             Assert.IsTrue(q1.Match(packed));
-
-
         }
 
         [Test]
@@ -117,8 +112,10 @@ namespace Tests.UnitTests
             var products1 = new[] { 101, 102, 103 };
             var products2 = new[] { 101, 102 };
 
-            var q1 = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && products1.Contains(o.ProductId));
-            var q2 = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && products2.Contains(o.ProductId));
+            var q1 = ExpressionTreeHelper.PredicateToQuery<Order>(o =>
+                o.IsDelivered && products1.Contains(o.ProductId));
+            var q2 = ExpressionTreeHelper.PredicateToQuery<Order>(o =>
+                o.IsDelivered && products2.Contains(o.ProductId));
 
             Assert.IsTrue(q1.IsSubsetOf(q1));
 
@@ -185,6 +182,4 @@ namespace Tests.UnitTests
             Console.WriteLine(query.ToString());
         }
     }
-
-
 }

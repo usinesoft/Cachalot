@@ -1,13 +1,13 @@
-﻿using Cachalot.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
+using Cachalot.Linq;
 using Client;
 using Client.Interface;
+using Client.Tools;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
-using System;
-using System.IO;
-using System.Linq;
-using Client.Tools;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests
@@ -79,7 +79,6 @@ namespace Tests.IntegrationTests
 
             var count = dataSource.Count();
             Assert.AreEqual(1010, count);
-
         }
 
         [Test]
@@ -123,7 +122,7 @@ namespace Tests.IntegrationTests
 
                 var fullPath = DumpHelper.NormalizeDumpPath(dumpPath);
 
-                
+
                 Assert.IsTrue(Directory.Exists(fullPath),
                     $"not found {fullPath} current directory = {Directory.GetCurrentDirectory()}");
                 var files = Directory.EnumerateFiles(fullPath).ToList();
@@ -196,7 +195,8 @@ namespace Tests.IntegrationTests
                 Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json") && !f.Contains("sequence")).ToList();
-                Assert.AreEqual(1, dataFiles.Count, "A single file should be generated in the dump (less than 1000 items)");
+                Assert.AreEqual(1, dataFiles.Count,
+                    "A single file should be generated in the dump (less than 1000 items)");
             }
 
             // reload and check your data is still there
@@ -227,8 +227,6 @@ namespace Tests.IntegrationTests
                 var list0 = dataSource.Where(t => t.Folder == "TATA").ToList();
 
                 admin.ImportDump(dumpPath);
-
-
 
 
                 var folders = new[] { "TATA", "TOTO" };

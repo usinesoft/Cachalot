@@ -1,7 +1,6 @@
-﻿namespace Server.FullTextSearch
+﻿namespace Server.FullTextSearch;
+
+public interface ITrace
 {
-    public interface ITrace
-    {
-        void Trace(string line);
-    }
+    void Trace(string line);
 }

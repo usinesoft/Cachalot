@@ -2,11 +2,10 @@
 using Client.Messages;
 using Client.Tools;
 
-namespace Server.Transactions
+namespace Server.Transactions;
+
+public interface ITransactionManager
 {
-    public interface ITransactionManager
-    {
-        void ProcessTransactionRequest(TransactionRequest transactionRequest, IClient client,
-            SafeDictionary<string, DataStore> dataStores);
-    }
+    void ProcessTransactionRequest(TransactionRequest transactionRequest, IClient client,
+                                   SafeDictionary<string, DataStore> dataStores);
 }

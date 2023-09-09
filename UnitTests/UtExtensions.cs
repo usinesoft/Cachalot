@@ -1,24 +1,21 @@
-using Client.Core;
-using Client.Core.Linq;
-using Client.Interface;
-using Client.Queries;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using Client.Core;
+using Client.Core.Linq;
+using Client.Interface;
+using Client.Queries;
 
 namespace Tests
 {
-
     /// <summary>
-    /// Extension methods used to adapt the old unit tests after refactoring
+    ///     Extension methods used to adapt the old unit tests after refactoring
     /// </summary>
     internal static class UtExtensions
     {
         public static OrQuery PredicateToQuery<T>(Expression<Func<T, bool>> where, string collectionName = null)
         {
-
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             collectionName ??= schema.CollectionName;
@@ -35,9 +32,9 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false, string collectionName = null)
+        public static OrQuery Select<T>(Expression<Func<T, object>> selector, bool distinct = false,
+                                        string collectionName = null)
         {
-
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             collectionName ??= schema.CollectionName;
@@ -62,9 +59,9 @@ namespace Tests
             return query;
         }
 
-        public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false, string collectionName = null)
+        public static OrQuery OrderBy<T, R>(Expression<Func<T, R>> selector, bool descending = false,
+                                            string collectionName = null)
         {
-
             var schema = TypeDescriptionsCache.GetDescription(typeof(T));
 
             // create a fake queryable to force query parsing and capture resolution
@@ -72,7 +69,9 @@ namespace Tests
             var queryable = new NullQueryable<T>(executor);
 
 
-            var unused = descending ? queryable.OrderByDescending(selector).ToList() : queryable.OrderBy(selector).ToList();
+            var unused = descending
+                ? queryable.OrderByDescending(selector).ToList()
+                : queryable.OrderBy(selector).ToList();
 
             var query = executor.Expression;
 
@@ -80,7 +79,6 @@ namespace Tests
 
             return query;
         }
-
 
 
         public static CollectionSchema DeclareCollection<T>(this IDataClient @this)
@@ -95,11 +93,10 @@ namespace Tests
 
         public static IEnumerable<T> GetMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-
             var query = PredicateToQuery(where);
 
 
-            return @this.GetMany(query).Select(ri => ((JObject)ri.Item).ToObject<T>(SerializationHelper.Serializer));
+            return @this.GetMany(query).Select(ri => ri.Item.ToObject<T>(SerializationHelper.Serializer));
         }
 
         public static T GetOne<T>(this IDataClient @this, Expression<Func<T, bool>> where)
@@ -125,7 +122,6 @@ namespace Tests
 
         public static int RemoveMany<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-
             var query = PredicateToQuery(where);
 
             return @this.RemoveMany(query);
@@ -140,7 +136,6 @@ namespace Tests
 
         public static int Count<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-
             var query = PredicateToQuery(where);
 
             return @this.EvalQuery(query).Item2;
@@ -148,7 +143,6 @@ namespace Tests
 
         public static bool IsComplete<T>(this IDataClient @this, Expression<Func<T, bool>> where)
         {
-
             var query = PredicateToQuery(where);
 
             return @this.EvalQuery(query).Item1;

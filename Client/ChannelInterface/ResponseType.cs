@@ -1,28 +1,27 @@
-namespace Client.ChannelInterface
+namespace Client.ChannelInterface;
+
+/// <summary>
+///     Generic class of the response
+/// </summary>
+public enum ResponseType
 {
     /// <summary>
-    ///     Generic class of the response
+    ///     Contains useful data
     /// </summary>
-    public enum ResponseType
-    {
-        /// <summary>
-        ///     Contains useful data
-        /// </summary>
-        Data,
+    Data,
 
-        /// <summary>
-        ///     An exception has occured
-        /// </summary>
-        Exception,
+    /// <summary>
+    ///     An exception has occured
+    /// </summary>
+    Exception,
 
-        /// <summary>
-        ///     Void response
-        /// </summary>
-        Null,
+    /// <summary>
+    ///     Void response
+    /// </summary>
+    Null,
 
-        /// <summary>
-        ///     Ready co commit (for two stage transactions)
-        /// </summary>
-        Ready
-    }
+    /// <summary>
+    ///     Ready co commit (for two stage transactions)
+    /// </summary>
+    Ready
 }

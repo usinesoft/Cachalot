@@ -1,10 +1,10 @@
-using NUnit.Framework;
-using Server.Persistence;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using NUnit.Framework;
+using Server.Persistence;
 
 namespace Tests.IntegrationTests
 {

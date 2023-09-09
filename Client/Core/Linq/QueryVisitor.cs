@@ -1,3 +1,9 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using Client.Interface;
 using Client.Messages;
 using Client.Queries;
@@ -6,702 +12,684 @@ using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 
-namespace Client.Core.Linq
+namespace Client.Core.Linq;
+
+public class QueryVisitor : QueryModelVisitorBase
 {
-    public class QueryVisitor : QueryModelVisitorBase
+    private readonly CollectionSchema _collectionSchema;
+
+    public QueryVisitor([NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
     {
-        private readonly CollectionSchema _collectionSchema;
+        if (string.IsNullOrEmpty(collectionName))
+            throw new ArgumentException("Value cannot be null or empty.", nameof(collectionName));
 
-        public QueryVisitor([NotNull] string collectionName, [NotNull] CollectionSchema collectionSchema)
+        _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
+
+        RootExpression = new(collectionName);
+    }
+
+    public OrQuery RootExpression { get; }
+
+
+    public override void VisitQueryModel(QueryModel queryModel)
+    {
+        base.VisitQueryModel(queryModel);
+
+
+        QueryHelper.OptimizeQuery(RootExpression);
+
+
+        // mark simple queries by primary key to simplify processing
+        if (RootExpression.Elements.Count == 1 && RootExpression.Elements[0].Elements.Count == 1)
         {
-            if (string.IsNullOrEmpty(collectionName))
-                throw new ArgumentException("Value cannot be null or empty.", nameof(collectionName));
+            var atomic = RootExpression.Elements[0].Elements[0];
 
-            _collectionSchema = collectionSchema ?? throw new ArgumentNullException(nameof(collectionSchema));
-
-            RootExpression = new OrQuery(collectionName);
+            if (atomic.Operator == QueryOperator.Eq && atomic.Metadata.Name == _collectionSchema.PrimaryKeyField.Name)
+                RootExpression.ByPrimaryKey = true;
         }
+    }
 
-        public OrQuery RootExpression { get; }
+
+    private KeyInfo GetMetadata(MemberInfo member)
+    {
+        var propertyDescription = _collectionSchema.KeyByName(member.Name);
+        if (propertyDescription == null)
+            throw new CacheException($"property {member.Name} is not servers-side visible");
+
+        return propertyDescription;
+    }
 
 
-        public override void VisitQueryModel(QueryModel queryModel)
+    private bool IsLeafExpression(Expression expression)
+    {
+        return expression.NodeType == ExpressionType.GreaterThan
+               || expression.NodeType == ExpressionType.GreaterThanOrEqual
+               || expression.NodeType == ExpressionType.LessThan
+               || expression.NodeType == ExpressionType.LessThanOrEqual
+               || expression.NodeType == ExpressionType.Equal
+               || expression.NodeType == ExpressionType.NotEqual
+            ;
+    }
+
+
+    public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
+    {
+        if (whereClause.Predicate.NodeType == ExpressionType.Not)
         {
-            base.VisitQueryModel(queryModel);
+            var unary = (UnaryExpression)whereClause.Predicate;
+            InternalVisitWhereClause(unary.Operand, true);
+        }
+        else
+        {
+            InternalVisitWhereClause(whereClause.Predicate);
+        }
+    }
 
-
-            QueryHelper.OptimizeQuery(RootExpression);
-
-
-            // mark simple queries by primary key to simplify processing
-            if (RootExpression.Elements.Count == 1 && RootExpression.Elements[0].Elements.Count == 1)
+    private void InternalVisitWhereClause(Expression whereClause, bool not = false)
+    {
+        if (whereClause is BinaryExpression expression)
+        {
+            VisitBinaryExpression(expression, RootExpression);
+        }
+        else if (whereClause is MemberExpression memberExpression)
+        {
+            if (memberExpression.Type == typeof(bool))
+                // Generalize for more complex expressions
+                VisitMemberExpression(memberExpression, RootExpression, not);
+        }
+        else if (whereClause is MethodCallExpression call)
+        {
+            VisitMethodCall(call, RootExpression);
+        }
+        else
+        {
+            if (whereClause is SubQueryExpression subQuery)
             {
-                var atomic = RootExpression.Elements[0].Elements[0];
-
-                if (atomic.Operator == QueryOperator.Eq && atomic.Metadata.Name == _collectionSchema.PrimaryKeyField.Name)
-                {
-                    RootExpression.ByPrimaryKey = true;
-                }
-
-            }
-        }
-
-
-        private KeyInfo GetMetadata(MemberInfo member)
-        {
-            var propertyDescription = _collectionSchema.KeyByName(member.Name);
-            if (propertyDescription == null)
-                throw new CacheException($"property {member.Name} is not servers-side visible");
-
-            return propertyDescription;
-        }
-
-
-        private bool IsLeafExpression(Expression expression)
-        {
-            return expression.NodeType == ExpressionType.GreaterThan
-                   || expression.NodeType == ExpressionType.GreaterThanOrEqual
-                   || expression.NodeType == ExpressionType.LessThan
-                   || expression.NodeType == ExpressionType.LessThanOrEqual
-                   || expression.NodeType == ExpressionType.Equal
-                   || expression.NodeType == ExpressionType.NotEqual
-                ;
-        }
-
-
-        public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
-        {
-            if (whereClause.Predicate.NodeType == ExpressionType.Not)
-            {
-                var unary = (UnaryExpression)whereClause.Predicate;
-                InternalVisitWhereClause(unary.Operand, true);
+                var atomicQuery = VisitContainsExpression(subQuery, not);
+                var andQuery = new AndQuery();
+                andQuery.Elements.Add(atomicQuery);
+                RootExpression.Elements.Add(andQuery);
             }
             else
             {
-                InternalVisitWhereClause(whereClause.Predicate);
+                throw new NotSupportedException("Incorrect query");
             }
         }
 
-        private void InternalVisitWhereClause(Expression whereClause, bool not = false)
+
+        RootExpression.MultipleWhereClauses = true;
+    }
+
+    public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
+    {
+        var expression = selectClause.Selector;
+
+        if (expression is MemberExpression member)
+            RootExpression.SelectClause.Add(new() { Name = member.Member.Name, Alias = member.Member.Name });
+
+        else if (expression is NewExpression @new)
+            for (var i = 0; i < @new.Arguments.Count; i++)
+            {
+                var arg = @new.Arguments[i];
+
+                var targetMember = @new.Members[i];
+
+                if (arg is MemberExpression argMemberExpression)
+                    RootExpression.SelectClause.Add(new()
+                        { Name = argMemberExpression.Member.Name, Alias = targetMember.Name });
+            }
+
+
+        base.VisitSelectClause(selectClause, queryModel);
+    }
+
+    public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
+    {
+        if (orderByClause.Orderings.Count > 1)
+            throw new NotSupportedException("Only one order by clause is supported in this version");
+
+        if (orderByClause.Orderings.Count == 1)
         {
-            if (whereClause is BinaryExpression expression)
+            var ordering = orderByClause.Orderings[0];
+
+            if (ordering.Expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
             {
-                VisitBinaryExpression(expression, RootExpression);
-            }
-            else if (whereClause is MemberExpression memberExpression)
-            {
-                if (memberExpression.Type == typeof(bool))
-                    // Generalize for more complex expressions
-                    VisitMemberExpression(memberExpression, RootExpression, not);
-            }
-            else if (whereClause is MethodCallExpression call)
-            {
-                VisitMethodCall(call, RootExpression);
-            }
-            else
-            {
-                if (whereClause is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery, not);
-                    var andQuery = new AndQuery();
-                    andQuery.Elements.Add(atomicQuery);
-                    RootExpression.Elements.Add(andQuery);
-                }
-                else
-                {
-                    throw new NotSupportedException("Incorrect query");
-                }
-            }
-
-
-            RootExpression.MultipleWhereClauses = true;
-        }
-
-        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
-        {
-            var expression = selectClause.Selector;
-
-            if (expression is MemberExpression member)
-            {
-                RootExpression.SelectClause.Add(new SelectItem { Name = member.Member.Name, Alias = member.Member.Name });
-            }
-
-            else if (expression is NewExpression @new)
-            {
-                for (int i = 0; i < @new.Arguments.Count; i++)
-                {
-                    var arg = @new.Arguments[i];
-
-                    var targetMember = @new.Members[i];
-
-                    if (arg is MemberExpression argMemberExpression)
-                    {
-                        RootExpression.SelectClause.Add(new SelectItem { Name = argMemberExpression.Member.Name, Alias = targetMember.Name });
-                    }
-
-                }
-
-
-            }
-
-
-            base.VisitSelectClause(selectClause, queryModel);
-        }
-
-        public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
-        {
-            if (orderByClause.Orderings.Count > 1)
-                throw new NotSupportedException("Only one order by clause is supported in this version");
-
-            if (orderByClause.Orderings.Count == 1)
-            {
-                var ordering = orderByClause.Orderings[0];
-
-                if (ordering.Expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-                {
-                    if (unary.Operand is MemberExpression member)
-                    {
-                        RootExpression.OrderByProperty = member.Member.Name;
-                        RootExpression.OrderByIsDescending = ordering.OrderingDirection == OrderingDirection.Desc;
-                    }
-                }
-                else if (ordering.Expression is MemberExpression member)
+                if (unary.Operand is MemberExpression member)
                 {
                     RootExpression.OrderByProperty = member.Member.Name;
                     RootExpression.OrderByIsDescending = ordering.OrderingDirection == OrderingDirection.Desc;
                 }
-                else
-                {
-                    throw new NotSupportedException("Invalid order by clause");
-                }
             }
-        }
-
-        public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
-        {
-            if (resultOperator is DistinctResultOperator)
+            else if (ordering.Expression is MemberExpression member)
             {
-                RootExpression.Distinct = true;
-                return;
-            }
-
-            if (resultOperator is FirstResultOperator)
-            {
-                RootExpression.Take = 1;
-                return;
-            }
-
-
-            if (resultOperator is CountResultOperator || resultOperator is LongCountResultOperator)
-            {
-                RootExpression.CountOnly = true;
-                return;
-            }
-
-            if (resultOperator is TakeResultOperator takeResultOperator)
-            {
-                var exp = takeResultOperator.Count;
-
-                if (exp.NodeType == ExpressionType.Constant)
-                    RootExpression.Take = (int)((ConstantExpression)exp).Value;
-                else
-                    throw new NotSupportedException(
-                        "Currently not supporting methods or variables in the Skip or Take clause.");
-
-                return;
-            }
-
-            if (resultOperator is SkipResultOperator @operator)
-            {
-                var exp = @operator.Count;
-
-                if (exp.NodeType == ExpressionType.Constant)
-                    RootExpression.Skip = (int)((ConstantExpression)exp).Value;
-                else
-                    throw new NotSupportedException(
-                        "Currently not supporting methods or variables in the Skip or Take clause.");
-
-                return;
-            }
-
-
-            if (resultOperator is FullTextSearchResultOperator fullTextSearchResultOperator)
-                if (fullTextSearchResultOperator.Parameter is ConstantExpression param)
-                    RootExpression.FullTextSearch = (string)param.Value;
-
-            if (resultOperator is OnlyIfAvailableResultOperator) RootExpression.OnlyIfComplete = true;
-
-            base.VisitResultOperator(resultOperator, queryModel, index);
-        }
-
-        private void VisitAndExpression(BinaryExpression binaryExpression, AndQuery andExpression)
-        {
-            if (IsLeafExpression(binaryExpression.Left))
-            {
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
-            {
-                VisitMemberExpression((MemberExpression)binaryExpression.Left, andExpression, false);
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
-            {
-                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
-            {
-                if (binaryExpression.Left is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery);
-                    andExpression.Elements.Add(atomicQuery);
-                }
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.Not)
-            {
-                var unary = (UnaryExpression)binaryExpression.Left;
-
-                if (unary.Operand is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery, true);
-                    andExpression.Elements.Add(atomicQuery);
-                }
-                else if (unary.Operand is MemberExpression member)
-                {
-                    VisitMemberExpression(member, andExpression, true);
-                }
-            }
-            else if (binaryExpression.Left is MethodCallExpression call)
-            {
-                VisitMethodCall(call, andExpression);
+                RootExpression.OrderByProperty = member.Member.Name;
+                RootExpression.OrderByIsDescending = ordering.OrderingDirection == OrderingDirection.Desc;
             }
             else
             {
-                throw new NotSupportedException("Query too complex");
+                throw new NotSupportedException("Invalid order by clause");
             }
+        }
+    }
 
-            if (IsLeafExpression(binaryExpression.Right))
-            {
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
-            {
-                VisitMemberExpression((MemberExpression)binaryExpression.Right, andExpression, false);
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
-            {
-                if (binaryExpression.Right is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery);
-                    andExpression.Elements.Add(atomicQuery);
-                }
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.Not)
-            {
-                var unary = (UnaryExpression)binaryExpression.Right;
+    public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
+    {
+        if (resultOperator is DistinctResultOperator)
+        {
+            RootExpression.Distinct = true;
+            return;
+        }
 
-                if (unary.Operand is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery, true);
-                    andExpression.Elements.Add(atomicQuery);
-                }
-                else if (unary.Operand is MemberExpression member)
-                {
-                    VisitMemberExpression(member, andExpression, true);
-                }
-            }
-            else if (binaryExpression.Right is MethodCallExpression call)
-            {
-                VisitMethodCall(call, andExpression);
-            }
+        if (resultOperator is FirstResultOperator)
+        {
+            RootExpression.Take = 1;
+            return;
+        }
+
+
+        if (resultOperator is CountResultOperator || resultOperator is LongCountResultOperator)
+        {
+            RootExpression.CountOnly = true;
+            return;
+        }
+
+        if (resultOperator is TakeResultOperator takeResultOperator)
+        {
+            var exp = takeResultOperator.Count;
+
+            if (exp.NodeType == ExpressionType.Constant)
+                RootExpression.Take = (int)((ConstantExpression)exp).Value;
             else
-            {
-                throw new NotSupportedException("Query too complex");
-            }
+                throw new NotSupportedException(
+                    "Currently not supporting methods or variables in the Skip or Take clause.");
+
+            return;
         }
 
-        private AtomicQuery VisitContainsExpression(SubQueryExpression subQuery, bool not = false)
+        if (resultOperator is SkipResultOperator @operator)
         {
-            if (subQuery.QueryModel.ResultOperators.Count != 1)
-                throw new NotSupportedException("Only Contains extension is supported");
+            var exp = @operator.Count;
 
-            var contains = subQuery.QueryModel.ResultOperators[0] as ContainsResultOperator;
-
-            // process collection.Contains(x=>x.Member)
-            if (contains?.Item is MemberExpression item)
-            {
-                var select = subQuery.QueryModel?.SelectClause.Selector as QuerySourceReferenceExpression;
-
-                if (select?.ReferencedQuerySource is MainFromClause from)
-                {
-                    var expression = from.FromExpression as ConstantExpression;
-
-                    if (expression?.Value is IEnumerable values)
-                    {
-                        var oper = not ? QueryOperator.NotIn : QueryOperator.In;
-
-                        var list = new List<KeyValue>();
-                        var metadata = GetMetadata(item.Member);
-
-                        foreach (var value in values)
-                        {
-                            var keyValue = new KeyValue(value);
-                            list.Add(keyValue);
-                        }
-
-                        return new AtomicQuery(metadata, list, oper);
-                    }
-                }
-            }
-            // process x=>x.VectorMember.Contains(value)
+            if (exp.NodeType == ExpressionType.Constant)
+                RootExpression.Skip = (int)((ConstantExpression)exp).Value;
             else
-            {
-                var value = contains?.Item;
+                throw new NotSupportedException(
+                    "Currently not supporting methods or variables in the Skip or Take clause.");
 
-                if (value != null)
-                {
-                    var select = subQuery.QueryModel?.SelectClause.Selector as QuerySourceReferenceExpression;
-                    var from = select?.ReferencedQuerySource as MainFromClause;
-
-
-                    if (from?.FromExpression is MemberExpression expression)
-                    {
-                        // the member must not be a scalar type. A string is a vector of chars but still considered a scalar in this context
-                        var isVector = typeof(IEnumerable).IsAssignableFrom(expression.Type) &&
-                                       !typeof(string).IsAssignableFrom(expression.Type);
-
-                        if (!isVector)
-                            throw new NotSupportedException("Trying to use Contains extension on a scalar member");
-
-
-                        if (value is ConstantExpression valueExpression)
-                        {
-                            var oper = not ? QueryOperator.NotContains : QueryOperator.Contains;
-
-
-                            var metadata = GetMetadata(expression.Member);
-
-                            var keyValue = new KeyValue(valueExpression.Value);
-
-
-                            return new AtomicQuery(metadata, keyValue, oper);
-                        }
-                    }
-                }
-            }
-
-            throw new NotSupportedException("Only Contains extension is supported");
+            return;
         }
 
-        private void VisitBinaryExpression(BinaryExpression binaryExpression, OrQuery rootExpression)
+
+        if (resultOperator is FullTextSearchResultOperator fullTextSearchResultOperator)
+            if (fullTextSearchResultOperator.Parameter is ConstantExpression param)
+                RootExpression.FullTextSearch = (string)param.Value;
+
+        if (resultOperator is OnlyIfAvailableResultOperator) RootExpression.OnlyIfComplete = true;
+
+        base.VisitResultOperator(resultOperator, queryModel, index);
+    }
+
+    private void VisitAndExpression(BinaryExpression binaryExpression, AndQuery andExpression)
+    {
+        if (IsLeafExpression(binaryExpression.Left))
         {
-            // manage AND expressions
-            if (binaryExpression.NodeType == ExpressionType.AndAlso)
+            andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
+        {
+            VisitMemberExpression((MemberExpression)binaryExpression.Left, andExpression, false);
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
+        {
+            VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
+        {
+            if (binaryExpression.Left is SubQueryExpression subQuery)
             {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-
-                VisitAndExpression(binaryExpression, andExpression);
-            }
-
-            // manage OR expressions
-            else if (binaryExpression.NodeType == ExpressionType.OrElse)
-            {
-                VisitOrExpression(binaryExpression, rootExpression);
-            }
-
-            // manage simple expressions like a > 10
-            else if (IsLeafExpression(binaryExpression))
-            {
-                var andExpression = AndExpression(rootExpression);
-
-                andExpression.Elements.Add(VisitLeafExpression(binaryExpression));
-            }
-            else
-            {
-                throw new NotSupportedException("Query too complex");
+                var atomicQuery = VisitContainsExpression(subQuery);
+                andExpression.Elements.Add(atomicQuery);
             }
         }
-
-        private void VisitMemberExpression(MemberExpression expression, OrQuery rootExpression, bool not)
+        else if (binaryExpression.Left.NodeType == ExpressionType.Not)
         {
-            var andExpression = AndExpression(rootExpression);
+            var unary = (UnaryExpression)binaryExpression.Left;
 
-            VisitMemberExpression(expression, andExpression, not);
+            if (unary.Operand is SubQueryExpression subQuery)
+            {
+                var atomicQuery = VisitContainsExpression(subQuery, true);
+                andExpression.Elements.Add(atomicQuery);
+            }
+            else if (unary.Operand is MemberExpression member)
+            {
+                VisitMemberExpression(member, andExpression, true);
+            }
         }
-
-        private void VisitMemberExpression(MemberExpression expression, AndQuery parentExpress, bool not)
+        else if (binaryExpression.Left is MethodCallExpression call)
         {
-            var metadata = GetMetadata(expression.Member);
-            var keyValue = new KeyValue(!not);
-
-            parentExpress.Elements.Add(new AtomicQuery(metadata, keyValue));
-        }
-
-        private void VisitMethodCall(MethodCallExpression call, OrQuery rootExpression)
-        {
-            var andExpression = AndExpression(rootExpression);
-
             VisitMethodCall(call, andExpression);
         }
-
-        private void VisitMethodCall(MethodCallExpression call, AndQuery andExpression)
+        else
         {
-            var methodName = call.Method.Name;
-            var argument = call.Arguments.FirstOrDefault();
+            throw new NotSupportedException("Query too complex");
+        }
 
-            if (call.Object is MemberExpression member && argument is ConstantExpression constant)
+        if (IsLeafExpression(binaryExpression.Right))
+        {
+            andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
+        {
+            VisitMemberExpression((MemberExpression)binaryExpression.Right, andExpression, false);
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
+        {
+            if (binaryExpression.Right is SubQueryExpression subQuery)
             {
-                var value = constant.Value.ToString();
-
-
-                var metadata = GetMetadata(member.Member);
-                var keyValue = new KeyValue(value);
-                var op = methodName switch
-                {
-                    "StartsWith" => QueryOperator.StrStartsWith,
-                    "EndsWith" => QueryOperator.StrEndsWith,
-                    "Contains" => QueryOperator.StrContains,
-                    _ => throw new NotSupportedException($"Method {methodName} can not be used in a query"),
-                };
-                andExpression.Elements.Add(new AtomicQuery(metadata, keyValue, op));
+                var atomicQuery = VisitContainsExpression(subQuery);
+                andExpression.Elements.Add(atomicQuery);
             }
-            else
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.Not)
+        {
+            var unary = (UnaryExpression)binaryExpression.Right;
+
+            if (unary.Operand is SubQueryExpression subQuery)
             {
-                throw new NotSupportedException($"Error processing method call expression:{methodName}");
+                var atomicQuery = VisitContainsExpression(subQuery, true);
+                andExpression.Elements.Add(atomicQuery);
+            }
+            else if (unary.Operand is MemberExpression member)
+            {
+                VisitMemberExpression(member, andExpression, true);
+            }
+        }
+        else if (binaryExpression.Right is MethodCallExpression call)
+        {
+            VisitMethodCall(call, andExpression);
+        }
+        else
+        {
+            throw new NotSupportedException("Query too complex");
+        }
+    }
+
+    private AtomicQuery VisitContainsExpression(SubQueryExpression subQuery, bool not = false)
+    {
+        if (subQuery.QueryModel.ResultOperators.Count != 1)
+            throw new NotSupportedException("Only Contains extension is supported");
+
+        var contains = subQuery.QueryModel.ResultOperators[0] as ContainsResultOperator;
+
+        // process collection.Contains(x=>x.Member)
+        if (contains?.Item is MemberExpression item)
+        {
+            var select = subQuery.QueryModel?.SelectClause.Selector as QuerySourceReferenceExpression;
+
+            if (select?.ReferencedQuerySource is MainFromClause from)
+            {
+                var expression = from.FromExpression as ConstantExpression;
+
+                if (expression?.Value is IEnumerable values)
+                {
+                    var oper = not ? QueryOperator.NotIn : QueryOperator.In;
+
+                    var list = new List<KeyValue>();
+                    var metadata = GetMetadata(item.Member);
+
+                    foreach (var value in values)
+                    {
+                        var keyValue = new KeyValue(value);
+                        list.Add(keyValue);
+                    }
+
+                    return new(metadata, list, oper);
+                }
+            }
+        }
+        // process x=>x.VectorMember.Contains(value)
+        else
+        {
+            var value = contains?.Item;
+
+            if (value != null)
+            {
+                var select = subQuery.QueryModel?.SelectClause.Selector as QuerySourceReferenceExpression;
+                var from = select?.ReferencedQuerySource as MainFromClause;
+
+
+                if (from?.FromExpression is MemberExpression expression)
+                {
+                    // the member must not be a scalar type. A string is a vector of chars but still considered a scalar in this context
+                    var isVector = typeof(IEnumerable).IsAssignableFrom(expression.Type) &&
+                                   !typeof(string).IsAssignableFrom(expression.Type);
+
+                    if (!isVector)
+                        throw new NotSupportedException("Trying to use Contains extension on a scalar member");
+
+
+                    if (value is ConstantExpression valueExpression)
+                    {
+                        var oper = not ? QueryOperator.NotContains : QueryOperator.Contains;
+
+
+                        var metadata = GetMetadata(expression.Member);
+
+                        var keyValue = new KeyValue(valueExpression.Value);
+
+
+                        return new(metadata, keyValue, oper);
+                    }
+                }
             }
         }
 
+        throw new NotSupportedException("Only Contains extension is supported");
+    }
 
-        /// <summary>
-        ///     OR expression can be present only at root level
-        /// </summary>
-        /// <param name="binaryExpression"></param>
-        /// <param name="rootExpression"></param>
-        private void VisitOrExpression(BinaryExpression binaryExpression, OrQuery rootExpression)
+    private void VisitBinaryExpression(BinaryExpression binaryExpression, OrQuery rootExpression)
+    {
+        // manage AND expressions
+        if (binaryExpression.NodeType == ExpressionType.AndAlso)
         {
-            // visit left part
-            if (IsLeafExpression(binaryExpression.Left))
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
 
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
-            {
-                VisitMemberExpression((MemberExpression)binaryExpression.Left, rootExpression, false);
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
-            {
-                if (binaryExpression.Left is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery);
-                    var andQuery = new AndQuery();
-                    andQuery.Elements.Add(atomicQuery);
-                    rootExpression.Elements.Add(andQuery);
-                }
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.Not)
-            {
-                var unary = (UnaryExpression)binaryExpression.Left;
-
-                if (unary.Operand is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery, true);
-                    var andQuery = new AndQuery();
-                    andQuery.Elements.Add(atomicQuery);
-                    rootExpression.Elements.Add(andQuery);
-                }
-                else if (unary.Operand is MemberExpression member)
-                {
-                    VisitMemberExpression(member, rootExpression, true);
-                }
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.OrElse)
-            {
-                VisitOrExpression((BinaryExpression)binaryExpression.Left, rootExpression);
-            }
-            else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
-            }
-            else if (binaryExpression.Left is MethodCallExpression call)
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-                VisitMethodCall(call, andExpression);
-            }
-            else
-            {
-                throw new NotSupportedException("Query too complex");
-            }
-
-            // visit right part
-            if (IsLeafExpression(binaryExpression.Right))
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-
-                andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
-            {
-                VisitMemberExpression((MemberExpression)binaryExpression.Right, rootExpression, false);
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
-            {
-                if (binaryExpression.Right is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery);
-                    var andQuery = new AndQuery();
-                    andQuery.Elements.Add(atomicQuery);
-                    rootExpression.Elements.Add(andQuery);
-                }
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.Not)
-            {
-                var unary = (UnaryExpression)binaryExpression.Right;
-
-                if (unary.Operand is SubQueryExpression subQuery)
-                {
-                    var atomicQuery = VisitContainsExpression(subQuery, true);
-                    var andQuery = new AndQuery();
-                    andQuery.Elements.Add(atomicQuery);
-                    rootExpression.Elements.Add(andQuery);
-                }
-                else if (unary.Operand is MemberExpression member)
-                {
-                    VisitMemberExpression(member, rootExpression, true);
-                }
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.OrElse)
-            {
-                VisitOrExpression((BinaryExpression)binaryExpression.Right, rootExpression);
-            }
-            else if (binaryExpression.Right.NodeType == ExpressionType.AndAlso)
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-                VisitAndExpression((BinaryExpression)binaryExpression.Right, andExpression);
-            }
-            else if (binaryExpression.Right is MethodCallExpression call)
-            {
-                var andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-                VisitMethodCall(call, andExpression);
-            }
-            else
-            {
-                throw new NotSupportedException("Query too complex");
-            }
+            VisitAndExpression(binaryExpression, andExpression);
         }
 
-        private static AndQuery AndExpression(OrQuery rootExpression)
+        // manage OR expressions
+        else if (binaryExpression.NodeType == ExpressionType.OrElse)
         {
-            AndQuery andExpression;
-            if (!rootExpression.MultipleWhereClauses)
-            {
-                andExpression = new AndQuery();
-                rootExpression.Elements.Add(andExpression);
-            }
-            else // multiple where clauses are joined by AND
-            {
-                andExpression = rootExpression.Elements[0];
-            }
-
-            return andExpression;
+            VisitOrExpression(binaryExpression, rootExpression);
         }
 
-
-        /// <summary>
-        ///     Manage simple expressions like left operator right
-        /// </summary>
-        /// <param name="binaryExpression"></param>
-        private AtomicQuery VisitLeafExpression(BinaryExpression binaryExpression)
+        // manage simple expressions like a > 10
+        else if (IsLeafExpression(binaryExpression))
         {
-            if (binaryExpression.Right is ConstantExpression right)
+            var andExpression = AndExpression(rootExpression);
+
+            andExpression.Elements.Add(VisitLeafExpression(binaryExpression));
+        }
+        else
+        {
+            throw new NotSupportedException("Query too complex");
+        }
+    }
+
+    private void VisitMemberExpression(MemberExpression expression, OrQuery rootExpression, bool not)
+    {
+        var andExpression = AndExpression(rootExpression);
+
+        VisitMemberExpression(expression, andExpression, not);
+    }
+
+    private void VisitMemberExpression(MemberExpression expression, AndQuery parentExpress, bool not)
+    {
+        var metadata = GetMetadata(expression.Member);
+        var keyValue = new KeyValue(!not);
+
+        parentExpress.Elements.Add(new(metadata, keyValue));
+    }
+
+    private void VisitMethodCall(MethodCallExpression call, OrQuery rootExpression)
+    {
+        var andExpression = AndExpression(rootExpression);
+
+        VisitMethodCall(call, andExpression);
+    }
+
+    private void VisitMethodCall(MethodCallExpression call, AndQuery andExpression)
+    {
+        var methodName = call.Method.Name;
+        var argument = call.Arguments.FirstOrDefault();
+
+        if (call.Object is MemberExpression member && argument is ConstantExpression constant)
+        {
+            var value = constant.Value.ToString();
+
+
+            var metadata = GetMetadata(member.Member);
+            var keyValue = new KeyValue(value);
+            var op = methodName switch
             {
-                if (binaryExpression.Left is MemberExpression left)
+                "StartsWith" => QueryOperator.StrStartsWith,
+                "EndsWith" => QueryOperator.StrEndsWith,
+                "Contains" => QueryOperator.StrContains,
+                _ => throw new NotSupportedException($"Method {methodName} can not be used in a query")
+            };
+            andExpression.Elements.Add(new(metadata, keyValue, op));
+        }
+        else
+        {
+            throw new NotSupportedException($"Error processing method call expression:{methodName}");
+        }
+    }
+
+
+    /// <summary>
+    ///     OR expression can be present only at root level
+    /// </summary>
+    /// <param name="binaryExpression"></param>
+    /// <param name="rootExpression"></param>
+    private void VisitOrExpression(BinaryExpression binaryExpression, OrQuery rootExpression)
+    {
+        // visit left part
+        if (IsLeafExpression(binaryExpression.Left))
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+
+            andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Left));
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.MemberAccess)
+        {
+            VisitMemberExpression((MemberExpression)binaryExpression.Left, rootExpression, false);
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+            VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.Extension)
+        {
+            if (binaryExpression.Left is SubQueryExpression subQuery)
+            {
+                var atomicQuery = VisitContainsExpression(subQuery);
+                var andQuery = new AndQuery();
+                andQuery.Elements.Add(atomicQuery);
+                rootExpression.Elements.Add(andQuery);
+            }
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.Not)
+        {
+            var unary = (UnaryExpression)binaryExpression.Left;
+
+            if (unary.Operand is SubQueryExpression subQuery)
+            {
+                var atomicQuery = VisitContainsExpression(subQuery, true);
+                var andQuery = new AndQuery();
+                andQuery.Elements.Add(atomicQuery);
+                rootExpression.Elements.Add(andQuery);
+            }
+            else if (unary.Operand is MemberExpression member)
+            {
+                VisitMemberExpression(member, rootExpression, true);
+            }
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.OrElse)
+        {
+            VisitOrExpression((BinaryExpression)binaryExpression.Left, rootExpression);
+        }
+        else if (binaryExpression.Left.NodeType == ExpressionType.AndAlso)
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+            VisitAndExpression((BinaryExpression)binaryExpression.Left, andExpression);
+        }
+        else if (binaryExpression.Left is MethodCallExpression call)
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+            VisitMethodCall(call, andExpression);
+        }
+        else
+        {
+            throw new NotSupportedException("Query too complex");
+        }
+
+        // visit right part
+        if (IsLeafExpression(binaryExpression.Right))
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+
+            andExpression.Elements.Add(VisitLeafExpression((BinaryExpression)binaryExpression.Right));
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.MemberAccess)
+        {
+            VisitMemberExpression((MemberExpression)binaryExpression.Right, rootExpression, false);
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.Extension)
+        {
+            if (binaryExpression.Right is SubQueryExpression subQuery)
+            {
+                var atomicQuery = VisitContainsExpression(subQuery);
+                var andQuery = new AndQuery();
+                andQuery.Elements.Add(atomicQuery);
+                rootExpression.Elements.Add(andQuery);
+            }
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.Not)
+        {
+            var unary = (UnaryExpression)binaryExpression.Right;
+
+            if (unary.Operand is SubQueryExpression subQuery)
+            {
+                var atomicQuery = VisitContainsExpression(subQuery, true);
+                var andQuery = new AndQuery();
+                andQuery.Elements.Add(atomicQuery);
+                rootExpression.Elements.Add(andQuery);
+            }
+            else if (unary.Operand is MemberExpression member)
+            {
+                VisitMemberExpression(member, rootExpression, true);
+            }
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.OrElse)
+        {
+            VisitOrExpression((BinaryExpression)binaryExpression.Right, rootExpression);
+        }
+        else if (binaryExpression.Right.NodeType == ExpressionType.AndAlso)
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+            VisitAndExpression((BinaryExpression)binaryExpression.Right, andExpression);
+        }
+        else if (binaryExpression.Right is MethodCallExpression call)
+        {
+            var andExpression = new AndQuery();
+            rootExpression.Elements.Add(andExpression);
+            VisitMethodCall(call, andExpression);
+        }
+        else
+        {
+            throw new NotSupportedException("Query too complex");
+        }
+    }
+
+    private static AndQuery AndExpression(OrQuery rootExpression)
+    {
+        AndQuery andExpression;
+        if (!rootExpression.MultipleWhereClauses)
+        {
+            andExpression = new();
+            rootExpression.Elements.Add(andExpression);
+        }
+        else // multiple where clauses are joined by AND
+        {
+            andExpression = rootExpression.Elements[0];
+        }
+
+        return andExpression;
+    }
+
+
+    /// <summary>
+    ///     Manage simple expressions like left operator right
+    /// </summary>
+    /// <param name="binaryExpression"></param>
+    private AtomicQuery VisitLeafExpression(BinaryExpression binaryExpression)
+    {
+        if (binaryExpression.Right is ConstantExpression right)
+        {
+            if (binaryExpression.Left is MemberExpression left)
+            {
+                var metadata = GetMetadata(left.Member);
+                var keyValue = new KeyValue(right.Value);
+
+                var oper = ConvertOperator(binaryExpression);
+
+                return new(metadata, keyValue, oper);
+            }
+
+            if (binaryExpression.Left is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+                if (unary.Operand is MemberExpression member)
                 {
-                    var metadata = GetMetadata(left.Member);
+                    var metadata = GetMetadata(member.Member);
                     var keyValue = new KeyValue(right.Value);
 
                     var oper = ConvertOperator(binaryExpression);
 
-                    return new AtomicQuery(metadata, keyValue, oper);
+                    return new(metadata, keyValue, oper);
                 }
-
-                if (binaryExpression.Left is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
-                    if (unary.Operand is MemberExpression member)
-                    {
-                        var metadata = GetMetadata(member.Member);
-                        var keyValue = new KeyValue(right.Value);
-
-                        var oper = ConvertOperator(binaryExpression);
-
-                        return new AtomicQuery(metadata, keyValue, oper);
-                    }
-            }
-
-
-            // try to revert the expression
-            {
-                var left = binaryExpression.Right as MemberExpression;
-                right = binaryExpression.Left as ConstantExpression;
-
-                if (left != null && right != null)
-                {
-                    var metadata = GetMetadata(left.Member);
-                    var keyValue = new KeyValue(right.Value);
-
-                    var oper = QueryOperator.Eq;
-
-                    // reverse the operator
-                    if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Lt;
-
-                    if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Le;
-
-                    if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Gt;
-
-                    if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Ge;
-
-                    return new AtomicQuery(metadata, keyValue, oper);
-                }
-            }
-
-            throw new NotSupportedException("Error parsing binary expression");
         }
 
-        private static QueryOperator ConvertOperator(BinaryExpression binaryExpression)
+
+        // try to revert the expression
         {
-            var oper = QueryOperator.Eq;
+            var left = binaryExpression.Right as MemberExpression;
+            right = binaryExpression.Left as ConstantExpression;
 
+            if (left != null && right != null)
+            {
+                var metadata = GetMetadata(left.Member);
+                var keyValue = new KeyValue(right.Value);
 
-            if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Gt;
+                var oper = QueryOperator.Eq;
 
-            if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Ge;
+                // reverse the operator
+                if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Lt;
 
-            if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Lt;
+                if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Le;
 
-            if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Le;
+                if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Gt;
 
-            if (binaryExpression.NodeType == ExpressionType.NotEqual) oper = QueryOperator.NotEq;
-            return oper;
+                if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Ge;
+
+                return new(metadata, keyValue, oper);
+            }
         }
+
+        throw new NotSupportedException("Error parsing binary expression");
+    }
+
+    private static QueryOperator ConvertOperator(BinaryExpression binaryExpression)
+    {
+        var oper = QueryOperator.Eq;
+
+
+        if (binaryExpression.NodeType == ExpressionType.GreaterThan) oper = QueryOperator.Gt;
+
+        if (binaryExpression.NodeType == ExpressionType.GreaterThanOrEqual) oper = QueryOperator.Ge;
+
+        if (binaryExpression.NodeType == ExpressionType.LessThan) oper = QueryOperator.Lt;
+
+        if (binaryExpression.NodeType == ExpressionType.LessThanOrEqual) oper = QueryOperator.Le;
+
+        if (binaryExpression.NodeType == ExpressionType.NotEqual) oper = QueryOperator.NotEq;
+        return oper;
     }
 }

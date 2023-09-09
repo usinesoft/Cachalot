@@ -1,49 +1,49 @@
-import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { AndQuery, DataResponse, QueryMetadata, SearchRequest, SqlResponse } from './model/query';
-import streamSaver from 'streamsaver';
-import { ExecutionPlan } from './model/execution-plan';
+import { HttpClient } from "@angular/common/http";
+import { Inject, Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { AndQuery, DataResponse, QueryMetadata, SearchRequest, SqlResponse } from "./model/query";
+import streamSaver from "streamsaver";
+import { ExecutionPlan } from "./model/execution-plan";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root"
 })
 export class QueryService {
 
-  constructor(private http: HttpClient, @Inject('BASE_URL') private baseUrl: string) { }
+  constructor(private http: HttpClient, @Inject("BASE_URL") private baseUrl: string) {}
 
 
-  public GetQueryMetadata(collection: string, property: string): Observable<QueryMetadata> {
+  GetQueryMetadata(collection: string, property: string): Observable<QueryMetadata> {
     return this.http.get<QueryMetadata>(this.baseUrl + `Data/query/metadata/${collection}/${property}`);
   }
 
 
-  public GetAsSql(collection: string, query: AndQuery): Observable<SqlResponse> {
+  GetAsSql(collection: string, query: AndQuery): Observable<SqlResponse> {
     return this.http.post<SqlResponse>(this.baseUrl + `Data/query/sql/${collection}`, query);
   }
 
-  public GetExecutionPlan(queryId: string): Observable<ExecutionPlan> {
+  GetExecutionPlan(queryId: string): Observable<ExecutionPlan> {
     return this.http.get<ExecutionPlan>(this.baseUrl + `Data/query/plan/${queryId}`);
   }
 
-  public DownloadAsStream(sql: string | undefined, fullTextQuery: string | undefined): Observable<boolean> {
-    var request = new SearchRequest();
+  DownloadAsStream(sql: string | undefined, fullTextQuery: string | undefined): Observable<boolean> {
+    const request = new SearchRequest();
     request.sql = sql;
     request.fullText = fullTextQuery;
 
 
-    return this.downloadFileAsStream(this.baseUrl + 'data/query/stream', 'POST', request);
+    return this.downloadFileAsStream(this.baseUrl + "data/query/stream", "POST", request);
   }
 
-  public ExecuteQuery(sql: string | undefined, fullTextQuery: string | undefined) {
+  ExecuteQuery(sql: string | undefined, fullTextQuery: string | undefined) {
 
-    var request = new SearchRequest();
+    const request = new SearchRequest();
     request.sql = sql;
     request.fullText = fullTextQuery;
-    return this.http.post<DataResponse>(this.baseUrl + 'Data/query/execute', request);
+    return this.http.post<DataResponse>(this.baseUrl + "Data/query/execute", request);
   }
 
-  public UploadFile(file: File, collection: string): Observable<any> {
+  UploadFile(file: File, collection: string): Observable<any> {
 
     const formData = new FormData();
     formData.append("file", file);
@@ -55,7 +55,7 @@ export class QueryService {
   // extract file name from header
   protected getFileName(data: any) {
 
-    return 'data.json';
+    return "data.json";
     // let fileName: string|undefined;
     // let fileNameKeyword = "filename=";
 
@@ -72,30 +72,31 @@ export class QueryService {
   }
 
   // download stream without a Blob (which is limited in size and accumulates everything before being saved to a file)
-  public downloadFileAsStream(url: string, method: string, body: any): Observable<boolean> {
-    const accessToken = localStorage.getItem('access_token');
+  downloadFileAsStream(url: string, method: string, body: any): Observable<boolean> {
+    const accessToken = localStorage.getItem("access_token");
     let headers: any = undefined;
     if (accessToken) {
       headers = {
         Authorization: `Bearer ${accessToken}`
-      }
+      };
     }
     if (body) {
       headers = headers || {};
-      headers = { ...headers, 'Content-Type': 'application/json' };
+      headers = { ...headers, 'Content-Type': "application/json" };
     }
     return new Observable<boolean>(subscriber => {
-      fetch(url, {
-        method: method,
-        body: !!body ? JSON.stringify(body) : undefined,
-        headers: headers
-      })
+      fetch(url,
+          {
+            method: method,
+            body: !!body ? JSON.stringify(body) : undefined,
+            headers: headers
+          })
         .then(response => {
-          let fileName = this.getFileName(response);
-          console.info("Creating file stream...")
+          const fileName = this.getFileName(response);
+          console.info("Creating file stream...");
           streamSaver.mitm = `assets/mitm.html`;
           const fileStream = streamSaver.createWriteStream(fileName!, { size: -1 });
-          console.info("Created file stream with name " + fileName);
+          console.info(`Created file stream with name ${fileName}`);
           response!.body!.pipeTo(fileStream)
             .then(
               _ => {
@@ -104,21 +105,21 @@ export class QueryService {
                 subscriber.complete();
               },
               error => {
-                console.error('Error in the middle of streaming: ', error);
+                console.error("Error in the middle of streaming: ", error);
 
                 subscriber.error(error);
               }
             )
             .catch(error => {
-              console.error('FATAL Error in the middle of streaming: ', error);
+              console.error("FATAL Error in the middle of streaming: ", error);
 
               subscriber.error(error);
             });
         })
         .catch((error) => {
-          console.error('Error: ', error);
+          console.error("Error: ", error);
           subscriber.error(error);
-        })
+        });
     });
   }
 }

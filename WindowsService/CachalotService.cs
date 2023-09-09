@@ -1,52 +1,46 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
 using Server;
 using Server.HostServices;
 
-namespace WindowsService
+namespace WindowsService;
+
+internal class CachalotService : ServiceBase
 {
-    class CachalotService : ServiceBase
+    private HostedService _service;
+    private ManualResetEvent _stopEvent;
+
+    protected override void OnStart(string[] args)
     {
-        private ManualResetEvent _stopEvent;
-        private HostedService _service;
+        if (!OperatingSystem.IsWindows())
+            throw new NotSupportedException("The service works only on Windows");
 
-        protected override void OnStart(string[] args)
-        {
-            
-            if (!OperatingSystem.IsWindows())
-                throw new NotSupportedException("The service works only on Windows");
+        base.OnStart(args);
 
-            base.OnStart(args);
+        var exeDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            var exeDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        Directory.SetCurrentDirectory(exeDirectory);
 
-            Directory.SetCurrentDirectory(exeDirectory);
+        _stopEvent = new(false);
 
-            _stopEvent = new ManualResetEvent(false);
-
-            _service = new HostedService(HostServices.Log, _stopEvent);
-
-            
-            // allow for longer startup times
-            Task.Factory.StartNew(() => _service.Start(args.Length > 0 ? args[0]:null));
-
-            
-            
-        }
-
-        protected override void OnStop()
-        {
-            if (!OperatingSystem.IsWindows())
-                throw new NotSupportedException("The service works only on Windows");
+        _service = new(HostServices.Log, _stopEvent);
 
 
-            _service.Stop();
-            base.OnStop();
-        }
+        // allow for longer startup times
+        Task.Factory.StartNew(() => _service.Start(args.Length > 0 ? args[0] : null));
+    }
 
-        
+    protected override void OnStop()
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new NotSupportedException("The service works only on Windows");
+
+
+        _service.Stop();
+        base.OnStop();
     }
 }

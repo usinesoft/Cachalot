@@ -8,26 +8,55 @@ namespace Server.Persistence;
 public class ReliableStorage : IDisposable
 {
     public const string StorageFileName = "datastore.bin";
-    
+
     /// <summary>
-    /// Temporary copy o the data file used for recovery (after drop or if restore fails)
+    ///     Temporary copy o the data file used for recovery (after drop or if restore fails)
     /// </summary>
     public const string TempFileName = "datastore.tmp";
-    
+
     private readonly string _backupPath;
 
 
     private Thread _backupInitThread;
-    
+
     private BackupStorage _backupStorage;
 
     /// <summary>
-    /// Internally used for statistics
+    /// </summary>
+    /// <param name="objectProcessor">an object processor is responsible to transform raw data blocks into useful objects</param>
+    /// <param name="workingDirectory"></param>
+    /// <param name="backupPath"></param>
+    /// <param name="isBackup"></param>
+    public ReliableStorage(IPersistentObjectProcessor objectProcessor, string workingDirectory = null,
+                           string backupPath = null, bool isBackup = false)
+    {
+        if (isBackup && backupPath == null)
+            throw new ArgumentException("For a backup storage, backup path must be specified");
+
+        _backupPath = backupPath;
+
+        // the backup path is an absolute path. The data path is relative to the working directory
+        DataPath = isBackup ? _backupPath :
+            workingDirectory != null ? Path.Combine(workingDirectory, Constants.DataPath) : Constants.DataPath;
+
+        ObjectProcessor = objectProcessor;
+
+        IsBackup = isBackup;
+
+        if (!Directory.Exists(DataPath)) Directory.CreateDirectory(DataPath);
+
+        var fullPath = Path.Combine(DataPath, StorageFileName);
+
+        StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
+    }
+
+    /// <summary>
+    ///     Internally used for statistics
     /// </summary>
     public static int StoredInPlace { get; set; }
 
     /// <summary>
-    /// Internally used for statistics
+    ///     Internally used for statistics
     /// </summary>
     public static int Relocated { get; set; }
 
@@ -49,35 +78,6 @@ public class ReliableStorage : IDisposable
     protected Dictionary<string, BlockInfo> BlockInfoByPrimaryKey { get; } = new();
 
     protected Stream StorageStream { get; private set; }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="objectProcessor">an object processor is responsible to transform raw data blocks into useful objects</param>
-    /// <param name="workingDirectory"></param>
-    /// <param name="backupPath"></param>
-    /// <param name="isBackup"></param>
-    public ReliableStorage(IPersistentObjectProcessor objectProcessor, string workingDirectory = null,
-                           string backupPath = null, bool isBackup = false)
-    {
-        if (isBackup && backupPath == null) throw new ArgumentException("For a backup storage, backup path must be specified");
-
-        _backupPath = backupPath;
-
-        // the backup path is an absolute path. The data path is relative to the working directory
-        DataPath = isBackup ? _backupPath :
-            workingDirectory != null ? Path.Combine(workingDirectory, Constants.DataPath) : Constants.DataPath;
-
-        ObjectProcessor = objectProcessor;
-
-        IsBackup = isBackup;
-
-        if (!Directory.Exists(DataPath)) Directory.CreateDirectory(DataPath);
-
-        var fullPath = Path.Combine(DataPath, StorageFileName);
-
-        StorageStream = new FileStream(fullPath, FileMode.OpenOrCreate);
-    }
 
     public void Dispose()
     {
@@ -217,7 +217,7 @@ public class ReliableStorage : IDisposable
         var reader = new BinaryReader(StorageStream);
 
         var block = new PersistentBlock();
-        
+
         // read all the blocks
         while (block.Read(reader))
         {
@@ -249,7 +249,7 @@ public class ReliableStorage : IDisposable
         var fullPath = Path.Combine(dataPath, StorageFileName);
         var tempPath = Path.Combine(dataPath, TempFileName);
 
-        
+
         using (var tempStream = new FileStream(tempPath, FileMode.Create))
         {
             var writer = new BinaryWriter(tempStream);
@@ -279,7 +279,7 @@ public class ReliableStorage : IDisposable
                 block = new();
             }
 
-            
+
             writer.Flush();
             readStream.Dispose();
         }
@@ -287,7 +287,6 @@ public class ReliableStorage : IDisposable
         File.Delete(fullPath);
 
         File.Move(tempPath, fullPath);
-        
     }
 
     /// <summary>
@@ -361,8 +360,8 @@ public class ReliableStorage : IDisposable
             UsedDataSize = data.Length
         };
 
-        
-         if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo)) // updating an object
+
+        if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo)) // updating an object
         {
             // load the old version of the block
             StorageStream.Seek(blockInfo.Offset, SeekOrigin.Begin);
@@ -420,11 +419,7 @@ public class ReliableStorage : IDisposable
                     break;
             }
 
-            if (!wasUpdatedInPlace)
-            {
-                BlockInfoByPrimaryKey[primaryKey] = new(StorageSize, block.LastTransactionId);    
-            }
-            
+            if (!wasUpdatedInPlace) BlockInfoByPrimaryKey[primaryKey] = new(StorageSize, block.LastTransactionId);
         }
         else // a new object not already in the persistent storage
         {

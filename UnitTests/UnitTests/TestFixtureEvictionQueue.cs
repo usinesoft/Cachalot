@@ -1,8 +1,8 @@
+using System;
+using System.Collections.Generic;
 using Client.Core;
 using NUnit.Framework;
 using Server;
-using System;
-using System.Collections.Generic;
 using Tests.TestData;
 
 namespace Tests.UnitTests

@@ -198,9 +198,6 @@ namespace Tests.IntegrationTests
 
             r5 = connector.SqlQueryAsJson("select from home where PriceInEuros <= 56").ToList();
             Assert.AreEqual(1, r5.Count);
-            
-
-
         }
 
         [Test]
@@ -293,7 +290,7 @@ namespace Tests.IntegrationTests
             var schema1 = SchemaFactory.New("order")
                 .PrimaryKey("Id")
                 .WithServerSideValue("Category", IndexType.Dictionary)
-                .WithServerSideValue("Amount", IndexType.None)
+                .WithServerSideValue("Amount")
                 .Build();
 
             var schema2 = SchemaFactory.New("order")
@@ -304,14 +301,15 @@ namespace Tests.IntegrationTests
 
             var compatibility = CollectionSchema.AreCompatible(schema2, schema1);
 
-            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsReindex, compatibility, "new index so it should be reindexed");
-            
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsReindex, compatibility,
+                "new index so it should be reindexed");
+
             compatibility = CollectionSchema.AreCompatible(schema1, schema2);
-            
+
             Assert.AreEqual(CollectionSchema.CompatibilityLevel.Ok, compatibility, "less indexes so nothing to do");
 
             compatibility = CollectionSchema.AreCompatible(schema2, schema2);
-            
+
             Assert.AreEqual(CollectionSchema.CompatibilityLevel.Ok, compatibility, "same schema so nothing to do");
 
             var schema3 = SchemaFactory.New("order")
@@ -322,16 +320,17 @@ namespace Tests.IntegrationTests
                 .Build();
 
             compatibility = CollectionSchema.AreCompatible(schema3, schema1);
-            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility, "new server-side value added so full repacking is needed");
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility,
+                "new server-side value added so full repacking is needed");
 
             compatibility = CollectionSchema.AreCompatible(schema3, schema2);
-            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility, "new server-side value added so full repacking is needed");
+            Assert.AreEqual(CollectionSchema.CompatibilityLevel.NeedsRepacking, compatibility,
+                "new server-side value added so full repacking is needed");
         }
 
         [Test]
         public void Reindex_existing_collection()
         {
-
             //store objects with a schema
             using (var connector = new Connector(_clientConfig))
             {
@@ -805,7 +804,7 @@ namespace Tests.IntegrationTests
 
                 var admin = connector.AdminInterface();
 
-                
+
                 admin.InitializeFromDump(dumpPath);
 
                 var dataSource = connector.DataSource<Event>();
@@ -1518,9 +1517,12 @@ namespace Tests.IntegrationTests
 
             var collection = connector.DataSource<AllKindsOfProperties>();
 
-            collection.Put(new AllKindsOfProperties{InstrumentName = "instr01", Tags = new List<string>{"a", "b", "c"}});
-            collection.Put(new AllKindsOfProperties{InstrumentName = "instr02", Tags = new List<string>{"x", "y", "c"}});
-            collection.Put(new AllKindsOfProperties{InstrumentName = "instr02", Tags = new List<string>{"x", "y", "z"}});
+            collection.Put(new AllKindsOfProperties
+                { InstrumentName = "instr01", Tags = new List<string> { "a", "b", "c" } });
+            collection.Put(new AllKindsOfProperties
+                { InstrumentName = "instr02", Tags = new List<string> { "x", "y", "c" } });
+            collection.Put(new AllKindsOfProperties
+                { InstrumentName = "instr02", Tags = new List<string> { "x", "y", "z" } });
 
             // scalar property (indexed)
             var ji = connector.SqlQueryAsJson("select distinct InstrumentName from AllKindsOfProperties").ToList();
@@ -1532,7 +1534,6 @@ namespace Tests.IntegrationTests
             // collection property (indexed)
             var jt = connector.SqlQueryAsJson("select distinct tags from AllKindsOfProperties").ToList();
             Assert.AreEqual(6, jt.Count);
-            
         }
 
 

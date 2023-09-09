@@ -1,166 +1,163 @@
-using Client;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using Client;
 
-namespace Server
+namespace Server;
+
+public class ServerSideLock
 {
-    public class ServerSideLock
+    private static int _lastId;
+
+    private static readonly int ProcessorCount = Environment.ProcessorCount;
+
+    private static readonly int Retries = 10;
+
+    private static readonly int MaxReads = ProcessorCount;
+
+    /// <summary>
+    ///     Mostly for debugging
+    /// </summary>
+    private readonly int _id;
+
+    private readonly object _sync = new();
+
+    private bool _pendingWriteRequest;
+    private int _writeCount;
+
+    public ServerSideLock()
     {
-        private int _writeCount;
+        Interlocked.Increment(ref _lastId);
 
-        private bool _pendingWriteRequest;
+        _id = _lastId;
+    }
 
-        private readonly object _sync = new object();
+    public int ReadCount { get; private set; }
 
-        /// <summary>
-        /// Mostly for debugging
-        /// </summary>
-        private readonly int _id;
+    private static void SpinWait(int spinCount)
+    {
+        const int lockSpinCycles = 20;
 
-        private static int _lastId;
+        //Exponential back-off
+        if (spinCount < 5 && ProcessorCount > 1)
+            Thread.SpinWait(lockSpinCycles * spinCount);
+        else
+            Thread.Sleep(0);
+    }
 
-        public ServerSideLock()
+
+    public bool TryEnterWrite()
+    {
+        var result = false;
+
+        for (var i = 0; i < Retries; i++)
         {
-            Interlocked.Increment(ref _lastId);
-
-            _id = _lastId;
-        }
-
-        public int ReadCount { get; private set; }
-
-        private static readonly int ProcessorCount = Environment.ProcessorCount;
-
-        private static readonly int Retries = 10;
-
-        private static readonly int MaxReads = ProcessorCount;
-
-        private static void SpinWait(int spinCount)
-        {
-            const int lockSpinCycles = 20;
-
-            //Exponential back-off
-            if (spinCount < 5 && ProcessorCount > 1)
-                Thread.SpinWait(lockSpinCycles * spinCount);
-            else
-                Thread.Sleep(0);
-        }
-
-
-        public bool TryEnterWrite()
-        {
-            var result = false;
-
-            for (var i = 0; i < Retries; i++)
+            lock (_sync)
             {
-                lock (_sync)
+                if (ReadCount > 0 || _writeCount > 0)
                 {
-                    if (ReadCount > 0 || _writeCount > 0)
-                    {
-                        if (_writeCount == 0) // do not mark as pending write if there is already a write lock
-                            _pendingWriteRequest = true;
-                    }
-                    else
-                    {
-                        _writeCount++;
-
-                        _pendingWriteRequest = false;
-
-                        result = true;
-
-                        break;
-                    }
+                    if (_writeCount == 0) // do not mark as pending write if there is already a write lock
+                        _pendingWriteRequest = true;
                 }
-
-                SpinWait(4);
-            }
-
-            Debug.Assert(!result || _writeCount > 0);
-
-            Dbg.Trace($"lock = {_id} write lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest} maxReads = {MaxReads}");
-
-            return result;
-        }
-
-        public bool TryEnterRead()
-        {
-            var result = false;
-
-            for (var i = 0; i < Retries; i++)
-            {
-                lock (_sync)
+                else
                 {
-                    if (_writeCount == 0 && !_pendingWriteRequest && ReadCount < MaxReads)
-                    {
-                        result = true;
-                        ReadCount++;
+                    _writeCount++;
 
-                        break;
-                    }
+                    _pendingWriteRequest = false;
+
+                    result = true;
+
+                    break;
                 }
-
-                SpinWait(4);
             }
 
-
-            Dbg.Trace($"lock = {_id} read lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest} maxReads = {MaxReads}");
-
-            return result;
+            SpinWait(4);
         }
 
-        public void ExitRead()
+        Debug.Assert(!result || _writeCount > 0);
+
+        Dbg.Trace(
+            $"lock = {_id} write lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest} maxReads = {MaxReads}");
+
+        return result;
+    }
+
+    public bool TryEnterRead()
+    {
+        var result = false;
+
+        for (var i = 0; i < Retries; i++)
         {
             lock (_sync)
             {
-                if (_writeCount > 0)
-                    throw new NotSupportedException("Calling ExitRead() when a write lock is hold");
+                if (_writeCount == 0 && !_pendingWriteRequest && ReadCount < MaxReads)
+                {
+                    result = true;
+                    ReadCount++;
 
-                if (ReadCount == 0)
-                    throw new NotSupportedException("Calling ExitRead() when no read lock is hold");
-
-                ReadCount--;
-
-                Debug.Assert(ReadCount >= 0);
-
-                Dbg.Trace($"lock = {_id} exit read readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
+                    break;
+                }
             }
 
-
+            SpinWait(4);
         }
 
-        public void ExitWrite()
+
+        Dbg.Trace(
+            $"lock = {_id} read lock result = {result} readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest} maxReads = {MaxReads}");
+
+        return result;
+    }
+
+    public void ExitRead()
+    {
+        lock (_sync)
         {
-            lock (_sync)
-            {
-                if (ReadCount > 0)
-                    throw new NotSupportedException("Calling ExitWrite() when o read lock is hold");
+            if (_writeCount > 0)
+                throw new NotSupportedException("Calling ExitRead() when a write lock is hold");
 
-                if (_writeCount == 0)
-                    throw new NotSupportedException("Calling ExitWrite() when no write lock is hold");
+            if (ReadCount == 0)
+                throw new NotSupportedException("Calling ExitRead() when no read lock is hold");
 
-                _writeCount = 0;
+            ReadCount--;
 
-                _pendingWriteRequest = false;
+            Debug.Assert(ReadCount >= 0);
 
-                Debug.Assert(_writeCount == 0);
-
-                Dbg.Trace($"lock = {_id} exit write readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
-            }
-
-
+            Dbg.Trace(
+                $"lock = {_id} exit read readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
         }
+    }
 
-        /// <summary>
-        ///     Only called by administrator
-        /// </summary>
-        public void ForceReset()
+    public void ExitWrite()
+    {
+        lock (_sync)
         {
-            lock (_sync)
-            {
-                ReadCount = 0;
-                _writeCount = 0;
+            if (ReadCount > 0)
+                throw new NotSupportedException("Calling ExitWrite() when o read lock is hold");
 
-            }
+            if (_writeCount == 0)
+                throw new NotSupportedException("Calling ExitWrite() when no write lock is hold");
+
+            _writeCount = 0;
+
+            _pendingWriteRequest = false;
+
+            Debug.Assert(_writeCount == 0);
+
+            Dbg.Trace(
+                $"lock = {_id} exit write readCount={ReadCount} writeCount = {_writeCount} pendingWrite = {_pendingWriteRequest}");
+        }
+    }
+
+    /// <summary>
+    ///     Only called by administrator
+    /// </summary>
+    public void ForceReset()
+    {
+        lock (_sync)
+        {
+            ReadCount = 0;
+            _writeCount = 0;
         }
     }
 }

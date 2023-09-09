@@ -1,9 +1,8 @@
-﻿namespace Server.Persistence
+﻿namespace Server.Persistence;
+
+public enum BlockStatus
 {
-    public enum BlockStatus
-    {
-        Active,
-        Deleted,
-        Dirty
-    }
+    Active,
+    Deleted,
+    Dirty
 }

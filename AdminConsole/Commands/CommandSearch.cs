@@ -1,79 +1,77 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Client;
 using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace AdminConsole.Commands
+namespace AdminConsole.Commands;
+
+public class CommandSearch : CommandBase
 {
-    public class CommandSearch : CommandBase
+    internal override IDataClient TryExecute(IDataClient client)
     {
-        internal override IDataClient TryExecute(IDataClient client)
+        if (!CanExecute)
+            return client;
+
+        Dbg.CheckThat(Params.Count == 2);
+
+        IList<JObject> listResult = null;
+
+        try
         {
-            if (!CanExecute)
-                return client;
+            Dbg.CheckThat(Query != null);
 
-            Dbg.CheckThat(Params.Count == 2);
+            Profiler.IsActive = true;
+            Profiler.Start("SEARCH");
 
-            IList<JObject> listResult = null;
+            listResult = client.GetMany(Query).Select(r => r.Item).ToList();
 
-            try
+
+            Logger.Write("[");
+            for (var i = 0; i < listResult.Count; i++)
             {
-                Dbg.CheckThat(Query != null);
-
-                Profiler.IsActive = true;
-                Profiler.Start("SEARCH");
-
-                listResult = client.GetMany(Query).Select(r => r.Item).Cast<JObject>().ToList();
-
-
-
-                Logger.Write("[");
-                for (var i = 0; i < listResult.Count; i++)
-                {
-                    Logger.Write(listResult[i].ToString());
-                    if (i < listResult.Count - 1) Logger.Write(",");
-                }
-
-                Logger.Write("]");
-
-                Logger.DumpFile("ftresult.json");
-
-                Logger.Write("[");
-                for (var i = 0; i < listResult.Count; i++)
-                {
-                    Logger.Write(listResult[i].ToString());
-                    if (i < listResult.Count - 1) Logger.Write(",");
-                }
-
-                Logger.Write("]");
-                Logger.EndDump();
-
-                return client;
+                Logger.Write(listResult[i].ToString());
+                if (i < listResult.Count - 1) Logger.Write(",");
             }
-            catch (CacheException ex)
+
+            Logger.Write("]");
+
+            Logger.DumpFile("ftresult.json");
+
+            Logger.Write("[");
+            for (var i = 0; i < listResult.Count; i++)
             {
-                Logger.WriteEror("Can not execute SEARCH : {0} {1}", ex.Message, ex.ServerMessage);
-                return client;
+                Logger.Write(listResult[i].ToString());
+                if (i < listResult.Count - 1) Logger.Write(",");
             }
-            catch (Exception ex)
-            {
-                Logger.WriteEror("Can not execute SEARCH : {0}", ex.Message);
-                return client;
-            }
-            finally
-            {
-                Profiler.End();
 
-                var count = 0;
-                if (listResult != null)
-                    count = listResult.Count;
+            Logger.Write("]");
+            Logger.EndDump();
 
-                Logger.Write("Found {0} items. The call took {1} milliseconds", count,
-                    Profiler.TotalTimeMilliseconds);
-            }
+            return client;
+        }
+        catch (CacheException ex)
+        {
+            Logger.WriteEror("Can not execute SEARCH : {0} {1}", ex.Message, ex.ServerMessage);
+            return client;
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteEror("Can not execute SEARCH : {0}", ex.Message);
+            return client;
+        }
+        finally
+        {
+            Profiler.End();
+
+            var count = 0;
+            if (listResult != null)
+                count = listResult.Count;
+
+            Logger.Write("Found {0} items. The call took {1} milliseconds", count,
+                Profiler.TotalTimeMilliseconds);
         }
     }
 }

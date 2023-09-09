@@ -1,128 +1,117 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
-namespace Client.Parsing
+namespace Client.Parsing;
+
+public static class Tokenizer
 {
-    public static class Tokenizer
+    private const string EscapedQuoteReplacement = "(#)";
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static CharClass GetCharClass(char ch)
     {
-        private const string EscapedQuoteReplacement = "(#)";
+        if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static CharClass GetCharClass(char ch)
+
+        if ("<>:=,()!".Contains(ch))
+            return CharClass.Symbol;
+
+        return CharClass.LetterOrDigit;
+    }
+
+    public static IList<Token> TokenizeOneLine(string input)
+    {
+        var result = new List<Token>(1000);
+
+        input = input.Trim().Replace("\\'", EscapedQuoteReplacement);
+
+        var previousSplitPosition = 0;
+        var previousType = CharClass.Start;
+
+        var insideString = false;
+
+        for (var i = 0; i < input.Length; i++)
         {
-            if (char.IsWhiteSpace(ch)) return CharClass.Whitespace;
+            var current = input[i];
 
-           
-            if ("<>:=,()!".Contains(ch))
-                return CharClass.Symbol;
-            
-            return CharClass.LetterOrDigit;
-        }
+            var currentType = GetCharClass(current);
 
-        public static IList<Token> TokenizeOneLine(string input)
-        {
-            var result = new List<Token>(1000);
-
-            input = input.Trim().Replace("\\'", EscapedQuoteReplacement);
-
-            var previousSplitPosition = 0;
-            var previousType = CharClass.Start;
-
-            bool insideString = false;
-
-            for (var i = 0; i < input.Length; i++)
+            if (current == '\'') // string delimiter
             {
-                var current = input[i];
-
-                var currentType = GetCharClass(current);
-
-                if (current == '\'') // string delimiter
+                if (insideString)
                 {
-                    if (insideString)
-                    {
-                        var text = input.Substring(previousSplitPosition, i - previousSplitPosition +1);
+                    var text = input.Substring(previousSplitPosition, i - previousSplitPosition + 1);
 
-                        var txt = text.Replace(EscapedQuoteReplacement, "'");
-                        result.Add(new Token
+                    var txt = text.Replace(EscapedQuoteReplacement, "'");
+                    result.Add(new()
+                    {
+                        // restore escaped quotes id any
+                        NormalizedText = txt.ToLower(),
+                        Text = txt,
+                        TokenType = previousType
+                    });
+
+                    previousSplitPosition = i + 1;
+                }
+                else
+                {
+                    if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
+                    {
+                        var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
+
+                        result.Add(new()
                         {
-                            // restore escaped quotes id any
-                            NormalizedText = txt.ToLower(),
-                            Text = txt,
+                            NormalizedText = text.ToLower(),
+                            Text = text,
                             TokenType = previousType
                         });
-
-                        previousSplitPosition = i +1;
-                        
                     }
-                    else
+
+                    previousType = currentType;
+
+                    previousSplitPosition = i;
+                }
+
+                insideString = !insideString;
+            }
+            else
+            {
+                if (currentType != previousType && !insideString)
+                {
+                    if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
                     {
-                        if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
-                        {
-                            var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
-                            
-                            result.Add(new Token
+                        var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
+
+                        if (text.Length > 0)
+                            result.Add(new()
                             {
                                 NormalizedText = text.ToLower(),
                                 Text = text,
                                 TokenType = previousType
                             });
-                        
-                            
-                        }
-
-                        previousType = currentType;
-
-                        previousSplitPosition = i;
                     }
-                    
-                    insideString = !insideString;
+
+                    previousType = currentType;
+
+                    previousSplitPosition = i;
                 }
-                else
-                {
-                    if (currentType != previousType && !insideString)
-                    {
-                        if (previousType != CharClass.Whitespace && previousType != CharClass.Start)
-                        {
-                            var text = input.Substring(previousSplitPosition, i - previousSplitPosition);
-
-                            if (text.Length > 0)
-                            {
-                                result.Add(new Token
-                                {
-                                    NormalizedText = text.ToLower(),
-                                    Text = text,
-                                    TokenType = previousType
-                                });
-                            }
-                        }
-
-                        previousType = currentType;
-
-                        previousSplitPosition = i;
-                    }
-                }
-                
             }
-
-            if (previousType != CharClass.Whitespace)
-            {
-                var text = input.Substring(previousSplitPosition, input.Length - previousSplitPosition);
-
-                if (text.Length > 0)
-                {
-                    result.Add(new()
-                    {
-                        NormalizedText = text.ToLower(),
-                        Text = text,
-                        TokenType = previousType
-                    });
-                }
-                
-            }
-
-
-            return result;
         }
+
+        if (previousType != CharClass.Whitespace)
+        {
+            var text = input.Substring(previousSplitPosition, input.Length - previousSplitPosition);
+
+            if (text.Length > 0)
+                result.Add(new()
+                {
+                    NormalizedText = text.ToLower(),
+                    Text = text,
+                    TokenType = previousType
+                });
+        }
+
+
+        return result;
     }
 }

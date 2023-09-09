@@ -1,5 +1,5 @@
-using NUnit.Framework;
 using System.Threading;
+using NUnit.Framework;
 
 namespace Tests.UnitTests
 {
@@ -25,8 +25,6 @@ namespace Tests.UnitTests
             //this call should be served with the pooled resource
             var res3 = pool.Get();
             Assert.AreEqual(pool.NewResourceClaims, 2);
-
-
         }
 
         [Test]

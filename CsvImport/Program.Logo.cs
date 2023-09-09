@@ -1,5 +1,5 @@
-﻿
-// ReSharper disable once CheckNamespace
+﻿// ReSharper disable once CheckNamespace
+
 internal partial class Program
 {
     private static readonly string Logo = @"
@@ -20,5 +20,4 @@ internal partial class Program
                                                         /_,'
 
 ";
-
 }

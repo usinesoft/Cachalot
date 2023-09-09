@@ -1,13 +1,12 @@
-﻿namespace Server.Persistence
-{
-    internal class NullObjectProcessor : IPersistentObjectProcessor
-    {
-        public void Process(byte[] data)
-        {
-        }
+﻿namespace Server.Persistence;
 
-        public void EndProcess(string dataPath = null)
-        {
-        }
+internal class NullObjectProcessor : IPersistentObjectProcessor
+{
+    public void Process(byte[] data)
+    {
+    }
+
+    public void EndProcess(string dataPath = null)
+    {
     }
 }

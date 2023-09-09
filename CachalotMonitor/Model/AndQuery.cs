@@ -1,15 +1,11 @@
-﻿using Client.Interface;
-
-namespace CachalotMonitor.Model;
-
-
+﻿namespace CachalotMonitor.Model;
 
 public class AndQuery
 {
     public int Take { get; set; } = 100;
-    
+
     /// <summary>
-    /// Optional column to order by
+    ///     Optional column to order by
     /// </summary>
     public string? OrderBy { get; set; }
 

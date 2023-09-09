@@ -1,97 +1,95 @@
 ﻿#region
 
-using Client.Core;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using Client.Core;
 
 #endregion
 
-namespace Channel
+namespace Channel;
+
+public class
+    TcpClientPool : PoolStrategy<TcpClient>
 {
-    public class 
-        TcpClientPool : PoolStrategy<TcpClient>
+    private readonly IPAddress _address;
+
+    private readonly int _port;
+
+    public TcpClientPool(int poolCapacity, int preloaded, string host, int port) : base(poolCapacity)
     {
-        private readonly IPAddress _address;
+        _port = port;
 
-        private readonly int _port;
+        // accept hostname, IPV4 or IPV6 address
 
-        public TcpClientPool(int poolCapacity, int preloaded, string host, int port) : base(poolCapacity)
+        if (!IPAddress.TryParse(host, out _address))
+            _address = Dns.GetHostEntry(host).AddressList[0];
+
+        _address = _address.MapToIPv6();
+
+        PreLoad(preloaded);
+    }
+
+
+    protected override TcpClient GetShinyNewResource()
+    {
+        try
         {
-            _port = port;
+            var client = new TcpClient(AddressFamily.InterNetworkV6) { Client = { DualMode = true }, NoDelay = true };
 
-            // accept hostname, IPV4 or IPV6 address
-
-            if (!IPAddress.TryParse(host, out _address))
-                _address = Dns.GetHostEntry(host).AddressList[0];
-
-            _address = _address.MapToIPv6();
-
-            PreLoad(preloaded);
-        }
+            client.Connect(_address, _port);
 
 
-        protected override TcpClient GetShinyNewResource()
-        {
-            try
-            {
-                var client = new TcpClient(AddressFamily.InterNetworkV6) { Client = { DualMode = true }, NoDelay = true };
-
-                client.Connect(_address, _port);
-
-                
-                if (!client.Connected)
-                    return null;
-
-                return client;
-            }
-            catch (Exception)
-            {
-                //by returning null we notify the pool that the external connection
-                //provider is not available any more
+            if (!client.Connected)
                 return null;
-            }
-        }
 
-        protected override bool IsStillValid(TcpClient tcp)
+            return client;
+        }
+        catch (Exception)
         {
-            if (tcp == null)
+            //by returning null we notify the pool that the external connection
+            //provider is not available any more
+            return null;
+        }
+    }
+
+    protected override bool IsStillValid(TcpClient tcp)
+    {
+        if (tcp == null)
+            return false;
+
+
+        try
+        {
+            if (!tcp.Connected)
                 return false;
 
+            var stream = tcp.GetStream();
+            stream.WriteByte(Constants.PingCookie); // ping 
+            var pingAnswer = stream.ReadByte();
 
-            try
-            {
-                if(!tcp.Connected)
-                    return false;
+            // this should never happen. 
+            if (pingAnswer != Constants.PingCookie) throw new NotSupportedException("Wrong answer to ping request");
 
-                var stream = tcp.GetStream();
-                stream.WriteByte(Constants.PingCookie); // ping 
-                var pingAnswer = stream.ReadByte();
-
-                // this should never happen. 
-                if (pingAnswer != Constants.PingCookie) throw new NotSupportedException("Wrong answer to ping request");
-
-                return pingAnswer == Constants.PingCookie;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return pingAnswer == Constants.PingCookie;
         }
-
-        protected override void Release(TcpClient resource)
+        catch (Exception)
         {
-            if (resource != null)
-            {
-                // proactive close request
-                var stream = resource.GetStream();
-                stream.WriteByte(Constants.CloseCookie);
-                stream.Flush();
+            return false;
+        }
+    }
 
-                resource.Client.Close();
-                resource.Close();
-            }
-            
+    protected override void Release(TcpClient resource)
+    {
+        if (resource != null)
+        {
+            // proactive close request
+            var stream = resource.GetStream();
+            stream.WriteByte(Constants.CloseCookie);
+            stream.Flush();
+
+            resource.Client.Close();
+            resource.Close();
         }
     }
 }

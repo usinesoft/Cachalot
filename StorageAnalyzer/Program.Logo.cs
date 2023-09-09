@@ -1,6 +1,6 @@
 ﻿namespace StorageAnalyzer
 {
-    partial class Program
+    internal partial class Program
     {
         private static readonly string Logo = @"
       __________...----..____..-'``-..___
@@ -20,6 +20,5 @@
                                                         /_,'
 
 ";
-
     }
 }

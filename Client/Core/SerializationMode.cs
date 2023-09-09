@@ -1,8 +1,7 @@
-namespace Client.Core
+namespace Client.Core;
+
+public enum SerializationMode
 {
-    public enum SerializationMode
-    {
-        Json,
-        ProtocolBuffers
-    }
+    Json,
+    ProtocolBuffers
 }

@@ -1,12 +1,11 @@
-﻿using Client.Core;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using Client.Core;
 using Client.Messages;
 using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
-using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -14,19 +13,17 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureSql
     {
-
-        static (string a, string op, string b) ExtractUnitaryQuery(Node root, int nthQuery = 0)
+        private static (string a, string op, string b) ExtractUnitaryQuery(Node root, int nthQuery = 0)
         {
             var where = root.Children.FirstOrDefault(x => x.Token == "where");
             Assert.IsNotNull(where);
 
             var expr = where.Children[0]?.Children[0]?.Children[nthQuery];
             Assert.IsNotNull(expr);
-            Assert.AreEqual(2, expr.Children.Count); 
-            
+            Assert.AreEqual(2, expr.Children.Count);
 
-            return (expr.Children[0].Token, expr.Token, expr.Children[1].Token); 
 
+            return (expr.Children[0].Token, expr.Token, expr.Children[1].Token);
         }
 
         [TestCase("like '%john%'", "like", "'%john%'")]
@@ -40,11 +37,7 @@ namespace Tests.UnitTests
             var tks = Tokenizer.TokenizeOneLine(input);
             Assert.IsNotNull(tokens);
             Assert.AreEqual(tokens.Length, tks.Count);
-            for (int i = 0; i < tokens.Length; i++)
-            {
-                Assert.AreEqual(tokens[i], tks[i].Text);
-            }
-
+            for (var i = 0; i < tokens.Length; i++) Assert.AreEqual(tokens[i], tks[i].Text);
         }
 
         [Test]
@@ -59,10 +52,6 @@ namespace Tests.UnitTests
             Assert.AreEqual("thetable", result.Children[1].Children[0].Token);
 
             Console.WriteLine(result);
-
-
-
-
         }
 
         [Test]
@@ -70,7 +59,7 @@ namespace Tests.UnitTests
         [TestCase("select from persons where a = b", "a", "=", "b", 0)]
         [TestCase("select from persons where a = 'b'", "a", "=", "'b'", 0)]
         [TestCase("select from persons where a = 'b' and c < 15", "c", "<", "15", 1)]
-        public void Parsing_with_single_expression(string expression, string a, string op, string b, int nth )
+        public void Parsing_with_single_expression(string expression, string a, string op, string b, int nth)
         {
             var result = new Parser().ParseSql(expression);
             Assert.IsNull(result.ErrorMessage);
@@ -94,8 +83,6 @@ namespace Tests.UnitTests
             Console.WriteLine(result);
         }
 
-
-        
 
         [Test]
         public void Ignore_keywords_inside_strings()
@@ -153,7 +140,8 @@ namespace Tests.UnitTests
         [Test]
         public void More_complex_parsing()
         {
-            var result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 take 1 ");
+            var result =
+                new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 take 1 ");
 
             Assert.IsNull(result.ErrorMessage);
 
@@ -163,7 +151,8 @@ namespace Tests.UnitTests
 
             Console.WriteLine(result);
 
-            result = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games' take 20");
+            result = new Parser().ParseSql(
+                "select from collection where client in (x, y , z) or category in 'geek', 'games' take 20");
 
 
             Assert.AreEqual("select", result.Token);
@@ -188,7 +177,9 @@ namespace Tests.UnitTests
         [Test]
         public void Parsing_extension()
         {
-            var result = new Parser().ParseSql("select from collection where a<>'ttt' or tags contains 'geek' and clients contains 156 take 10 ");
+            var result =
+                new Parser().ParseSql(
+                    "select from collection where a<>'ttt' or tags contains 'geek' and clients contains 156 take 10 ");
 
 
             Assert.IsNull(result.ErrorMessage);
@@ -200,52 +191,50 @@ namespace Tests.UnitTests
         [Test]
         public void Parsing_with_not()
         {
-            var result = new Parser().ParseSql("select from collection where a not in ('ttt', 'xxx') or tags not contains 'geek' and clients not contains 156  ");
+            var result =
+                new Parser().ParseSql(
+                    "select from collection where a not in ('ttt', 'xxx') or tags not contains 'geek' and clients not contains 156  ");
 
             Assert.IsNull(result.ErrorMessage);
 
             Console.WriteLine(result);
-
         }
 
         [Test]
         public void Parsing_performance_test()
         {
             // warm up
-            var _ = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
+            var _ = new Parser().ParseSql(
+                "select from collection where client in (x, y , z) or category in 'geek', 'games'");
             _ = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
 
             var watch = new Stopwatch();
             watch.Start();
-            for (int i = 0; i < 1000; i++)
-            {
-                _ = new Parser().ParseSql("select from collection where client in (x, y , z) or category in 'geek', 'games'");
-            }
+            for (var i = 0; i < 1000; i++)
+                _ = new Parser().ParseSql(
+                    "select from collection where client in (x, y , z) or category in 'geek', 'games'");
 
             watch.Stop();
 
             Console.WriteLine($"1000 call to parse took {watch.ElapsedMilliseconds} ms");
 
             watch.Restart();
-            for (int i = 0; i < 1000; i++)
-            {
+            for (var i = 0; i < 1000; i++)
                 _ = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5  ");
-            }
 
             watch.Stop();
 
             Console.WriteLine($"1000 call to parse took {watch.ElapsedMilliseconds} ms");
-
         }
 
         [Test]
         public void Smart_parse_values()
         {
-            object vi = JExtensions.SmartParse("123");
+            var vi = JExtensions.SmartParse("123");
 
             Assert.IsTrue(vi is int);
 
-            object vf = JExtensions.SmartParse("123,1");
+            var vf = JExtensions.SmartParse("123,1");
 
             Assert.IsTrue(vf is double);
 
@@ -273,10 +262,9 @@ namespace Tests.UnitTests
             Assert.IsTrue(vb is bool);
 
             Assert.IsNull(JExtensions.SmartParse("null"));
-
         }
 
-        static AtomicQuery FindAtomicQuery(OrQuery query, string property)
+        private static AtomicQuery FindAtomicQuery(OrQuery query, string property)
         {
             return query.Elements.SelectMany(e => e.Elements).FirstOrDefault(e => e.PropertyName == property);
         }
@@ -284,7 +272,6 @@ namespace Tests.UnitTests
         [Test]
         public void Select_to_query()
         {
-
             var schema = SchemaFactory.New("collection").PrimaryKey("id")
                 .WithServerSideValue("a")
                 .WithServerSideValue("x", IndexType.Ordered)
@@ -292,7 +279,8 @@ namespace Tests.UnitTests
                 .WithServerSideValue("date", IndexType.Ordered)
                 .Build();
 
-            var result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
+            var result =
+                new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
 
             var query = result.ToQuery(schema);
 
@@ -300,7 +288,9 @@ namespace Tests.UnitTests
 
             Assert.IsTrue(query.IsValid);
 
-            var result1 = new Parser().ParseSql("select * from collection where a != 'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
+            var result1 =
+                new Parser().ParseSql(
+                    "select * from collection where a != 'ttt' or x < 1.22 and x >= 0,5 or age > 18 ");
 
             var query1 = result1.ToQuery(schema);
 
@@ -328,8 +318,6 @@ namespace Tests.UnitTests
             Assert.NotNull(q4);
             Assert.AreEqual(KeyValue.OriginalType.Date, q4.Value.Type);
             Assert.AreEqual(QueryOperator.Eq, q4.Operator);
-
-
         }
 
         [Test]
@@ -361,8 +349,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(QueryOperator.NotIn, q.Operator);
                 Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.SomeInteger));
             }
-
-
         }
 
         [Test]
@@ -373,7 +359,9 @@ namespace Tests.UnitTests
                 .Build();
 
             {
-                var query = new Parser().ParseSql("select from items where tags contains 'geek' or tags contains electronics").ToQuery(schema);
+                var query = new Parser()
+                    .ParseSql("select from items where tags contains 'geek' or tags contains electronics")
+                    .ToQuery(schema);
 
                 Assert.AreEqual("items", query.CollectionName);
 
@@ -391,8 +379,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(QueryOperator.NotContains, q.Operator);
                 Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.String));
             }
-
-
         }
 
         [Test]
@@ -410,8 +396,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(QueryOperator.StrStartsWith, q.Operator);
                 Assert.AreEqual("john", q.Value.StringValue);
                 Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
-
-
             }
 
             {
@@ -422,8 +406,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(QueryOperator.StrEndsWith, q.Operator);
                 Assert.AreEqual("john", q.Value.StringValue);
                 Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
-
-
             }
 
             {
@@ -434,10 +416,7 @@ namespace Tests.UnitTests
                 Assert.AreEqual(QueryOperator.StrContains, q.Operator);
                 Assert.AreEqual("john", q.Value.StringValue);
                 Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
-
-
             }
-
         }
 
         [Test]
@@ -451,7 +430,8 @@ namespace Tests.UnitTests
                 .Build();
 
             {
-                var query = new Parser().ParseSql("select fx, age from collection where a in (1, 2, 3)").ToQuery(schema);
+                var query = new Parser().ParseSql("select fx, age from collection where a in (1, 2, 3)")
+                    .ToQuery(schema);
 
                 var q = FindAtomicQuery(query, "a");
 
@@ -462,12 +442,12 @@ namespace Tests.UnitTests
                 Assert.AreEqual(2, query.SelectClause.Count);
                 Assert.AreEqual("fx", query.SelectClause[0].Name);
                 Assert.AreEqual("fx", query.SelectClause[0].Alias);
-
             }
 
             {
                 // same with alias
-                var query = new Parser().ParseSql("select fx forex, age from collection where a in (1, 2, 3)").ToQuery(schema);
+                var query = new Parser().ParseSql("select fx forex, age from collection where a in (1, 2, 3)")
+                    .ToQuery(schema);
 
                 var q = FindAtomicQuery(query, "a");
 
@@ -478,9 +458,7 @@ namespace Tests.UnitTests
                 Assert.AreEqual(2, query.SelectClause.Count);
                 Assert.AreEqual("fx", query.SelectClause[0].Name);
                 Assert.AreEqual("forex", query.SelectClause[0].Alias);
-
             }
-
         }
 
 
@@ -503,7 +481,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(10, query.Take);
                 Assert.AreEqual("age", query.OrderByProperty);
                 Assert.IsFalse(query.OrderByIsDescending);
-
             }
 
             {
@@ -515,7 +492,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual(0, query.Take); // no take clause
                 Assert.AreEqual("age", query.OrderByProperty);
                 Assert.IsTrue(query.OrderByIsDescending);
-
             }
 
             {
@@ -530,7 +506,6 @@ namespace Tests.UnitTests
                 Assert.AreEqual("a", query.SelectClause[0].Name);
                 Assert.AreEqual("x", query.SelectClause[1].Name);
                 Assert.IsTrue(query.Distinct);
-
             }
         }
 
@@ -541,16 +516,18 @@ namespace Tests.UnitTests
             var schema = TypedSchemaFactory.FromType<Order>();
 
             // warm-up 
-            var categories = new string[] { "geek", "games" };
+            var categories = new[] { "geek", "games" };
 
             var query1 = ExpressionTreeHelper.PredicateToQuery<Order>(
-                o => o.IsDelivered && categories.Contains(o.Category) || o.Amount > 100 && o.Amount < 200,
+                o => (o.IsDelivered && categories.Contains(o.Category)) || (o.Amount > 100 && o.Amount < 200),
                 schema.CollectionName);
 
-            var query2 = new Parser().ParseSql($"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200").ToQuery(schema);
+            var query2 = new Parser()
+                .ParseSql(
+                    $"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200")
+                .ToQuery(schema);
 
             Assert.AreEqual(query1.ToString().ToLower(), query2.ToString().ToLower());
-
 
 
             const int iterations = 1000;
@@ -559,12 +536,10 @@ namespace Tests.UnitTests
                 var clock = new Stopwatch();
                 clock.Start();
 
-                for (int i = 0; i < iterations; i++)
-                {
+                for (var i = 0; i < iterations; i++)
                     query1 = ExpressionTreeHelper.PredicateToQuery<Order>(
-                        o => o.IsDelivered && categories.Contains(o.Category) || o.Amount > 100 && o.Amount < 200,
+                        o => (o.IsDelivered && categories.Contains(o.Category)) || (o.Amount > 100 && o.Amount < 200),
                         schema.CollectionName);
-                }
 
                 clock.Stop();
 
@@ -575,22 +550,16 @@ namespace Tests.UnitTests
                 var clock = new Stopwatch();
                 clock.Start();
 
-                for (int i = 0; i < iterations; i++)
-                {
-                    query2 = new Parser().ParseSql($"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200").ToQuery(schema);
-                }
+                for (var i = 0; i < iterations; i++)
+                    query2 = new Parser()
+                        .ParseSql(
+                            $"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200")
+                        .ToQuery(schema);
 
                 clock.Stop();
 
                 Console.WriteLine($"{iterations} iterations with sql took {clock.ElapsedMilliseconds} ms");
             }
-
-
-
         }
-
     }
-
-
-
 }

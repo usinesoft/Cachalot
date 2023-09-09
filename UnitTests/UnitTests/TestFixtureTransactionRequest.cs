@@ -1,18 +1,16 @@
-﻿using Client.Core;
-using Client.Messages;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Client.Core;
+using Client.Messages;
+using NUnit.Framework;
 using Tests.TestData;
 
 namespace Tests.UnitTests
 {
-
     [TestFixture]
     public class TestFixtureTransactionRequest
     {
-
         [Test]
         public void Split_transaction_request()
         {
@@ -21,7 +19,7 @@ namespace Tests.UnitTests
             var requests = new List<DataRequest>();
 
             // simple put requests
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
 
@@ -33,7 +31,7 @@ namespace Tests.UnitTests
             }
 
             // conditional put requests
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
 
@@ -46,7 +44,7 @@ namespace Tests.UnitTests
             }
 
             // simple delete requests
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var order1 = new Order { Id = Guid.NewGuid(), Category = "geek", ProductId = 123, Quantity = 1 };
                 var packed1 = PackedObject.Pack(order1, schema, "orders1");
@@ -56,7 +54,8 @@ namespace Tests.UnitTests
             }
 
             // delete many request
-            var deleteMany = new RemoveManyRequest(ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered, "orders"));
+            var deleteMany =
+                new RemoveManyRequest(ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered, "orders"));
             requests.Add(deleteMany);
 
 
@@ -79,8 +78,7 @@ namespace Tests.UnitTests
             var deleteManyCount = tr0.ChildRequests.Count(r => r is RemoveManyRequest);
             Assert.AreEqual(1, deleteManyCount);
 
-            Assert.AreEqual(2, tr0.AllCollections.Length);// orders and orders1
-
+            Assert.AreEqual(2, tr0.AllCollections.Length); // orders and orders1
         }
     }
 }

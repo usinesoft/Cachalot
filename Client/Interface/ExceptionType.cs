@@ -1,11 +1,10 @@
-namespace Client.Interface
+namespace Client.Interface;
+
+public enum ExceptionType
 {
-    public enum ExceptionType
-    {
-        Unknown,
-        FailedToAcquireLock,
-        CommunicationErrorInTransaction,
-        ConditionNotSatisfied,
-        ErrorWritingDataInTransactionLog
-    }
+    Unknown,
+    FailedToAcquireLock,
+    CommunicationErrorInTransaction,
+    ConditionNotSatisfied,
+    ErrorWritingDataInTransactionLog
 }

@@ -1,26 +1,25 @@
-using Client.Interface;
 using System;
+using Client.Interface;
 
-namespace AdminConsole.Commands
+namespace AdminConsole.Commands;
+
+public class CommandStop : CommandBase
 {
-    public class CommandStop : CommandBase
+    internal override IDataClient TryExecute(IDataClient client)
     {
-        internal override IDataClient TryExecute(IDataClient client)
+        if (!CanExecute) return client;
+
+
+        try
         {
-            if (!CanExecute) return client;
-
-
-            try
-            {
-                client.Stop(false);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-
-
-            return client;
+            client.Stop(false);
         }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+
+        return client;
     }
 }

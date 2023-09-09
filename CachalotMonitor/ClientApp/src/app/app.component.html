@@ -1,23 +1,23 @@
-
 <mat-toolbar color="primary" class="example-toolbar">
-  <button mat-icon-button (click)="isExpanded = !isExpanded"><mat-icon>menu</mat-icon></button>
+  <button mat-icon-button (click)="isExpanded = !isExpanded">
+    <mat-icon>menu</mat-icon>
+  </button>
   <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor (v1.8.4)</a>
   <span class="cluster" *ngIf="cluster">&nbsp;[{{cluster}}]</span>
-  
-  
-  
+
+
 </mat-toolbar>
 <mat-sidenav-container class="sidenav-container" autosize>
   <mat-sidenav #sidenav class="simple-sidenav" mode="side" opened="true" (mouseenter)="mouseenter()"
-    (mouseleave)="mouseleave()">
+               (mouseleave)="mouseleave()">
     <mat-nav-list>
-      
-        <a mat-list-item [routerLink]="['/']">Cluster</a>
-        <a mat-list-item [routerLink]="'/collections'"> Collections </a>
-        <a mat-list-item [routerLink]="'/schema'"> Schema </a>
-        <a mat-list-item [routerLink]="'/data'"> Data </a>
-        <a mat-list-item [routerLink]="'/admin'"> Admin </a>
-        
+
+      <a mat-list-item [routerLink]="['/']">Cluster</a>
+      <a mat-list-item [routerLink]="'/collections'"> Collections </a>
+      <a mat-list-item [routerLink]="'/schema'"> Schema </a>
+      <a mat-list-item [routerLink]="'/data'"> Data </a>
+      <a mat-list-item [routerLink]="'/admin'"> Admin </a>
+
     </mat-nav-list>
   </mat-sidenav>
 

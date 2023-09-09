@@ -1,12 +1,12 @@
-﻿using Cachalot.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Tests.TestData;
 using Tests.TestData.Events;
 
@@ -175,8 +175,6 @@ namespace Tests.IntegrationTests
             var max = 0;
             using (var connector = new Connector(config))
             {
-
-
                 var ids = connector.GenerateUniqueIds("test", 12);
 
                 Assert.AreEqual(12, ids.Length);
@@ -530,13 +528,11 @@ namespace Tests.IntegrationTests
         [Test]
         public void Full_text_search()
         {
-
             var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
             using (var connector = new Connector(config))
             {
-
                 connector.AdminInterface().DropDatabase();
 
                 connector.DeclareCollection<Home>();
@@ -574,8 +570,8 @@ namespace Tests.IntegrationTests
                     Town = "Paris",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="beautiful view"},
-                        new Comment{Text="close to the metro"},
+                        new Comment { Text = "beautiful view" },
+                        new Comment { Text = "close to the metro" }
                     }
                 };
 
@@ -590,8 +586,8 @@ namespace Tests.IntegrationTests
                     Town = "Paris",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="ps4"},
-                        new Comment{Text="close to the metro"},
+                        new Comment { Text = "ps4" },
+                        new Comment { Text = "close to the metro" }
                     }
                 };
 
@@ -606,8 +602,8 @@ namespace Tests.IntegrationTests
                     Town = "Nice",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="wonderful sea view"},
-                        new Comment{Text="close to beach"},
+                        new Comment { Text = "wonderful sea view" },
+                        new Comment { Text = "close to beach" }
                     }
                 };
 
@@ -627,7 +623,6 @@ namespace Tests.IntegrationTests
         [Test]
         public void Multiple_collections_for_same_type()
         {
-
             var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
@@ -653,13 +648,11 @@ namespace Tests.IntegrationTests
 
             Assert.AreEqual(1, all.Count);
             Assert.AreEqual(2, all1.Count);
-
         }
 
         [Test]
         public void Consistent_read()
         {
-
             var config = new ClientConfig();
             config.LoadFromFile("inprocess_persistent_config.xml");
 
@@ -685,12 +678,7 @@ namespace Tests.IntegrationTests
                 Assert.AreEqual(1, all.Count);
 
                 // should throw an exception because "homes1" is not available in this context
-                Assert.Throws<NotSupportedException>(() =>
-                {
-                    all = ctx.Collection<Home>("homes1").ToList();
-                });
-
-
+                Assert.Throws<NotSupportedException>(() => { all = ctx.Collection<Home>("homes1").ToList(); });
             }, "homes");
 
             connector.ConsistentRead(ctx =>
@@ -701,7 +689,6 @@ namespace Tests.IntegrationTests
 
                 all = ctx.Collection<Home>("homes1").ToList();
                 Assert.AreEqual(2, all.Count);
-
             }, "homes", "homes1");
         }
 
@@ -741,11 +728,6 @@ namespace Tests.IntegrationTests
             var reloaded3 = dataSource.Where(o => o.Category == "sf").ToList();
 
             Assert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
-
-
         }
-
     }
-
-
 }

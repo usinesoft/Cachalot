@@ -1,5 +1,5 @@
-﻿using Cachalot.Linq;
-using System;
+﻿using System;
+using Cachalot.Linq;
 using Tests.TestData.Events;
 using Tests.TestData.Instruments;
 
@@ -15,8 +15,10 @@ namespace Tests.TestData
         }
 
         public (Instruments.Trade trade, Event creationEvent) CreateOption(int quantity, int unitPrice,
-            string counterparty, string portfolio, string underlying, decimal strike, bool isPut, bool cashSettlement,
-            bool isAmerican, int monthsToMaturity)
+                                                                           string counterparty, string portfolio,
+                                                                           string underlying, decimal strike,
+                                                                           bool isPut, bool cashSettlement,
+                                                                           bool isAmerican, int monthsToMaturity)
         {
             var tid = _connector.GenerateUniqueIds("trade_id", 1);
 
@@ -60,7 +62,7 @@ namespace Tests.TestData
 
 
         public (Instruments.Trade trade, Event increaseEvent) IncreaseOption(Instruments.Trade trade,
-            decimal deltaQuantity)
+                                                                             decimal deltaQuantity)
         {
             var newVersion = trade.Clone();
 

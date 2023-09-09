@@ -1,12 +1,12 @@
-﻿using Client.Core;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Client.Core;
 using Client.Interface;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using Server.Persistence;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Tests.TestData;
 using Constants = Server.Persistence.Constants;
 
@@ -24,6 +24,16 @@ namespace Tests.UnitTests
             if (File.Exists(_backupPath)) File.Delete(_backupPath);
 
             _schema = TypedSchemaFactory.FromType<Trade>();
+        }
+
+        [OneTimeSetUp]
+        public void RunBeforeAnyTests()
+        {
+            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
+            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+
+            var config = new ClientConfig();
+            config.LoadFromFile("inprocess_config.xml");
         }
 
         private class TestProcessor : IPersistentObjectProcessor
@@ -46,17 +56,6 @@ namespace Tests.UnitTests
         private readonly string _backupPath = Path.Combine("backup", ReliableStorage.StorageFileName);
 
         private CollectionSchema _schema;
-
-        [OneTimeSetUp]
-        public void RunBeforeAnyTests()
-        {
-            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
-            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-
-            var config = new ClientConfig();
-            config.LoadFromFile("inprocess_config.xml");
-
-        }
 
 
         private DurableTransaction MakeTransaction<T>(params T[] items)
@@ -126,7 +125,8 @@ namespace Tests.UnitTests
 
             var schema = TypedSchemaFactory.FromType(typeof(Trade));
 
-            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
+                .First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -204,7 +204,8 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
+                .First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -253,7 +254,8 @@ namespace Tests.UnitTests
 
             Assert.AreEqual(2, processor.LoadedObjects.Count);
 
-            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema)).First(t => t.Id == 2);
+            var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
+                .First(t => t.Id == 2);
 
             Assert.AreEqual("TOTO", reloaded.Folder);
 
@@ -262,7 +264,6 @@ namespace Tests.UnitTests
             Assert.AreEqual(0, log.PendingTransactionsCount);
             log.Dispose();
         }
-
 
 
         [Test]

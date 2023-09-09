@@ -1,192 +1,194 @@
 <div class="data-root">
 
-    <!--Tooltip templates-->
-    <ng-template #TooltipExport>
-        <div>
-            <h3>Export result</h3>
-            <p>Download query result as a json file.</p>
-        </div>
-    </ng-template>
-
-    <ng-template #TooltipImport>
-        <div>
-            <h3>Import JSON data</h3>
-            <p> Import data from a json file. The file may contain<br>
-                a single object or a JSON array.<br>
-                New objects are inserted, existent objects are updated.
-            </p>
-        </div>
-    </ng-template>
-
-
-    <ng-template #TooltipIgnoreLimit>
-        <div>
-            <h3>Ignore the TAKE clause</h3>
-            <p>This applies to JSON export.<br>
-                All the query result will be exported.
-            </p>
-
-        </div>
-    </ng-template>
-
-
-
-    <!-- <div class="input-container"> -->
-    <div class="data-selection-container">
-        <!--collection selection-->
-        <mat-form-field appearance="fill">
-            <mat-label>Collections</mat-label>
-            <mat-select [(value)]="selectedCollection">
-                <mat-option *ngFor="let collection of collections" [value]="collection">
-                    {{collection|uppercase}}
-                </mat-option>
-            </mat-select>
-            <mat-hint>select the collection</mat-hint>
-
-
-        </mat-form-field>
-
-
-        <mat-toolbar style="max-width: 3rem;background: transparent;">
-
-            
-
-            <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh"
-                (click)="refresh()" style="margin-left: 2rem;">
-                <mat-icon tooltip="refresh" placement="bottom">refresh</mat-icon>
-            </button>
-            
-            <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
-                (click)="exportJson()" [tooltip]="ttExport" placement="bottom"
-                >
-                <mat-icon>download</mat-icon>
-            </button>
-
-            <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport"  placement="bottom">
-                <mat-icon>attach_file</mat-icon>
-            </button>
-
-            <input type="file" class="file-input" (change)="onFileSelected($event)"
-                #fileUpload>
-
-
-            <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="ttIgnoreLimits" placement="bottom"
-                style="margin:1rem; font-size: 1rem;font-weight: 400;" >ignore
-                limit</mat-checkbox>
-
-        </mat-toolbar>
-
-        <!-- </div> -->
+  <!--Tooltip templates-->
+  <ng-template #TooltipExport>
+    <div>
+      <h3>Export result</h3>
+      <p>Download query result as a json file.</p>
     </div>
+  </ng-template>
 
-    <!--QUERY both structured and translated to sql-->
-    <div class="input-container" style="margin-top: 1rem;">
-        <div class="query-container" *ngIf="schema">
-            <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
-                style="flex-grow: 2;">
-            </app-and-query>
-            <div class="sql-container" style="flex-grow: 1;">
-
-                <p>{{sql}}</p>
-                <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
-                    [cdkCopyToClipboard]="sql">
-                    <mat-icon>content_copy</mat-icon>
-                </button>
-            </div>
-        </div>
-
-        <!--other params like visible columns and order-by-->
-        <div class="params-container" *ngIf="schema">
-            <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
-                [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
-                style="flex-grow: 2; min-width: 20rem;"></app-smart-multi-select>
-
-            <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take"
-                [allValues]="['10','50','100', '1000']" [hint]="'limit displayed items'" label="Take">
-            </app-smart-multi-select>
-
-            <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
-                [allValues]="orderByProperties" [clearButton]="true"
-                [hint]="'select column to order by (must be ordered index)'" label="Order by">
-            </app-smart-multi-select>
-            <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
-                <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
-            </div>
-
-
-        </div>
-        <!--full-text search (if enabled on the current collection)-->
-        <div class="params-container">
-            <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow:2">
-                <mat-label>Full-text search</mat-label>
-                <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery" (keyup.enter)="onEnter()">
-                <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
-                <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
-                    (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
-                    <mat-icon>close</mat-icon>
-                </button>
-
-            </mat-form-field>
-        </div>
+  <ng-template #TooltipImport>
+    <div>
+      <h3>Import JSON data</h3>
+      <p>
+        Import data from a json file. The file may contain<br>
+        a single object or a JSON array.<br>
+        New objects are inserted, existent objects are updated.
+      </p>
     </div>
+  </ng-template>
 
 
-    <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
-    <!--result of the query-->
-
-    <!-- <div class="result-container" *ngIf="data.length > 0"> -->
-    <div class="result-container">
-
-        <table *ngIf="schema" class="table">
-            <!--header-->
-            <thead class="row header black mat-primary">
-                <th class="cell info-cell" colspan="2">
-                    <a style="cursor: pointer;" (click)="openPlan()">
-                        client time={{clientTimeInMilliseconds}} ms
-                    </a>
-                </th>
-                <th class="cell" *ngFor="let col of visibleColumns">
-                    {{col}}
-                </th>
-            </thead>
-            <!--data-->
-            <tr *ngIf="data.length == 0">
-                <th colspan="3" style="font-size: 2rem; padding-left: 3rem; font-weight: bold;">No Data</th>
-            </tr>
-            <tr *ngFor="let r of data" class="row">
-
-                <td class="cell-expand">
-                    {{r['#']}}
-                </td>
-                <td class="cell-expand">
-                    <span>
-                        <mat-slide-toggle [(ngModel)]="r['#json']">json</mat-slide-toggle>
-                        <!-- <mat-icon class="primary" *ngIf="!r['#json']" style="color: blue;overflow: visible;"
-                            (click)="switchDisplay(r)">
-                            control_point</mat-icon>
-                        <mat-icon *ngIf="r['#json']" style="color: green;;overflow: visible" (click)="switchDisplay(r)">
-                            code</mat-icon> -->
-                    </span>
-                </td>
-                <ng-container *ngIf="!r['#json']">
-                    <td *ngFor="let col of visibleColumns">
-                        {{r[col]}}
-                    </td>
-                </ng-container>
-                <ng-container *ngIf="r['#json']">
-                    <td style="padding: 1rem;background-color: white;position:relative"
-                        [attr.colspan]="visibleColumns.length">
-                        <button class="json-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
-                            [cdkCopyToClipboard]="asJson(r)">
-                            <mat-icon>content_copy</mat-icon>
-                        </button>
-                        <ngx-json-viewer [json]="cleanup(r)" style="border: 1px;"></ngx-json-viewer>
-                    </td>
-
-                </ng-container>
-            </tr>
-        </table>
+  <ng-template #TooltipIgnoreLimit>
+    <div>
+      <h3>Ignore the TAKE clause</h3>
+      <p>
+        This applies to JSON export.<br>
+        All the query result will be exported.
+      </p>
 
     </div>
+  </ng-template>
+
+
+  <!-- <div class="input-container"> -->
+  <div class="data-selection-container">
+    <!--collection selection-->
+    <mat-form-field appearance="fill">
+      <mat-label>Collections</mat-label>
+      <mat-select [(value)]="selectedCollection">
+        <mat-option *ngFor="let collection of collections" [value]="collection">
+          {{collection|uppercase}}
+        </mat-option>
+      </mat-select>
+      <mat-hint>select the collection</mat-hint>
+
+
+    </mat-form-field>
+
+
+    <mat-toolbar style="background: transparent; max-width: 3rem;">
+
+
+      <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh"
+              (click)="refresh()" style="margin-left: 2rem;">
+        <mat-icon tooltip="refresh" placement="bottom">refresh</mat-icon>
+      </button>
+
+      <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
+              (click)="exportJson()" [tooltip]="ttExport" placement="bottom">
+        <mat-icon>download</mat-icon>
+      </button>
+
+      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport" placement="bottom">
+        <mat-icon>attach_file</mat-icon>
+      </button>
+
+      <input type="file" class="file-input" (change)="onFileSelected($event)"
+             #fileUpload>
+
+
+      <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="ttIgnoreLimits" placement="bottom"
+                    style="font-size: 1rem; font-weight: 400; margin: 1rem;">
+        ignore
+        limit
+      </mat-checkbox>
+
+    </mat-toolbar>
+
+    <!-- </div> -->
+  </div>
+
+  <!--QUERY both structured and translated to sql-->
+  <div class="input-container" style="margin-top: 1rem;">
+    <div class="query-container" *ngIf="schema">
+      <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
+                     style="flex-grow: 2;">
+      </app-and-query>
+      <div class="sql-container" style="flex-grow: 1;">
+
+        <p>{{sql}}</p>
+        <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
+                [cdkCopyToClipboard]="sql">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!--other params like visible columns and order-by-->
+    <div class="params-container" *ngIf="schema">
+      <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
+                              [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
+                              style="flex-grow: 2; min-width: 20rem;">
+      </app-smart-multi-select>
+
+      <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take"
+                              [allValues]="['10','50','100', '1000']" [hint]="'limit displayed items'" label="Take">
+      </app-smart-multi-select>
+
+      <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
+                              [allValues]="orderByProperties" [clearButton]="true"
+                              [hint]="'select column to order by (must be ordered index)'" label="Order by">
+      </app-smart-multi-select>
+      <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
+        <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
+      </div>
+
+
+    </div>
+    <!--full-text search (if enabled on the current collection)-->
+    <div class="params-container">
+      <mat-form-field appearance="fill" *ngIf="schema && schema.fullText.length > 0" style="flex-grow: 2">
+        <mat-label>Full-text search</mat-label>
+        <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery" (keyup.enter)="onEnter()">
+        <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
+        <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
+                (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
+          <mat-icon>close</mat-icon>
+        </button>
+
+      </mat-form-field>
+    </div>
+  </div>
+
+
+  <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
+  <!--result of the query-->
+
+  <!-- <div class="result-container" *ngIf="data.length > 0"> -->
+  <div class="result-container">
+
+    <table *ngIf="schema" class="table">
+      <!--header-->
+      <thead class="row header black mat-primary">
+      <th class="cell info-cell" colspan="2">
+        <a style="cursor: pointer;" (click)="openPlan()">
+          client time={{clientTimeInMilliseconds}} ms
+        </a>
+      </th>
+      <th class="cell" *ngFor="let col of visibleColumns">
+        {{col}}
+      </th>
+      </thead>
+      <!--data-->
+      <tr *ngIf="data.length == 0">
+        <th colspan="3" style="font-size: 2rem; font-weight: bold; padding-left: 3rem;">No Data</th>
+      </tr>
+      <tr *ngFor="let r of data" class="row">
+
+        <td class="cell-expand">
+          {{r['#']}}
+        </td>
+        <td class="cell-expand">
+          <span>
+            <mat-slide-toggle [(ngModel)]="r['#json']">json</mat-slide-toggle>
+            <!-- <mat-icon class="primary" *ngIf="!r['#json']" style="color: blue;overflow: visible;"
+                           (click)="switchDisplay(r)">
+              control_point</mat-icon>
+            <mat-icon *ngIf="r['#json']" style="color: green;;overflow: visible" (click)="switchDisplay(r)">
+              code</mat-icon> -->
+          </span>
+        </td>
+        <ng-container *ngIf="!r['#json']">
+          <td *ngFor="let col of visibleColumns">
+            {{r[col]}}
+          </td>
+        </ng-container>
+        <ng-container *ngIf="r['#json']">
+          <td style="background-color: white; padding: 1rem; position: relative"
+              [attr.colspan]="visibleColumns.length">
+            <button class="json-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
+                    [cdkCopyToClipboard]="asJson(r)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+            <ngx-json-viewer [json]="cleanup(r)" style="border: 1px;"></ngx-json-viewer>
+          </td>
+
+        </ng-container>
+      </tr>
+    </table>
+
+  </div>
 
 </div>

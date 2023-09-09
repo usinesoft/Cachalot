@@ -1,16 +1,17 @@
-﻿using Cachalot.Linq;
-using Client.Core;
-using Client.Core.Linq;
-using Client.Interface;
-using NUnit.Framework;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Cachalot.Linq;
+using Client.Core;
+using Client.Core.Linq;
+using Client.Interface;
+using NUnit.Framework;
 using Tests.TestData;
 using Tests.TestData.Events;
 using Trade = Tests.TestData.Instruments.Trade;
+
 // ReSharper disable RedundantAssignment
 
 namespace Tests.IntegrationTests
@@ -20,8 +21,6 @@ namespace Tests.IntegrationTests
     [Ignore("Starting an external server does not work on git ub actions")]
     public class TestFixturePersistenceWithExternalServer
     {
-        private Process _process;
-
         [OneTimeSetUp]
         public void StartServer()
         {
@@ -37,23 +36,27 @@ namespace Tests.IntegrationTests
 
             _process = new Process
             {
-                StartInfo = { FileName = "dotnet", Arguments = $"{fullPath}", WorkingDirectory = path, WindowStyle = ProcessWindowStyle.Normal }
+                StartInfo =
+                {
+                    FileName = "dotnet", Arguments = $"{fullPath}", WorkingDirectory = path,
+                    WindowStyle = ProcessWindowStyle.Normal
+                }
             };
 
             var started = _process.Start();
 
             Assert.IsTrue(started, "failed to run external server");
-
         }
 
 
         [OneTimeTearDown]
         public void StopServer()
         {
-
             _process.Kill(true);
             _process.WaitForExit();
         }
+
+        private Process _process;
 
         private readonly ClientConfig _config = new ClientConfig
         {
@@ -67,8 +70,6 @@ namespace Tests.IntegrationTests
                 }
             }
         };
-
-
 
 
         [Test]
@@ -149,7 +150,6 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_config))
             {
-
                 connector.AdminInterface().DropDatabase();
 
                 connector.DeclareCollection<Event>();
@@ -198,7 +198,6 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_config))
             {
-
                 connector.AdminInterface().DropDatabase();
 
                 connector.DeclareCollection<Home>();
@@ -268,8 +267,8 @@ namespace Tests.IntegrationTests
                     Town = "Paris",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="beautiful view"},
-                        new Comment{Text="close to the metro"},
+                        new Comment { Text = "beautiful view" },
+                        new Comment { Text = "close to the metro" }
                     }
                 };
 
@@ -284,8 +283,8 @@ namespace Tests.IntegrationTests
                     Town = "Paris",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="ps4"},
-                        new Comment{Text="close to the metro"},
+                        new Comment { Text = "ps4" },
+                        new Comment { Text = "close to the metro" }
                     }
                 };
 
@@ -300,8 +299,8 @@ namespace Tests.IntegrationTests
                     Town = "Nice",
                     Comments = new List<Comment>
                     {
-                        new Comment{Text="wonderful sea view"},
-                        new Comment{Text="close to beach"},
+                        new Comment { Text = "wonderful sea view" },
+                        new Comment { Text = "close to beach" }
                     }
                 };
 
@@ -339,15 +338,15 @@ namespace Tests.IntegrationTests
                     {
                         case 0:
                             events.Add(new FixingEvent(ids[i], "AXA", 150, "EQ-256")
-                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
+                                { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                         case 1:
                             events.Add(new FixingEvent(ids[i], "TOTAL", 180, "IRD-400")
-                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
+                                { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                         case 2:
                             events.Add(new Increase(ids[i], 180, "EQ-256")
-                            { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
+                                { EventDate = eventDate, ValueDate = eventDate.AddDays(2) });
                             break;
                     }
 
@@ -376,25 +375,23 @@ namespace Tests.IntegrationTests
                 var dataSource = connector.DataSource<Order>();
 
 
-                List<Order> orders = new List<Order>();
+                var orders = new List<Order>();
 
                 // generate orders for three categories
-                for (int i = 0; i < items; i++)
+                for (var i = 0; i < items; i++)
                 {
-                    var order = new Order { Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now, Category = "geek", ProductId = 1000 + i % 10, Quantity = 2 };
+                    var order = new Order
+                    {
+                        Id = Guid.NewGuid(), Amount = 10.15, ClientId = 100 + i + 10, Date = DateTimeOffset.Now,
+                        Category = "geek", ProductId = 1000 + i % 10, Quantity = 2
+                    };
 
                     if (i % 5 == 0)
-                    {
                         order.Category = "sf";
-                    }
-                    else if (i % 5 == 1)
-                    {
-                        order.Category = "science";
-                    }
+                    else if (i % 5 == 1) order.Category = "science";
 
                     orders.Add(order);
                 }
-
 
 
                 dataSource.PutMany(orders);
@@ -410,7 +407,8 @@ namespace Tests.IntegrationTests
 
                 watch.Stop();
 
-                Console.WriteLine($"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
+                Console.WriteLine(
+                    $"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
 
                 Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
 
@@ -423,7 +421,6 @@ namespace Tests.IntegrationTests
         [Test]
         public void Order_by_with_single_server()
         {
-
             using var connector = new Connector(_config);
 
             connector.AdminInterface().DropDatabase();
@@ -432,7 +429,7 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            List<Order> orders = Order.GenerateTestData(10_000);
+            var orders = Order.GenerateTestData(10_000);
 
 
             dataSource.PutMany(orders);
@@ -447,13 +444,15 @@ namespace Tests.IntegrationTests
 
             var noOrder = dataSource.Where(o => o.Category == "geek").ToList();
 
-            Console.WriteLine($"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {noOrder.Count} objects without order-by took {watch.ElapsedMilliseconds} milliseconds");
 
             watch.Restart();
 
             var ascending = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
 
-            Console.WriteLine($"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
 
             Assert.AreEqual(noOrder.Count, ascending.Count);
 
@@ -461,28 +460,22 @@ namespace Tests.IntegrationTests
 
             var descending = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
-            Console.WriteLine($"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
+            Console.WriteLine(
+                $"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
 
             Assert.AreEqual(noOrder.Count, descending.Count);
 
             // check that they are ordered
 
             // check sorted ascending
-            for (int i = 0; i < ascending.Count - 1; i++)
-            {
+            for (var i = 0; i < ascending.Count - 1; i++)
                 Assert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
-            }
 
             // check sorted descending
-            for (int i = 0; i < descending.Count - 1; i++)
-            {
+            for (var i = 0; i < descending.Count - 1; i++)
                 Assert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
-            }
 
             watch.Stop();
-
-
         }
-
     }
 }

@@ -1,42 +1,38 @@
 ﻿using Client.Core;
 using ProtoBuf;
-using ProtoBuf.WellKnownTypes;
 
-namespace Client.Queries
+namespace Client.Queries;
+
+/// <summary>
+///     Abstract base class for the queries
+/// </summary>
+[ProtoContract]
+[ProtoInclude(500, typeof(AtomicQuery))]
+[ProtoInclude(501, typeof(AndQuery))]
+[ProtoInclude(502, typeof(OrQuery))]
+public abstract class Query
 {
     /// <summary>
-    ///     Abstract base class for the queries
+    ///     Check if the current query is valid. Validity rules are specific to each subclass
     /// </summary>
-    [ProtoContract]
-    [ProtoInclude(500, typeof(AtomicQuery))]
-    [ProtoInclude(501, typeof(AndQuery))]
-    [ProtoInclude(502, typeof(OrQuery))]
-    public abstract class Query
+    public abstract bool IsValid { get; }
+
+    public static Query Empty { get; } = new EmptyQuery();
+
+    /// <summary>
+    ///     Return true if the current query matches the specified object
+    /// </summary>
+    /// <param name="item"></param>
+    /// <returns></returns>
+    public abstract bool Match(PackedObject item);
+}
+
+public class EmptyQuery : Query
+{
+    public sealed override bool IsValid => true;
+
+    public sealed override bool Match(PackedObject item)
     {
-        /// <summary>
-        ///     Check if the current query is valid. Validity rules are specific to each subclass
-        /// </summary>
-        public abstract bool IsValid { get; }
-
-        /// <summary>
-        ///     Return true if the current query matches the specified object
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public abstract bool Match(PackedObject item);
-
-        public static Query Empty { get; } = new EmptyQuery();
+        return true;
     }
-
-    public class EmptyQuery : Query
-    {
-        public sealed override bool IsValid => true;
-        public sealed override bool Match(PackedObject item)
-        {
-            return true;
-        }
-    }
-
-
-
 }

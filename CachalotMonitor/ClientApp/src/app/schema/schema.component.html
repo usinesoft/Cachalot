@@ -1,140 +1,147 @@
 <div class="root-container">
 
-    <div class="schema-selection-container">
-        <ng-template #TooltipEdit>
-            <div>
-                <h3>Modify schema</h3>
-                <p>You can modify the type of an existing index or create a new index.</p>
-                <p>An ordered index enables sorting and faster comparison, but it is slower to update than a dictionary
-                    index.</p>
-                <p>Every index has a small impact on the start-up time and the memory usage</p>
-            </div>
-        </ng-template>
-        <ng-template #TooltipSave>
-            <div>
-                <h3>Apply the modificatiions</h3>
-                <p>Usually it takes less than 10 seconds.</p>
-            </div>
-        </ng-template>
-        <ng-template #TooltipCancel>
-            <div>
-                <h3>Cancel the modifications</h3>
-                <p>Your schema will not be changed.</p>
-            </div>
-        </ng-template>
+  <div class="schema-selection-container">
+    <ng-template #TooltipEdit>
+      <div>
+        <h3>Modify schema</h3>
+        <p>You can modify the type of an existing index or create a new index.</p>
+        <p>
+          An ordered index enables sorting and faster comparison, but it is slower to update than a dictionary
+          index.
+        </p>
+        <p>Every index has a small impact on the start-up time and the memory usage</p>
+      </div>
+    </ng-template>
+    <ng-template #TooltipSave>
+      <div>
+        <h3>Apply the modificatiions</h3>
+        <p>Usually it takes less than 10 seconds.</p>
+      </div>
+    </ng-template>
+    <ng-template #TooltipCancel>
+      <div>
+        <h3>Cancel the modifications</h3>
+        <p>Your schema will not be changed.</p>
+      </div>
+    </ng-template>
 
-
-        <div class="column-container">
-            <!--collection selection-->
-            <mat-form-field appearance="fill">
-                <mat-label>Collections</mat-label>
-                <mat-select [(value)]="selectedCollection">
-                    <mat-option *ngFor="let collection of collections" [value]="collection">
-                        {{collection|uppercase}}
-                    </mat-option>
-                </mat-select>
-                <mat-hint>select the collection</mat-hint>
-            </mat-form-field>
-
-            <app-collection-card [name]="summary.name" [items]="summary.itemsCount" [fullText]="summary.fullTextSearch"
-                [layout]="summary.storageLayout" [eviction]="summary.evictionType" *ngIf="summary">
-            </app-collection-card>
-        </div>
-
-        <!--update index type-->
-        <!-- <mat-toolbar>
-            <mat-select [(value)]="selectedCollection" placeholder="select collection">
-                <mat-option *ngFor="let collection of collections" [value]="collection">
-                    {{collection|uppercase}}
-                </mat-option>
-            </mat-select>
-            <button mat-icon-button color="accent" aria-label="edit" class="action-button" (click)="editMode=true"
-                [ngbPopover]="TooltipEdit" triggers="mouseenter:mouseleave" *ngIf="editMode == false && canBeEdited">
-                <mat-icon>edit_note</mat-icon>
-            </button>
-            <app-smart-multi-select *ngIf="editMode" [singleValue]="true" [(selectedValues)]="editedProperties"
-                style="margin-left: 1rem;" [allValues]="serverSide" [clearButton]="true"
-                [hint]="'select a server-side property'" label="property">
-            </app-smart-multi-select>
-
-            <mat-select [(value)]="selectedIndexType">
-                <mat-option *ngFor="let indexType of indexTypes" [value]="indexType">
-                    {{indexType}}
-                </mat-option>
-            </mat-select>
-
-            <button mat-icon-button color="primary" aria-label="cancel" class="action-button" (click)="editMode=false"
-                [ngbPopover]="TooltipCancel" triggers="mouseenter:mouseleave" *ngIf="editMode == true">
-                <mat-icon>cancel</mat-icon>
-            </button>
-            <button mat-icon-button color="accent" aria-label="save" class="action-button" (click)="updateSchema()"
-                [ngbPopover]="TooltipSave" triggers="mouseenter:mouseleave" *ngIf="editMode == true">
-                <mat-icon>save</mat-icon>
-            </button>
-        </mat-toolbar> -->
-    </div>
 
     <div class="column-container">
+      <!--collection selection-->
+      <mat-form-field appearance="fill">
+        <mat-label>Collections</mat-label>
+        <mat-select [(value)]="selectedCollection">
+          <mat-option *ngFor="let collection of collections" [value]="collection">
+            {{collection|uppercase}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>select the collection</mat-hint>
+      </mat-form-field>
+
+      <app-collection-card [name]="summary.name" [items]="summary.itemsCount" [fullText]="summary.fullTextSearch"
+                           [layout]="summary.storageLayout" [eviction]="summary.evictionType" *ngIf="summary">
+      </app-collection-card>
+    </div>
+
+    <!--update index type-->
+    <!-- <mat-toolbar>
+      <mat-select [(value)]="selectedCollection" placeholder="select collection">
+        <mat-option *ngFor="let collection of collections" [value]="collection">
+          {{collection|uppercase}}
+        </mat-option>
+      </mat-select>
+      <button mat-icon-button color="accent" aria-label="edit" class="action-button" (click)="editMode=true"
+              [ngbPopover]="TooltipEdit" triggers="mouseenter:mouseleave" *ngIf="editMode == false && canBeEdited">
+        <mat-icon>edit_note</mat-icon>
+      </button>
+      <app-smart-multi-select *ngIf="editMode" [singleValue]="true" [(selectedValues)]="editedProperties"
+                              style="margin-left: 1rem;" [allValues]="serverSide" [clearButton]="true"
+                              [hint]="'select a server-side property'" label="property">
+      </app-smart-multi-select>
+
+      <mat-select [(value)]="selectedIndexType">
+        <mat-option *ngFor="let indexType of indexTypes" [value]="indexType">
+          {{indexType}}
+        </mat-option>
+      </mat-select>
+
+      <button mat-icon-button color="primary" aria-label="cancel" class="action-button" (click)="editMode=false"
+              [ngbPopover]="TooltipCancel" triggers="mouseenter:mouseleave" *ngIf="editMode == true">
+        <mat-icon>cancel</mat-icon>
+      </button>
+      <button mat-icon-button color="accent" aria-label="save" class="action-button" (click)="updateSchema()"
+              [ngbPopover]="TooltipSave" triggers="mouseenter:mouseleave" *ngIf="editMode == true">
+        <mat-icon>save</mat-icon>
+      </button>
+    </mat-toolbar> -->
+  </div>
+
+  <div class="column-container">
 
 
-        <div class="schema-container" *ngIf="schema">
+    <div class="schema-container" *ngIf="schema">
 
-            <table class="table">
+      <table class="table">
 
-                <thead class="row header black">
-                    <th class="cell">
-                        Queryable properties
-                    </th>
-                    <th class="cell">
-                        Index Type
-                    </th>
-                    <th class="cell">
-                        Is Collection
-                    </th>
-                    <th class="cell">
-                        Actions
-                    </th>
+        <thead class="row header black">
+        <th class="cell">
+          Queryable properties
+        </th>
+        <th class="cell">
+          Index Type
+        </th>
+        <th class="cell">
+          Is Collection
+        </th>
+        <th class="cell">
+          Actions
+        </th>
 
-                </thead>
+        </thead>
 
-                <tr class="row" *ngFor="let prop of schema.serverSide">
-                    <td class="cell" data-title="Name">
-                        {{prop.name}}
-                    </td>
-                    <td class="cell" data-title="Index Type">
-                        <span [outerHTML]="prop.indexType | formatIndexType"></span>
-                    </td>
-                    <td class="cell" data-title="Is Collection">
-                        <mat-icon *ngIf="prop.isCollection" aria-hidden="false"
-                            style="font-weight: bold; color:crimson" fontIcon="check"></mat-icon>
-                    </td>
-                    <td class="cell" data-title="Actions">
-                        <ng-container *ngIf = "!working">
-                            <mat-icon color="primary"
-                                *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || (prop.indexType == 'Dictionary' && !prop.isCollection))"
-                                aria-hidden="false" style=" font-weight: bold; cursor: pointer;"
-                                fontIcon="arrow_upward" tooltip="upgrade index"
-                                (click)="prop.confirmMode=true"></mat-icon>
-                            <mat-icon *ngIf="prop.confirmMode" aria-hidden="false"
-                                style=" font-weight: bold; cursor: pointer;" fontIcon="check"
-                                tooltip="confirm" (click)="upgrade(prop)"></mat-icon>
-                            <mat-icon *ngIf="prop.confirmMode" aria-hidden="false" color="accent"
-                                style=" font-weight: bold; cursor: pointer;" fontIcon="close"
-                                tooltip="cancel" (click)="prop.confirmMode=false"></mat-icon>
-                            <mat-icon *ngIf="prop.indexType == 'Primary' || prop.indexType == 'Ordered'"
-                                style=" font-weight: bold;color:rgba(255, 255, 255, 0) "
-                                fontIcon="arrow_upward"></mat-icon>
-                        </ng-container>
-                        <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
-                    </td>
+        <tr class="row" *ngFor="let prop of schema.serverSide">
+          <td class="cell" data-title="Name">
+            {{prop.name}}
+          </td>
+          <td class="cell" data-title="Index Type">
+            <span [outerHTML]="prop.indexType | formatIndexType"></span>
+          </td>
+          <td class="cell" data-title="Is Collection">
+            <mat-icon *ngIf="prop.isCollection" aria-hidden="false"
+                      style="color: crimson; font-weight: bold;" fontIcon="check">
+            </mat-icon>
+          </td>
+          <td class="cell" data-title="Actions">
+            <ng-container *ngIf="!working">
+              <mat-icon color="primary"
+                        *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || (prop.indexType == 'Dictionary' && !prop.isCollection))"
+                        aria-hidden="false" style="cursor: pointer; font-weight: bold;"
+                        fontIcon="arrow_upward" tooltip="upgrade index"
+                        (click)="prop.confirmMode=true">
+              </mat-icon>
+              <mat-icon *ngIf="prop.confirmMode" aria-hidden="false"
+                        style="cursor: pointer; font-weight: bold;" fontIcon="check"
+                        tooltip="confirm" (click)="upgrade(prop)">
+              </mat-icon>
+              <mat-icon *ngIf="prop.confirmMode" aria-hidden="false" color="accent"
+                        style="cursor: pointer; font-weight: bold;" fontIcon="close"
+                        tooltip="cancel" (click)="prop.confirmMode=false">
+              </mat-icon>
+              <mat-icon *ngIf="prop.indexType == 'Primary' || prop.indexType == 'Ordered'"
+                        style="color: rgba(255, 255, 255, 0); font-weight: bold;"
+                        fontIcon="arrow_upward">
+              </mat-icon>
+            </ng-container>
+            <mat-progress-bar mode="indeterminate" *ngIf="working"></mat-progress-bar>
+          </td>
 
 
-                </tr>
-            </table>
-
-        </div>
+        </tr>
+      </table>
 
     </div>
+
+  </div>
 
 
 </div>

@@ -1,16 +1,16 @@
-﻿using Cachalot.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Cachalot.Linq;
 using Channel;
 using Client;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Tests.TestData.MoneyTransfer;
 
 namespace Tests.IntegrationTests
@@ -40,6 +40,13 @@ namespace Tests.IntegrationTests
             TransactionStatistics.Reset();
         }
 
+        [OneTimeSetUp]
+        public void RunBeforeAnyTests()
+        {
+            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
+            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+        }
+
         private class ServerInfo
         {
             public TcpServerChannel Channel { get; set; }
@@ -50,13 +57,6 @@ namespace Tests.IntegrationTests
         private List<ServerInfo> _servers = new List<ServerInfo>();
 
         private const int ServerCount = 1;
-
-        [OneTimeSetUp]
-        public void RunBeforeAnyTests()
-        {
-            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
-            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-        }
 
         private void StopServers()
         {

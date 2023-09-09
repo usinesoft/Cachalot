@@ -1,71 +1,71 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>Cachalot</RootNamespace>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Dan Ionescu</Authors>
-    <Company>USINESOFT</Company>
-    <Description>Fastest transactional database for dotnet applications. It can also be used as a very powerful distributed cache</Description>
-    <Copyright>USINESOFT</Copyright>
-    <Version>2.4.5</Version>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <PackageId>Cachalot.Client</PackageId>
-    <PackageProjectUrl>https://github.com/usinesoft/Cachalot</PackageProjectUrl>
-    <PackageIcon>cachalot_64.png</PackageIcon>
-    <RepositoryUrl>https://github.com/usinesoft/Cachalot</RepositoryUrl>
-    <PackageTags>nosql;cache;distributed;database</PackageTags>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<RootNamespace>Cachalot</RootNamespace>
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Authors>Dan Ionescu</Authors>
+		<Company>USINESOFT</Company>
+		<Description>Fastest transactional database for dotnet applications. It can also be used as a very powerful distributed cache</Description>
+		<Copyright>USINESOFT</Copyright>
+		<Version>2.4.5</Version>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageId>Cachalot.Client</PackageId>
+		<PackageProjectUrl>https://github.com/usinesoft/Cachalot</PackageProjectUrl>
+		<PackageIcon>cachalot_64.png</PackageIcon>
+		<RepositoryUrl>https://github.com/usinesoft/Cachalot</RepositoryUrl>
+		<PackageTags>nosql;cache;distributed;database</PackageTags>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+	</ItemGroup>
 
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>bin/Release</OutputPath>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<OutputPath>bin/Release</OutputPath>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>bin\Debug</OutputPath>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<OutputPath>bin\Debug</OutputPath>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\Media\cachalot_64.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\Media\cachalot_64.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="protobuf-net" Version="3.2.26" />
-    <PackageReference Include="Remotion.Linq" Version="2.2.0" />
-    <PackageReference Include="SharpZipLib" Version="1.4.2" />
-    <PackageReference Include="Teronis.MSBuild.Packaging.ProjectBuildInPackage" Version="1.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="protobuf-net" Version="3.2.26" />
+		<PackageReference Include="Remotion.Linq" Version="2.2.0" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
+		<PackageReference Include="Teronis.MSBuild.Packaging.ProjectBuildInPackage" Version="1.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference PrivateAssets="all" Include="..\Channel\Channel.csproj" />
-    <ProjectReference PrivateAssets="all" Include="..\Client\Client.csproj" />
-    <ProjectReference PrivateAssets="all" Include="..\Server\Server.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference PrivateAssets="all" Include="..\Channel\Channel.csproj" />
+		<ProjectReference PrivateAssets="all" Include="..\Client\Client.csproj" />
+		<ProjectReference PrivateAssets="all" Include="..\Server\Server.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="client_ReadMe.md">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <Target Name="PrePackage" BeforeTargets="BuildPackage">
-    <PropertyGroup>
-      <BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
-    </PropertyGroup>
-  </Target>
+	<ItemGroup>
+		<None Update="client_ReadMe.md">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<Target Name="PrePackage" BeforeTargets="BuildPackage">
+		<PropertyGroup>
+			<BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
+		</PropertyGroup>
+	</Target>
 </Project>

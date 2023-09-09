@@ -1,10 +1,10 @@
-﻿using Cachalot.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
+using Cachalot.Linq;
 using Client.Interface;
 using NUnit.Framework;
 using Server.Persistence;
-using System;
-using System.IO;
-using System.Linq;
 using Tests.TestData.MoneyTransfer;
 
 namespace Tests.IntegrationTests
@@ -12,7 +12,6 @@ namespace Tests.IntegrationTests
     [TestFixture]
     public class TestFixtureTransactionWithInProcessServer
     {
-
         [SetUp]
         public void SetUp()
         {

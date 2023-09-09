@@ -1,7 +1,6 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { ServerHistory, ServerInfo } from '../model/connection-data';
+import { Component, Input, OnInit } from "@angular/core";
+import { ServerHistory, ServerInfo } from "../model/connection-data";
 import {
-  ChartComponent,
   ApexAxisChartSeries,
   ApexChart,
   ApexXAxis,
@@ -10,8 +9,6 @@ import {
   ApexStroke,
   ApexYAxis
 } from "ng-apexcharts";
-import { ShowOnDirtyErrorStateMatcher } from '@angular/material/core';
-import { interval, Subscription } from 'rxjs';
 
 export type ChartOptions = {
   series: ApexAxisChartSeries;
@@ -24,16 +21,16 @@ export type ChartOptions = {
 };
 
 @Component({
-  selector: 'app-server-card',
-  templateUrl: './server-card.component.html',
-  styleUrls: ['./server-card.component.scss']
+  selector: "app-server-card",
+  templateUrl: "./server-card.component.html",
+  styleUrls: ["./server-card.component.scss"]
 })
 export class ServerCardComponent implements OnInit {
 
-  public chartOptions: ChartOptions;
-  
-  
-  constructor() { 
+  chartOptions: ChartOptions;
+
+
+  constructor() {
 
     this.chartOptions = {
       series: [
@@ -49,7 +46,7 @@ export class ServerCardComponent implements OnInit {
       chart: {
         height: 240,
         type: "area",
-        toolbar:{show:false},
+        toolbar: { show: false },
         // background:'#111',
         // foreColor:'#FAFAFA'
       },
@@ -61,52 +58,51 @@ export class ServerCardComponent implements OnInit {
       },
       xaxis: {
         type: "numeric",
-        
-        labels:{
-          show:false
+
+        labels: {
+          show: false
         }
       },
-     
+
       yaxis: {
-        max:16,
-        min:0,
+        max: 16,
+        min: 0,
         labels: {
-          formatter: function (value) {
+          formatter: function(value) {
             return value.toFixed(2);
           }
         },
       },
       tooltip: {
-        enabled:false,
-        enabledOnSeries:[]
+        enabled: false,
+        enabledOnSeries: []
       }
-      
+
     };
 
   }
 
 
   @Input()
-  public model:ServerInfo = new ServerInfo;
+  model = new ServerInfo;
 
-  
-  _history:ServerHistory|undefined;
+
+  _history: ServerHistory | undefined;
 
   @Input()
-  public set history(value:ServerHistory){
+  set history(value: ServerHistory) {
     this._history = value;
   }
 
 
- 
   //timerSubscription:Subscription |undefined;
 
   ngOnInit(): void {
     // this.timerSubscription = interval(1000).subscribe(()=>{
-       this.chartOptions.series[0].data = this._history?.totalMemory!;
-       this.chartOptions.series[1].data = this._history?.nonFragmentedMemory!;
+    this.chartOptions.series[0].data = this._history?.totalMemory!;
+    this.chartOptions.series[1].data = this._history?.nonFragmentedMemory!;
 
-       console.log(this._history?.nonFragmentedMemory!);
+    console.log(this._history?.nonFragmentedMemory!);
     //   console.log('update chart ' + this.chartOptions.series[0].data.length);
     //   window.dispatchEvent(new Event('resize'));
     // });

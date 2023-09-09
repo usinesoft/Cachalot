@@ -1,11 +1,11 @@
-﻿using Cachalot.Extensions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Cachalot.Extensions;
 using Cachalot.Linq;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests
@@ -33,36 +33,28 @@ namespace Tests.IntegrationTests
         }
 
 
-        IEnumerable<FlatWithAllKindsOfProperties> GenerateTestData(int count)
+        private IEnumerable<FlatWithAllKindsOfProperties> GenerateTestData(int count)
         {
-
-            for (int i = 0; i < count; i++)
-            {
+            for (var i = 0; i < count; i++)
                 yield return new FlatWithAllKindsOfProperties
                 {
                     Id = i + 1,
                     Nominal = i * 0.5,
-                    Quantity = i % 5 + 1,
-
+                    Quantity = i % 5 + 1
                 };
-            }
         }
 
-        IEnumerable<FlatWithAllKindsOfProperties> GenerateTestDataForPivot(int count)
+        private IEnumerable<FlatWithAllKindsOfProperties> GenerateTestDataForPivot(int count)
         {
-
-            for (int i = 0; i < count; i++)
-            {
+            for (var i = 0; i < count; i++)
                 yield return new FlatWithAllKindsOfProperties
                 {
                     Id = i + 1,
                     InstrumentName = i % 2 == 0 ? "a" : "b",
-                    ValueDate = i % 3 == 1 ? System.DateTime.Today : System.DateTime.Today.AddDays(1),
+                    ValueDate = i % 3 == 1 ? DateTime.Today : DateTime.Today.AddDays(1),
                     Nominal = i * 0.5,
-                    Quantity = i % 5 + 1,
-
+                    Quantity = i % 5 + 1
                 };
-            }
         }
 
         [Test]
@@ -121,7 +113,6 @@ namespace Tests.IntegrationTests
 
                 Assert.AreEqual(20, projection2.Count);
             }
-
         }
 
         [Test]
@@ -135,8 +126,6 @@ namespace Tests.IntegrationTests
 
 
                 dataSource.PutMany(GenerateTestDataForPivot(100));
-
-
             }
 
             using (var connector = new Connector(_clientConfig))
@@ -145,7 +134,8 @@ namespace Tests.IntegrationTests
 
                 var dataSource = connector.DataSource<FlatWithAllKindsOfProperties>();
 
-                var request = dataSource.PreparePivotRequest().OnAxis(x => x.InstrumentName, x => x.ValueDate).AggregateValues(x => x.Quantity, x => x.Nominal);
+                var request = dataSource.PreparePivotRequest().OnAxis(x => x.InstrumentName, x => x.ValueDate)
+                    .AggregateValues(x => x.Quantity, x => x.Nominal);
 
                 var pivot = request.Execute();
 
@@ -153,7 +143,6 @@ namespace Tests.IntegrationTests
 
                 pivot.CheckPivot();
             }
-
         }
 
         [Test]
@@ -171,15 +160,11 @@ namespace Tests.IntegrationTests
                 Assert.Throws<CacheException>(() =>
                 {
                     var _ = dataSource.OrderBy(x => x.Nominal).ToList();
-
                 });
-
-
             }
 
             using (var connector = new Connector(_clientConfig))
             {
-
                 var schema = TypedSchemaFactory.FromType(typeof(FlatWithAllKindsOfProperties));
                 var property = schema.ServerSide.Where(x => x.Name == "Nominal").First();
                 property.IndexType = IndexType.Ordered;
@@ -192,8 +177,6 @@ namespace Tests.IntegrationTests
                 var allOrdered = dataSource.OrderBy(x => x.Nominal).ToList();
 
                 Assert.AreEqual(100, allOrdered.Count);
-
-
             }
         }
 
@@ -212,7 +195,6 @@ namespace Tests.IntegrationTests
             // check they are found after reload
             using (var connector = new Connector(_clientConfig))
             {
-                
                 var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
 
                 Assert.AreEqual(12, result.Count);
@@ -221,12 +203,11 @@ namespace Tests.IntegrationTests
                 result = connector.SqlQueryAsJson("select  distinct ClientName from 20k").ToList();
                 Assert.AreEqual(61, result.Count);
 
-                var count  = connector.SqlQueryAsJson("count from 20k where dealid=25958469").ToList();
+                var count = connector.SqlQueryAsJson("count from 20k where dealid=25958469").ToList();
 
                 // should return a single object with the count property
                 Assert.AreEqual(1, count.Count);
                 Assert.AreEqual(12, count[0].Value<int>("count"));
-
             }
         }
     }

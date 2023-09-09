@@ -1,9 +1,8 @@
 using System;
 
-namespace Client.Messages
+namespace Client.Messages;
+
+public interface IHasSession
 {
-    public interface IHasSession
-    {
-        Guid SessionId { get; }
-    }
+    Guid SessionId { get; }
 }

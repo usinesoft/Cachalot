@@ -1,13 +1,13 @@
 ﻿#region
 
-using Channel;
-using Client.Interface;
-using NUnit.Framework;
-using Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Channel;
+using Client.Interface;
+using NUnit.Framework;
+using Server;
 using Tests.TestData;
 
 #endregion
@@ -93,9 +93,6 @@ namespace Tests.IntegrationTests
             var itemsReloaded = _aggregator.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
 
             Assert.AreEqual(113, itemsReloaded.Count);
-
-
         }
-
     }
 }

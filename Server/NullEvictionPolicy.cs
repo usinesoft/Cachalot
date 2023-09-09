@@ -1,18 +1,17 @@
 using Client.Interface;
 
-namespace Server
+namespace Server;
+
+/// <summary>
+///     No eviction is performed.
+/// </summary>
+public class NullEvictionPolicy : EvictionPolicy
 {
-    /// <summary>
-    ///     No eviction is performed.
-    /// </summary>
-    public class NullEvictionPolicy : EvictionPolicy
+    public override EvictionType Type => EvictionType.None;
+
+
+    public override string ToString()
     {
-        public override EvictionType Type => EvictionType.None;
-
-
-        public override string ToString()
-        {
-            return "NONE";
-        }
+        return "NONE";
     }
 }

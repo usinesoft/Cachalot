@@ -14,3 +14,4 @@
 //        [ProtoMember(2)]public decimal Value { get; set; }
 //    }
 //}
+

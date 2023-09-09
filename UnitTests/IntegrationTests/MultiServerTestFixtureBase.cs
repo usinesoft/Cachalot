@@ -1,25 +1,25 @@
-﻿using Channel;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using Channel;
 using Client;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
 using Server.HostServices.Logger;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
 
 namespace Tests.IntegrationTests
 {
     public class MultiServerTestFixtureBase
     {
+        protected ClientConfig _clientConfig;
 
-        protected class ServerInfo
-        {
-            public TcpServerChannel Channel { get; set; }
-            public Server.Server Server { get; set; }
-            public int Port { get; set; }
-        }
+        private List<FastLogger> _loggers = new List<FastLogger>();
+
+        protected List<ServerInfo> _servers = new List<ServerInfo>();
+
+        protected int ServerCount = 10;
 
 
         protected void StopServers()
@@ -30,17 +30,8 @@ namespace Tests.IntegrationTests
                 serverInfo.Server.Stop();
             }
 
-            foreach (var logger in _loggers)
-            {
-                logger.Stop();
-            }
+            foreach (var logger in _loggers) logger.Stop();
         }
-
-        protected List<ServerInfo> _servers = new List<ServerInfo>();
-
-        private List<FastLogger> _loggers = new List<FastLogger>();
-
-        protected int ServerCount = 10;
 
         protected void StartServers(int serverCount = 0)
         {
@@ -118,7 +109,11 @@ namespace Tests.IntegrationTests
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
         }
 
-
-        protected ClientConfig _clientConfig;
+        protected class ServerInfo
+        {
+            public TcpServerChannel Channel { get; set; }
+            public Server.Server Server { get; set; }
+            public int Port { get; set; }
+        }
     }
 }

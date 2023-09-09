@@ -1,51 +1,50 @@
+using System;
+using System.Linq.Expressions;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.ResultOperators;
 using Remotion.Linq.Clauses.StreamedData;
-using System;
-using System.Linq.Expressions;
 
-namespace Client.Core.Linq
+namespace Client.Core.Linq;
+
+public class OnlyIfAvailableResultOperator
+    : SequenceTypePreservingResultOperatorBase
+
 {
-    public class OnlyIfAvailableResultOperator
-        : SequenceTypePreservingResultOperatorBase
+    public OnlyIfAvailableResultOperator(Expression parameter)
 
     {
-        public OnlyIfAvailableResultOperator(Expression parameter)
-
-        {
-            Parameter = parameter;
-        }
+        Parameter = parameter;
+    }
 
 
-        public Expression Parameter { get; private set; }
+    public Expression Parameter { get; private set; }
 
 
-        public override string ToString()
+    public override string ToString()
 
-        {
-            return "Only if available";
-        }
-
-
-        public override ResultOperatorBase Clone(CloneContext cloneContext)
-
-        {
-            return new OnlyIfAvailableResultOperator(Parameter);
-        }
+    {
+        return "Only if available";
+    }
 
 
-        public override void TransformExpressions(
-            Func<Expression, Expression> transformation)
+    public override ResultOperatorBase Clone(CloneContext cloneContext)
 
-        {
-            Parameter = transformation(Parameter);
-        }
+    {
+        return new OnlyIfAvailableResultOperator(Parameter);
+    }
 
 
-        public override StreamedSequence ExecuteInMemory<T>(StreamedSequence input)
+    public override void TransformExpressions(
+        Func<Expression, Expression> transformation)
 
-        {
-            return input; // sequence is not changed by this operator
-        }
+    {
+        Parameter = transformation(Parameter);
+    }
+
+
+    public override StreamedSequence ExecuteInMemory<T>(StreamedSequence input)
+
+    {
+        return input; // sequence is not changed by this operator
     }
 }

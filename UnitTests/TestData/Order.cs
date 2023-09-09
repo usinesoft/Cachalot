@@ -1,21 +1,17 @@
-﻿using Client.Core;
-using Client.Interface;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Client.Core;
+using Client.Interface;
 
 namespace Tests.TestData
 {
     public class Order
     {
+        [ServerSideValue(IndexType.Primary)] public Guid Id { get; set; }
 
-        [ServerSideValue(IndexType.Primary)]
-        public Guid Id { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public double Amount { get; set; }
 
-        [ServerSideValue(IndexType.Ordered)]
-        public double Amount { get; set; }
-
-        [ServerSideValue()]
-        public int Quantity { get; set; }
+        [ServerSideValue] public int Quantity { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)]
         public string Category { get; set; }

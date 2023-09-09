@@ -1,18 +1,18 @@
-﻿using Server.Persistence;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Server.Persistence;
 
 namespace StorageAnalyzer
 {
-    partial class Program
+    internal partial class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.ForegroundColor = ConsoleColor.White;
             Console.BackgroundColor = ConsoleColor.Black;
             Console.WriteLine(Logo);
-            
+
             if (args.Length == 0)
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -55,18 +55,17 @@ namespace StorageAnalyzer
 
             if (report1.BlocksWithIssues.Count > 0)
             {
-                Console.WriteLine("There are invalid blocks in the storage. Fix it? (y/n)"); 
+                Console.WriteLine("There are invalid blocks in the storage. Fix it? (y/n)");
                 var key = Console.ReadKey();
                 if (key.KeyChar == 'y' || key.KeyChar == 'Y')
                 {
                     Console.WriteLine("Start compacting and repairing storage...");
-                    ReliableStorage.CompactAndRepair(dir, ReliableStorage.StorageFileName, ReliableStorage.TempFileName);
+                    ReliableStorage.CompactAndRepair(dir, ReliableStorage.StorageFileName,
+                        ReliableStorage.TempFileName);
                     Console.WriteLine("done");
                 }
             }
         }
-
-        
 
 
         private static StorageReport AnalyzeStorage(string dir)
@@ -83,7 +82,7 @@ namespace StorageAnalyzer
 
             var storageReport = new StorageReport();
 
-            int index = 0;
+            var index = 0;
 
             var primaryKeys = new HashSet<string>();
 
@@ -96,42 +95,26 @@ namespace StorageAnalyzer
                 {
                     storageReport.BlocksWithIssues.Add(block);
                     storageReport.InvalidBlocks++;
-                    
                 }
 
                 if (block.IsValidBlock() && !primaryKeys.Add(block.PrimaryKey))
-                {
                     storageReport.DuplicatePrimaryKeys.Add(block.PrimaryKey);
-                }
 
-                if (block.BlockStatus == BlockStatus.Active)
-                {
-                    storageReport.ActiveBlocks++;
-                }
+                if (block.BlockStatus == BlockStatus.Active) storageReport.ActiveBlocks++;
 
-                if (block.BlockStatus == BlockStatus.Deleted)
-                {
-                    storageReport.DeletedBlocks++;
-                }
+                if (block.BlockStatus == BlockStatus.Deleted) storageReport.DeletedBlocks++;
 
-                if (block.BlockStatus == BlockStatus.Dirty)
-                {
-                    storageReport.DirtyBlocks++;
-                }
+                if (block.BlockStatus == BlockStatus.Dirty) storageReport.DirtyBlocks++;
 
                 if (!block.IsValidBlock())
-                {
                     ReliableStorage.FindNextBeginMarker(storage.Position + PersistentBlock.MinSize, storage);
-                }
 
                 // get the most recent transaction committed to this storage
                 if (block.LastTransactionId > storageReport.LastTransactionId)
-                {
                     storageReport.LastTransactionId = block.LastTransactionId;
-                }
 
                 storageReport.LastPrimaryKey = block.PrimaryKey;
-                
+
                 index++;
                 block = new PersistentBlock { Index = index };
             }
@@ -156,7 +139,6 @@ namespace StorageAnalyzer
 
             var stop = false;
             while (!stop)
-            {
                 try
                 {
                     var transactionData = TransactionLog.ReadTransaction(reader);
@@ -178,23 +160,15 @@ namespace StorageAnalyzer
                         case TransactionStatus.Canceled:
                             report.CanceledCount++;
                             break;
-
                     }
 
-                    if (!transactionData.EndMarkerOk)
-                    {
-                        report.TransactionsWithIssues.Add(transactionData);
-                    }
-
-
+                    if (!transactionData.EndMarkerOk) report.TransactionsWithIssues.Add(transactionData);
                 }
                 catch (EndOfStreamException)
                 {
-
                     report.LastOffsetFound = transactionLog.Position;
                     stop = true;
                 }
-            }
 
             return report;
         }

@@ -1,22 +1,22 @@
 ﻿using Cachalot.Linq;
 using Client.Interface;
+using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
-namespace CachalotMonitor.Services
+namespace CachalotMonitor.Services;
+
+public interface IClusterService : IDisposable
 {
-    public interface IClusterService:IDisposable
-    {
-        Connector? Connector { get; }
+    Connector? Connector { get; }
 
-        string Connect(Model.ConnectionInfo connectionInfo);
+    string Connect(ConnectionInfo connectionInfo);
 
-        void Disconnect();
+    void Disconnect();
 
-        ClusterInformation GetClusterInformation();
+    ClusterInformation GetClusterInformation();
 
-        void SaveToConnectionHistory(Model.ConnectionInfo info, string name);
-        
-        Model.ConnectionInfo GetFromConnectionHistory(string name);
-        
-        string[] GetHistoryEntries();
-    }
+    void SaveToConnectionHistory(ConnectionInfo info, string name);
+
+    ConnectionInfo GetFromConnectionHistory(string name);
+
+    string[] GetHistoryEntries();
 }

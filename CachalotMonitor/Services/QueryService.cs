@@ -9,22 +9,23 @@ using Newtonsoft.Json.Linq;
 
 namespace CachalotMonitor.Services;
 
-class QueryService : IQueryService
+internal class QueryService : IQueryService
 {
-    readonly IClusterService _clusterService;
+    private readonly IClusterService _clusterService;
 
-    private DataSource<LogEntry>? ActivityTable { get; }
     public QueryService(IClusterService clusterService)
     {
         _clusterService = clusterService ?? throw new ArgumentNullException(nameof(clusterService));
-        
+
         ActivityTable = clusterService.Connector?.DataSource<LogEntry>("@ACTIVITY");
     }
 
-    
+    private DataSource<LogEntry>? ActivityTable { get; }
+
+
     public string QueryAsJson(string? sql, string? fullTextQuery = null, Guid queryId = default)
     {
-        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToList() ;
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToList();
 
         if (result != null)
         {
@@ -44,41 +45,26 @@ class QueryService : IQueryService
         if (result == null)
             return;
 
-        int count = 0;
-        
+        var count = 0;
+
         await writer.WriteAsync('[');
 
         foreach (var item in result)
         {
-            if (count != 0)// write the comma after the previous object
-            {
+            if (count != 0) // write the comma after the previous object
                 await writer.WriteAsync(',');
-            }
 
             await writer.WriteAsync(item.ToString(Formatting.None));
 
             count++;
 
             if (count % 1000 == 0) // flush every 1000 items
-            {
                 await writer.FlushAsync();
-            }
         }
-        
+
         await writer.WriteAsync(']');
-        
+
         await writer.FlushAsync();
-
-        
-    }
-
-
-    IEnumerable<JObject> ObjectConsumer(BlockingCollection<JObject> queue)
-    {
-        foreach (var item in queue.GetConsumingEnumerable())
-        {
-            yield return item;
-        }
     }
 
 
@@ -95,14 +81,12 @@ class QueryService : IQueryService
         using var sr = new StreamReader(stream);
         using var reader = new JsonTextReader(sr);
         while (await reader.ReadAsync())
-        {
             if (reader.TokenType == JsonToken.StartObject)
             {
                 // Load each object from the stream and do something with it
                 var obj = await JObject.LoadAsync(reader);
                 streamedObjects.Add(obj);
             }
-        }
 
         streamedObjects.CompleteAdding();
 
@@ -111,10 +95,9 @@ class QueryService : IQueryService
 
     public ExecutionPlan? GetExecutionPlan(Guid queryId)
     {
-
         if (ActivityTable != null)
         {
-            var entries =  ActivityTable.Where(x => x.Id == queryId).ToList();
+            var entries = ActivityTable.Where(x => x.Id == queryId).ToList();
 
             // aggregate matches from all servers
             var totalMatched = entries.Sum(x => x.ExecutionPlan.MatchedItems);
@@ -125,7 +108,6 @@ class QueryService : IQueryService
                 entries[0].ExecutionPlan.MatchedItems = totalMatched;
                 return entries[0].ExecutionPlan;
             }
-
         }
 
         return null;
@@ -136,10 +118,11 @@ class QueryService : IQueryService
         try
         {
             var info = _clusterService.GetClusterInformation();
-            
+
             var metadata = new QueryMetadata();
 
-            var schema = info.Schema.FirstOrDefault(x => x.CollectionName.Equals(collection,StringComparison.CurrentCultureIgnoreCase));
+            var schema = info.Schema.FirstOrDefault(x =>
+                x.CollectionName.Equals(collection, StringComparison.CurrentCultureIgnoreCase));
 
             if (schema != null)
             {
@@ -152,27 +135,23 @@ class QueryService : IQueryService
                     metadata.CollectionName = collection;
                     metadata.PropertyName = property;
 
-                    
+
                     // query distinct values of the property
-                    var result = _clusterService.Connector?.SqlQueryAsJson($"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 10}").ToList();
+                    var result = _clusterService.Connector
+                        ?.SqlQueryAsJson(
+                            $"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 10}")
+                        .ToList();
 
                     if (result?.Count == 0) // only if the table is empty
                         return metadata;
-                    
+
                     if (pr.IsCollection)
-                    {
-                        MetadataForCollectionProperty(property, result!, metadata);    
-                    }
+                        MetadataForCollectionProperty(property, result!, metadata);
                     else
-                    {
-                        MetadataForScalarProperty(property, result!, metadata);    
-                    }
+                        MetadataForScalarProperty(property, result!, metadata);
 
                     // if more than max values do not load the network as the result can not be used for query definition
-                    if (result!.Count > QueryMetadata.MaxValues)
-                    {
-                        metadata.PossibleValues = Array.Empty<string>();
-                    }
+                    if (result!.Count > QueryMetadata.MaxValues) metadata.PossibleValues = Array.Empty<string>();
 
                     metadata.PossibleValuesCount = result.Count;
 
@@ -182,11 +161,69 @@ class QueryService : IQueryService
         }
         catch (Exception)
         {
-            return new QueryMetadata { Found = false };
+            return new() { Found = false };
         }
 
-        return new QueryMetadata { Found = false };
+        return new() { Found = false };
+    }
 
+    public string ClientQueryToSql(string collection, AndQuery query)
+    {
+        var builder = new StringBuilder();
+
+        builder.Append("SELECT");
+        builder.Append(" ");
+        builder.Append("FROM");
+        builder.Append(" ");
+        builder.Append(collection);
+        builder.Append(" ");
+
+
+        if (query.SimpleQueries.Any(q => q.CheckIsValid()))
+        {
+            builder.Append("WHERE");
+            builder.Append(Environment.NewLine);
+        }
+
+        for (var i = 0; i < query.SimpleQueries.Length; i++)
+        {
+            var q = query.SimpleQueries[i];
+            SimpleQueryToSql(q, builder);
+            if (i < query.SimpleQueries.Length - 1)
+                if (query.SimpleQueries[i + 1].CheckIsValid())
+                {
+                    builder.Append(" ");
+                    builder.Append("AND");
+                    builder.Append(Environment.NewLine);
+                    builder.Append(" ");
+                }
+        }
+
+        if (query.OrderBy != null)
+        {
+            builder.Append(Environment.NewLine);
+            builder.Append(" ");
+            builder.Append("ORDER BY");
+            builder.Append(" ");
+            builder.Append(query.OrderBy);
+
+            if (query.Descending)
+            {
+                builder.Append(" ");
+                builder.Append("DESCENDING");
+            }
+        }
+
+        builder.Append(Environment.NewLine);
+        builder.Append($"TAKE {query.Take}");
+
+        return builder.ToString();
+    }
+
+
+    private IEnumerable<JObject> ObjectConsumer(BlockingCollection<JObject> queue)
+    {
+        foreach (var item in queue.GetConsumingEnumerable()) yield return item;
     }
 
     private void SimpleQueryToSql(SimpleQuery query, StringBuilder builder)
@@ -195,39 +232,22 @@ class QueryService : IQueryService
         {
             if (query.DataType == PropertyType.String && !query.PropertyIsCollection)
             {
-                if (op == "starts with")
-                {
-                    return $"'{value}%'";
-                }
+                if (op == "starts with") return $"'{value}%'";
 
-                if (op == "ends with")
-                {
-                    return $"'%{value}'";
-                }
+                if (op == "ends with") return $"'%{value}'";
 
-                if (op == "contains")
-                {
-                    return $"'%{value}%'";
-                }
+                if (op == "contains") return $"'%{value}%'";
 
                 return $"'{value}'";
             }
 
-            if (query.DataType == PropertyType.SomeFloat)
-            {
-                return $"{value}";
-            }
+            if (query.DataType == PropertyType.SomeFloat) return $"{value}";
 
-            if (query.PropertyIsCollection )
+            if (query.PropertyIsCollection)
             {
                 if (query.DataType == PropertyType.String)
-                {
                     return $"'{value}'";
-                }
-                else
-                {
-                    return $"{value}";
-                }
+                return $"{value}";
             }
 
             return value;
@@ -245,20 +265,17 @@ class QueryService : IQueryService
             {
                 values.AddRange(query.Values);
             }
-            else if (query.Values.Length ==1)
+            else if (query.Values.Length == 1)
             {
                 var first = query.Values[0];
-                if (first.Contains(','))    
-                {
-                    values.AddRange(first.Split(',', StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries));
-                }
+                if (first.Contains(','))
+                    values.AddRange(first.Split(',',
+                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
                 else
-                {
                     values.Add(first.Trim());
-                }
             }
 
-            bool needValue = true;
+            var needValue = true;
 
             switch (query.Operator)
             {
@@ -299,75 +316,15 @@ class QueryService : IQueryService
                 if (values.Count > 1)
                 {
                     builder.Append("(");
-                    builder.Append(string.Join(',', values.Select(v=> ValueToSql(v))));
+                    builder.Append(string.Join(',', values.Select(v => ValueToSql(v))));
                     builder.Append(")");
                 }
                 else
                 {
                     builder.Append(ValueToSql(values[0], query.Operator));
                 }
-
             }
         }
-        
-    }
-
-    public string ClientQueryToSql(string collection, AndQuery query)
-    {
-        var builder = new StringBuilder();
-
-        builder.Append("SELECT");
-        builder.Append(" ");
-        builder.Append("FROM");
-        builder.Append(" ");
-        builder.Append(collection);
-        builder.Append(" ");
-
-
-        if (query.SimpleQueries.Any(q => q.CheckIsValid()))
-        {
-            builder.Append("WHERE");
-            builder.Append(Environment.NewLine);
-
-        }
-        
-        for (int i = 0; i < query.SimpleQueries.Length; i++)
-        {
-            var q = query.SimpleQueries[i];
-            SimpleQueryToSql(q, builder);
-            if (i < query.SimpleQueries.Length - 1)
-            {
-                if (query.SimpleQueries[i + 1].CheckIsValid())
-                {
-                    builder.Append(" ");
-                    builder.Append("AND");
-                    builder.Append(Environment.NewLine);
-                    builder.Append(" ");
-                }
-                
-            }
-        }
-
-        if (query.OrderBy != null)
-        {
-            builder.Append(Environment.NewLine);
-            builder.Append(" ");
-            builder.Append("ORDER BY");
-            builder.Append(" ");
-            builder.Append(query.OrderBy);
-
-            if (query.Descending)
-            {
-                builder.Append(" ");
-                builder.Append("DESCENDING");
-            }
-
-        }
-
-        builder.Append(Environment.NewLine);
-        builder.Append($"TAKE {query.Take}");
-        
-        return builder.ToString();
     }
 
     private static void MetadataForScalarProperty(string property, List<JObject> result, QueryMetadata metadata)
@@ -434,8 +391,8 @@ class QueryService : IQueryService
 
             var jtk = jt.Value;
             string? val = null;
-            
-            
+
+
             if (jtk.Type == JTokenType.Date)
             {
                 var date = jtk.Value<DateTime>();
@@ -445,23 +402,16 @@ class QueryService : IQueryService
             {
                 val = jtk.Value<string>();
             }
-        
+
             if (!string.IsNullOrEmpty(val))
-            {
                 values.Add(val);
-            }
             else
-            {
                 canBeNull = true;
-            }
 
             // no values list for float properties
-            if (type != PropertyType.SomeFloat)
-            {
-                metadata.PossibleValues = values.OrderBy(x=>x).ToArray();
-            }
-            
-            
+            if (type != PropertyType.SomeFloat) metadata.PossibleValues = values.OrderBy(x => x).ToArray();
+
+
             metadata.PropertyType = type;
 
             // equal and different always accepted
@@ -477,7 +427,7 @@ class QueryService : IQueryService
             }
 
             // string operators for strings only
-            if(type is PropertyType.String)
+            if (type is PropertyType.String)
             {
                 operators.Add("starts with");
                 operators.Add("ends with");
@@ -492,8 +442,6 @@ class QueryService : IQueryService
 
             metadata.AvailableOperators = operators.ToArray();
         }
-
-
     }
 
     private static void MetadataForCollectionProperty(string property, List<JObject> result, QueryMetadata metadata)
@@ -501,7 +449,7 @@ class QueryService : IQueryService
         if (result == null) throw new ArgumentNullException(nameof(result));
         metadata.PropertyIsCollection = true;
 
-        var type = (((JProperty)result[0].First!)!).Value.Type;
+        var type = ((JProperty)result[0].First!)!.Value.Type;
 
         metadata.PropertyType = type switch
         {
@@ -512,11 +460,10 @@ class QueryService : IQueryService
             _ => PropertyType.String
         };
 
-        metadata.PossibleValues = result.Select(x => SmartDateTimeConverter.FormatDate((DateTime)(((JProperty )x.First!)!).Value)).ToArray();
-        
+        metadata.PossibleValues =
+            result.Select(x => SmartDateTimeConverter.FormatDate((DateTime)((JProperty)x.First!)!.Value)).ToArray();
+
         // only "contains" and "not contains" for collections
         metadata.AvailableOperators = new[] { "contains", "not contains" };
-        
-        
     }
 }

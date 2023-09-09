@@ -1,7 +1,7 @@
-﻿using Server.Persistence;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Server.Persistence;
 
 namespace StorageAnalyzer
 {
@@ -17,7 +17,7 @@ namespace StorageAnalyzer
         public string LastPrimaryKey { get; set; }
 
         public List<string> DuplicatePrimaryKeys { get; } = new List<string>();
-        
+
 
         public List<PersistentBlock> BlocksWithIssues { get; } = new List<PersistentBlock>();
         public long Size { get; set; }
@@ -35,7 +35,7 @@ namespace StorageAnalyzer
             result.AppendLine($"last transaction   : {LastTransactionId}");
             result.AppendLine($"last pk            : {LastPrimaryKey}");
 
-            
+
             return result.ToString();
         }
 
@@ -46,10 +46,7 @@ namespace StorageAnalyzer
             if (BlocksWithIssues.Count > 0)
             {
                 result.AppendLine("blocks with issues:");
-                foreach (var blockWithIssue in BlocksWithIssues)
-                {
-                    result.AppendLine("  " + blockWithIssue.ToString());
-                }
+                foreach (var blockWithIssue in BlocksWithIssues) result.AppendLine("  " + blockWithIssue);
 
                 result.AppendLine();
             }
@@ -57,14 +54,10 @@ namespace StorageAnalyzer
             if (DuplicatePrimaryKeys.Any())
             {
                 result.AppendLine($"{DuplicatePrimaryKeys.Count} Duplicate primary keys:");
-                foreach (var key in DuplicatePrimaryKeys.OrderBy(x=>x))
-                {
-                    result.AppendLine($"{key}");
-                }
+                foreach (var key in DuplicatePrimaryKeys.OrderBy(x => x)) result.AppendLine($"{key}");
             }
 
             return result.ToString();
         }
-
     }
 }

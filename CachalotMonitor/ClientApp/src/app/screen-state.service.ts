@@ -1,19 +1,18 @@
-import { Injectable } from '@angular/core';
-import { AndQuery } from './model/query';
-import { DataScreenState, SchemaScreenState } from './model/state';
+import { Injectable } from "@angular/core";
+import { DataScreenState, SchemaScreenState } from "./model/state";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root"
 })
 export class ScreenStateService {
 
-  constructor() { }
-  
-  public data:DataScreenState = new  DataScreenState;
+  constructor() {}
 
-  public schema:SchemaScreenState = new  SchemaScreenState;
+  data = new DataScreenState;
 
-  public clearScreenState():void{
+  schema = new SchemaScreenState;
+
+  clearScreenState(): void {
     this.data = new DataScreenState;
     this.schema = new SchemaScreenState;
   }

@@ -1,12 +1,12 @@
-﻿using FakeItEasy;
-using NUnit.Framework;
-using Server;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FakeItEasy;
+using NUnit.Framework;
+using Server;
 
 namespace Tests.UnitTests
 {
@@ -108,10 +108,7 @@ namespace Tests.UnitTests
                 },
                 () =>
                 {
-                    for (var i = 0; i < iterations; i++)
-                    {
-                        mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
-                    }
+                    for (var i = 0; i < iterations; i++) mgr.DoWithWriteLock(WriteAbc, "a", "b", "c");
                 }
             );
 

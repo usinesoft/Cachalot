@@ -1,11 +1,10 @@
-﻿namespace Client.Tools
+﻿namespace Client.Tools;
+
+public enum CharClass
 {
-    public enum CharClass
-    {
-        Start,
-        Letter,
-        Digit,
-        Symbol,
-        Whitespace
-    }
+    Start,
+    Letter,
+    Digit,
+    Symbol,
+    Whitespace
 }

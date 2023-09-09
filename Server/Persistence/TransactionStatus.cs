@@ -1,10 +1,9 @@
-namespace Server.Persistence
+namespace Server.Persistence;
+
+public enum TransactionStatus
 {
-    public enum TransactionStatus
-    {
-        ToProcess,
-        Processing,
-        Processed,
-        Canceled
-    }
+    ToProcess,
+    Processing,
+    Processed,
+    Canceled
 }

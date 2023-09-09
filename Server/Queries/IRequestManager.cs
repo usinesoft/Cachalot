@@ -1,9 +1,8 @@
 ﻿using Client.ChannelInterface;
 
-namespace Server.Queries
+namespace Server.Queries;
+
+public interface IRequestManager
 {
-    public interface IRequestManager
-    {
-        void ProcessRequest(Request request, IClient client);
-    }
+    void ProcessRequest(Request request, IClient client);
 }

@@ -2,16 +2,13 @@
 using Client.Core;
 using Client.Tools;
 using NUnit.Framework;
-using NUnit.Framework.Internal;
 using Tests.TestTools;
 
 namespace Tests.UnitTests
 {
-
     [TestFixture]
     public class TestFixtureKeyValue
     {
-
         [Test]
         public void Compare_same_type()
         {
@@ -50,8 +47,6 @@ namespace Tests.UnitTests
                 Assert.IsTrue(kv1 <= kv2);
                 Assert.AreEqual(kv1, kv1);
             }
-
-
         }
 
 
@@ -92,7 +87,7 @@ namespace Tests.UnitTests
         {
             var kv1 = new KeyValue(1000M);
             var kv2 = new KeyValue(1000);
-            
+
             Assert.AreEqual(KeyValue.OriginalType.SomeFloat, kv1.Type);
             Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv2.Type);
 
@@ -105,7 +100,7 @@ namespace Tests.UnitTests
         {
             KeyValue date = null;
 
-            DateTime testValue = DateTime.MinValue;
+            var testValue = DateTime.MinValue;
 
             string fmt1 = null;
 
@@ -127,7 +122,6 @@ namespace Tests.UnitTests
                 var fmt2 = SmartDateTimeConverter.FormatDate(tst);
 
                 Assert.AreEqual(fmt1, fmt2);
-
             }
         }
 
@@ -136,7 +130,7 @@ namespace Tests.UnitTests
         {
             KeyValue date = null;
 
-            DateTime testValue = DateTime.MinValue;
+            var testValue = DateTime.MinValue;
 
             string fmt1 = null;
 
@@ -158,9 +152,7 @@ namespace Tests.UnitTests
                 var fmt2 = SmartDateTimeConverter.FormatDate(tst);
 
                 Assert.AreEqual(fmt1, fmt2);
-
             }
         }
-
     }
 }

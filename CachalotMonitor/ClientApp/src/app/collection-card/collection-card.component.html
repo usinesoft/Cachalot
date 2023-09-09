@@ -1,58 +1,55 @@
-
-
-
 <mat-card class="collection-card">
-    <mat-card-header class="card-title">
-        <mat-card-title [tooltip]="name!">{{name|uppercase}}</mat-card-title>
-        <mat-card-subtitle>{{items}}&nbsp;objects</mat-card-subtitle>
-    </mat-card-header>
+  <mat-card-header class="card-title">
+    <mat-card-title [tooltip]="name!">{{name|uppercase}}</mat-card-title>
+    <mat-card-subtitle>{{items}}&nbsp;objects</mat-card-subtitle>
+  </mat-card-header>
 
 
-    <ng-template #HtmlContentFlat>
-        <div>
-        <h3>Flat Layout</h3>
-        <p>Ideal for flat objects (like the lines in a csv file or in an old sql database).</p>
-        <p>All the properties can be used in queries.</p>
-        </div>
-    </ng-template>
+  <ng-template #HtmlContentFlat>
+    <div>
+      <h3>Flat Layout</h3>
+      <p>Ideal for flat objects (like the lines in a csv file or in an old sql database).</p>
+      <p>All the properties can be used in queries.</p>
+    </div>
+  </ng-template>
 
-    <ng-template #HtmlContentDefault>
-        <div>
-        <h3>Default Layout</h3>
-        <p>Ideal for medium-size hierarchical objects (containing sub-objects, collections).</p>
-        <p>Selected properties can be used in queries. </p>
-        <p>The complete object is stored as JSON. </p>
-        </div>
-    </ng-template>
+  <ng-template #HtmlContentDefault>
+    <div>
+      <h3>Default Layout</h3>
+      <p>Ideal for medium-size hierarchical objects (containing sub-objects, collections).</p>
+      <p>Selected properties can be used in queries. </p>
+      <p>The complete object is stored as JSON. </p>
+    </div>
+  </ng-template>
 
-    <ng-template #HtmlContentCompressed>
-        <div>
-        <h3>Compressed Layout</h3>
-        <p>Ideal for medium/big hierarchical objects (like complex documents).</p>
-        <p>Selected properties can be used in queries. </p>
-        <p>The complete object is stored as compressed JSON. </p>
-        </div>
-    </ng-template>
-    
-    <img *ngIf="layout=='Flat'" mat-card-image src="../../assets/flat.png" alt="flat layout" [tooltip] ="$any(HtmlContentFlat)" triggers="mouseenter:mouseleave" contentType="template">
-    <img *ngIf="layout=='Default'" mat-card-image src="../../assets/default.png" alt="default layout" [tooltip] ="$any(HtmlContentDefault)" triggers="mouseenter:mouseleave" contentType="template">
-    <img *ngIf="layout=='Compressed'" mat-card-image src="../../assets/compressed.png" alt="compressed layout" [tooltip] ="$any(HtmlContentCompressed)" triggers="mouseenter:mouseleave" contentType="template">
-        <table style="padding: 1rem; min-width: 100%;font-weight: lighter;">
+  <ng-template #HtmlContentCompressed>
+    <div>
+      <h3>Compressed Layout</h3>
+      <p>Ideal for medium/big hierarchical objects (like complex documents).</p>
+      <p>Selected properties can be used in queries. </p>
+      <p>The complete object is stored as compressed JSON. </p>
+    </div>
+  </ng-template>
 
-            <tr>
-                <td>Eviction</td>
-                <td>{{eviction|evictionShortName}}</td>
-            </tr>
-            <tr>
-                <td>Full-text</td>
-                <td>{{fullText}}</td>
-            </tr>
-        </table>
-        <mat-card-content>
-        </mat-card-content>
-    <mat-divider inset></mat-divider>
-    <mat-card-actions>
-        <button mat-button (click)="viewSchema(name)">SCHEMA</button>
-        <button mat-button (click)="viewData(name)">DATA</button>
-    </mat-card-actions>
+  <img *ngIf="layout=='Flat'" mat-card-image src="../../assets/flat.png" alt="flat layout" [tooltip]="$any(HtmlContentFlat)" triggers="mouseenter:mouseleave" contentType="template">
+  <img *ngIf="layout=='Default'" mat-card-image src="../../assets/default.png" alt="default layout" [tooltip]="$any(HtmlContentDefault)" triggers="mouseenter:mouseleave" contentType="template">
+  <img *ngIf="layout=='Compressed'" mat-card-image src="../../assets/compressed.png" alt="compressed layout" [tooltip]="$any(HtmlContentCompressed)" triggers="mouseenter:mouseleave" contentType="template">
+  <table style="font-weight: lighter; min-width: 100%; padding: 1rem;">
+
+    <tr>
+      <td>Eviction</td>
+      <td>{{eviction|evictionShortName}}</td>
+    </tr>
+    <tr>
+      <td>Full-text</td>
+      <td>{{fullText}}</td>
+    </tr>
+  </table>
+  <mat-card-content>
+  </mat-card-content>
+  <mat-divider inset></mat-divider>
+  <mat-card-actions>
+    <button mat-button (click)="viewSchema(name)">SCHEMA</button>
+    <button mat-button (click)="viewData(name)">DATA</button>
+  </mat-card-actions>
 </mat-card>

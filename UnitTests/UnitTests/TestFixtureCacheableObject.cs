@@ -1,12 +1,12 @@
 ﻿#region
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Client.Core;
 using Client.Interface;
 using Client.Messages.Pivot;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Tests.TestData;
 
 #endregion
@@ -18,12 +18,10 @@ namespace Tests.UnitTests
     {
         private class TestData
         {
-            [ServerSideValue(IndexType.Primary)]
-            public Guid Id { get; set; }
+            [ServerSideValue(IndexType.Primary)] public Guid Id { get; set; }
 
             [ServerSideValue(IndexType.Dictionary)]
             public string Name { get; set; }
-
         }
 
 
@@ -39,7 +37,6 @@ namespace Tests.UnitTests
             };
             return object1;
         }
-
 
 
         [Test]
@@ -68,26 +65,24 @@ namespace Tests.UnitTests
         [Test]
         public void PackedObjectSerialization()
         {
-
             var schema = TypedSchemaFactory.FromType(typeof(Person));
 
             var packed = PackedObject.Pack(new Person { Id = 13, First = "Dan", Last = "IONESCU" }, schema);
 
-            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers, schema.StorageLayout == Layout.Compressed);
+            var data = SerializationHelper.ObjectToBytes(packed, SerializationMode.ProtocolBuffers,
+                schema.StorageLayout == Layout.Compressed);
 
-            var reloaded = SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
+            var reloaded =
+                SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
 
             Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
-
         }
 
 
         [Test]
         public void TestObjectWithServerSideValues()
         {
-
-
             // now try attributes on type
             //var description = TypedSchemaFactory.FromType(typeof(Order));
 
@@ -99,8 +94,6 @@ namespace Tests.UnitTests
             //Assert.AreEqual("Amount", desc1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
             //Assert.AreEqual(IndexType.Ordered, desc1.ServerSideValues.Single(v=>v.Name == "Amount").IndexType);
             //Assert.AreEqual(IndexType.None, desc1.ServerSideValues.Single(v=>v.Name == "Quantity").IndexType);
-
-
 
 
             //// pack an object using different kinds of type description
@@ -137,7 +130,6 @@ namespace Tests.UnitTests
             //Assert.AreEqual(2, packed3.Values.Length);
             //Assert.AreEqual("Amount", packed3.Values[0].Name);
             //Assert.AreEqual(order.Amount, packed3.Values[0].Value);
-
         }
 
 
@@ -166,7 +158,6 @@ namespace Tests.UnitTests
         [Test]
         public void ComputePivotWithServerValues()
         {
-
             var description = TypedSchemaFactory.FromType(typeof(Order));
 
             var order1 = new Order
@@ -257,7 +248,8 @@ namespace Tests.UnitTests
 
 
             // first test with one single axis (Category index = 3)
-            var pivot = new PivotLevel(schema, new List<int> { 3 }, new List<int> { 1, 2 }); ;
+            var pivot = new PivotLevel(schema, new List<int> { 3 }, new List<int> { 1, 2 });
+            ;
 
             pivot.AggregateOneObject(packed1);
             pivot.AggregateOneObject(packed2);
@@ -332,7 +324,6 @@ namespace Tests.UnitTests
             var sum2 = pivot1.Children.Sum(c => c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum);
 
             Assert.AreEqual(sum1, sum2);
-
         }
 
         [Test]
@@ -346,7 +337,6 @@ namespace Tests.UnitTests
             var pk = Guid.Parse(packed.PrimaryKey.ToString());
 
             Assert.AreNotEqual(Guid.Empty, pk);
-
         }
     }
 }

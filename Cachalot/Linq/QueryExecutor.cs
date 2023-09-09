@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Client;
 using Client.Core;
 using Client.Core.Linq;
@@ -5,88 +8,82 @@ using Client.Interface;
 using Client.Queries;
 using Newtonsoft.Json.Linq;
 using Remotion.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Cachalot.Linq
+namespace Cachalot.Linq;
+
+internal class QueryExecutor : IQueryExecutor
 {
-    internal class QueryExecutor : IQueryExecutor
+    private static Action<OrQuery> _customAction;
+
+    private readonly IDataClient _client;
+    private readonly string _collectionName;
+    private readonly CollectionSchema _collectionSchema;
+    private readonly Guid _sessionId;
+
+
+    public QueryExecutor(IDataClient client, CollectionSchema collectionSchema, Guid sessionId, string collectionName)
     {
-        private static Action<OrQuery> _customAction;
+        _client = client;
+        _collectionSchema = collectionSchema;
+        _sessionId = sessionId;
+        _collectionName = collectionName;
+    }
 
-        private readonly IDataClient _client;
-        private readonly CollectionSchema _collectionSchema;
-        private readonly Guid _sessionId;
-        private readonly string _collectionName;
+    // Executes a query with a scalar result, i.e. a query that ends with a result operator such as Count, Sum, or Average.
+    public T ExecuteScalar<T>(QueryModel queryModel)
+    {
+        var visitor = new QueryVisitor(_collectionName, _collectionSchema);
 
+        visitor.VisitQueryModel(queryModel);
 
-        public QueryExecutor(IDataClient client, CollectionSchema collectionSchema, Guid sessionId, string collectionName)
-        {
-            _client = client;
-            _collectionSchema = collectionSchema;
-            _sessionId = sessionId;
-            _collectionName = collectionName;
-        }
+        var expression = visitor.RootExpression;
 
-        // Executes a query with a scalar result, i.e. a query that ends with a result operator such as Count, Sum, or Average.
-        public T ExecuteScalar<T>(QueryModel queryModel)
-        {
-            var visitor = new QueryVisitor(_collectionName, _collectionSchema);
+        _customAction?.Invoke(expression);
 
-            visitor.VisitQueryModel(queryModel);
+        Dbg.Trace($"linq provider produced expression {expression}");
 
-            var expression = visitor.RootExpression;
+        if (expression.CountOnly) return (T)(object)_client.EvalQuery(expression).Item2;
 
-            _customAction?.Invoke(expression);
+        throw new NotSupportedException("Only Count scalar method is implemented");
+    }
 
-            Dbg.Trace($"linq provider produced expression {expression}");
+    // Executes a query with a single result object, i.e. a query that ends with a result operator such as First, Last, Single, Min, or Max.
+    public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
+    {
+        return returnDefaultWhenEmpty
+            ? ExecuteCollection<T>(queryModel).SingleOrDefault()
+            : ExecuteCollection<T>(queryModel).Single();
+    }
 
-            if (expression.CountOnly) return (T)(object)_client.EvalQuery(expression).Item2;
+    // Executes a query with a collection result.
+    public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
+    {
+        var visitor = new QueryVisitor(_collectionName, _collectionSchema);
 
-            throw new NotSupportedException("Only Count scalar method is implemented");
-        }
+        visitor.VisitQueryModel(queryModel);
 
-        // Executes a query with a single result object, i.e. a query that ends with a result operator such as First, Last, Single, Min, or Max.
-        public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
-        {
-            return returnDefaultWhenEmpty
-                ? ExecuteCollection<T>(queryModel).SingleOrDefault()
-                : ExecuteCollection<T>(queryModel).Single();
-        }
+        var expression = visitor.RootExpression;
 
-        // Executes a query with a collection result.
-        public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
-        {
-            var visitor = new QueryVisitor(_collectionName, _collectionSchema);
+        _customAction?.Invoke(expression);
 
-            visitor.VisitQueryModel(queryModel);
+        Dbg.Trace($"linq provider produced expression {expression}");
 
-            var expression = visitor.RootExpression;
+        return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri => FromJObject<T>(ri.Item));
+    }
 
-            _customAction?.Invoke(expression);
+    public static T FromJObject<T>(JObject jObject)
+    {
+        var t = typeof(T);
+        var isPrimitiveType = t.IsPrimitive || t.IsValueType || t == typeof(string) || t == typeof(DateTime) ||
+                              t == typeof(DateTimeOffset) || t == typeof(decimal);
 
-            Dbg.Trace($"linq provider produced expression {expression}");
+        if (jObject.Count == 1 && isPrimitiveType) return jObject.Properties().First().Value.ToObject<T>();
 
-            return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri => FromJObject<T>(ri.Item));
-        }
+        return jObject.ToObject<T>(SerializationHelper.Serializer);
+    }
 
-        public static T FromJObject<T>(JObject jObject)
-        {
-            var t = typeof(T);
-            bool isPrimitiveType = t.IsPrimitive || t.IsValueType || (t == typeof(string) || t == typeof(DateTime)) || t == typeof(DateTimeOffset) || t == typeof(decimal);
-
-            if (jObject.Count == 1 && isPrimitiveType)
-            {
-                return jObject.Properties().First().Value.ToObject<T>();
-            }
-
-            return jObject.ToObject<T>(SerializationHelper.Serializer);
-        }
-
-        public static void Probe(Action<OrQuery> action)
-        {
-            _customAction = action;
-        }
+    public static void Probe(Action<OrQuery> action)
+    {
+        _customAction = action;
     }
 }

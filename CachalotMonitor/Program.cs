@@ -1,13 +1,13 @@
 using System.Text.Json.Serialization;
 using CachalotMonitor.Services;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "front-end-dev",
+    options.AddPolicy("front-end-dev",
         builder =>
         {
             builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost");
@@ -15,7 +15,7 @@ builder.Services.AddCors(options =>
             builder.AllowAnyHeader();
         });
 
-    options.AddPolicy(name: "linux-server",
+    options.AddPolicy("linux-server",
         builder =>
         {
             builder.SetIsOriginAllowed(origin => new Uri(origin).Host == "51.15.23.61");
@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
             builder.AllowAnyHeader();
         });
 
-    options.AddPolicy(name: "cachalotdb",
+    options.AddPolicy("cachalotdb",
         builder =>
         {
             builder.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("cachalotdb.com"));
@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
             builder.AllowAnyHeader();
         });
 
-    options.AddPolicy(name: "cachalot-db",
+    options.AddPolicy("cachalot-db",
         builder =>
         {
             builder.SetIsOriginAllowed(origin => new Uri(origin).Host.EndsWith("cachalot-db.com"));
@@ -41,15 +41,14 @@ builder.Services.AddCors(options =>
 });
 
 
-
 // Add services to the container.
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
-{
-    var enumConverter = new JsonStringEnumConverter();
-    opts.JsonSerializerOptions.Converters.Add(enumConverter);
-});
+    {
+        var enumConverter = new JsonStringEnumConverter();
+        opts.JsonSerializerOptions.Converters.Add(enumConverter);
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -92,11 +91,9 @@ if (server != null)
     Console.WriteLine("Server started successfully");
     foreach (var address in addressFeature?.Addresses ?? Array.Empty<string>())
     {
-
         Console.WriteLine("Your monitoring page is available at:");
         Console.ForegroundColor = ConsoleColor.White;
         Console.WriteLine(address);
-        
     }
 }
 

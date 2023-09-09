@@ -1,9 +1,9 @@
-using Client.Core;
-using NUnit.Framework;
-using Server;
 using System;
 using System.Linq;
 using System.Threading;
+using Client.Core;
+using NUnit.Framework;
+using Server;
 using Tests.TestData;
 
 // ReSharper disable ObjectCreationAsStatement
@@ -13,11 +13,9 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureEvictionPolicy
     {
-
         [Test]
         public void LessRecentlyUsed()
         {
-
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
 
             var policy = new LruEvictionPolicy(10, 2);
@@ -57,8 +55,6 @@ namespace Tests.UnitTests
 
             // item 93 was not removed because it was recently used (the call to Touch)
             Assert.IsFalse(toRemove.Any(i => i == packed93));
-
-
         }
 
         [Test]
@@ -125,7 +121,6 @@ namespace Tests.UnitTests
             var policy = new LruEvictionPolicy(10, 2);
             var toRemove = policy.DoEviction();
             Assert.AreEqual(0, toRemove.Count);
-
         }
 
 
@@ -161,7 +156,6 @@ namespace Tests.UnitTests
 
             toRemove = policy.DoEviction();
             Assert.AreEqual(1, toRemove.Count);
-
         }
 
         [Test]
@@ -186,9 +180,6 @@ namespace Tests.UnitTests
             var toRemove = policy.DoEviction();
             Assert.AreEqual(1, toRemove.Count);
             Assert.AreEqual(packed12, toRemove.Single());
-
-
         }
-
     }
 }

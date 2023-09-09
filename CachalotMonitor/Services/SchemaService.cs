@@ -2,7 +2,7 @@
 
 namespace CachalotMonitor.Services;
 
-class SchemaService : ISchemaService
+internal class SchemaService : ISchemaService
 {
     private readonly IClusterService _clusterService;
 

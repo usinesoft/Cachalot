@@ -2,170 +2,162 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Client.Tools
+namespace Client.Tools;
+
+/// <summary>
+///     Thread safe dictionary. I know there is <see cref="ConcurrentDictionary{TKey,TValue}" /> but it is slower>
+/// </summary>
+/// <typeparam name="TKey"></typeparam>
+/// <typeparam name="TValue"></typeparam>
+public class SafeDictionary<TKey, TValue>
 {
+    private readonly Func<TValue> _factory;
 
-    /// <summary>
-    /// Thread safe dictionary. I know there is <see cref="ConcurrentDictionary{TKey,TValue}"/> but it is slower>
-    /// </summary>
-    /// <typeparam name="TKey"></typeparam>
-    /// <typeparam name="TValue"></typeparam>
-    public class SafeDictionary<TKey, TValue>
+    private readonly Dictionary<TKey, TValue> _innerDictionary = new();
+
+    public SafeDictionary(Func<TValue> factory)
     {
-
-        private readonly Func<TValue> _factory;
-
-        public SafeDictionary(Func<TValue> factory)
-        {
-            _factory = factory;
-        }
-
-        private readonly Dictionary<TKey, TValue> _innerDictionary = new Dictionary<TKey, TValue>();
+        _factory = factory;
+    }
 
 
-        public void Clear()
+    public int Count
+    {
+        get
         {
             lock (_innerDictionary)
             {
-                _innerDictionary.Clear();
+                return _innerDictionary.Count;
             }
         }
+    }
 
-
-        public int Count
-        {
-            get
-            {
-                lock (_innerDictionary)
-                {
-                    return _innerDictionary.Count;
-                }
-            }
-        }
-
-
-        public void Add(TKey key, TValue value)
+    public TValue this[TKey key]
+    {
+        get
         {
             lock (_innerDictionary)
             {
-                _innerDictionary.Add(key, value);
+                return _innerDictionary[key];
             }
         }
-
-        public bool ContainsKey(TKey key)
+        set
         {
             lock (_innerDictionary)
             {
-                return _innerDictionary.ContainsKey(key);
+                _innerDictionary[key] = value;
             }
         }
+    }
 
-        public bool Remove(TKey key)
+    public ICollection<TValue> Values
+    {
+        get
         {
             lock (_innerDictionary)
             {
-                return _innerDictionary.Remove(key);
+                return new List<TValue>(_innerDictionary.Values);
             }
         }
+    }
 
-        public TValue TryRemove(TKey key)
+    public ICollection<TKey> Keys
+    {
+        get
         {
             lock (_innerDictionary)
             {
-                if (_innerDictionary.TryGetValue(key, out var value))
-                {
-                    _innerDictionary.Remove(key);
-                    return value;
-                }
-
-                return default;
+                return new List<TKey>(_innerDictionary.Keys);
             }
         }
+    }
 
 
-
-        public TValue TryGetValue(TKey key)
+    public IList<KeyValuePair<TKey, TValue>> Pairs
+    {
+        get
         {
             lock (_innerDictionary)
             {
-                if (_innerDictionary.TryGetValue(key, out var value))
-                {
-                    return value;
-                }
-
-                return default;
+                return new List<KeyValuePair<TKey, TValue>>(_innerDictionary);
             }
         }
+    }
 
-        public TValue this[TKey key]
+
+    public void Clear()
+    {
+        lock (_innerDictionary)
         {
-            get
-            {
-                lock (_innerDictionary)
-                {
-                    return _innerDictionary[key];
-                }
-            }
-            set
-            {
-                lock (_innerDictionary)
-                {
-                    _innerDictionary[key] = value;
-                }
-            }
+            _innerDictionary.Clear();
         }
+    }
 
-        public TValue GetOrCreate(TKey key)
+
+    public void Add(TKey key, TValue value)
+    {
+        lock (_innerDictionary)
         {
-            if (_factory == null)
-                throw new NotSupportedException("Get or create called on a SafeDictionary instance that does not have a factory defined");
+            _innerDictionary.Add(key, value);
+        }
+    }
 
-            lock (_innerDictionary)
+    public bool ContainsKey(TKey key)
+    {
+        lock (_innerDictionary)
+        {
+            return _innerDictionary.ContainsKey(key);
+        }
+    }
+
+    public bool Remove(TKey key)
+    {
+        lock (_innerDictionary)
+        {
+            return _innerDictionary.Remove(key);
+        }
+    }
+
+    public TValue TryRemove(TKey key)
+    {
+        lock (_innerDictionary)
+        {
+            if (_innerDictionary.TryGetValue(key, out var value))
             {
-                if (!_innerDictionary.TryGetValue(key, out var value))
-                {
-                    value = _factory();
-                    _innerDictionary[key] = value;
-                }
+                _innerDictionary.Remove(key);
                 return value;
             }
-        }
 
-        public ICollection<TValue> Values
+            return default;
+        }
+    }
+
+
+    public TValue TryGetValue(TKey key)
+    {
+        lock (_innerDictionary)
         {
-            get
-            {
-                lock (_innerDictionary)
-                {
-                    return new List<TValue>(_innerDictionary.Values);
-                }
-            }
-        }
+            if (_innerDictionary.TryGetValue(key, out var value)) return value;
 
-        public ICollection<TKey> Keys
+            return default;
+        }
+    }
+
+    public TValue GetOrCreate(TKey key)
+    {
+        if (_factory == null)
+            throw new NotSupportedException(
+                "Get or create called on a SafeDictionary instance that does not have a factory defined");
+
+        lock (_innerDictionary)
         {
-            get
+            if (!_innerDictionary.TryGetValue(key, out var value))
             {
-                lock (_innerDictionary)
-                {
-                    return new List<TKey>(_innerDictionary.Keys);
-                }
+                value = _factory();
+                _innerDictionary[key] = value;
             }
+
+            return value;
         }
-
-
-        public IList<KeyValuePair<TKey, TValue>> Pairs
-        {
-            get
-            {
-                lock (_innerDictionary)
-                {
-                    return new List<KeyValuePair<TKey, TValue>>(_innerDictionary);
-                }
-            }
-        }
-
-
-
     }
 }

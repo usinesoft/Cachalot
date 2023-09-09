@@ -1,6 +1,6 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using Client.Interface;
-using System;
 
 // ReSharper disable NonReadonlyMemberInGetHashCode
 
@@ -10,11 +10,13 @@ namespace Tests.TestData.Events
     {
         [ServerSideValue(IndexType.Primary)] public int EventId { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public abstract string EventType { get; }
+        [ServerSideValue(IndexType.Dictionary)]
+        public abstract string EventType { get; }
 
         public string Comment { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public string DealId { get; set; }
+        [ServerSideValue(IndexType.Dictionary)]
+        public string DealId { get; set; }
 
 
         [ServerSideValue(IndexType.Ordered)] public DateTime EventDate { get; set; }

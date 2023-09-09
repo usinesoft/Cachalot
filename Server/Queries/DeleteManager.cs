@@ -1,101 +1,90 @@
-﻿using Client.ChannelInterface;
+﻿using System;
+using System.Linq;
+using Client.ChannelInterface;
 using Client.Messages;
 using Client.Queries;
 using Server.Persistence;
-using System;
-using System.Linq;
 
-namespace Server.Queries
+namespace Server.Queries;
+
+internal class DeleteManager : IRequestManager
 {
-    class DeleteManager : IRequestManager
+    private readonly DataStore _dataStore;
+    private readonly ITransactionLog _transactionLog;
+
+    public DeleteManager(DataStore dataStore, ITransactionLog transactionLog)
     {
-        private readonly DataStore _dataStore;
-        private readonly ITransactionLog _transactionLog;
+        _dataStore = dataStore;
+        _transactionLog = transactionLog;
+    }
 
-        public DeleteManager(DataStore dataStore, ITransactionLog transactionLog)
+    public void ProcessRequest(Request request, IClient client)
+    {
+        if (request is RemoveManyRequest removeManyRequest)
         {
-            _dataStore = dataStore;
-            _transactionLog = transactionLog;
-        }
-
-        public void ProcessRequest(Request request, IClient client)
-        {
-
-            if (request is RemoveManyRequest removeManyRequest)
+            try
             {
-                try
-                {
-                    int removed = RemoveMany(removeManyRequest.Query);
+                var removed = RemoveMany(removeManyRequest.Query);
 
-                    
-                    client?.SendResponse(new ItemsCountResponse { ItemsCount = removed });
-                }
-                catch (Exception e)
-                {
-                    client?.SendResponse(new ExceptionResponse(e));
 
-                    // if client is null we are inside a transaction. The exception will be processed at a higher level
-                    if (client == null)
-                    {
-                        throw;
-                    }
-                }
-                return;
+                client?.SendResponse(new ItemsCountResponse { ItemsCount = removed });
+            }
+            catch (Exception e)
+            {
+                client?.SendResponse(new ExceptionResponse(e));
+
+                // if client is null we are inside a transaction. The exception will be processed at a higher level
+                if (client == null) throw;
             }
 
-            if (request is RemoveRequest removeRequest) // remove one item by primary key
-            {
-                var removed = _dataStore.RemoveByPrimaryKey(removeRequest.PrimaryKey);
-
-                if (removed != null)
-                {
-                    _transactionLog?.NewTransaction(new DeleteDurableTransaction
-                    {
-                        GlobalKeysToDelete = { removed.GlobalKey }
-                    });
-
-                }
-
-                return;
-            }
-
-            throw new NotSupportedException($"Can not process this request type:{request.GetType().Name}");
+            return;
         }
 
-        private int RemoveMany(OrQuery query)
+        if (request is RemoveRequest removeRequest) // remove one item by primary key
         {
+            var removed = _dataStore.RemoveByPrimaryKey(removeRequest.PrimaryKey);
 
-            if (query.IsEmpty()) // an empty query means truncate the table
-            {
-                var all = _dataStore.DataByPrimaryKey.Values.ToList();
-
+            if (removed != null)
                 _transactionLog?.NewTransaction(new DeleteDurableTransaction
                 {
-                    GlobalKeysToDelete = all.Select(x => x.GlobalKey).ToList()
-                }); ;
+                    GlobalKeysToDelete = { removed.GlobalKey }
+                });
 
-                var count = all.Count;
-                _dataStore.Truncate();
+            return;
+        }
 
-                return count;
-            }
+        throw new NotSupportedException($"Can not process this request type:{request.GetType().Name}");
+    }
 
-            var queryManager = new QueryManager(_dataStore);
-
-            var toRemove = queryManager.ProcessQuery(query);
+    private int RemoveMany(OrQuery query)
+    {
+        if (query.IsEmpty()) // an empty query means truncate the table
+        {
+            var all = _dataStore.DataByPrimaryKey.Values.ToList();
 
             _transactionLog?.NewTransaction(new DeleteDurableTransaction
             {
-                GlobalKeysToDelete = toRemove.Select(x => x.GlobalKey).ToList()
+                GlobalKeysToDelete = all.Select(x => x.GlobalKey).ToList()
             });
+            ;
 
-            _dataStore.RemoveMany(toRemove);
+            var count = all.Count;
+            _dataStore.Truncate();
 
-            return toRemove.Count;
+            return count;
         }
 
+        var queryManager = new QueryManager(_dataStore);
 
+        var toRemove = queryManager.ProcessQuery(query);
 
+        _transactionLog?.NewTransaction(new DeleteDurableTransaction
+        {
+            GlobalKeysToDelete = toRemove.Select(x => x.GlobalKey).ToList()
+        });
 
+        _dataStore.RemoveMany(toRemove);
+
+        return toRemove.Count;
     }
 }

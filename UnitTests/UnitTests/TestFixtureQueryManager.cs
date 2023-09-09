@@ -1,15 +1,15 @@
-﻿using Client.Core;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Linq.Expressions;
+using Client.Core;
 using Client.Messages;
 using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
 using Server.Queries;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Linq.Expressions;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -17,8 +17,6 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureQueryManager
     {
-
-
         private static List<AllKindsOfProperties> GenerateAllKinds(int count)
         {
             var result = new List<AllKindsOfProperties>();
@@ -233,7 +231,8 @@ namespace Tests.UnitTests
             Console.WriteLine(qm.ExecutionPlan);
 
             Assert.AreEqual(100_000, result.Count);
-            Assert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count, "this query should have been decomposed in two queries");
+            Assert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count,
+                "this query should have been decomposed in two queries");
             Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan, "can not use index, as the it is not ordered");
 
 
@@ -252,7 +251,7 @@ namespace Tests.UnitTests
 
             {
                 var schema = TypedSchemaFactory.FromType<Order>();
-            
+
                 var objects = Order.GenerateTestData(10);
 
                 // set the amounts in order
@@ -266,12 +265,12 @@ namespace Tests.UnitTests
                 }
 
                 var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
-            
+
                 var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
 
                 ds.InternalPutMany(packed, true);
 
-                Expression<Func<Order, bool>> where = o=>o.Quantity == objects[9].Quantity;
+                Expression<Func<Order, bool>> where = o => o.Quantity == objects[9].Quantity;
 
                 var query = ExpressionTreeHelper.PredicateToQuery(where, schema.CollectionName);
                 query.OrderByProperty = "Amount";
@@ -290,7 +289,7 @@ namespace Tests.UnitTests
 
             //{
             //    var schema = TypedSchemaFactory.FromType<Order>();
-            
+
             //    var objects = Order.GenerateTestData(10);
 
             //    // set two different categories 
@@ -300,12 +299,11 @@ namespace Tests.UnitTests
             //    }
 
             //    var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
-            
+
             //    var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
 
             //    ds.InternalPutMany(packed, true);
 
-                
 
             //    var query = new OrQuery(schema.CollectionName);
             //    query.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
@@ -322,17 +320,16 @@ namespace Tests.UnitTests
             // Do not use ordered index for in clauses
             {
                 var schema = TypedSchemaFactory.FromType<Order>();
-            
+
                 var objects = Order.GenerateTestData(10);
-                
+
                 var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
-            
+
                 var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
 
                 ds.InternalPutMany(packed, true);
 
                 {
-                    
                     var parsingResult =
                         new Parser().ParseSql(
                             $"select from order where amount in ({objects[0].Amount}, {objects[1].Amount})");
@@ -347,7 +344,6 @@ namespace Tests.UnitTests
                 }
 
                 {
-                    
                     var parsingResult =
                         new Parser().ParseSql(
                             $"select from order where amount in ({objects[0].Amount}, {objects[1].Amount}, {objects[2].Amount}) and category={objects[0].Category}");
@@ -362,7 +358,6 @@ namespace Tests.UnitTests
                 }
 
                 {
-                    
                     var parsingResult =
                         new Parser().ParseSql(
                             $"select from order where amount not in ({objects[0].Amount}, {objects[1].Amount}, {objects[2].Amount}) and category={objects[0].Category}");
@@ -376,10 +371,6 @@ namespace Tests.UnitTests
                     Assert.IsTrue(result.Count >= 1);
                 }
             }
-
-          
-
-
         }
 
         [Test]
@@ -392,12 +383,12 @@ namespace Tests.UnitTests
         public void Like_operator_in_sql(string @operator, string value)
         {
             var schema = TypedSchemaFactory.FromType<Order>();
-            
+
             var objects = Order.GenerateTestData(100);
 
-                
+
             var packed = objects.Select(o => PackedObject.Pack(o, schema)).ToList();
-            
+
             var ds = new DataStore(schema, new NullEvictionPolicy(), new FullTextConfig());
 
             ds.InternalPutMany(packed, true);
@@ -485,10 +476,8 @@ namespace Tests.UnitTests
                 Assert.AreEqual(objects.Count, result.Count);
 
                 // check sorted ascending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
 
                 q.OrderByIsDescending = true;
@@ -498,10 +487,8 @@ namespace Tests.UnitTests
                 Assert.AreEqual(objects.Count, result.Count);
 
                 // check sorted descending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
             }
 
             // atomic query
@@ -521,10 +508,8 @@ namespace Tests.UnitTests
                 Assert.AreEqual(raw.Count, result.Count);
 
                 // check sorted ascending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
 
                 q.OrderByIsDescending = true;
@@ -534,15 +519,14 @@ namespace Tests.UnitTests
                 Assert.AreEqual(raw.Count, result.Count);
 
                 // check sorted descending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
             }
 
             // simple AND query
             {
-                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered == false && o.Category == "geek");
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(
+                    o => o.IsDelivered == false && o.Category == "geek");
 
                 var raw = objects.Where(o => o.IsDelivered == false && o.Category == "geek").ToList();
 
@@ -555,10 +539,8 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(raw.Count, result.Count);
 
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
 
                 q.OrderByIsDescending = true;
@@ -568,17 +550,17 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(raw.Count, result.Count);
 
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
             }
 
             // complex OR query
             {
-                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered == false && o.Category == "geek" || o.Category == "sf");
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o =>
+                    (o.IsDelivered == false && o.Category == "geek") || o.Category == "sf");
 
-                var raw = objects.Where(o => o.IsDelivered == false && o.Category == "geek" || o.Category == "sf").ToList();
+                var raw = objects.Where(o => (o.IsDelivered == false && o.Category == "geek") || o.Category == "sf")
+                    .ToList();
 
                 q.OrderByProperty = "Amount";
 
@@ -590,10 +572,8 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(raw.Count, result.Count);
 
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
 
                 q.OrderByIsDescending = true;
@@ -604,10 +584,8 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(raw.Count, result.Count);
 
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
                 // check that TAKE operator is applied after ORDER BY
                 q.Take = 1;
@@ -618,12 +596,11 @@ namespace Tests.UnitTests
 
             // order small subset (it will be ordered without index)
             {
-
                 var pks = objects.Select(x => x.Id).Take(10).ToList();
 
                 var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => pks.Contains(o.Id));
 
-                
+
                 q.OrderByProperty = "Amount";
 
                 var qm = new QueryManager(ds);
@@ -633,31 +610,25 @@ namespace Tests.UnitTests
 
 
                 // check sorted ascending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
 
 
                 q.OrderByIsDescending = true;
 
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
-                
+
 
                 // check sorted descending
-                for (int i = 0; i < result.Count - 1; i++)
-                {
+                for (var i = 0; i < result.Count - 1; i++)
                     Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
-                }
             }
-
         }
 
         [Test]
         public void Distinct_operator()
         {
-
             var objects = Order.GenerateTestData(100_000);
 
             var schema = TypedSchemaFactory.FromType<Order>();
@@ -670,7 +641,6 @@ namespace Tests.UnitTests
 
             // empty query
             {
-
                 // result from linq2object to be compared with query
                 var raw = objects.Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
 
@@ -685,14 +655,13 @@ namespace Tests.UnitTests
 
 
                 Assert.AreEqual(raw.Count, result.Count);
-
             }
 
             // atomic query
             {
-
                 // result from linq2object to be compared with query
-                var raw = objects.Where(o => o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+                var raw = objects.Where(o => o.IsDelivered).Select(o => new { o.Category, o.ClientId }).Distinct()
+                    .ToList();
 
                 var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered);
                 q.Distinct = true;
@@ -706,14 +675,13 @@ namespace Tests.UnitTests
 
 
                 Assert.AreEqual(raw.Count, result.Count);
-
             }
 
             // simple and query
             {
-
                 // result from linq2object to be compared with query
-                var raw = objects.Where(o => o.IsDelivered && o.Amount < 100).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+                var raw = objects.Where(o => o.IsDelivered && o.Amount < 100)
+                    .Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
 
                 var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 100);
                 q.Distinct = true;
@@ -727,16 +695,17 @@ namespace Tests.UnitTests
 
 
                 Assert.AreEqual(raw.Count, result.Count);
-
             }
 
             // complex or query
             {
-
                 // result from linq2object to be compared with query
-                var raw = objects.Where(o => o.IsDelivered && o.Amount < 100 || o.Category == "sf" && o.Quantity > 1).Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
+                var raw = objects
+                    .Where(o => (o.IsDelivered && o.Amount < 100) || (o.Category == "sf" && o.Quantity > 1))
+                    .Select(o => new { o.Category, o.ClientId }).Distinct().ToList();
 
-                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o => o.IsDelivered && o.Amount < 100 || o.Category == "sf" && o.Quantity > 1);
+                var q = ExpressionTreeHelper.PredicateToQuery<Order>(o =>
+                    (o.IsDelivered && o.Amount < 100) || (o.Category == "sf" && o.Quantity > 1));
                 q.Distinct = true;
                 q.SelectClause.Add(new SelectItem { Name = "Category", Alias = "Category" });
                 q.SelectClause.Add(new SelectItem { Name = "ClientId", Alias = "ClientId" });
@@ -752,7 +721,6 @@ namespace Tests.UnitTests
                 q.Take = 3;
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Assert.AreEqual(3, result.Count);
-
             }
         }
     }

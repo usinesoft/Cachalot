@@ -1,23 +1,20 @@
-﻿using ProtoBuf;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
+using ProtoBuf;
 
-namespace Client
+namespace Client;
+
+[ProtoContract]
+public class TokenizedLine
 {
+    [ProtoMember(1)] public IList<string> Tokens { get; set; } = new List<string>();
 
-    [ProtoContract]
-    public class TokenizedLine
+    public override string ToString()
     {
-        [ProtoMember(1)]
-        public IList<string> Tokens { get; set; } = new List<string>();
+        var builder = new StringBuilder();
 
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
+        foreach (var token in Tokens) builder.Append(token).Append(" ");
 
-            foreach (var token in Tokens) builder.Append(token).Append(" ");
-
-            return builder.ToString().Trim();
-        }
+        return builder.ToString().Trim();
     }
 }

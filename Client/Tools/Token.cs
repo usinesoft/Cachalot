@@ -1,15 +1,14 @@
-﻿namespace Client.Tools
+﻿namespace Client.Tools;
+
+public class Token
 {
-    public class Token
+    public string NormalizedText { get; set; }
+    public string Text { get; set; }
+
+    public CharClass TokenType { get; set; }
+
+    public override string ToString()
     {
-        public string NormalizedText { get; set; }
-        public string Text { get; set; }
-
-        public CharClass TokenType { get; set; }
-
-        public override string ToString()
-        {
-            return $"{nameof(NormalizedText)}: {NormalizedText}, {nameof(TokenType)}: {TokenType}";
-        }
+        return $"{nameof(NormalizedText)}: {NormalizedText}, {nameof(TokenType)}: {TokenType}";
     }
 }

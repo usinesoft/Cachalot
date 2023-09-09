@@ -1,16 +1,16 @@
-import { Component } from '@angular/core';
-import { MonitoringService } from './monitoring.service';
+import { Component } from "@angular/core";
+import { MonitoringService } from "./monitoring.service";
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html'
+  selector: "app-root",
+  templateUrl: "./app.component.html"
 })
 export class AppComponent {
-  title = 'app';
+  title = "app";
   isExpanded = true;
-  showSubmenu: boolean = false;
+  showSubmenu = false;
   isShowing = false;
-  showSubSubMenu: boolean = false;
+  showSubSubMenu = false;
 
   mouseenter() {
     if (!this.isExpanded) {
@@ -24,10 +24,10 @@ export class AppComponent {
     }
   }
 
-  public cluster:string|null = null;
+  cluster: string | null = null;
 
   constructor(public service: MonitoringService) {
-    service.currentCluster.subscribe(data=>{
+    service.currentCluster.subscribe(data => {
       this.cluster = data;
     });
   }

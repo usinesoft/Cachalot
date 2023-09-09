@@ -1,14 +1,13 @@
 ﻿using System;
 
-namespace Client.Tools
-{
-    public class ProgressEventArgs : EventArgs
-    {
-        public string Message { get; }
+namespace Client.Tools;
 
-        public ProgressEventArgs(string message)
-        {
-            Message = message;
-        }
+public class ProgressEventArgs : EventArgs
+{
+    public ProgressEventArgs(string message)
+    {
+        Message = message;
     }
+
+    public string Message { get; }
 }

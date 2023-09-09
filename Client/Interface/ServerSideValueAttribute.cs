@@ -1,25 +1,24 @@
-using Client.Core;
 using System;
 using System.Runtime.CompilerServices;
+using Client.Core;
 
-namespace Client.Interface
+namespace Client.Interface;
+
+/// <summary>
+///     Tag for the optional indexation keys
+/// </summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class ServerSideValueAttribute : Attribute
 {
     /// <summary>
-    ///     Tag for the optional indexation keys
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property)]
-    public sealed class ServerSideValueAttribute : Attribute
+    public ServerSideValueAttribute(IndexType indexType = IndexType.None, [CallerLineNumber] int lineNumber = -1)
     {
-        /// <summary>
-        /// </summary>
-        public ServerSideValueAttribute(IndexType indexType = IndexType.None, [CallerLineNumber] int lineNumber = -1)
-        {
-            IndexType = indexType;
-            LineNumber = lineNumber;
-        }
-
-        public IndexType IndexType { get; }
-
-        public int LineNumber { get; }
+        IndexType = indexType;
+        LineNumber = lineNumber;
     }
+
+    public IndexType IndexType { get; }
+
+    public int LineNumber { get; }
 }

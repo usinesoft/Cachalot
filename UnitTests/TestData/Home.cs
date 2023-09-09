@@ -1,7 +1,7 @@
-﻿using Client.Core;
-using Client.Interface;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Client.Core;
+using Client.Interface;
 
 namespace Tests.TestData
 {
@@ -28,11 +28,13 @@ namespace Tests.TestData
 
         [ServerSideValue(IndexType.Ordered)] public int Rooms { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public int Bathrooms { get; set; }
+        [ServerSideValue(IndexType.Dictionary)]
+        public int Bathrooms { get; set; }
 
         [ServerSideValue(IndexType.Ordered)] public decimal PriceInEuros { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public List<DateTime> AvailableDates { get; set; } = new List<DateTime>();
+        [ServerSideValue(IndexType.Dictionary)]
+        public List<DateTime> AvailableDates { get; set; } = new List<DateTime>();
 
 
         [FullTextIndexation] public List<Comment> Comments { get; set; } = new List<Comment>();

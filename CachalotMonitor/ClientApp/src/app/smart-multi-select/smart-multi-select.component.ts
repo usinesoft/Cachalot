@@ -1,71 +1,66 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
 
 @Component({
-  selector: 'app-smart-multi-select',
-  templateUrl: './smart-multi-select.component.html',
-  styleUrls: ['./smart-multi-select.component.scss']
+  selector: "app-smart-multi-select",
+  templateUrl: "./smart-multi-select.component.html",
+  styleUrls: ["./smart-multi-select.component.scss"]
 })
 export class SmartMultiSelectComponent implements OnInit {
 
-  constructor() { }
+  constructor() {}
 
   ngOnInit(): void {
   }
 
   // optional hint displayed under the control
   @Input()
-  public hint: string | undefined;
+  hint: string | undefined;
 
   // optional label
   @Input()
-  public label: string | undefined;
+  label: string | undefined;
 
   @Input()
-  public singleValue: boolean = false;
+  singleValue = false;
 
   @Input()
-  public clearButton: boolean = false;
+  clearButton = false;
 
   // all values
   private _values: string[] = [];
 
-  public get allValues(): string[] {
+  get allValues(): string[] {
     return this._values;
   }
 
 
-
   // the model is either an array or a single value
-  
-  public get selection() : any {
-    if(this.singleValue){
-      return this.selectedValues.length > 0? this.selectedValues[0]:undefined;
-    }
-    else{
+
+  get selection(): any {
+    if (this.singleValue) {
+      return this.selectedValues.length > 0 ? this.selectedValues[0] : undefined;
+    } else {
       return this.selectedValues;
-    }    
+    }
   }
 
-  public set selection(v : any) {
-    if(Array.isArray(v)){
+  set selection(v: any) {
+    if (Array.isArray(v)) {
       this.selectedValues = v;
-    }
-    else{
-      if(v){
-        this.selectedValues = [v]; 
-      }
-      else{
+    } else {
+      if (v) {
+        this.selectedValues = [v];
+      } else {
         this.selectedValues = [];
       }
-      
+
     }
   }
-  
 
 
   @Input()
-  public set allValues(v: string[]) {
+  set allValues(v: string[]) {
     this._values = v;
     this.filteredValues = v;
   }
@@ -73,28 +68,27 @@ export class SmartMultiSelectComponent implements OnInit {
   // selected values
   private _selectedValues: string[] = [];
 
-  public get selectedValues(): string[] {
+  get selectedValues(): string[] {
     return this._selectedValues;
   }
 
 
-  public clear(){
-    console.log('clear was called');
+  clear() {
+    console.log("clear was called");
     this._selectedValues = [];
     this.selectedValuesChange.emit(this._selectedValues);
   }
 
   @Input()
-  public set selectedValues(v: string[]) {
+  set selectedValues(v: string[]) {
     if (!Array.isArray(v)) {
-      if(this._selectedValues.length == 0 || this._selectedValues[0] != v){
+      if (this._selectedValues.length == 0 || this._selectedValues[0] != v) {
         this._selectedValues = [v];
         this.selectedValuesChange.emit(this._selectedValues);
       }
-      
-    }
-    else {
-      let filtered = v.filter(x => x); // remove empty values
+
+    } else {
+      const filtered = v.filter(x => x); // remove empty values
       if (!this.arraysAreEqual(filtered, this._selectedValues)) {
         this._selectedValues = filtered;
         this.selectedValuesChange.emit(filtered);
@@ -105,53 +99,52 @@ export class SmartMultiSelectComponent implements OnInit {
   }
 
   @Output()
-  public selectedValuesChange: EventEmitter<string[]> = new EventEmitter<string[]>();
+  selectedValuesChange = new EventEmitter<string[]>();
 
   // filtered values (used if search enabled)
-  public filteredValues: string[] = [];
+  filteredValues: string[] = [];
 
   // options
   @Input()
-  public isSingleValue: boolean = false;
+  isSingleValue = false;
 
   @Input()
-  public canSelectAll: boolean = false;
+  canSelectAll = false;
 
   @Input()
-  public canClearAll: boolean = false;
+  canClearAll = false;
 
   @Input()
-  public searchThreshold: number = 10;
+  searchThreshold = 10;
 
 
   // search
   private _searchText: string | undefined;
 
-  public get searchText(): string | undefined {
+  get searchText(): string | undefined {
     return this._searchText;
   }
 
-  public set searchText(v: string | undefined) {
+  set searchText(v: string | undefined) {
     this._searchText = v;
     if (v) {
-      let normalized = v.toLowerCase();
-      console.log('searching ' + normalized);
-      this.filteredValues = this.allValues.filter(x => x.toLowerCase().indexOf(normalized) > -1)
-    }
-    else {
+      const normalized = v.toLowerCase();
+      console.log(`searching ${normalized}`);
+      this.filteredValues = this.allValues.filter(x => x.toLowerCase().indexOf(normalized) > -1);
+    } else {
       this.filteredValues = [...this.allValues];
     }
 
   }
 
 
-  public clearAll() {
+  clearAll() {
     this.selectedValues = [];
   }
 
-  public selectAll() {
+  selectAll() {
     this._selectedValues = [];
-    this.selectedValues = [...this.allValues]
+    this.selectedValues = [...this.allValues];
 
   }
 

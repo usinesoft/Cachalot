@@ -1,6 +1,6 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using Client.Interface;
-using System;
 
 namespace Tests.TestData
 {
@@ -22,7 +22,7 @@ namespace Tests.TestData
         }
 
         public CacheableTypeOk(int primaryKey, int uniqueKey, string indexKeyFolder, DateTime indexKeyDate,
-            int indexKeyValue)
+                               int indexKeyValue)
         {
             _primaryKey = primaryKey;
             _uniqueKey = uniqueKey;

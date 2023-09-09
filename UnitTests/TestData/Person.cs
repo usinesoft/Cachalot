@@ -3,7 +3,6 @@ using Client.Interface;
 
 namespace Tests.TestData
 {
-
     public class Person
     {
         public Person(int id, string first, string last)
@@ -17,8 +16,7 @@ namespace Tests.TestData
         {
         }
 
-        [ServerSideValue(IndexType.Primary)]
-        public int Id { get; set; }
+        [ServerSideValue(IndexType.Primary)] public int Id { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)]
         public string First { get; set; }

@@ -1,13 +1,13 @@
 #region
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Tests.TestData;
 
 #endregion
@@ -80,8 +80,6 @@ namespace Tests.UnitTests
 
         private static void CheckLs(IndexBase indexByValue)
         {
-
-
             var keyType = new KeyInfo("IndexKeyValue", 0, IndexType.Ordered);
 
             //non existent value in the middle
@@ -169,7 +167,6 @@ namespace Tests.UnitTests
 
             return index;
         }
-
 
 
         [Test]
@@ -690,7 +687,7 @@ namespace Tests.UnitTests
             var timeStampIndex = new OrderedIndex(meta);
 
 
-            for (int i = 0; i < 1_000_000; i++)
+            for (var i = 0; i < 1_000_000; i++)
             {
                 var item = new LogEntry { Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now };
 
@@ -715,16 +712,14 @@ namespace Tests.UnitTests
 
             var activityTable = new DataStore(schema, new LruEvictionPolicy(2000, 1000), new FullTextConfig());
 
-            for (int i = 0; i < 10_000; i++)
+            for (var i = 0; i < 10_000; i++)
             {
                 var item = new LogEntry { Id = Guid.NewGuid(), TimeStamp = DateTimeOffset.Now };
 
                 var packed = PackedObject.Pack(item, schema);
 
                 activityTable.InternalPutMany(new List<PackedObject> { packed }, false);
-
             }
-
         }
     }
 }

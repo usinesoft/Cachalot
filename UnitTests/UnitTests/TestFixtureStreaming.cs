@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
@@ -6,11 +11,6 @@ using Client.Tools;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -83,7 +83,8 @@ namespace Tests.UnitTests
             var desc = TypedSchemaFactory.FromType<CacheableTypeOk>();
 
             var item1 = new CacheableTypeOk(1, 1003, "AHA", new DateTime(2010, 10, 02), 8);
-            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, desc.StorageLayout == Layout.Compressed);
+            var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json,
+                desc.StorageLayout == Layout.Compressed);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, false);
             Assert.IsNotNull(item1Reloaded);
@@ -138,7 +139,7 @@ namespace Tests.UnitTests
             stream.Seek(0, SeekOrigin.Begin);
             var evt = new ManualResetEvent(false);
             Streamer.FromStream(stream,
-                delegate (PackedObject item, int i, int totalItems)
+                delegate(PackedObject item, int i, int totalItems)
                 {
                     itemsReloaded.Add(item);
                     if (i == totalItems) evt.Set();
@@ -178,7 +179,7 @@ namespace Tests.UnitTests
 
                 var itemsReceived = 0;
                 Streamer.FromStream(stream,
-                    delegate (CacheableTypeOk data, int currentItem, int totalItems)
+                    delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
                         Assert.IsTrue(currentItem > 0);
                         Assert.IsTrue(currentItem <= totalItems);
@@ -243,7 +244,7 @@ namespace Tests.UnitTests
 
                 var itemsReceived = 0;
                 Streamer.FromStream(stream,
-                    delegate (CacheableTypeOk data, int currentItem, int totalItems)
+                    delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
                         Assert.IsTrue(currentItem > 0);
                         Assert.IsTrue(currentItem <= totalItems);
@@ -286,7 +287,7 @@ namespace Tests.UnitTests
 
                 var itemsReceived = 0;
                 Streamer.FromStream(stream,
-                    delegate (CacheableTypeOk data, int currentItem, int totalItems)
+                    delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
                         Assert.IsTrue(currentItem > 0);
                         Assert.IsTrue(currentItem <= totalItems);
@@ -325,7 +326,8 @@ namespace Tests.UnitTests
             using (var stream = new MemoryStream())
             {
                 //request
-                Streamer.ToStream(stream, new GetRequest(qbuilder.FromSql("select from CacheableTypeOk where IndexKeyValue > 1000")));
+                Streamer.ToStream(stream,
+                    new GetRequest(qbuilder.FromSql("select from CacheableTypeOk where IndexKeyValue > 1000")));
                 Streamer.ToStream(stream, put);
                 Streamer.ToStream(stream, remove);
                 Streamer.ToStream(stream, register);
@@ -411,53 +413,48 @@ namespace Tests.UnitTests
 
         private static IEnumerator<RankedItem> MakeEnumerable(params int[] values)
         {
-
             foreach (var value in values)
             {
                 var jobj = new JObject { { "value", new JValue(value) } };
 
                 yield return new RankedItem(0, jobj);
             }
-
         }
 
         [Test]
         public void TestMergingSortedEnumerableAscending()
         {
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 2, 4), MakeEnumerable(1, 3, 5),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 2, 4),
+                    MakeEnumerable(1, 3, 5),
                     MakeEnumerable(1, 5, 6, 18)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
 
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 1, 1),
+                    MakeEnumerable(15, 15, 15),
                     MakeEnumerable(2, 2, 2, 2)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
 
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(10, 11, 12), MakeEnumerable(1, 2, 3),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(10, 11, 12),
+                    MakeEnumerable(1, 2, 3),
                     MakeEnumerable(21, 22, 23, 24)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
         }
 
@@ -465,39 +462,36 @@ namespace Tests.UnitTests
         public void TestMergingSortedEnumerableDescending()
         {
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(4, 2, 1), MakeEnumerable(5, 3, 1),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(4, 2, 1),
+                    MakeEnumerable(5, 3, 1),
                     MakeEnumerable(18, 6, 5, 1)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
 
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(1, 1, 1), MakeEnumerable(15, 15, 15),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(1, 1, 1),
+                    MakeEnumerable(15, 15, 15),
                     MakeEnumerable(2, 2, 2, 2)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
 
             {
-                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(12, 11, 10), MakeEnumerable(3, 2, 1),
+                var ordered = OrderByHelper.MixOrderedEnumerators("value", true, MakeEnumerable(12, 11, 10),
+                    MakeEnumerable(3, 2, 1),
                     MakeEnumerable(24, 23, 22, 21)).ToList();
 
                 Assert.AreEqual(10, ordered.Count);
 
-                for (int i = 0; i < ordered.Count - 1; i++)
-                {
+                for (var i = 0; i < ordered.Count - 1; i++)
                     Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
-                }
             }
         }
     }

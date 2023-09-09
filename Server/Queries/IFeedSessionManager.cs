@@ -1,12 +1,11 @@
-﻿using Client.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Client.Core;
 
-namespace Server.Queries
+namespace Server.Queries;
+
+public interface IFeedSessionManager
 {
-    public interface IFeedSessionManager
-    {
-        void AddToSession(Guid sessionId, IList<PackedObject> objects);
-        IList<PackedObject> EndSession(Guid sessionId);
-    }
+    void AddToSession(Guid sessionId, IList<PackedObject> objects);
+    IList<PackedObject> EndSession(Guid sessionId);
 }

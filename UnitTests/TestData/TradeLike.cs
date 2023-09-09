@@ -1,7 +1,7 @@
-using Client.Core;
-using Client.Interface;
 using System;
 using System.Collections.Generic;
+using Client.Core;
+using Client.Interface;
 
 namespace Tests.TestData
 {
@@ -76,6 +76,5 @@ namespace Tests.TestData
             for (var i = 0; i < 10; i++)
                 _ech.Add(new KeyValuePair<DateTime, DateTime>(new DateTime(2010, 9, 15), new DateTime(2010, 12, 15)));
         }
-
     }
 }

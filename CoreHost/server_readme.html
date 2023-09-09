@@ -1,16 +1,18 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <title>logo  Cachalot DB</title>
+    <title>logo Cachalot DB</title>
 </head>
 <body>
 
-    <h1 id="logo-cachalot-db"><img src="https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true" alt="logo" />  Cachalot DB</h1>
+<h1 id="logo-cachalot-db"><img src="https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot_64.png?raw=true" alt="logo"/> Cachalot DB</h1>
 <p>Full documentation can be found <a href="https://github.com/usinesoft/Cachalot/blob/master/Doc/CachalotUserGuide.pdf">here&gt;&gt;</a></p>
 <h1 id="cachalot-server">Cachalot Server</h1>
-<p>Server is a dotnet core 3.1 executable, hosting a cachalot server with logging facility
-It can be run directly on windows (server.exe) or with the command line &quot;dotnet CoreHost.dll&quot; on all systems
-By default it uses the configuration file <strong>node_config.json</strong></p>
+<p>
+    Server is a dotnet core 3.1 executable, hosting a cachalot server with logging facility
+    It can be run directly on windows (server.exe) or with the command line &quot;dotnet CoreHost.dll&quot; on all systems
+    By default it uses the configuration file <strong>node_config.json</strong>
+</p>
 <p>Example of configuration file</p>
 <pre><code class="language-java">{
   &quot;IsPersistent&quot;: true,  
@@ -20,13 +22,15 @@ By default it uses the configuration file <strong>node_config.json</strong></p>
 }
 </code></pre>
 <ul>
-<li><strong>IsPersistent</strong> = true means it works as a detabase, otherwise it is only a cache</li>
-<li><strong>ClusterName</strong>, for monitoring only</li>
-<li><strong>TcpPort</strong> on the same machine each node should use a different one</li>
-<li><strong>DataPath</strong> is used only in database mode: the directory containg persistent data and logs. Multiple instances on the same machine should use different values</li>
+    <li><strong>IsPersistent</strong> = true means it works as a detabase, otherwise it is only a cache</li>
+    <li><strong>ClusterName</strong>, for monitoring only</li>
+    <li><strong>TcpPort</strong> on the same machine each node should use a different one</li>
+    <li><strong>DataPath</strong> is used only in database mode: the directory containg persistent data and logs. Multiple instances on the same machine should use different values</li>
 </ul>
-<p>If run with an &quot;instance name&quot; like <strong>dotnet CoreHost.dll cache_only</strong> it will use <strong>node_config_cache_only.json</strong>
-Using this command allows <em>multiple instances to be run with the same binaries</em>.</p>
+<p>
+    If run with an &quot;instance name&quot; like <strong>dotnet CoreHost.dll cache_only</strong> it will use <strong>node_config_cache_only.json</strong>
+    Using this command allows <em>multiple instances to be run with the same binaries</em>.
+</p>
 <p>It is tested at each release on Windows and Ubuntu</p>
 
 

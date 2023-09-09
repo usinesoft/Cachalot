@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace AdminConsole.ConsoleUtils.ConsoleActions
+namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public class MoveCursorToEndAction : IConsoleAction
 {
-    public class MoveCursorToEndAction : IConsoleAction
+    public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
     {
-        public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
-        {
-            console.CursorPosition = console.CurrentLine.Length;
-        }
+        console.CursorPosition = console.CurrentLine.Length;
     }
 }

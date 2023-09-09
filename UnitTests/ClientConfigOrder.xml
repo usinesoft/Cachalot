@@ -1,23 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
 <cacheClient>
-  <servers>
-    <server>
-      <host>localhost</host>
-      <port>4567</port>
+	<servers>
+		<server>
+			<host>localhost</host>
+			<port>4567</port>
 
-    </server>
-    <server>
-      <host>localhost</host>
-      <port>4568</port>
+		</server>
+		<server>
+			<host>localhost</host>
+			<port>4568</port>
 
-    </server>
-    <server>
-      <host>localhost</host>
-      <port>4569</port>
+		</server>
+		<server>
+			<host>localhost</host>
+			<port>4569</port>
 
-    </server>
-  </servers>
-  
+		</server>
+	</servers>
+
 
 </cacheClient>

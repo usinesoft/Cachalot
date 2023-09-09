@@ -1,11 +1,11 @@
-﻿using Client;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using Client;
 using Client.Core;
 using Client.Tools;
 using NUnit.Framework;
 using Server.FullTextSearch;
-using System;
-using System.Diagnostics;
-using System.Linq;
 using Tests.TestData;
 
 // ReSharper disable NotAccessedVariable
@@ -15,8 +15,7 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureFullTextProcessing
     {
-
-        static TokenizedLine Tokenize(string line)
+        private static TokenizedLine Tokenize(string line)
         {
             return Tokenizer.Tokenize(new[] { line })[0];
         }
@@ -30,14 +29,21 @@ namespace Tests.UnitTests
             Assert.IsTrue(multiplier1 > multiplier2);
             Assert.AreEqual(1, multiplier2); // no multiplier as the order is not preserved
 
-            var multiplier3 = FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"), Tokenize("nice evening"));
-            var multiplier4 = FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"), Tokenize("it was a nice evening"));
+            var multiplier3 =
+                FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"), Tokenize("nice evening"));
+            var multiplier4 =
+                FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"),
+                    Tokenize("it was a nice evening"));
 
             Assert.AreEqual(multiplier3, multiplier4);
             Assert.IsTrue(multiplier3 > 1);
 
-            var multiplier5 = FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice and happy evening"), Tokenize("nice evening"));
-            var multiplier6 = FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"), Tokenize("nice and happy evening"));
+            var multiplier5 =
+                FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice and happy evening"),
+                    Tokenize("nice evening"));
+            var multiplier6 =
+                FullTextIndex.ComputeBonusIfOrderIsPreserved(Tokenize("nice evening"),
+                    Tokenize("nice and happy evening"));
 
             Assert.IsTrue(multiplier6 > multiplier5);
             Assert.IsTrue(multiplier5 > 1);
@@ -70,8 +76,8 @@ namespace Tests.UnitTests
                 CountryCode = "FR",
                 Comments =
                 {
-                    new Comment {Text = "Wonderful place", User = "foo"},
-                    new Comment {Text = "Very nice apartment"}
+                    new Comment { Text = "Wonderful place", User = "foo" },
+                    new Comment { Text = "Very nice apartment" }
                 },
                 Contacts = { "mail", "phone" }
             };
@@ -93,8 +99,6 @@ namespace Tests.UnitTests
         [Test]
         public void Symbols_processing()
         {
-
-
             var tokens = Tokenizer.TokenizeOneLine("on-line course").PostProcessSymbols();
 
             Assert.AreEqual(3, tokens.Count);
@@ -133,8 +137,8 @@ namespace Tests.UnitTests
                 CountryCode = "FR",
                 Comments =
                 {
-                    new Comment {Text = "Wonderful place", User = "foo"},
-                    new Comment {Text = "Very nice apartment"}
+                    new Comment { Text = "Wonderful place", User = "foo" },
+                    new Comment { Text = "Very nice apartment" }
                 }
             };
 
@@ -205,8 +209,8 @@ namespace Tests.UnitTests
                 CountryCode = "FR",
                 Comments =
                 {
-                    new Comment {Text = "Wonderful place", User = "foo"},
-                    new Comment {Text = "Very nice apartment"}
+                    new Comment { Text = "Wonderful place", User = "foo" },
+                    new Comment { Text = "Very nice apartment" }
                 }
             };
 
@@ -226,15 +230,12 @@ namespace Tests.UnitTests
 
             //Assert.AreEqual(v1, v2);
             Assert.AreEqual(v2, v3);
-
         }
 
 
         [Test]
         public void Tokenize_if_casing_changed_inside_a_word()
         {
-
-
             var tokens = Tokenizer.TokenizeOneLine("camelCase");
 
             Assert.AreEqual(2, tokens.Count);
@@ -255,7 +256,6 @@ namespace Tests.UnitTests
         [Test]
         public void Tokenize_simple_text()
         {
-
             var tokens = Tokenizer.TokenizeOneLine("a simple test");
 
             Assert.AreEqual(3, tokens.Count);

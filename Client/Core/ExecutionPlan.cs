@@ -3,123 +3,110 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace Client.Core
+namespace Client.Core;
+
+/// <summary>
+///     A global execution plan. Includes one or more query plans and postprocessing time (order by, distinct)
+/// </summary>
+public class ExecutionPlan
 {
+    private readonly Stopwatch _watch = new();
+
+    private TimeSpan _startDistinct;
+
+    private TimeSpan _startMerge;
+
+
+    private TimeSpan _startOrderBy;
+
+    public int MatchedItems { get; set; }
+
+    public int TotalTimeInMicroseconds { get; set; }
+
+    public IList<QueryExecutionPlan> QueryPlans { get; set; } = new List<QueryExecutionPlan>();
+
     /// <summary>
-    /// A global execution plan. Includes one or more query plans and postprocessing time (order by, distinct)
+    ///     Time to execute the distinct clause (if present)
     /// </summary>
-    public class ExecutionPlan
+    public int DistinctTimeInMicroseconds { get; set; }
+
+    /// <summary>
+    ///     Time to merge sub-queries (if more than one)
+    /// </summary>
+    public int MergeTimeInMicroseconds { get; set; }
+
+
+    /// <summary>
+    ///     Order time in microseconds
+    /// </summary>
+    public int OrderTimeInMicroseconds { get; set; }
+
+    public bool SimpleDistinct { get; set; }
+
+    public void Begin()
     {
+        _watch.Start();
+    }
 
-        readonly Stopwatch _watch = new Stopwatch();
+    public void End()
+    {
+        _watch.Stop();
 
-        public int MatchedItems { get; set; }
+        TotalTimeInMicroseconds = (int)(_watch.Elapsed.TotalMilliseconds * 1000D);
+    }
 
-        public int TotalTimeInMicroseconds { get; set; }
+    public override string ToString()
+    {
+        var result = new StringBuilder();
 
-        public void Begin()
-        {
-            _watch.Start();
-        }
+        result.AppendLine($"Total execution time : {TotalTimeInMicroseconds} μs");
 
-        public void End()
-        {
-            _watch.Stop();
+        if (OrderTimeInMicroseconds != 0) result.AppendLine($"Order-by time : {OrderTimeInMicroseconds} μs");
 
-            TotalTimeInMicroseconds = (int)(_watch.Elapsed.TotalMilliseconds * 1000D);
-        }
+        if (DistinctTimeInMicroseconds != 0) result.AppendLine($"Distinct time : {DistinctTimeInMicroseconds} μs");
 
-        public IList<QueryExecutionPlan> QueryPlans { get; set; } = new List<QueryExecutionPlan>();
+        if (MergeTimeInMicroseconds != 0) result.AppendLine($"Merge time : {MergeTimeInMicroseconds} μs");
 
-        /// <summary>
-        /// Time to execute the distinct clause (if present)
-        /// </summary>
-        public int DistinctTimeInMicroseconds { get; set; }
+        result.AppendLine();
 
-        /// <summary>
-        /// Time to merge sub-queries (if more than one)
-        /// </summary>
-        public int MergeTimeInMicroseconds { get; set; }
+        foreach (var queryPlan in QueryPlans) result.AppendLine(queryPlan.ToString());
 
+        return result.ToString();
+    }
 
-        /// <summary>
-        /// Order time in microseconds
-        /// </summary>
-        public int OrderTimeInMicroseconds { get; set; }
+    public void BeginDistinct()
+    {
+        _startDistinct = _watch.Elapsed;
+    }
 
-        public bool SimpleDistinct { get; set; }
+    public void EndDistinct()
+    {
+        var elapsed = _watch.Elapsed;
 
-        public override string ToString()
-        {
-            var result = new StringBuilder();
+        DistinctTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startDistinct.TotalMilliseconds) * 1000);
+    }
 
-            result.AppendLine($"Total execution time : {TotalTimeInMicroseconds} μs");
+    public void BeginMerge()
+    {
+        _startMerge = _watch.Elapsed;
+    }
 
-            if (OrderTimeInMicroseconds != 0)
-            {
-                result.AppendLine($"Order-by time : {OrderTimeInMicroseconds} μs");
-            }
+    public void EndMerge()
+    {
+        var elapsed = _watch.Elapsed;
 
-            if (DistinctTimeInMicroseconds != 0)
-            {
-                result.AppendLine($"Distinct time : {DistinctTimeInMicroseconds} μs");
-            }
+        MergeTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startMerge.TotalMilliseconds) * 1000);
+    }
 
-            if (MergeTimeInMicroseconds != 0)
-            {
-                result.AppendLine($"Merge time : {MergeTimeInMicroseconds} μs");
-            }
+    public void BeginOrderBy()
+    {
+        _startOrderBy = _watch.Elapsed;
+    }
 
-            result.AppendLine();
+    public void EndOrderBy()
+    {
+        var elapsed = _watch.Elapsed;
 
-            foreach (var queryPlan in QueryPlans)
-            {
-                result.AppendLine(queryPlan.ToString());
-            }
-
-            return result.ToString();
-        }
-
-        private TimeSpan _startDistinct;
-        public void BeginDistinct()
-        {
-            _startDistinct = _watch.Elapsed;
-        }
-
-        public void EndDistinct()
-        {
-            var elapsed = _watch.Elapsed;
-
-            DistinctTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startDistinct.TotalMilliseconds) * 1000);
-
-        }
-
-        private TimeSpan _startMerge;
-        public void BeginMerge()
-        {
-            _startMerge = _watch.Elapsed;
-        }
-
-        public void EndMerge()
-        {
-            var elapsed = _watch.Elapsed;
-
-            MergeTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startMerge.TotalMilliseconds) * 1000);
-
-        }
-
-
-        private TimeSpan _startOrderBy;
-        public void BeginOrderBy()
-        {
-            _startOrderBy = _watch.Elapsed;
-        }
-
-        public void EndOrderBy()
-        {
-            var elapsed = _watch.Elapsed;
-
-            OrderTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startOrderBy.TotalMilliseconds) * 1000);
-        }
+        OrderTimeInMicroseconds = (int)((elapsed.TotalMilliseconds - _startOrderBy.TotalMilliseconds) * 1000);
     }
 }

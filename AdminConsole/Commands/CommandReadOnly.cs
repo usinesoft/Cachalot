@@ -1,26 +1,25 @@
-using Client.Interface;
 using System;
+using Client.Interface;
 
-namespace AdminConsole.Commands
+namespace AdminConsole.Commands;
+
+public class CommandReadOnly : CommandBase
 {
-    public class CommandReadOnly : CommandBase
+    internal override IDataClient TryExecute(IDataClient client)
     {
-        internal override IDataClient TryExecute(IDataClient client)
+        if (!CanExecute) return client;
+
+
+        try
         {
-            if (!CanExecute) return client;
-
-
-            try
-            {
-                client.SetReadonlyMode();
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-
-
-            return client;
+            client.SetReadonlyMode();
         }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+
+        return client;
     }
 }

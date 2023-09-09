@@ -1,11 +1,13 @@
-import { Pipe, PipeTransform } from '@angular/core';
-import { DomSanitizer } from '@angular/platform-browser';
+import { Pipe, PipeTransform } from "@angular/core";
+import { DomSanitizer } from "@angular/platform-browser";
 
-const FILE_SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-const FILE_SIZE_UNITS_LONG = ['Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes', 'Pettabytes', 'Exabytes', 'Zettabytes', 'Yottabytes'];
+const FILE_SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+const FILE_SIZE_UNITS_LONG = [
+  "Bytes", "Kilobytes", "Megabytes", "Gigabytes", "Pettabytes", "Exabytes", "Zettabytes", "Yottabytes"
+];
 
 @Pipe({
-  name: 'formatSize'
+  name: "formatSize"
 })
 export class FormatSizePipe implements PipeTransform {
   transform(sizeInBytes: number, longForm: boolean): string {
@@ -25,66 +27,67 @@ export class FormatSizePipe implements PipeTransform {
 }
 
 @Pipe({
-  name: 'evictionShortName'
+  name: "evictionShortName"
 })
 export class EvictionPipe implements PipeTransform {
-  transform(longName: string|undefined): string {
-    switch(longName){
-      case 'LessRecentlyUsed':
-        return 'LRU';
+  transform(longName: string | undefined): string {
+    switch (longName) {
+    case "LessRecentlyUsed":
+      return "LRU";
 
-        case 'LessRecentlyUsed':
-          return 'LRU';
-        case 'TimeToLive':
-          return 'TTL';
+    case "LessRecentlyUsed":
+      return "LRU";
+    case "TimeToLive":
+      return "TTL";
 
-        default:
-          return 'NO';
+    default:
+      return "NO";
 
     }
   }
 }
 
 @Pipe({
-  name: 'formatIndexType'
+  name: "formatIndexType"
 })
 export class IndexPipe implements PipeTransform {
-  
-  constructor(private sanitized: DomSanitizer){}
-  
-  transform(longName: string|undefined) {
-    switch(longName){
-      case 'Primary':
-        return this.sanitized.bypassSecurityTrustHtml('<div style="color:#B00020;font-weight:500;">primary</div>');
 
-      case 'Ordered':
-        return this.sanitized.bypassSecurityTrustHtml('<span style="color:#6200EE;font-weight:500;">ordered</span>');
-        
-      
-      case 'Dictionary':
-        return this.sanitized.bypassSecurityTrustHtml('<span style="color:#018786;font-weight:500;">dictionary</span>');
-      
-        default:
-          return '';
+  constructor(private sanitized: DomSanitizer) {}
+
+  transform(longName: string | undefined) {
+    switch (longName) {
+    case "Primary":
+      return this.sanitized.bypassSecurityTrustHtml('<div style="color:#B00020;font-weight:500;">primary</div>');
+
+    case "Ordered":
+      return this.sanitized.bypassSecurityTrustHtml('<span style="color:#6200EE;font-weight:500;">ordered</span>');
+
+
+    case "Dictionary":
+      return this.sanitized.bypassSecurityTrustHtml('<span style="color:#018786;font-weight:500;">dictionary</span>');
+
+    default:
+      return "";
 
     }
   }
 }
 
 @Pipe({
-  name: 'check'
+  name: "check"
 })
 export class CheckPipe implements PipeTransform {
-  
-  constructor(private sanitized: DomSanitizer){}
-  
-  transform(value: boolean|undefined) {
-    
-    if(value){
-      return this.sanitized.bypassSecurityTrustHtml('<mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="home">check</mat-icon>');
+
+  constructor(private sanitized: DomSanitizer) {}
+
+  transform(value: boolean | undefined) {
+
+    if (value) {
+      return this.sanitized.bypassSecurityTrustHtml(
+        '<mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="home">check</mat-icon>');
     }
-    
-    return '';
-    
+
+    return "";
+
   }
 }

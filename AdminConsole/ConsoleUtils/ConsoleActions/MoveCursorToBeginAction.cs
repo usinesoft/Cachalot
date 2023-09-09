@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace AdminConsole.ConsoleUtils.ConsoleActions
+namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public class MoveCursorToBeginAction : IConsoleAction
 {
-    public class MoveCursorToBeginAction : IConsoleAction
+    public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
     {
-        public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
-        {
-            console.CursorPosition = 0;
-        }
+        console.CursorPosition = 0;
     }
 }

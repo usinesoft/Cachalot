@@ -1,12 +1,5 @@
 ﻿//#define DEBUG_VERBOSE
 
-using Cachalot.Linq;
-using Channel;
-using Client;
-using Client.Core;
-using Client.Interface;
-using NUnit.Framework;
-using Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,8 +7,16 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Cachalot.Linq;
+using Channel;
+using Client;
+using Client.Core;
+using Client.Interface;
+using NUnit.Framework;
+using Server;
 using Tests.TestData;
 using Tests.TestData.MoneyTransfer;
+
 // ReSharper disable AccessToDisposedClosure
 
 // ReSharper disable AccessToModifiedClosure
@@ -25,9 +26,6 @@ namespace Tests.IntegrationTests
     [TestFixture]
     public class TestFixtureTwoStageTransactionsOnMultiServerCluster
     {
-        public int Servers { set; get; } = 3;
-        public int Threads { set; get; } = 20;
-
         [TearDown]
         public void Exit()
         {
@@ -48,6 +46,16 @@ namespace Tests.IntegrationTests
             StartServers(Servers);
         }
 
+        [OneTimeSetUp]
+        public void RunBeforeAnyTests()
+        {
+            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
+            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
+        }
+
+        public int Servers { set; get; } = 3;
+        public int Threads { set; get; } = 20;
+
         private class ServerInfo
         {
             public TcpServerChannel Channel { get; set; }
@@ -59,13 +67,6 @@ namespace Tests.IntegrationTests
 
         private const int DefaultServerCount = 3;
 
-        [OneTimeSetUp]
-        public void RunBeforeAnyTests()
-        {
-            Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
-            Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
-        }
-
         private void StopServers()
         {
             foreach (var serverInfo in _servers)
@@ -74,7 +75,6 @@ namespace Tests.IntegrationTests
                 serverInfo.Server.Stop();
             }
         }
-
 
 
         private ClientConfig _clientConfig;
@@ -359,7 +359,7 @@ namespace Tests.IntegrationTests
 
             var all = new List<Account>(count);
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var acc = new Account { Id = accountIds[i], Balance = i % classes };
                 all.Add(acc);
@@ -375,16 +375,15 @@ namespace Tests.IntegrationTests
 
             Parallel.Invoke(
                 () =>
-            {
-
-                for (int i = 0; i < classes; i++)
                 {
-                    var transaction = connector.BeginTransaction();
-                    transaction.DeleteMany<Account>(acc => acc.Balance == i, "delete_test");
-                    transaction.Commit();
-                    Thread.Sleep(random.Next(200));
-                }
-            },
+                    for (var i = 0; i < classes; i++)
+                    {
+                        var transaction = connector.BeginTransaction();
+                        transaction.DeleteMany<Account>(acc => acc.Balance == i, "delete_test");
+                        transaction.Commit();
+                        Thread.Sleep(random.Next(200));
+                    }
+                },
                 () =>
                 {
                     var notDeleted = count;
@@ -398,17 +397,13 @@ namespace Tests.IntegrationTests
                             var chunkSize = count / classes;
 
 
-
                             Assert.AreEqual(0, notDeleted % chunkSize, "only complete chunks are deleted");
 
                             Console.WriteLine($"found {notDeleted} items");
-
                         }, "delete_test");
 
                         Thread.Sleep(random.Next(200));
                     }
-
-
                 });
         }
 
@@ -429,7 +424,6 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
                 myAccounts = accounts.ToList();
-
             }
 
             Parallel.Invoke(
@@ -521,7 +515,6 @@ namespace Tests.IntegrationTests
                 myAccounts = accounts.ToList();
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
-
             }
         }
 
@@ -576,7 +569,6 @@ namespace Tests.IntegrationTests
         {
             using (var connector = new Connector(_clientConfig))
             {
-
                 connector.DeclareCollection<Account>();
                 connector.DeclareCollection<MoneyTransfer>();
 
@@ -605,12 +597,11 @@ namespace Tests.IntegrationTests
 
                                 // this is also a non transactional request
                                 var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
-
                             });
                         },
                         () =>
                         {
-                            List<Account> myAccounts = accounts.ToList();
+                            var myAccounts = accounts.ToList();
 
 
                             for (var i = 0; i < Threads; i++)
@@ -682,11 +673,9 @@ namespace Tests.IntegrationTests
 
             Parallel.For(0, 20, i =>
             {
-
                 // ReSharper disable once AccessToDisposedClosure
                 connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
                 {
-
                     var myAccounts = ctx.Collection<Account>().ToList();
                     Assert.AreEqual(2, myAccounts.Count);
 
@@ -697,12 +686,8 @@ namespace Tests.IntegrationTests
 
 
                     var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
-
                 });
-
-
             });
-
         }
 
         [Test]
@@ -724,7 +709,6 @@ namespace Tests.IntegrationTests
             // ReSharper disable once AccessToDisposedClosure
             connector.ConsistentRead<MoneyTransfer, Account>(ctx =>
             {
-
                 var myAccounts = ctx.Collection<Account>().ToList();
                 Assert.AreEqual(2, myAccounts.Count);
 
@@ -735,7 +719,6 @@ namespace Tests.IntegrationTests
 
 
                 var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
-
             });
 
 
@@ -757,11 +740,7 @@ namespace Tests.IntegrationTests
             transaction.Put(all[1]);
             transaction.Put(transfer);
             transaction.Commit();
-
-
-
         }
-
 
 
         [Test]
@@ -775,10 +754,7 @@ namespace Tests.IntegrationTests
             const int count = 100;
 
             var all = new List<Order>();
-            for (int i = 0; i < count; i++)
-            {
-                all.Add(new Order { Id = Guid.NewGuid(), Amount = 50, Category = "geek" });
-            }
+            for (var i = 0; i < count; i++) all.Add(new Order { Id = Guid.NewGuid(), Amount = 50, Category = "geek" });
 
             var newOrders = connector.DataSource<Order>("new_orders");
             var processedOrders = connector.DataSource<Order>("processed_orders");
@@ -789,22 +765,21 @@ namespace Tests.IntegrationTests
             // and consistent read to check that at any time data is consistent
 
             Parallel.Invoke(() =>
-            {
-                foreach (var order in newOrders.ToList())
                 {
-                    var transaction = connector.BeginTransaction();
-                    order.IsDelivered = true;
-                    transaction.Put(order, "processed_orders");
-                    transaction.Delete(order, "new_orders");
-                    transaction.Commit();
+                    foreach (var order in newOrders.ToList())
+                    {
+                        var transaction = connector.BeginTransaction();
+                        order.IsDelivered = true;
+                        transaction.Put(order, "processed_orders");
+                        transaction.Delete(order, "new_orders");
+                        transaction.Commit();
 
-                    Thread.SpinWait(10000);
-                }
-            },
+                        Thread.SpinWait(10000);
+                    }
+                },
                 () =>
                 {
-                    for (int i = 0; i < count; i++)
-                    {
+                    for (var i = 0; i < count; i++)
                         connector.ConsistentRead(ctx =>
                         {
                             var @new = ctx.Collection<Order>("new_orders").ToList();
@@ -814,15 +789,8 @@ namespace Tests.IntegrationTests
                             Assert.IsTrue(processed.All(o => o.IsDelivered = true));
 
                             Console.WriteLine($"{@new.Count} - {processed.Count}");
-
                         }, "new_orders", "processed_orders");
-                    }
                 });
-
-
-
-
-
         }
 
         [Test]
@@ -847,9 +815,8 @@ namespace Tests.IntegrationTests
             watch.Start();
 
 
-
             //run in parallel a sequence of transactions and consistent read-only operation
-            List<Account> all = accounts.ToList();
+            var all = accounts.ToList();
             try
             {
                 Parallel.Invoke(
@@ -857,11 +824,9 @@ namespace Tests.IntegrationTests
                     {
                         Parallel.For(0, Threads, new ParallelOptions { MaxDegreeOfParallelism = 10 }, i =>
                         {
-
                             // ReSharper disable once AccessToDisposedClosure
                             connector.ConsistentRead(ctx =>
                             {
-
                                 var myAccounts = ctx.Collection<Account>().ToList();
 
                                 Dbg.Trace($"Done step 1 for iteration {i}");
@@ -887,20 +852,13 @@ namespace Tests.IntegrationTests
                                 Console.WriteLine($"Balance = {myAccounts[1].Balance} Transferred = {sumTransferred}");
 
                                 Dbg.Trace($"Done for iteration {i}");
-
                             }, nameof(MoneyTransfer), nameof(Account));
-
-
-
                         });
                     },
                     () =>
                     {
-
                         for (var i = 0; i < Threads; i++)
                         {
-
-
                             var transfer = new MoneyTransfer
                             {
                                 Id = transferIds[i],

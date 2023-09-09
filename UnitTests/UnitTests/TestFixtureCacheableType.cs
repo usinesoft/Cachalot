@@ -1,9 +1,9 @@
 ﻿#region
 
-using Client.Core;
-using NUnit.Framework;
 using System;
 using System.IO;
+using Client.Core;
+using NUnit.Framework;
 using Tests.TestData;
 
 #endregion
@@ -55,7 +55,7 @@ namespace Tests.UnitTests
             }
 
             {
-                DateTime dt = DateTime.Now;
+                var dt = DateTime.Now;
                 var kv = new KeyValue(dt);
 
                 Assert.AreEqual(dt.Ticks, kv.IntValue);
@@ -87,7 +87,7 @@ namespace Tests.UnitTests
             }
 
             {
-                DayOfWeek dow = DayOfWeek.Friday;
+                var dow = DayOfWeek.Friday;
                 var kv = new KeyValue(dow);
 
                 Assert.AreEqual(5, kv.IntValue);
@@ -103,14 +103,12 @@ namespace Tests.UnitTests
             }
 
             {
-                bool tf = true;
+                var tf = true;
                 var kv = new KeyValue(tf);
 
                 Assert.AreEqual(1, kv.IntValue);
                 Assert.AreEqual(KeyValue.OriginalType.Boolean, kv.Type);
             }
-
-
         }
 
         [Test]

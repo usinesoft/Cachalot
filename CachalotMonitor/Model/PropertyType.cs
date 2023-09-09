@@ -8,5 +8,5 @@ public enum PropertyType
     Date = 3,
     String = 4,
     Null = 5,
-    Unknown = 6,
+    Unknown = 6
 }

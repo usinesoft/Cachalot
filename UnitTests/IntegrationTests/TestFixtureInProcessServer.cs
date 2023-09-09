@@ -106,7 +106,6 @@ namespace Tests.IntegrationTests
                     {
                         new InvoiceLine { Quantity = 1, UnitaryPrice = 1002.25M }
                     }
-
                 },
                 new Invoice
                 {
@@ -114,20 +113,14 @@ namespace Tests.IntegrationTests
                     {
                         new InvoiceLine { Quantity = 1, UnitaryPrice = 1004.25M }
                     }
-
-                }
-
-                ,
+                },
                 new Invoice
                 {
                     Id = "ab103", DiscountPercentage = 0.15M, Lines = new[]
                     {
                         new InvoiceLine { Quantity = 1, UnitaryPrice = 1005.25M }
                     }
-
                 }
-
-
             };
 
 

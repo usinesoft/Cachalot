@@ -1,38 +1,31 @@
-﻿using Server;
-using Server.HostServices;
-using System;
+﻿using System;
 using System.Threading;
+using Server;
+using Server.HostServices;
 
-namespace Host
+namespace Host;
+
+internal class Program
 {
-    internal class Program
+    private static void Main(string[] args)
     {
-        private static void Main(string[] args)
-        {
-            string instance = null;
-            // an instance-name can be specified
-            // 
-            if (args.Length == 1) instance = args[0].Trim().ToLower();
+        string instance = null;
+        // an instance-name can be specified
+        // 
+        if (args.Length == 1) instance = args[0].Trim().ToLower();
 
-            var stopEvent = new ManualResetEvent(false);
+        var stopEvent = new ManualResetEvent(false);
 
-            var service = new HostedService(HostServices.Log, stopEvent);
+        var service = new HostedService(HostServices.Log, stopEvent);
 
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
-            if (service.Start(instance))
-            {
-                stopEvent.WaitOne();
+        if (service.Start(instance)) stopEvent.WaitOne();
+    }
 
-            }
-
-
-        }
-
-        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-        {
-            HostServices.Log.LogError(e.ExceptionObject.ToString());
-            Console.WriteLine(e.ExceptionObject.ToString());
-        }
+    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        HostServices.Log.LogError(e.ExceptionObject.ToString());
+        Console.WriteLine(e.ExceptionObject.ToString());
     }
 }

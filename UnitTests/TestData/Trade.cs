@@ -1,13 +1,10 @@
-using Client.Core;
-using Client.Interface;
 using System;
 using System.Collections.Generic;
+using Client.Core;
+using Client.Interface;
 
 namespace Tests.TestData
 {
-   
-
-
     [Serializable]
     public class Trade : IEquatable<Trade>
     {

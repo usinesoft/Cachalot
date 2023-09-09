@@ -1,10 +1,10 @@
-using NUnit.Framework;
-using Server.Persistence;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using NUnit.Framework;
+using Server.Persistence;
 
 namespace Tests.UnitTests
 {
@@ -596,14 +596,13 @@ namespace Tests.UnitTests
             }
         }
 
-        byte[] MakeByteArray(int size)
+        private byte[] MakeByteArray(int size)
         {
             var result = new byte[size];
-            
-            Random.Shared.NextBytes(result);
-            
-            return result;
 
+            Random.Shared.NextBytes(result);
+
+            return result;
         }
 
         [Test]
@@ -630,7 +629,7 @@ namespace Tests.UnitTests
             }
 
             var processor = new NullProcessor();
-            
+
             // reload and resize the blocks 
             using (var storage = new ReliableStorage(processor))
             {
@@ -639,7 +638,7 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(2, processor.ProcessedBlocks.Count);
 
-                
+
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
 
@@ -670,7 +669,6 @@ namespace Tests.UnitTests
                 // the large one will be at the end as it was written to a new block at the end
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[1], largeArray1);
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largerArray2);
-                
             }
         }
 
@@ -698,7 +696,7 @@ namespace Tests.UnitTests
             }
 
             var processor = new NullProcessor();
-            
+
             // reload and resize the blocks 
             using (var storage = new ReliableStorage(processor))
             {
@@ -707,14 +705,14 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(2, processor.ProcessedBlocks.Count);
 
-                
+
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largeArray1);
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
 
 
                 // We store one resized block and one unchanged
                 // The resized block is smaller so it should be stored in the same position
-                
+
 
                 storage.StoreBlock(smallArray1, "a1", 150);
                 storage.StoreBlock(smallArray2, "a2", 150);
@@ -734,10 +732,9 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(2, processor.ProcessedBlocks.Count);
 
-                
+
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
                 CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
-                
             }
         }
 
@@ -780,33 +777,30 @@ namespace Tests.UnitTests
             ReliableStorage.Relocated = 0;
             ReliableStorage.StoredInPlace = 0;
 
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 var key1 = rgen.Next(10) + 1;
-                
+
                 var length1 = rgen.Next(10000) + 1;
-                
+
                 var data1 = MakeByteArray(length1);
                 data1[0] = (byte)key1;
-                
-                
+
+
                 using (var storage = new ReliableStorage(new NullProcessor()))
                 {
-                    
                     storage.LoadPersistentData();
 
                     storage.StoreBlock(data1, key1.ToString(), 150);
-                    
-
                 }
-                
+
                 var processor = new NullProcessor();
 
                 using (var storage = new ReliableStorage(processor))
                 {
                     storage.LoadPersistentData();
-                    
-                    var reloaded = processor.ProcessedBlocks.Single(x=>x[0] == key1);
+
+                    var reloaded = processor.ProcessedBlocks.Single(x => x[0] == key1);
 
                     CollectionAssert.AreEqual(data1, reloaded);
 
@@ -818,14 +812,10 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(proc))
             {
                 storage.LoadPersistentData();
-                Console.WriteLine($"blocks={storage.BlockCount} inactive={storage.InactiveBlockCount} corrupted={storage.CorruptedBlocks} storage size={storage.StorageSize}");
+                Console.WriteLine(
+                    $"blocks={storage.BlockCount} inactive={storage.InactiveBlockCount} corrupted={storage.CorruptedBlocks} storage size={storage.StorageSize}");
                 Console.WriteLine($"in-place={ReliableStorage.StoredInPlace} relocated={ReliableStorage.Relocated}");
             }
-
-            
-
-            
-
         }
     }
 }

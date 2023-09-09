@@ -1,6 +1,6 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using NUnit.Framework;
-using System;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -13,7 +13,6 @@ namespace Tests.UnitTests
         [Test]
         public void Pack_and_unpack_an_object_with_flat_layout()
         {
-
             var schema1 = TypedSchemaFactory.FromType(typeof(FlatWithAllKindsOfProperties));
             Assert.AreEqual(Layout.Flat, schema1.StorageLayout);
 
@@ -30,8 +29,7 @@ namespace Tests.UnitTests
                 InstrumentName = "IRS",
                 AnotherDate = now,
                 AreYouSure = FlatWithAllKindsOfProperties.Fuzzy.Maybe,
-                IsDeleted = true,
-
+                IsDeleted = true
             };
 
             var packed1 = PackedObject.Pack(testObj1, schema1);
@@ -62,8 +60,6 @@ namespace Tests.UnitTests
             var data3 = SerializationHelper.ObjectToBytes(packed4, SerializationMode.ProtocolBuffers, false);
 
             Assert.Greater(data2.Length, data3.Length);
-
         }
-
     }
 }

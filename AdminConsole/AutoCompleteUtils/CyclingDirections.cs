@@ -1,8 +1,7 @@
-﻿namespace AdminConsole.AutoCompleteUtils
+﻿namespace AdminConsole.AutoCompleteUtils;
+
+public enum CyclingDirections
 {
-    public enum CyclingDirections
-    {
-        Forward,
-        Backward
-    }
+    Forward,
+    Backward
 }

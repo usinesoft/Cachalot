@@ -1,40 +1,35 @@
 ﻿using System;
 using Tests.IntegrationTests;
 
-namespace TestRunner
+namespace TestRunner;
+
+internal class Program
 {
-    class Program
+    private static void Main(string[] args)
     {
-        static void Main(string[] args)
+        var fixture = new TestFixtureAdvancedCacheWithMultipleNodes();
+
+        fixture.RunBeforeAnyTests();
+
+        Run(() => fixture.Domain_declaration_example(), () => fixture.Init(), () => fixture.Exit());
+    }
+
+    private static void Run(Action toRun, Action before, Action after)
+    {
+        try
         {
-            var fixture = new TestFixtureAdvancedCacheWithMultipleNodes();
+            before();
+            toRun();
 
-            fixture.RunBeforeAnyTests();
-
-            Run(() => fixture.Domain_declaration_example(), () => fixture.Init(), () => fixture.Exit());
-
-
+            Console.WriteLine("Success");
         }
-
-        static void Run(Action toRun, Action before, Action after)
+        catch (Exception e)
         {
-            try
-            {
-                before();
-                toRun();
-
-                Console.WriteLine("Success");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-
-            }
-            finally
-            {
-                after();
-            }
-
+            Console.WriteLine(e);
+        }
+        finally
+        {
+            after();
         }
     }
 }

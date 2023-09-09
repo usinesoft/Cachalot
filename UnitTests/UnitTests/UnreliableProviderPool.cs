@@ -1,6 +1,6 @@
-using Channel;
 using System;
 using System.Threading;
+using Channel;
 
 namespace Tests.UnitTests
 {
@@ -16,7 +16,6 @@ namespace Tests.UnitTests
             : base(poolCapacity)
         {
         }
-
 
 
         public long NewResourceClaims => Interlocked.Read(ref _newResourceClaims);

@@ -1,11 +1,10 @@
-﻿using Client.Core;
+﻿using System.Linq;
+using Client.Core;
 using NUnit.Framework;
-using System.Linq;
 using Tests.TestData;
 
 namespace Tests.UnitTests
 {
-
     [TestFixture]
     public class TestFixtureSchemaFactory
     {
@@ -25,11 +24,7 @@ namespace Tests.UnitTests
 
             var scalars = schema.ServerSide.Where(x => x.IsCollection = false).ToList();
             // check that orders are a continuous range (for scalar properties)
-            for (int i = 1; i < scalars.Count; i++)
-            {
-                Assert.IsTrue(scalars[i].Order - scalars[i - 1].Order == 1);
-            }
-
+            for (var i = 1; i < scalars.Count; i++) Assert.IsTrue(scalars[i].Order - scalars[i - 1].Order == 1);
         }
 
         [Test]
@@ -45,8 +40,6 @@ namespace Tests.UnitTests
 
             // order is preserved for scalars
             Assert.Less(schema.OrderOf("name"), schema.OrderOf("age"));
-
-
         }
     }
 }

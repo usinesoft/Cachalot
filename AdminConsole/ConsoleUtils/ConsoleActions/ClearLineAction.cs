@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace AdminConsole.ConsoleUtils.ConsoleActions
+namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public class ClearLineAction : IConsoleAction
 {
-    public class ClearLineAction : IConsoleAction
+    public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
     {
-        public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
-        {
-            console.CurrentLine = string.Empty;
-            console.CursorPosition = 0;
-        }
+        console.CurrentLine = string.Empty;
+        console.CursorPosition = 0;
     }
 }

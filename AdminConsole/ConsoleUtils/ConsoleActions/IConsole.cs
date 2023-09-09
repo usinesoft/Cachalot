@@ -1,9 +1,8 @@
-﻿namespace AdminConsole.ConsoleUtils.ConsoleActions
+﻿namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public interface IConsole
 {
-    public interface IConsole
-    {
-        PreviousLineBuffer PreviousLineBuffer { get; }
-        string CurrentLine { get; set; }
-        int CursorPosition { get; set; }
-    }
+    PreviousLineBuffer PreviousLineBuffer { get; }
+    string CurrentLine { get; set; }
+    int CursorPosition { get; set; }
 }

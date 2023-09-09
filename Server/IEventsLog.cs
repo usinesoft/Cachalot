@@ -1,7 +1,6 @@
-namespace Server
+namespace Server;
+
+public interface IEventsLog
 {
-    public interface IEventsLog
-    {
-        void LogEvent(EventType eventType, string detail = null, int milliseconds = 0);
-    }
+    void LogEvent(EventType eventType, string detail = null, int milliseconds = 0);
 }

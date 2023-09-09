@@ -1,14 +1,14 @@
 #region
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using Channel;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
 using Server;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Tests.TestData;
 
 #endregion
@@ -18,8 +18,6 @@ namespace Tests.IntegrationTests
     [TestFixture]
     public class TestFixtureEviction
     {
-        private string CollectionName { get; set; }
-
         [SetUp]
         public void Init()
         {
@@ -42,6 +40,8 @@ namespace Tests.IntegrationTests
         {
             _server.Stop();
         }
+
+        private string CollectionName { get; set; }
 
         private DataClient _client;
 
@@ -80,7 +80,8 @@ namespace Tests.IntegrationTests
             }
 
             //reload all items
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa =
+                _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
 
             Assert.AreEqual(91, itemsInAaa.Count); //eviction triggered at 100 removed 10 added 1
 
@@ -140,10 +141,11 @@ namespace Tests.IntegrationTests
                 itemsToPut.Add(item);
             }
 
-            _client.PutMany(itemsToPut, false);
+            _client.PutMany(itemsToPut);
 
             //reload all items
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa =
+                _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
             Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
         }
 
@@ -162,7 +164,8 @@ namespace Tests.IntegrationTests
                 _client.PutOne(item);
             }
 
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa =
+                _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
             var itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
@@ -180,7 +183,7 @@ namespace Tests.IntegrationTests
 
             // this one should be evicted because it will expire
             var itemToBeEvicted = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.PutOne(itemToBeEvicted, false);
+            _client.PutOne(itemToBeEvicted);
 
             // this one should not be evicted because even if it will expire it is marked as "exclude from eviction"
             var itemToKeepForever = new CacheableTypeOk(15, 1002, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -190,13 +193,13 @@ namespace Tests.IntegrationTests
 
             // this item should not be evicted because it has not expired
             var itemNotToBeEvicted = new CacheableTypeOk(0, 1000, "aaa", new DateTime(2010, 10, 10), 1500);
-            _client.PutOne(itemNotToBeEvicted, false);
+            _client.PutOne(itemNotToBeEvicted);
 
-            IList<CacheableTypeOk> itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
+            IList<CacheableTypeOk> itemsInAaa =
+                _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
 
             Assert.AreEqual(2, itemsInAaa.Count);
             Assert.IsFalse(itemsInAaa.Any(i => i.PrimaryKey == 1), "only item 1 should have been evicted");
         }
-
     }
 }

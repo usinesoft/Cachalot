@@ -1,9 +1,8 @@
-﻿namespace Server.FullTextSearch
+﻿namespace Server.FullTextSearch;
+
+internal class NullTrace : ITrace
 {
-    internal class NullTrace : ITrace
+    public void Trace(string line)
     {
-        public void Trace(string line)
-        {
-        }
     }
 }

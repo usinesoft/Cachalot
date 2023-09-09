@@ -1,22 +1,22 @@
 using System;
 using Client.Core;
 
-namespace Server
+namespace Server;
+
+public interface ILog
 {
-    public interface ILog
-    {
-        void LogActivity(string type, string collectionName, int executionTimeInMicroseconds, string detail, string query = null,
-            ExecutionPlan plan = null, Guid queryId = default);
+    /// <summary>
+    ///     A non persistent table that can be queried like a normal table storing the server activity
+    /// </summary>
+    DataStore ActivityTable { get; }
 
-        /// <summary>
-        /// A non persistent table that can be queried like a normal table storing the server activity
-        /// </summary>
-        DataStore ActivityTable { get; }
+    void LogActivity(string type, string collectionName, int executionTimeInMicroseconds, string detail,
+                     string query = null,
+                     ExecutionPlan plan = null, Guid queryId = default);
 
 
-        void LogDebug(string message);
-        void LogInfo(string message);
-        void LogWarning(string message);
-        void LogError(string message);
-    }
+    void LogDebug(string message);
+    void LogInfo(string message);
+    void LogWarning(string message);
+    void LogError(string message);
 }

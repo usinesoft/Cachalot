@@ -1,11 +1,10 @@
-﻿namespace Client.Parsing
+﻿namespace Client.Parsing;
+
+public enum CharClass
 {
-    public enum CharClass
-    {
-        Start,
-        LetterOrDigit,
-        Symbol,
-        Whitespace,
-        StringDelimiter
-    }
+    Start,
+    LetterOrDigit,
+    Symbol,
+    Whitespace,
+    StringDelimiter
 }

@@ -1,126 +1,112 @@
-﻿using Cachalot.Linq;
+﻿using System.Text;
+using Cachalot.Linq;
 using Client.Interface;
-using System.Text;
 using Client.Messages;
 using Newtonsoft.Json;
+using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
-namespace CachalotMonitor.Services
+namespace CachalotMonitor.Services;
+
+public class ClusterService : IClusterService
 {
-    public class ClusterService : IClusterService
+    private const string HistoryPath = "history";
+
+    private const string HistoryExtension = "cnx";
+
+    private readonly Dictionary<string, ConnectionInfo> _connectionHistoryCache = new();
+
+    private readonly ILogger<ClusterService> _logger;
+
+    public ClusterService(ILogger<ClusterService> logger)
     {
-        public ClusterService(ILogger<ClusterService> logger)
-        {
-            _logger = logger;
+        _logger = logger;
 
-            LoadConnectionHistory();
+        LoadConnectionHistory();
+    }
+
+    public string? ConnectionString { get; private set; }
+
+    public Connector? Connector { get; private set; }
+
+    public string Connect(ConnectionInfo connectionInfo)
+    {
+        if (connectionInfo.Nodes.Length == 0)
+            throw new ArgumentException("The connection info does not contain any node");
+
+        var cx = new StringBuilder();
+        foreach (var node in connectionInfo.Nodes)
+        {
+            cx.Append(node.Host);
+            cx.Append(':');
+            cx.Append(node.Port);
+            cx.Append('+');
         }
 
-        public Connector? Connector { get; private set; }
+        ConnectionString = cx.ToString().TrimEnd('+');
 
-        private readonly ILogger<ClusterService> _logger;
+        Connector?.Dispose();
 
-        public string Connect(Model.ConnectionInfo connectionInfo)
+        Connector = new(ConnectionString);
+
+        return ConnectionString;
+    }
+
+    public void Disconnect()
+    {
+        Connector?.Dispose();
+        Connector = null;
+    }
+
+    public ClusterInformation GetClusterInformation()
+    {
+        if (Connector == null)
+            return new(Array.Empty<ServerDescriptionResponse>());
+
+        return Connector.GetClusterDescription();
+    }
+
+    public void SaveToConnectionHistory(ConnectionInfo info, string name)
+    {
+        var historyPath = Path.Combine(Directory.GetCurrentDirectory(), HistoryPath);
+
+        if (!Directory.Exists(historyPath)) Directory.CreateDirectory(historyPath);
+
+        var json = JsonConvert.SerializeObject(info);
+
+        var filePath = Path.Combine(historyPath, $"{name}.{HistoryExtension}");
+
+        File.WriteAllText(filePath, json);
+
+        _connectionHistoryCache[name] = info;
+    }
+
+    public ConnectionInfo GetFromConnectionHistory(string name)
+    {
+        return _connectionHistoryCache[name];
+    }
+
+    public string[] GetHistoryEntries()
+    {
+        return _connectionHistoryCache.Keys.ToArray();
+    }
+
+    public void Dispose()
+    {
+        Connector?.Dispose();
+    }
+
+    private void LoadConnectionHistory()
+    {
+        var historyPath = Path.Combine(Directory.GetCurrentDirectory(), HistoryPath);
+
+        if (!Directory.Exists(historyPath)) return;
+
+        var files = Directory.EnumerateFiles(historyPath, $"*.{HistoryExtension}");
+        foreach (var file in files)
         {
-
-            if (connectionInfo.Nodes.Length == 0)
-            {
-                throw new ArgumentException("The connection info does not contain any node");
-            }
-
-            var cx = new StringBuilder();
-            foreach (var node in connectionInfo.Nodes)
-            {
-                cx.Append(node.Host);
-                cx.Append(':');
-                cx.Append(node.Port);
-                cx.Append('+');
-            }
-
-            ConnectionString = cx.ToString().TrimEnd('+');
-
-            Connector?.Dispose();
-
-            Connector = new Connector(ConnectionString);
-
-            return ConnectionString;
-
-        }
-
-        public void Disconnect()
-        {
-            Connector?.Dispose();
-            Connector = null;
-        }
-
-        public ClusterInformation GetClusterInformation()
-        {
-            if (Connector == null)
-                return new ClusterInformation(Array.Empty<ServerDescriptionResponse>());
-
-            return Connector.GetClusterDescription();
-        }
-
-        private readonly Dictionary<string, Model.ConnectionInfo> _connectionHistoryCache = new();
-        public string? ConnectionString { get; private set; }
-
-        private const string HistoryPath = "history";
-        
-        private const string HistoryExtension = "cnx"; 
-
-        public void SaveToConnectionHistory(Model.ConnectionInfo info, string name)
-        {
-            var historyPath = Path.Combine(Directory.GetCurrentDirectory(), HistoryPath);
-
-            if (!Directory.Exists(historyPath))
-            {
-                Directory.CreateDirectory(historyPath);
-            }
-            
-            var json = JsonConvert.SerializeObject(info);
-
-            var filePath = Path.Combine(historyPath, $"{name}.{HistoryExtension}");
-
-            File.WriteAllText(filePath, json);
-
-            _connectionHistoryCache[name] = info;
-        }
-
-        public Model.ConnectionInfo GetFromConnectionHistory(string name)
-        {
-            return _connectionHistoryCache[name];
-        }
-
-        public string[] GetHistoryEntries()
-        {
-            return _connectionHistoryCache.Keys.ToArray(); 
-        }
-
-        private void LoadConnectionHistory()
-        {
-            var historyPath = Path.Combine(Directory.GetCurrentDirectory(), HistoryPath);
-
-            if (!Directory.Exists(historyPath))
-            {
-                return;
-            }
-
-            var files = Directory.EnumerateFiles(historyPath,$"*.{HistoryExtension}");
-            foreach (var file in files)
-            {
-                var json = File.ReadAllText(file);
-                var info = JsonConvert.DeserializeObject<Model.ConnectionInfo>(json);
-                if (info != null)
-                {
-                    _connectionHistoryCache[Path.GetFileNameWithoutExtension(file)] = info;
-                }
-                
-            }
-
-        }
-
-        public void Dispose()
-        {
-            Connector?.Dispose();
+            var json = File.ReadAllText(file);
+            var info = JsonConvert.DeserializeObject<ConnectionInfo>(json);
+            if (info != null) _connectionHistoryCache[Path.GetFileNameWithoutExtension(file)] = info;
         }
     }
 }

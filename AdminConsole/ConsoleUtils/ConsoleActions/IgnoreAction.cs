@@ -1,12 +1,11 @@
 ﻿using System;
 
-namespace AdminConsole.ConsoleUtils.ConsoleActions
+namespace AdminConsole.ConsoleUtils.ConsoleActions;
+
+public class IgnoreAction : IConsoleAction
 {
-    public class IgnoreAction : IConsoleAction
+    public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
     {
-        public void Execute(IConsole console, ConsoleKeyInfo consoleKeyInfo)
-        {
-            // Do nothing. "Ignore" the command
-        }
+        // Do nothing. "Ignore" the command
     }
 }

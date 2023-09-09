@@ -1,17 +1,15 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using Client.Interface;
-using System;
 
 namespace StressTests.Model
 {
-
     /// <summary>
-    /// The quantity of a product available in an outlet
+    ///     The quantity of a product available in an outlet
     /// </summary>
     public class Stock
     {
-        [ServerSideValue(IndexType.Primary)]
-        public Guid Id { get; set; }
+        [ServerSideValue(IndexType.Primary)] public Guid Id { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)]
         public Guid OutletId { get; set; }
@@ -19,7 +17,6 @@ namespace StressTests.Model
         [ServerSideValue(IndexType.Dictionary)]
         public Guid ProductId { get; set; }
 
-        [ServerSideValue(IndexType.Ordered)]
-        public decimal Quantity { get; set; }
+        [ServerSideValue(IndexType.Ordered)] public decimal Quantity { get; set; }
     }
 }

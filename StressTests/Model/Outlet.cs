@@ -1,13 +1,12 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using Client.Interface;
-using System;
 
 namespace StressTests.Model
 {
     public class Outlet
     {
-        [ServerSideValue(IndexType.Primary)]
-        public Guid Id { get; set; }
+        [ServerSideValue(IndexType.Primary)] public Guid Id { get; set; }
 
         [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
@@ -32,7 +31,5 @@ namespace StressTests.Model
         [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
         public string ContactName { get; set; }
-
-
     }
 }

@@ -1,16 +1,16 @@
 ﻿#region
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Channel;
 using Client.Core;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
 using Server;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Tests.TestData;
 
 #endregion
@@ -42,10 +42,6 @@ namespace Tests.IntegrationTests
             _server.Stop();
         }
 
-        private DataClient _client;
-
-        private Server.Server _server;
-
 
         [OneTimeSetUp]
         public void RunBeforeAnyTests()
@@ -53,6 +49,10 @@ namespace Tests.IntegrationTests
             Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
             Directory.SetCurrentDirectory(TestContext.CurrentContext.TestDirectory);
         }
+
+        private DataClient _client;
+
+        private Server.Server _server;
 
 
         [Test]
@@ -176,10 +176,12 @@ namespace Tests.IntegrationTests
         public void SearchByIndexedList()
         {
             //add two new items
-            var trade1 = new Trade(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500) { Accounts = { 1, 101, 10001, 7 } };
+            var trade1 = new Trade(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500)
+                { Accounts = { 1, 101, 10001, 7 } };
             _client.PutOne(trade1);
 
-            var trade2 = new Trade(2, 1002, "bbbb", new DateTime(2010, 10, 10), 1600) { Accounts = { 2, 102, 10002, 7 } };
+            var trade2 = new Trade(2, 1002, "bbbb", new DateTime(2010, 10, 10), 1600)
+                { Accounts = { 2, 102, 10002, 7 } };
             _client.PutOne(trade2);
 
 

@@ -1,10 +1,9 @@
 using ProtoBuf;
 
-namespace Client.ChannelInterface
+namespace Client.ChannelInterface;
+
+[ProtoContract]
+public class ReadyResponse : Response
 {
-    [ProtoContract]
-    public class ReadyResponse : Response
-    {
-        public override ResponseType ResponseType => ResponseType.Ready;
-    }
+    public override ResponseType ResponseType => ResponseType.Ready;
 }

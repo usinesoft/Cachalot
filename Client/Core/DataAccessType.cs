@@ -1,18 +1,17 @@
-namespace Client.Core
+namespace Client.Core;
+
+/// <summary>
+///     Access type needed
+/// </summary>
+public enum DataAccessType
 {
     /// <summary>
-    ///     Access type needed
+    ///     Read-only
     /// </summary>
-    public enum DataAccessType
-    {
-        /// <summary>
-        ///     Read-only
-        /// </summary>
-        Read,
+    Read,
 
-        /// <summary>
-        ///     Read-write
-        /// </summary>
-        Write
-    }
+    /// <summary>
+    ///     Read-write
+    /// </summary>
+    Write
 }

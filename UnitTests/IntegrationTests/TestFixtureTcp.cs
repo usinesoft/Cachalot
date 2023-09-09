@@ -1,13 +1,13 @@
 ﻿#region
 
-using Channel;
-using Client.Interface;
-using NUnit.Framework;
-using Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Channel;
+using Client.Interface;
+using NUnit.Framework;
+using Server;
 using Tests.TestData;
 
 #endregion

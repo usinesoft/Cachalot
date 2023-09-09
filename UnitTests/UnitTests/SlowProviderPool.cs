@@ -1,5 +1,5 @@
-using Channel;
 using System.Threading;
+using Channel;
 
 namespace Tests.UnitTests
 {

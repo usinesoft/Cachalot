@@ -1,6 +1,6 @@
-﻿using Client.Core;
+﻿using System;
+using Client.Core;
 using Client.Interface;
-using System;
 
 namespace Tests.TestData.MoneyTransfer
 {
@@ -12,8 +12,10 @@ namespace Tests.TestData.MoneyTransfer
 
         [ServerSideValue(IndexType.Ordered)] public DateTime Date { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public int SourceAccount { get; set; }
+        [ServerSideValue(IndexType.Dictionary)]
+        public int SourceAccount { get; set; }
 
-        [ServerSideValue(IndexType.Dictionary)] public int DestinationAccount { get; set; }
+        [ServerSideValue(IndexType.Dictionary)]
+        public int DestinationAccount { get; set; }
     }
 }

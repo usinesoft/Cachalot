@@ -41,15 +41,4 @@ namespace Tests.TestData
 
         public InvoiceLine[] Lines { get; set; } = Array.Empty<InvoiceLine>();
     }
-
-    public class InvoiceLine
-    {
-        public string ProductId { get; set; }
-
-        public int Quantity { get; set; }
-
-        public decimal UnitaryPrice { get; set; }
-
-        public decimal Price => UnitaryPrice * Quantity;
-    }
 }

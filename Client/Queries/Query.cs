@@ -26,13 +26,3 @@ public abstract class Query
     /// <returns></returns>
     public abstract bool Match(PackedObject item);
 }
-
-public class EmptyQuery : Query
-{
-    public sealed override bool IsValid => true;
-
-    public sealed override bool Match(PackedObject item)
-    {
-        return true;
-    }
-}

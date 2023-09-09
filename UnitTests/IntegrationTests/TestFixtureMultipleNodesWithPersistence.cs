@@ -1680,5 +1680,43 @@ namespace Tests.IntegrationTests
                 .Distinct().ToList();
             CollectionAssert.AreEqual(result5, result6);
         }
+
+
+        [Test]
+        public void Drop_collection()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            
+            var dataSource = connector.DataSource<Order>();
+
+            dataSource.Put(new Order { Category = "geek", ClientId = 101, IsDelivered = true });
+            dataSource.Put(new Order { Category = "geek", ClientId = 101 });
+            dataSource.Put(new Order { Category = "geek", ClientId = 102, IsDelivered = true });
+            dataSource.Put(new Order { Category = "sf", ClientId = 102 });
+
+            var schema = connector.GetCollectionSchema("order");
+
+            Assert.IsNotNull(schema);
+            Assert.True(schema.ServerSide.Count > 0);
+
+            var desc = connector.GetClusterDescription();
+            var userCollections= desc.CollectionsSummary.Count(x => x.Name != "@ACTIVITY");
+            Assert.AreEqual(1, userCollections);
+
+            connector.DropCollection("order");
+
+            schema = connector.GetCollectionSchema("order");
+
+            Assert.IsNull(schema);
+            
+            desc = connector.GetClusterDescription();
+            userCollections= desc.CollectionsSummary.Count(x => x.Name != "@ACTIVITY");
+            Assert.AreEqual(0, userCollections);
+
+
+        }
     }
 }

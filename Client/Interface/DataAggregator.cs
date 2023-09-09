@@ -319,7 +319,7 @@ public partial class
         {
             Parallel.ForEach(CacheClients, client =>
             {
-                var removed = client.RemoveMany(query);
+                var removed = client.RemoveMany(query, drop);
                 Interlocked.Add(ref sum, removed);
             });
         }

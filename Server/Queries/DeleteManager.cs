@@ -26,7 +26,7 @@ internal class DeleteManager : IRequestManager
             {
                 var removed = RemoveMany(removeManyRequest.Query);
 
-
+               
                 client?.SendResponse(new ItemsCountResponse { ItemsCount = removed });
             }
             catch (Exception e)
@@ -66,7 +66,7 @@ internal class DeleteManager : IRequestManager
             {
                 GlobalKeysToDelete = all.Select(x => x.GlobalKey).ToList()
             });
-            ;
+            
 
             var count = all.Count;
             _dataStore.Truncate();

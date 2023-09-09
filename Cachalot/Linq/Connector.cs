@@ -195,10 +195,8 @@ public class Connector : IDisposable
                 string.Equals(x.CollectionName, collectionName, StringComparison.CurrentCultureIgnoreCase));
             if (schema == null) return null;
 
-            lock (_collectionSchema)
-            {
-                _collectionSchema[schema.CollectionName.ToUpper()] = schema;
-            }
+            _collectionSchema[schema.CollectionName.ToUpper()] = schema;
+            
 
             return schema;
         }
@@ -249,6 +247,15 @@ public class Connector : IDisposable
     public void DropCollection(string collectionName = null)
     {
         Client.RemoveMany(new(collectionName), true);
+
+        lock (_collectionSchema)
+        {
+            var key = _collectionSchema.Keys.FirstOrDefault(k=>k.Equals(collectionName, StringComparison.InvariantCultureIgnoreCase));
+            if (key != null)
+            {
+                _collectionSchema.Remove(key);
+            }
+        }
     }
 
 

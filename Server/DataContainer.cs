@@ -271,40 +271,51 @@ public class DataContainer
 
             lockManager.DoWithWriteLock(() =>
             {
-                if (dataRequest is RemoveManyRequest removeManyRequest)
+                switch (dataRequest)
                 {
-                    var mgr = new DeleteManager(dataStore, PersistenceEngine);
-
-                    mgr.ProcessRequest(removeManyRequest, client);
-
-                    if (removeManyRequest.Drop)
+                    case RemoveManyRequest removeManyRequest:
                     {
-                        // remove the data store for the collection
-                        DataStores.Remove(removeManyRequest.CollectionName);
+                        var mgr = new DeleteManager(dataStore, PersistenceEngine);
 
-                        // delete schema information after truncate
-                        _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+                        mgr.ProcessRequest(removeManyRequest, client);
+
+                        if (removeManyRequest.Drop)
+                        {
+
+                            var key = DataStores.Keys.FirstOrDefault(k => k.Equals(removeManyRequest.CollectionName,
+                                StringComparison.InvariantCultureIgnoreCase));
+
+                            // remove the data store for the collection
+                            DataStores.Remove(key);
+
+                            // delete schema information after truncate
+                            _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+                        }
+
+                        break;
                     }
-                }
-                else if (dataRequest is PutRequest putRequest)
-                {
-                    var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore,
-                        _serviceContainer.Log);
+                    case PutRequest putRequest:
+                    {
+                        var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore,
+                            _serviceContainer.Log);
 
-                    mgr.ProcessRequest(putRequest, client);
-                }
-                else if (dataRequest is DomainDeclarationRequest domainDeclarationRequest)
-                {
-                    var mgr = new CacheOnlyManager(dataStore);
+                        mgr.ProcessRequest(putRequest, client);
+                        break;
+                    }
+                    case DomainDeclarationRequest domainDeclarationRequest:
+                    {
+                        var mgr = new CacheOnlyManager(dataStore);
 
-                    mgr.ProcessRequest(domainDeclarationRequest, client);
-                }
+                        mgr.ProcessRequest(domainDeclarationRequest, client);
+                        break;
+                    }
+                    case EvictionSetupRequest evictionSetupRequest:
+                    {
+                        var mgr = new CacheOnlyManager(dataStore);
 
-                else if (dataRequest is EvictionSetupRequest evictionSetupRequest)
-                {
-                    var mgr = new CacheOnlyManager(dataStore);
-
-                    mgr.ProcessRequest(evictionSetupRequest, client);
+                        mgr.ProcessRequest(evictionSetupRequest, client);
+                        break;
+                    }
                 }
             }, dataRequest.CollectionName);
         }

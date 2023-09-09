@@ -4,13 +4,6 @@ using Client.Interface;
 
 namespace StressTests.Model
 {
-    public enum Channel
-    {
-        Direct,
-        Facebook,
-        Web
-    }
-
     /// <summary>
     ///     One product in a sale operation
     /// </summary>

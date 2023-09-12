@@ -133,10 +133,25 @@ public class AdminService : IAdminService
         _clusterService.Connector?.Truncate(collectionName);
     }
 
+    public void DropTable(string collectionName)
+    {
+        _clusterService.Connector?.DropCollection(collectionName);
+    }
+
     public void DeleteProcess(Guid id)
     {
         var toDelete = ProcessCollection[id];
         if (toDelete != null) ProcessCollection.Delete(toDelete);
+    }
+
+    public void SwitchToReadOnly()
+    {
+        _clusterService.Connector!.AdminInterface().ReadOnlyMode();
+    }
+
+    public void SwitchToReadWrite()
+    {
+        _clusterService.Connector!.AdminInterface().ReadOnlyMode(true);
     }
 
 

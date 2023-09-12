@@ -34,6 +34,10 @@ public interface IAdminService : IDisposable
     public void DropDatabase();
 
     public void TruncateTable(string collectionName);
+    public void DropTable(string collectionName);
 
     void DeleteProcess(Guid id);
+
+    void SwitchToReadOnly();
+    void SwitchToReadWrite();
 }

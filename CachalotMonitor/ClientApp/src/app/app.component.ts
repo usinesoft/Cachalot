@@ -1,4 +1,5 @@
 import { Component } from "@angular/core";
+import { ConnectionService } from "./connection.service";
 import { MonitoringService } from "./monitoring.service";
 
 @Component({
@@ -26,9 +27,25 @@ export class AppComponent {
 
   cluster: string | null = null;
 
-  constructor(public service: MonitoringService) {
+  constructor(public service: MonitoringService, private connectionService:ConnectionService) {
     service.currentCluster.subscribe(data => {
       this.cluster = data;
     });
+  }
+
+  public adminCode:string|undefined;
+
+  public get isAdmin():boolean {
+    return this.connectionService.isAdmin;
+  }
+
+  public login():void{
+    this.connectionService.connectAsAdmin(this.adminCode!)
+    this.adminCode = undefined;
+  }
+
+  public logout():void{
+    this.connectionService.disconnectAdmin();
+    this.adminCode = undefined;
   }
 }

@@ -112,8 +112,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       }
 
-      console.log("resize event");
-      console.log(this.clusterHistory[0].nonFragmentedMemory);
+      // console.log("resize event");
+      // console.log(this.clusterHistory[0].nonFragmentedMemory);
       window.dispatchEvent(new Event("resize"));
 
     });

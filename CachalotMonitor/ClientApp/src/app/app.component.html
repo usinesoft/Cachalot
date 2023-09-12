@@ -2,14 +2,32 @@
   <button mat-icon-button (click)="isExpanded = !isExpanded">
     <mat-icon>menu</mat-icon>
   </button>
-  <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor (v1.8.4)</a>
+  <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor (v1.8.5)</a>
   <span class="cluster" *ngIf="cluster">&nbsp;[{{cluster}}]</span>
 
+  <div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;" *ngIf="!isAdmin">
+    
+      <div>guest</div>
+      <mat-icon>person</mat-icon>
+      <button mat-icon-button (click)="login()" [disabled]="!adminCode">
+        <mat-icon style="margin-right: 2rem">login</mat-icon>
+      </button>
+      <input name="code" type="text" style="min-width: 10rem;float:right" [(ngModel)]="adminCode" type="password" >
+      <label for="code">admin code</label>    
+  </div>
+  <div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;" *ngIf="isAdmin">
+    <button mat-icon-button (click)="logout()">
+      <mat-icon style="margin-right: 2rem">logout</mat-icon>
+    </button>      
+    <div>admin</div>
+    <mat-icon>person</mat-icon>
+    
+  </div>
 
 </mat-toolbar>
 <mat-sidenav-container class="sidenav-container" autosize>
-  <mat-sidenav #sidenav class="simple-sidenav" mode="side" opened="true" (mouseenter)="mouseenter()"
-               (mouseleave)="mouseleave()">
+  <mat-sidenav #sidenav class="simple-sidenav" mode="side" [opened]="isExpanded" (mouseenter)="mouseenter()"
+    (mouseleave)="mouseleave()">
     <mat-nav-list>
 
       <a mat-list-item [routerLink]="['/']">Cluster</a>

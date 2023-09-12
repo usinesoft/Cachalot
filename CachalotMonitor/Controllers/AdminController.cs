@@ -10,17 +10,19 @@ namespace CachalotMonitor.Controllers;
 [ApiController]
 public class AdminController : ControllerBase
 {
-    public AdminController(IClusterService clusterService, IAdminService adminService, ISchemaService schemaService)
+    public AdminController(IClusterService clusterService, IAdminService adminService, ISchemaService schemaService, IAuthenticationService authService)
     {
         ClusterService = clusterService;
         AdminService = adminService;
         SchemaService = schemaService;
+        AuthService = authService;
     }
 
     private IClusterService ClusterService { get; }
     public IAdminService AdminService { get; }
 
     public ISchemaService SchemaService { get; }
+    public IAuthenticationService AuthService { get; }
 
     /// <summary>
     ///     Connect with explicit connection data
@@ -179,8 +181,17 @@ public class AdminController : ControllerBase
     }
 
     [HttpDelete("drop")]
+    [AuthenticationFilter]
     public void Drop()
     {
         AdminService.DropDatabase();
+    }
+
+    [HttpGet("check-code/{code}")]
+    public CodeValidationResponse CheckCode(string code)
+    {
+        var result = AuthService.CheckAdminCode(code);
+
+        return new CodeValidationResponse { IsValid = result };
     }
 }

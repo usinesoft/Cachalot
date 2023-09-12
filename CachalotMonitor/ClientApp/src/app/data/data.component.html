@@ -61,7 +61,7 @@
         <mat-icon>download</mat-icon>
       </button>
 
-      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport" placement="bottom">
+      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport" placement="bottom" [disabled]="!isAdmin">
         <mat-icon>attach_file</mat-icon>
       </button>
 

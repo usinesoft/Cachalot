@@ -154,7 +154,7 @@ MonitoringService {
           for (let i = 0; i < this.clusterHistory.length; i++) {
             const status = data?.serversStatus[i];
             this.clusterHistory[i].add(status?.workingSet!/ (1024 * 1024 * 1024), status?.nonFragmentedMemory! /(1024 * 1024 * 1024)!, status?.runningThreads!);
-            console.log(`history length ${this.clusterHistory[i].totalMemory.length}`);
+            //console.log(`history length ${this.clusterHistory[i].totalMemory.length}`);
           }
         }
 

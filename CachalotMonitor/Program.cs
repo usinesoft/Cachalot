@@ -58,6 +58,8 @@ builder.Services.AddSingleton<IClusterService, ClusterService>();
 builder.Services.AddSingleton<IAdminService, AdminService>();
 builder.Services.AddSingleton<ISchemaService, SchemaService>();
 
+builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
+
 
 var app = builder.Build();
 

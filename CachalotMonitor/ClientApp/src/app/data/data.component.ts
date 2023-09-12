@@ -1,5 +1,6 @@
 import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
+import { ConnectionService } from "../connection.service";
 import { ExecutionPlanComponent } from "../execution-plan/execution-plan.component";
 import { CollectionSummary } from "../model/connection-data";
 import { AndQuery, SimpleQuery } from "../model/query";
@@ -15,6 +16,17 @@ import { ScreenStateService } from "../screen-state.service";
 })
 export class DataComponent implements OnInit {
 
+  constructor(private monitoringService: MonitoringService,
+    private queryService: QueryService,
+    private stateService: ScreenStateService,
+    public dialog: MatDialog,
+    private connectionService:ConnectionService)
+    {}
+
+
+    public get isAdmin(){
+      return this.connectionService.isAdmin;
+    }
 
   private differentValues(a: any, b: any) {
     const s1 = JSON.stringify(a);
@@ -172,11 +184,7 @@ export class DataComponent implements OnInit {
 
   }
 
-  constructor(private monitoringService: MonitoringService,
-    private queryService: QueryService,
-    private stateService: ScreenStateService,
-    public dialog: MatDialog) {
-  }
+  
 
   refresh(): void {
     this.getData(true);

@@ -8,6 +8,8 @@ import { Schema } from "../model/schema";
 import { MonitoringService } from "../monitoring.service";
 import { QueryService } from "../query.service";
 import { ScreenStateService } from "../screen-state.service";
+import { HelpService } from "../help.service";
+import { MatSnackBar } from "@angular/material/snack-bar";
 
 @Component({
   selector: "app-data",
@@ -20,6 +22,8 @@ export class DataComponent implements OnInit {
     private queryService: QueryService,
     private stateService: ScreenStateService,
     public dialog: MatDialog,
+    public helpService:HelpService,
+    private snackBar: MatSnackBar,
     private connectionService:ConnectionService)
     {}
 
@@ -144,31 +148,6 @@ export class DataComponent implements OnInit {
   }
 
 
-  ///////////////////////////////////
-  // formatted tooltips
-
-  ttIgnoreLimits = `<div class="cool-tooltip">
-                            <h3>Ignore the TAKE clause</h3>
-                            <p>This applies to JSON export.<br>
-                                All the query result will be exported.
-                            </p>
-                          </div>`;
-
-  ttExport = `<div>
-                        <h3>Export result</h3>
-                        <p>Download query result as a json file.</p>
-                    </div>`;
-
-
-  ttImport = `<div>
-                        <h3>Import JSON data</h3>
-                        <p> Import data from a json file. The file may contain<br>
-                            a single object or a JSON array.<br>
-                            New objects are inserted, existent objects are updated.
-                        </p>
-                    </div>`;
-
-
   // the one selected for result ordering
   get orderBy(): string[] {
     if (this.stateService.data.currentQuery?.orderBy) {
@@ -259,6 +238,22 @@ export class DataComponent implements OnInit {
           clientTimeInMilliseconds: this.clientTimeInMilliseconds
         }
       });
+  }
+
+
+  public deleteResult(){
+    
+    
+
+    if(this.sql && this.sql.toLowerCase().includes('where')){
+      this.queryService.ExecuteDelete(this.sql).subscribe(data=>{
+        this.snackBar.open(`${data.itemsChanged} items deleted`, "", { duration: 3000, panelClass: "green-snackbar" });
+      })
+    }
+    else{
+      this.snackBar.open('Empty queries (no WHERE clause) are not allowed ', "", { duration: 3000, panelClass: "red-snackbar" });
+    }
+    
   }
 
   private getData(force: boolean = false) {

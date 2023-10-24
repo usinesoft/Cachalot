@@ -1,36 +1,5 @@
 <div class="data-root">
 
-  <!--Tooltip templates-->
-  <ng-template #TooltipExport>
-    <div>
-      <h3>Export result</h3>
-      <p>Download query result as a json file.</p>
-    </div>
-  </ng-template>
-
-  <ng-template #TooltipImport>
-    <div>
-      <h3>Import JSON data</h3>
-      <p>
-        Import data from a json file. The file may contain<br>
-        a single object or a JSON array.<br>
-        New objects are inserted, existent objects are updated.
-      </p>
-    </div>
-  </ng-template>
-
-
-  <ng-template #TooltipIgnoreLimit>
-    <div>
-      <h3>Ignore the TAKE clause</h3>
-      <p>
-        This applies to JSON export.<br>
-        All the query result will be exported.
-      </p>
-
-    </div>
-  </ng-template>
-
 
   <!-- <div class="input-container"> -->
   <div class="data-selection-container">
@@ -48,20 +17,20 @@
     </mat-form-field>
 
 
-    <mat-toolbar style="background: transparent; max-width: 3rem;">
+    <mat-toolbar style="background: transparent; ">
 
 
       <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh"
               (click)="refresh()" style="margin-left: 2rem;">
-        <mat-icon tooltip="refresh" placement="bottom">refresh</mat-icon>
+        <mat-icon [tooltip]="helpService.tooltip('data.refresh')" placement="bottom">refresh</mat-icon>
       </button>
 
       <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
-              (click)="exportJson()" [tooltip]="ttExport" placement="bottom">
+              (click)="exportJson()" [tooltip]="helpService.tooltip('data.export')" placement="bottom">
         <mat-icon>download</mat-icon>
       </button>
 
-      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="ttImport" placement="bottom" [disabled]="!isAdmin">
+      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="helpService.tooltip('data.import')" placement="bottom" [disabled]="!isAdmin">
         <mat-icon>attach_file</mat-icon>
       </button>
 
@@ -69,11 +38,15 @@
              #fileUpload>
 
 
-      <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="ttIgnoreLimits" placement="bottom"
+      <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="helpService.tooltip('data.ignore.take')" placement="bottom"
                     style="font-size: 1rem; font-weight: 400; margin: 1rem;">
         ignore
         limit
       </mat-checkbox>
+
+      <button mat-icon-button color="warn" (click)="deleteResult()" [tooltip]="helpService.tooltip('data.delete')" placement="bottom" [disabled]="!isAdmin">
+        <mat-icon>delete</mat-icon>
+      </button>
 
     </mat-toolbar>
 
@@ -143,7 +116,7 @@
       <!--header-->
       <thead class="row header black mat-primary">
       <th class="cell info-cell" colspan="2">
-        <a style="cursor: pointer;" (click)="openPlan()">
+        <a style="cursor: pointer;" (click)="openPlan()" tooltip="Click visualize the execution plan">
           client time={{clientTimeInMilliseconds}} ms
         </a>
       </th>

@@ -24,3 +24,7 @@
   background-image: url('../../assets/compressed.png');
 }
 
+::ng-deep .tooltip-left {
+  text-align: left;
+  padding: 1rem ;
+}

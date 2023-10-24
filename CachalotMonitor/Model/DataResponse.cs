@@ -8,4 +8,6 @@ public class DataResponse
     public Guid QueryId { get; set; }
 
     public int ClientTimeInMilliseconds { get; set; }
+
+    public int ItemsChanged { get; set; }
 }

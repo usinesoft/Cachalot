@@ -4,12 +4,13 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { BehaviorSubject, interval, Observable, Subscription } from "rxjs";
 import { ClusterInformation, ConnectionData, ConnectionResponse, ServerHistory } from "./model/connection-data";
 import { SchemaUpdateRequest } from "./model/schema";
+import { CanActivate } from "@angular/router";
 
 @Injectable({
   providedIn: "root"
 })
 export class
-MonitoringService {
+  MonitoringService {
 
 
   ////////////////////////////////////
@@ -61,19 +62,19 @@ MonitoringService {
     this.working = true;
     this.http.post<ConnectionResponse>(this.baseUrl + "Admin/connect", connection).subscribe(result => {
 
-        this.working = false;
-        if (result.connectionString) {
-          this.connectionString = result.connectionString;
+      this.working = false;
+      if (result.connectionString) {
+        this.connectionString = result.connectionString;
 
-          this.disconnected = false;
-          this.disconnecting = false;
+        this.disconnected = false;
+        this.disconnecting = false;
 
-          this.updateClusterStatus();
-          this.displaySuccess("connected");
-        } else {
-          this.displayError(result.errorMessage ?? "connection error");
-        }
-      },
+        this.updateClusterStatus();
+        this.displaySuccess("connected");
+      } else {
+        this.displayError(result.errorMessage ?? "connection error");
+      }
+    },
       err => {
         this.working = false;
         this.displayError(err ?? "connection error");
@@ -81,9 +82,6 @@ MonitoringService {
 
   }
 
-  get isConnected(): boolean {
-    return this.clusterInformation.getValue()?.status != "NotConnected";
-  }
 
   disconnect() {
 
@@ -143,32 +141,42 @@ MonitoringService {
     this.http.get<ClusterInformation>(this.baseUrl + "Admin").subscribe((data: ClusterInformation) => {
 
 
-        // accumulate data as history
-        if (this.clusterHistory.length == 0) { // init once
-          data?.serversStatus.forEach(element => {
-            this.clusterHistory.push(new ServerHistory);
-          });
+      // detect cluster changed
+      var oldCLuster = this.getCLusterName();
+      var newCluster = this.getCLusterNameFrom(data);
+      if (oldCLuster != newCluster) {
+        console.log('cluster changed from ' + oldCLuster + ' to ' + newCluster);
+        this.clusterHistory = [];
+      }
 
-        } else { // update
+      // accumulate data as history
+      if (this.clusterHistory.length == 0) { // init once
+        data?.serversStatus.forEach(element => {
+          this.clusterHistory.push(new ServerHistory);
+        });
 
-          for (let i = 0; i < this.clusterHistory.length; i++) {
-            const status = data?.serversStatus[i];
-            this.clusterHistory[i].add(status?.workingSet!/ (1024 * 1024 * 1024), status?.nonFragmentedMemory! /(1024 * 1024 * 1024)!, status?.runningThreads!);
-            //console.log(`history length ${this.clusterHistory[i].totalMemory.length}`);
-          }
+      } else { // update
+
+        for (let i = 0; i < this.clusterHistory.length; i++) {
+          const status = data?.serversStatus[i];
+          this.clusterHistory[i].add(status?.workingSet! / (1024 * 1024 * 1024), status?.nonFragmentedMemory! / (1024 * 1024 * 1024)!, status?.runningThreads!);
+          //console.log(`history length ${this.clusterHistory[i].totalMemory.length}`);
         }
+      }
 
-        if (!this.disconnecting) {
-          this.clusterInformation.next(data);
-          this.currentCluster.next(this.getCLusterName());
-        }
-
-        this.working = false;
-        this.disconnecting = false;
-        this.disconnected = false;
+      if (!this.disconnecting) {
 
 
-      },
+        this.clusterInformation.next(data);
+        this.currentCluster.next(newCluster);
+      }
+
+      this.working = false;
+      this.disconnecting = false;
+      this.disconnected = false;
+
+
+    },
       _err => {
 
         this.clusterInformation.next(null);
@@ -195,7 +203,13 @@ MonitoringService {
   }
 
   private getCLusterName(): string | null {
-    const info = this.clusterInformation.getValue();
+
+    return this.getCLusterNameFrom(this.clusterInformation.getValue());
+
+  }
+
+  private getCLusterNameFrom(info: ClusterInformation | null): string | null {
+
     if (info && info.serversStatus && info.serversStatus.length > 0) {
       return info.serversStatus[0]?.clusterName ?? null;
     }
@@ -203,5 +217,15 @@ MonitoringService {
     return null;
   }
 
+}
 
+@Injectable({
+  providedIn: "root"
+})
+export class ConnectedGuard implements CanActivate {
+  constructor(private service: MonitoringService) { }
+  canActivate() {
+
+    return !this.service.disconnected;
+  }
 }

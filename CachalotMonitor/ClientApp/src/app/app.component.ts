@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
 import { ConnectionService } from "./connection.service";
 import { MonitoringService } from "./monitoring.service";
+import { HelpService } from "./help.service";
 
 @Component({
   selector: "app-root",
@@ -27,7 +28,20 @@ export class AppComponent {
 
   cluster: string | null = null;
 
-  constructor(public service: MonitoringService, private connectionService:ConnectionService) {
+  public get detailMode():boolean{
+    return this.helpService.detailMode;
+  }
+
+  public set detailMode(detail:boolean){
+    this.helpService.detailMode = detail;
+  }
+
+
+  public get isConnected(){
+    return !this.service.disconnected;
+  }
+
+  constructor(public service: MonitoringService, private connectionService:ConnectionService, private helpService:HelpService) {
     service.currentCluster.subscribe(data => {
       this.cluster = data;
     });

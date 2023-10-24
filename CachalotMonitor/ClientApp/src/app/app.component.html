@@ -1,9 +1,10 @@
-<mat-toolbar color="primary" class="example-toolbar">
+<mat-toolbar color="primary" style="height: fit-content;flex-wrap: wrap;">
   <button mat-icon-button (click)="isExpanded = !isExpanded">
     <mat-icon>menu</mat-icon>
   </button>
   <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor (v1.8.5)</a>
   <span class="cluster" *ngIf="cluster">&nbsp;[{{cluster}}]</span>
+  <mat-slide-toggle [(ngModel)]="detailMode" style="margin-left: 2rem;">detailed tooltips</mat-slide-toggle>
 
   <div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;" *ngIf="!isAdmin">
     
@@ -31,10 +32,10 @@
     <mat-nav-list>
 
       <a mat-list-item [routerLink]="['/']">Cluster</a>
-      <a mat-list-item [routerLink]="'/collections'"> Collections </a>
-      <a mat-list-item [routerLink]="'/schema'"> Schema </a>
-      <a mat-list-item [routerLink]="'/data'"> Data </a>
-      <a mat-list-item [routerLink]="'/admin'"> Admin </a>
+      <a mat-list-item [routerLink]="'/collections'" *ngIf="isConnected"> Collections </a>
+      <a mat-list-item [routerLink]="'/schema'" *ngIf="isConnected"> Schema </a>
+      <a mat-list-item [routerLink]="'/data'" *ngIf="isConnected"> Data </a>
+      <a mat-list-item [routerLink]="'/admin'" *ngIf="isConnected"> Admin </a>
 
     </mat-nav-list>
   </mat-sidenav>

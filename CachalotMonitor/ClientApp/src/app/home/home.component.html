@@ -1,9 +1,19 @@
 <!--CONNECTION AREA--------------------------------------------------------------------------------------------------------->
 <div class="home-container">
 
-  <div class="connection-container">
+  <div class="connection-container" *ngIf="!connected">
+
+    <p class="title">Connect to a known cluster</p>
+    <div class="actions-container">
+      <button  *ngFor="let h of history" mat-raised-button color="primary"
+        aria-label="Connect" [tooltip]="'Connect to cluster from connection history'" triggers="mouseenter:mouseleave"
+        (click)="connectWithHistory(h)">
+        <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
+      </button>
+    </div>
+
+    <p class="title" style="margin-top: 4rem;">Connect to a new cluster of servers</p>
     <div class="servers-container" *ngIf="!connected">
-      <p class="title">Connect to a cluster of servers</p>
       <mat-progress-bar mode="indeterminate" *ngIf="working || disconnecting"></mat-progress-bar>
       <div *ngFor="let server of connection.nodes; index as i" class="server-container">
         <!--host-->
@@ -19,47 +29,45 @@
           <mat-hint>TCP port</mat-hint>
           <!--add/remove-->
           <button *ngIf="i==0" matSuffix mat-icon-button color="primary" style="height: auto;" aria-label="add"
-                  (click)="addServer()" [tooltip]="'Add a new server'" triggers="mouseenter:mouseleave">
+            (click)="addServer()" [tooltip]="'Add a new server'" triggers="mouseenter:mouseleave">
             <mat-icon>add</mat-icon>
           </button>
           <button *ngIf="i!=0" matSuffix color="warn" mat-icon-button style="height: auto;" aria-label="remove"
-                  (click)="removeServer(server)" [tooltip]="'Remove this server'" triggers="mouseenter:mouseleave">
+            (click)="removeServer(server)" [tooltip]="'Remove this server'" triggers="mouseenter:mouseleave">
             <mat-icon>remove</mat-icon>
           </button>
         </mat-form-field>
 
 
       </div>
-    </div>
-    <!--actions and history-->
-    <div class="actions-container" *ngIf="!connected">
-      <button mat-raised-button color="primary" aria-label="Connect" [tooltip]="'Connect to cluster'"
-              triggers="mouseenter:mouseleave" [disabled]="!canConnect" (click)="connect()">
-        <mat-icon>electrical_services</mat-icon>
-      </button>
-      <button style="margin-left: 1rem;" *ngFor="let h of history" mat-raised-button color="primary"
-              aria-label="Connect" [tooltip]="'Connect to cluster from connection history'" triggers="mouseenter:mouseleave"
-              (click)="connectWithHistory(h)">
-        <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
-      </button>
-    </div>
-    <!--connection status when connected-->
-    <div class="status-container" *ngIf="connected">
-      <mat-form-field appearance="outline" style="min-width: 50rem;">
-        <mat-label>connection string</mat-label>
-        <input matInput [ngModel]="connectionString" [disabled]="true">
-        <mat-hint>copy to use it in your code</mat-hint>
-        <button *ngIf="connectionString" matSuffix mat-icon-button aria-label="Copy"
-                [cdkCopyToClipboard]="connectionString">
-          <mat-icon>content_copy</mat-icon>
-        </button>
-        <button matSuffix color="warn" mat-icon-button aria-label="Disconnect" [tooltip]="Disconnect"
-                triggers="mouseenter:mouseleave" class="server-button" (click)="disconnect()" [disabled]="disconnecting">
+      <div class="actions-container" *ngIf="!connected">
+        <button mat-raised-button color="primary" aria-label="Connect" [tooltip]="'Connect to cluster'"
+          triggers="mouseenter:mouseleave" [disabled]="!canConnect" (click)="connect()">
           <mat-icon>electrical_services</mat-icon>
         </button>
-      </mat-form-field>
 
+      </div>
     </div>
+
+
+    
+  </div>
+  <!--connection status when connected-->
+  <div class="status-container" *ngIf="connected">
+    <mat-form-field appearance="outline" style="min-width: 50rem;">
+      <mat-label>connection string</mat-label>
+      <input matInput [ngModel]="connectionString" [disabled]="true">
+      <mat-hint>copy to use it in your code</mat-hint>
+      <button *ngIf="connectionString" matSuffix mat-icon-button aria-label="Copy"
+        [cdkCopyToClipboard]="connectionString">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+      <button matSuffix color="warn" mat-icon-button aria-label="Disconnect" tooltip="Disconnect"
+        triggers="mouseenter:mouseleave" class="server-button" (click)="disconnect()" [disabled]="disconnecting">
+        <mat-icon>electrical_services</mat-icon>
+      </button>
+    </mat-form-field>
+
   </div>
 
   <!--CLUSTER VIEW - SERVERS--------------------------------------------------------------------------------------------------------->
@@ -67,21 +75,20 @@
   <div *ngIf="clusterInformation" class="cluster-status-container">
     <div>
       <!-- <mat-icon style="color:green" class="status-icon" *ngIf="clusterInformation.status == 'Ok'">check_circle</mat-icon> -->
-      <mat-icon style="color: orange" class="status-icon"
-                *ngIf="clusterInformation.status == 'Warning'">
+      <mat-icon style="color: orange" class="status-icon" *ngIf="clusterInformation.status == 'Warning'">
         warning
       </mat-icon>
       <mat-icon style="color: red" class="status-icon" *ngIf="clusterInformation.status == 'Error'">error</mat-icon>
     </div>
     <div *ngIf="clusterInformation.status != 'Ok' && clusterInformation.status != 'NotConnected'"
-         style="font-size: 1.2rem;">
+      style="font-size: 1.2rem;">
       {{clusterInformation.statusReason}}
     </div>
   </div>
   <div *ngIf="clusterInformation" class="cluster-container">
 
     <app-server-card *ngFor="let node of clusterStatus; trackBy:identifyServer; let i = index" [model]="node"
-                     [history]="clusterHistory[i]">
+      [history]="clusterHistory[i]">
     </app-server-card>
 
 

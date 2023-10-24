@@ -8,7 +8,7 @@
 .admin-root{
     display: flex;
     flex-direction: column;
-    gap:3px;
+    gap:1rem;
 }
 
 .backup-dir{
@@ -33,27 +33,15 @@
     @include borders;
 }
 
-
-.dangerous-actions{
-    display: flex;
-    flex-direction: column;
-    gap:1rem;
-    margin-top: 1rem;
-    
-    background-position-x: 210px;
-    background-position-y:-100px ;
-    background-image: url('../../assets/warning.png');
-    background-size:cover ;
-    background-repeat: no-repeat;
-    padding: 1rem;
+.tools-container{
     @include borders;
-
+    display: flex;
+    flex-direction: row;
+    gap:1rem;
+    padding: 0;
 }
 
-.dangerous-button{
-    margin-left: 2rem;
-    min-width: 12rem;
-}
+
 
 td{
     padding-top: 2px;
@@ -62,8 +50,8 @@ td{
 
 .confirm{
     position: absolute;
-    right: 1rem;
-    bottom: 1rem;
+    left: 10rem;
+    top: 10rem;
     width: 30rem;
     height:10rem;
     background-color: aliceblue;
@@ -81,7 +69,7 @@ td{
 }
 
 .header{
-    height: 3rem;
+    
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
 
@@ -101,7 +89,31 @@ td{
     color: #222222;
   }
 
+  ::ng-deep .big-tooltip{
+    background-color: #222222;
+    color: #fafafa!important    ;
+    font-size: 1rem;
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    white-space: pre-line;
+  }
 
+  ::ng-deep .mat-tooltip{
+    background-color: #222222;
+    color: #fafafa!important    ;
+    font-size: 1rem;
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    white-space: pre-line;
+  }
+
+  ::ng-deep .mdc-tooltip__surface {
+    max-width: 350px;
+    padding: 15px;
+  }
+
+  ::ng-deep .tooltip-left {
+    text-align: left;
+    padding: 1rem ;
+}
 
 
 

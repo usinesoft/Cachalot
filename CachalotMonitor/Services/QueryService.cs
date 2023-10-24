@@ -113,6 +113,11 @@ internal class QueryService : IQueryService
         return null;
     }
 
+    public int DeleteMany(string sql)
+    {
+        return _clusterService?.Connector?.DeleteManyWithSQL(sql) ?? 0;
+    }
+
     public QueryMetadata GetMetadata(string collection, string property)
     {
         try

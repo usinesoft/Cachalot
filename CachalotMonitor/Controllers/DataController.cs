@@ -64,6 +64,44 @@ public class DataController : ControllerBase
         return result;
     }
 
+    /// <summary>
+    /// Can not use the DELETE verb as we need a body
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    [HttpPost("delete/execute")]
+    public DataResponse DeleteMany([FromBody] InputQuery query)
+    {
+        var result = new DataResponse();
+
+        var watch = new Stopwatch();
+
+        var queryId = Guid.NewGuid();
+        try
+        {
+            if (string.IsNullOrWhiteSpace(query.Sql))
+            {
+                throw new ArgumentException("empty query");
+            }
+            watch.Start();
+            result.ItemsChanged = _queryService.DeleteMany(query.Sql);
+        }
+        catch (Exception ex)
+        {
+            result.Error = ex.Message;
+        }
+        finally
+        {
+            watch.Stop();
+            result.ClientTimeInMilliseconds = (int)watch.ElapsedMilliseconds;
+            result.QueryId = queryId;
+        }
+
+
+        return result;
+    }
+
     [HttpPost("query/stream")]
     public async Task<IActionResult> ExecuteQueryAsStream([FromBody] InputQuery query)
     {

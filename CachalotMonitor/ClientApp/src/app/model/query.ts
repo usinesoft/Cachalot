@@ -40,4 +40,5 @@ export class DataResponse {
   json: string | undefined;
   clientTimeInMilliseconds = 0;
   queryId: string | undefined;
+  itemsChanged:number = 0;
 }

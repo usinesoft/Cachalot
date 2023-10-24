@@ -1,8 +1,10 @@
 import { Component, OnInit } from "@angular/core";
+import { ConnectionService } from "../connection.service";
 import { CollectionSummary } from "../model/connection-data";
 import { Schema, SchemaUpdateRequest, ServerSide } from "../model/schema";
 import { MonitoringService } from "../monitoring.service";
 import { ScreenStateService } from "../screen-state.service";
+import { HelpService } from "../help.service";
 
 @Component({
   selector: "app-schema",
@@ -11,7 +13,11 @@ import { ScreenStateService } from "../screen-state.service";
 })
 export class SchemaComponent implements OnInit {
 
-  constructor(private monitoringService: MonitoringService, private stateService: ScreenStateService) {}
+  constructor(private monitoringService: MonitoringService, private stateService: ScreenStateService, private connectionService:ConnectionService, public helpService:HelpService) {}
+
+  public get isAdmin(){
+    return this.connectionService.isAdmin;
+  }
 
 
   collections: string[] = [];

@@ -16,4 +16,5 @@ public interface IQueryService
     Task PutManyAsStream(Stream stream, string collectionName);
 
     ExecutionPlan? GetExecutionPlan(Guid queryId);
+    int DeleteMany(string sql);
 }

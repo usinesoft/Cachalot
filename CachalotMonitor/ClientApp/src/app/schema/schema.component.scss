@@ -1,12 +1,6 @@
-@use 'sass:map';
-@use '@angular/material' as mat;
+
 @import '../../variables.scss';
 
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
-
-@import '~@angular/material/theming';
-
-@include mat-core();
 
 
 :host{  
@@ -22,6 +16,9 @@
     align-items: flex-start;
 }
 
+.row{
+    height: 3.2rem;
+}
 .column-container{
     display: flex;
     flex-direction: column;   
@@ -90,17 +87,7 @@ mat-toolbar{
   }
 
 
-  :host ::ng-deep .popover {
-    background-color: #FFFF99;
-    opacity: 1;    
-    box-shadow: 2px 2px 6px 0 rgba(0, 0, 0, 0.2), 4px 4px 14px 0 rgba(0, 0, 0, 0.19);
-    max-width: 50rem;
-  }
-
-  :host ::ng-deep .popover h3{
-    font-size: larger;
-    font-weight: bold;
-    color: #222222;
-  }
-
-
+  ::ng-deep .tooltip-left {
+    text-align: left;
+    padding: 1rem ;
+}

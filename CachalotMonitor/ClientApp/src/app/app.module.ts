@@ -1,7 +1,7 @@
 import { BrowserModule } from "@angular/platform-browser";
 import { NgModule } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { HttpClientModule } from "@angular/common/http";
+import { HTTP_INTERCEPTORS, HttpClientModule } from "@angular/common/http";
 import { RouterModule } from "@angular/router";
 
 import { AppComponent } from "./app.component";
@@ -41,7 +41,11 @@ import { MatSidenavModule } from "@angular/material/sidenav"
 import { MatListModule } from "@angular/material/list";
 import { CollectionsComponent } from "./collections/collections.component";
 import { ServerCardComponent } from "./server-card/server-card.component"
-import { NgApexchartsModule } from "ng-apexcharts"
+import { NgApexchartsModule } from "ng-apexcharts";
+import { MyInterceptor } from "./my-auth-interceptor";
+import {ConnectedGuard} from "./monitoring.service"
+
+
 
 
 @NgModule({
@@ -86,10 +90,10 @@ import { NgApexchartsModule } from "ng-apexcharts"
     MatSlideToggleModule,
     RouterModule.forRoot([
       { path: "", component: HomeComponent, pathMatch: "full" },
-      { path: "collections", component: CollectionsComponent },
-      { path: "admin", component: AdminComponent },
-      { path: "schema", component: SchemaComponent },
-      { path: "data", component: DataComponent },
+      { path: "collections", component: CollectionsComponent , canActivate:[ConnectedGuard]},
+      { path: "admin", component: AdminComponent, canActivate:[ConnectedGuard] },
+      { path: "schema", component: SchemaComponent , canActivate:[ConnectedGuard]},
+      { path: "data", component: DataComponent , canActivate:[ConnectedGuard]},
     ]),
     BrowserAnimationsModule,
     MatDialogModule,
@@ -98,7 +102,7 @@ import { NgApexchartsModule } from "ng-apexcharts"
     MatListModule,
     NgApexchartsModule,
   ],
-  providers: [],
+  providers: [{ provide: HTTP_INTERCEPTORS, useClass: MyInterceptor, multi: true }, ConnectedGuard],
   bootstrap: [AppComponent]
 })
 export class AppModule {

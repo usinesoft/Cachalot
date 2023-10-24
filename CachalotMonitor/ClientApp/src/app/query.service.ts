@@ -43,6 +43,14 @@ export class QueryService {
     return this.http.post<DataResponse>(this.baseUrl + "Data/query/execute", request);
   }
 
+  ExecuteDelete(sql: string ) {
+
+    const request = new SearchRequest();
+    request.sql = sql;
+    
+    return this.http.post<DataResponse>(this.baseUrl + "Data/delete/execute", request);
+  }
+
   UploadFile(file: File, collection: string): Observable<any> {
 
     const formData = new FormData();

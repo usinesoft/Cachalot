@@ -271,6 +271,35 @@ public class Connector : IDisposable
         return new(Client);
     }
 
+
+    public int DeleteManyWithSQL(string sql)
+    {
+        sql = sql.Trim();
+
+        // if a delete query is received rewrite it as select; the parser already exist
+        if (sql.StartsWith("delete", StringComparison.InvariantCultureIgnoreCase))
+        {
+            sql = "select" + sql.Substring(6);
+        }
+        var parsed = new Parser().ParseSql(sql);
+
+        var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from");
+
+        if (fromNode == null) throw new CacheException($"Collection name missing in {sql}. FROM clause not found");
+
+        var tableName = fromNode.Children.Single().Token;
+
+
+        var schema = GetCollectionSchema(tableName);
+        
+        var query = parsed.ToQuery(schema);
+
+        // ignore take clause for delete
+        query.Take = 0;
+
+        return Client.RemoveMany(query);
+    }
+
     public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
     {
         var parsed = new Parser().ParseSql(sql);

@@ -1,27 +1,8 @@
-@use 'sass:map';
-@use '@angular/material' as mat;
-
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
-@import '~@angular/material/theming';
-@include mat-core();
-
-
-$app-primary: mat-palette($mat-grey);
-$app-accent:  mat-palette($mat-light-blue);
-$app-warn: mat-palette($mat-pink);
 
 /*-------------------------------------------borders----------------------*/
 @mixin borders {
   box-shadow:0px 2px 1px -1px rgba(0, 0, 0, 0.2),0px 1px 1px 0px rgba(0, 0, 0, 0.14),0px 1px 3px 0px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
-}
-
-@mixin color($theme){
-  // Get the color config from the theme.
-  $color-config: mat.get-color-config($theme);
-  // Get the primary color palette from the color-config.
-  $primary-palette: map.get($color-config, 'primary');
-  
 }
 
 

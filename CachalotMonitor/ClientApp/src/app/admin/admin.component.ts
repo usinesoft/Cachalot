@@ -3,7 +3,8 @@ import { interval, Subscription } from "rxjs";
 import { AdminService } from "../admin.service";
 import { Process } from "../model/backup";
 import { MonitoringService } from "../monitoring.service";
-import { QueryService } from "../query.service";
+import { ConnectionService } from "../connection.service";
+import { HelpService } from "../help.service";
 
 @Component({
   selector: "app-admin",
@@ -17,8 +18,64 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   constructor(private service: AdminService,
     private monitoringService: MonitoringService,
-    private queryService: QueryService) {
+    private connectionService:ConnectionService,
+    public helpService:HelpService
+  ) {
   }
+
+  public get isAdmin(){
+    return this.connectionService.isAdmin;
+  }
+
+  public get detailedInfo(){
+    return this.helpService.detailMode;
+  }
+
+  public info(){
+
+  }
+
+  public ttDrop: string = `
+      <div>
+        <h3>Drop the database</h3>
+        <p>Delete all data and schema information.</p>
+        <p>Used to reset database after tests or before using "Feed from backup"</p>
+        <p>(Requires admin mode)</p>
+      </div>`;
+
+  public ttReadOnly: string = `
+      <div>
+        <h3>Switch to read-only mode</h3>
+        <p>All operations that modify data will fail</p>
+        <p>(Requires admin mode)</p>
+      </div>`;
+
+  public ttReadWrite: string = `
+      <div>
+        <h3>Switch to read-write mode</h3>        
+        <p>(Requires admin mode)</p>
+      </div>`;
+
+  
+
+
+  public readOnlyMode() {
+
+    this.service.switchToReadOnly().subscribe(_data => {
+
+    });
+  }
+
+  public readWriteMode() {
+    this.service.switchToReadWrite().subscribe(_data => {
+
+    });
+  }
+
+  readOnly: boolean | undefined;
+
+  clusterSubscription: Subscription | undefined;
+
 
   ngOnInit(): void {
 
@@ -27,13 +84,19 @@ export class AdminComponent implements OnInit, OnDestroy {
       .filter(c => c[0] != "@") ??
       [];
 
+    this.clusterSubscription = this.monitoringService.clusterInformation.subscribe(info => {
+      this.readOnly = info?.serversStatus.some(s => s.isReadOnly);
+
+    });
+
+
     this.service.getBackupDirectory().subscribe(data => {
       this._backupPath = data.backupDirectory;
       if (this._backupPath) {
         this.service.getBackupList().subscribe(data => {
-            this.backupList = data.slice(0, 10);
-            this.working = false;
-          },
+          this.backupList = data.slice(0, 10);
+          this.working = false;
+        },
           err => this.working = false);
       }
     });
@@ -54,6 +117,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.timerSubscription?.unsubscribe();
+    this.clusterSubscription?.unsubscribe();
   }
 
 
@@ -63,16 +127,16 @@ export class AdminComponent implements OnInit, OnDestroy {
     if (this._backupPath) {
       this.working = true;
       this.service.saveBackupDirectory(this._backupPath).subscribe(res => {
-          this.service.getBackupDirectory().subscribe(data => {
-              this._backupPath = data.backupDirectory;
-              this.service.getBackupList().subscribe(data => {
-                  this.backupList = data;
-                  this.working = false;
-                },
-                err => this.working = false);
-            },
+        this.service.getBackupDirectory().subscribe(data => {
+          this._backupPath = data.backupDirectory;
+          this.service.getBackupList().subscribe(data => {
+            this.backupList = data;
+            this.working = false;
+          },
             err => this.working = false);
         },
+          err => this.working = false);
+      },
         err => this.working = false);
     }
 
@@ -165,6 +229,11 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.actionToConfirm = undefined;
       return;
     }
+    if (this.actionToConfirm == "drop-collection") {
+      this.dropCollection();
+      this.actionToConfirm = undefined;
+      return;
+    }
     if (this.actionToConfirm == "restore") {
       this.restore();
       this.actionToConfirm = undefined;
@@ -193,5 +262,11 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   }
 
+  dropCollection() {
+    this.working = true;
+    this.service.dropCollection(this.selectedCollection!).subscribe(x => {
+      this.working = false;
+    });
+  }
 
 }

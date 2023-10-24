@@ -106,7 +106,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       } else { // update
 
-        for (let i = 0; i < this.clusterHistory.length; i++) {
+        for (let i = 0; i < this.clusterStatus.length; i++) {
           const status = data?.serversStatus[i];
           this.clusterStatus[i] = status!;
         }

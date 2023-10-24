@@ -1,144 +1,115 @@
 <div class="admin-root">
-
-
-  <div class="backup-dir">
-    <mat-form-field appearance="fill" style="flex-grow: 2">
-      <mat-label>Backup directory</mat-label>
-      <input matInput placeholder="mapping of network shared folder" [(ngModel)]="backupPath">
-      <mat-hint>must be a network folder mapped under the same path for all nodes in the cluster</mat-hint>
-      <button mat-button *ngIf="backupPath" matSuffix mat-icon-button aria-label="Save"
-              (click)="saveBackupPath()">
-        <mat-icon>save</mat-icon>
-      </button>
-    </mat-form-field>
-  </div>
-
-  <div class="actions">
-    <button mat-raised-button color="primary" style="margin: 0.5rem" aria-label="restore"
-            matTooltip="backup database" [disabled]="!backupPath" (click)="backup()" [disabled]="working">
-      <mat-icon>cloud_upload</mat-icon>
-      backup database
-    </button>
-
-  </div>
-
-
-  <div class="dangerous-actions">
-    <div class="actions">
-      <ng-template #TooltipFeed>
-        <div>
-          <h3>Feed from backup</h3>
-          <p>Feed all data from a backup in an existing database</p>
-          <p>If the database is not empty, existing data is <u>replaced</u>, new data is inserted.</p>
-          <p>
-            May be used to restore a database on which nodes were added or removed or to feed data between
-            clusters with different number of nodes (for example feeding a development cluster with data
-            from a production cluster)
-          </p>
-          <p>If some nodes already have data, a DROP DATABASE is required before.</p>
-          <p>May also be used to merge data from two databases.</p>
-        </div>
-      </ng-template>
-      <ng-template #TooltipRestore>
-        <div>
-          <h3>Restore from backup</h3>
-          <p>Reset the database to a previous state. All current data is lost.</p>
-          <p>
-            It is fast (all nodes are restored in parallel) but it requires the number of nodes to be the
-            same as in the backup.
-          </p>
-          <p>To restore data in a cluster with different configuration use “feed from backup”.</p>
-          <p>
-            The database will not be available during the restore. Nodes will restart automatically when
-            finished.
-          </p>
-        </div>
-      </ng-template>
-      <ng-template #TooltipDrop>
-        <div>
-          <h3>Drop the database</h3>
-          <p>Delete all data and schema information.</p>
-          <p>Used to reset database after tests or before using "Feed from backup"</p>
-        </div>
-      </ng-template>
-      <ng-template #TooltipTruncate>
-        <div>
-          <h3>Truncate the {{selectedCollection}} collection</h3>
-          <p>All data will be deleted.</p>
-          <p>Schema information (queryable properties and indexes) is conserved</p>
-        </div>
-      </ng-template>
-
-      <mat-form-field appearance="standard">
-        <mat-label>select backup</mat-label>
-        <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedBackup" #multiSelect>
-          <mat-option *ngFor="let val of backupList" [value]="val">
-            {{val}}
-          </mat-option>
-        </mat-select>
-
-      </mat-form-field>
-
-      <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button" aria-label="restore"
-              (click)="actionToConfirm='restore'" [disabled]="working" [tooltip]="$any(TooltipRestore)"
-              triggers="mouseenter:mouseleave">
-        <mat-icon>cloud_download</mat-icon>
-        restore from backup
-      </button>
-      <button *ngIf="selectedBackup" mat-raised-button color="warn" class="dangerous-button"
-              aria-label="feed from backup" (click)="actionToConfirm='recreate'" [disabled]="working"
-              [tooltip]="$any(TooltipFeed)" triggers="mouseenter:mouseleave">
-        <mat-icon>reply</mat-icon>
-        feed from backup
-      </button>
-    </div>
-    <div class="actions">
-      <mat-form-field appearance="standard">
-        <mat-label>select collection</mat-label>
-        <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedCollection" #multiSelect>
-          <mat-option *ngFor="let val of collections" [value]="val">
-            {{val}}
-          </mat-option>
-        </mat-select>
-
-      </mat-form-field>
-
-      <button *ngIf="selectedCollection" mat-raised-button color="warn" class="dangerous-button"
-              aria-label="truncate" (click)="actionToConfirm='truncate'" [tooltip]="$any(TooltipTruncate)"
-              triggers="mouseenter:mouseleave" [disabled]="working">
-        <mat-icon>delete</mat-icon>
-        truncate collection
-      </button>
-      <button mat-raised-button color="warn" class="dangerous-button" aria-label="drop" [tooltip]="$any(TooltipDrop)"
-              triggers="mouseenter:mouseleave" (click)="actionToConfirm='drop'" [disabled]="working">
+  <div class="tools-container">
+    <mat-toolbar style="background: transparent; ">
+      <button mat-button color="warn" class="dangerous-button" aria-label="drop" [tooltip]="helpService.tooltip('admin.drop.database')"
+        triggers="mouseenter:mouseleave" (click)="actionToConfirm='drop'" [disabled]="working || !isAdmin">
         <mat-icon>delete_forever</mat-icon>
         DROP DATABASE
       </button>
-    </div>
-    <div class="confirm" *ngIf="actionToConfirm">
-      <div class="confirm-section">
-        <div style="font-size: 56px; min-height: 4rem; min-width: 7rem;">
-          <mat-icon [inline]="true" style="color: red">
-            dangerous
-          </mat-icon>
-        </div>
-      </div>
-      <div class="confirm-section">
-        <div style="font-weight: bold;">
-          <p>Are you sure? This operation is irreversible.</p>
-          <p>Data will be lost !!!</p>
-        </div>
-        <div class="actions">
-          <button mat-raised-button color="warn" aria-label="confirm" (click)="confirm()">
-            YES
-          </button>
-          <button mat-raised-button color="primary" style="min-width: 8rem;" aria-label="confirm"
-                  (click)="actionToConfirm = undefined">
-            NO
-          </button>
-        </div>
-      </div>
+      <button *ngIf="!readOnly" mat-button color="warn" class="dangerous-button" aria-label="read-only" [disabled]="working || !isAdmin"
+        [tooltip]="helpService.tooltip('admin.readonly')" triggers="mouseenter:mouseleave" (click)="readOnlyMode()" >
+        <mat-icon>lock</mat-icon>
+        Read-only
+      </button>
+      <button *ngIf="readOnly" mat-button color="primary" class="dangerous-button" aria-label="read-write" [disabled]="working || !isAdmin"
+        [tooltip]="ttReadWrite" triggers="mouseenter:mouseleave" (click)="readWriteMode()" [disabled]="working">
+        <mat-icon>lock_open</mat-icon>
+        Read-write
+      </button>
+    </mat-toolbar>
+  </div>
 
+  <div class="tools-container">
+    <mat-form-field appearance="standard" style="min-width:20rem; padding-left: 1rem;">
+      <mat-label>Backup directory</mat-label>
+      <input matInput placeholder="mapping of network shared folder" [(ngModel)]="backupPath">      
+      <button mat-button *ngIf="backupPath" matSuffix mat-icon-button aria-label="Save" (click)="saveBackupPath()" [disabled]="working || !isAdmin"  [tooltip]="helpService.tooltip('admin.backup.dir')">
+        <mat-icon>save</mat-icon>
+      </button>
+      <button mat-button matSuffix mat-icon-button aria-label="Info" *ngIf="detailedInfo" [tooltip]="helpService.tooltip('admin.backup.explain')">
+        <mat-icon matSuffix>info</mat-icon>
+      </button>
+    </mat-form-field>
+    <mat-toolbar style="background: transparent; ">
+      <button mat-button color="primary" class="dangerous-button" aria-label="backup" [tooltip]="helpService.tooltip('admin.backup')"   [disabled]="working || !isAdmin || !backupPath"
+        (click)="backup()">
+        <mat-icon>cloud_upload</mat-icon>
+        backup database
+      </button>
+    </mat-toolbar>
+  </div>
+
+  <div class="tools-container">
+    <mat-form-field appearance="standard" style="padding-left: 1rem;min-width:20rem">
+      <mat-label>select backup</mat-label>
+      <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedBackup" #multiSelect>
+        <mat-option *ngFor="let val of backupList" [value]="val">
+          {{val}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-toolbar style="background: transparent; ">
+      <button *ngIf="selectedBackup" mat-button color="warn" class="dangerous-button" aria-label="restore" [disabled]="working || !isAdmin"
+        (click)="actionToConfirm='restore'" [tooltip]="helpService.tooltip('admin.backup.restore')"
+        triggers="mouseenter:mouseleave">
+        <mat-icon>cloud_download</mat-icon>
+        restore from backup
+      </button>
+      <button *ngIf="selectedBackup" mat-button color="warn" class="dangerous-button" [disabled]="working || !isAdmin"
+        aria-label="feed from backup" (click)="actionToConfirm='recreate'" 
+        [tooltip]="helpService.tooltip('admin.backup.feed')" triggers="mouseenter:mouseleave">
+        <mat-icon>reply</mat-icon>
+        feed from backup
+      </button>
+    </mat-toolbar>
+  </div>
+
+  <div class="tools-container">
+    <mat-form-field appearance="standard" style="padding-left: 1rem;min-width:20rem">
+      <mat-label>select collection</mat-label>
+      <mat-select placeholder="Value(s)" [multiple]="false" [(ngModel)]="selectedCollection" #multiSelect>
+        <mat-option *ngFor="let val of collections" [value]="val">
+          {{val}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-toolbar style="background: transparent; ">
+      <button *ngIf="selectedCollection" mat-button color="warn" class="dangerous-button" aria-label="truncate" [disabled]="working || !isAdmin"
+        (click)="actionToConfirm='truncate'" [tooltip]="helpService.tooltip('admin.truncate.collection')" triggers="mouseenter:mouseleave">
+        <mat-icon>delete</mat-icon>
+        truncate collection
+      </button>
+      <button *ngIf="selectedCollection" mat-button color="warn" class="dangerous-button" aria-label="drop collection" [disabled]="working || !isAdmin"
+        (click)="actionToConfirm='drop-collection'" [tooltip]="helpService.tooltip('admin.drop.collection')" triggers="mouseenter:mouseleave" >
+        <mat-icon>delete_forever</mat-icon>
+        drop collection
+      </button>
+    </mat-toolbar>
+  </div>
+
+
+  <div class="confirm" *ngIf="actionToConfirm">
+    <div class="confirm-section">
+      <div style="min-height: 5rem; min-width: 7rem;">
+        <mat-icon  style="color: red;font-size: 3rem;width:3rem;height:3rem">
+          dangerous
+        </mat-icon>
+      </div>
+    </div>
+    <div class="confirm-section">
+      <div style="font-weight: bold;">
+        <p>Are you sure? This operation is irreversible.</p>
+        <p>Data will be lost !!!</p>
+      </div>
+      <div class="actions">
+        <button mat-raised-button color="warn" aria-label="confirm" (click)="confirm()">
+          YES
+        </button>
+        <button mat-raised-button color="primary" style="min-width: 8rem;" aria-label="confirm"
+          (click)="actionToConfirm = undefined">
+          NO
+        </button>
+      </div>
     </div>
 
   </div>
@@ -149,13 +120,13 @@
       <table class="table">
         <!--header-->
         <thead class="row header black">
-        <th class="cell">TYPE</th>
-        <th class="cell">CLUSTER</th>
-        <th class="cell">STARTED</th>
-        <th class="cell">DURATION (sec.)</th>
-        <th class="cell">STATUS</th>
-        <th class="cell"></th>
-        <th class="cell">ACTIONS</th>
+          <th class="cell">TYPE</th>
+          <th class="cell">CLUSTER</th>
+          <th class="cell">STARTED</th>
+          <th class="cell">DURATION (sec.)</th>
+          <th class="cell">STATUS</th>
+          <th class="cell"></th>
+          <th class="cell">ACTIONS</th>
         </thead>
         <!--data-->
         <tr *ngFor="let r of processHistory; trackBy:identifyProcess" class="row">
@@ -173,15 +144,15 @@
               </div>
             </ng-template>
             <mat-icon *ngIf="r.status=='Failed'" style="color: brown; height: 2rem; width: 2rem;"
-                      [tooltip]="$any(TooltipError)" triggers="mouseenter:mouseleave">
+              [tooltip]="$any(TooltipError)" triggers="mouseenter:mouseleave">
               info
             </mat-icon>
           </td>
           <td>
             <button mat-icon-button color="accent" aria-label="remove from history"
-                    style="height: 2rem; padding: 0; width: 2rem;"
-                    tooltip="remove this entry from hitory (the backup will not be deleted)"
-                    (click)="removeFromHistory(r.processId)">
+              style="height: 2rem; padding: 0; width: 2rem;"
+              tooltip="remove this entry from hitory (the backup will not be deleted)"
+              (click)="removeFromHistory(r.processId)">
               <mat-icon style="font-size: 1.2rem;">delete</mat-icon>
             </button>
           </td>

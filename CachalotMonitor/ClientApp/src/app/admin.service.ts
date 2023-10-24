@@ -31,6 +31,15 @@ export class AdminService {
 
   }
 
+  switchToReadOnly(){
+    return this.http.post<any>(this.baseUrl + "Admin/read-only", null);
+  }
+
+  switchToReadWrite(){
+    return this.http.post<any>(this.baseUrl + "Admin/read-write", null);
+  }
+
+
   getProcessHistory() {
     return this.http.get<Process[]>(this.baseUrl + "Admin/process/list");
   }
@@ -60,5 +69,9 @@ export class AdminService {
 
   truncate(collection: string): Observable<any> {
     return this.http.delete<any>(this.baseUrl + `Admin/truncate/${collection}`);
+  }
+
+  dropCollection(collection: string): Observable<any> {
+    return this.http.delete<any>(this.baseUrl + `Admin/drop/${collection}`);
   }
 }

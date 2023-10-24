@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 import { ScreenStateService } from "../screen-state.service";
+import { HelpService } from "../help.service";
 
 @Component({
   selector: "app-collection-card",
@@ -26,7 +27,7 @@ export class CollectionCardComponent implements OnInit {
   fullText: boolean | undefined;
 
 
-  constructor(private router: Router, private stateService: ScreenStateService) {}
+  constructor(private router: Router, private stateService: ScreenStateService, public helpService:HelpService) {}
 
   ngOnInit(): void {
   }

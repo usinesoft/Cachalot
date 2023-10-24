@@ -119,6 +119,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("backup/path")]
+    [AuthenticationFilter]
     public void ConfigureBackup([FromBody] BackupConfig cfg)
     {
         if (cfg.BackupDirectory != null)
@@ -144,12 +145,14 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("backup/restore/{backup}")]
+    [AuthenticationFilter]
     public void RestoreFromBackup(string backup)
     {
         AdminService.StartRestore(backup);
     }
 
     [HttpPost("backup/recreate/{backup}")]
+    [AuthenticationFilter]
     public void RecreateFromBackup(string backup)
     {
         AdminService.StartRecreate(backup);
@@ -162,6 +165,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpDelete("process/delete/{id}")]
+    [AuthenticationFilter]
     public void DeleteProcess(Guid id)
     {
         AdminService.DeleteProcess(id);
@@ -169,12 +173,14 @@ public class AdminController : ControllerBase
 
 
     [HttpDelete("truncate/{collection}")]
+    [AuthenticationFilter]
     public void Truncate(string collection)
     {
         AdminService.TruncateTable(collection);
     }
 
     [HttpDelete("drop/{collection}")]
+    [AuthenticationFilter]
     public void DropCollection(string collection)
     {
         ClusterService.Connector?.DropCollection(collection);
@@ -193,5 +199,19 @@ public class AdminController : ControllerBase
         var result = AuthService.CheckAdminCode(code);
 
         return new CodeValidationResponse { IsValid = result };
+    }
+
+    [HttpPost("read-only")]
+    [AuthenticationFilter]
+    public void ReadOnly()
+    {
+        AdminService.SwitchToReadOnly();
+    }
+
+    [HttpPost("read-write")]
+    [AuthenticationFilter]
+    public void ReadWrite()
+    {
+        AdminService.SwitchToReadWrite();
     }
 }

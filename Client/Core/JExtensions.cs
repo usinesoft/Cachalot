@@ -23,7 +23,10 @@ public static class JExtensions
 
         if (valueToken?.Type == JTokenType.Boolean) return new((bool)valueToken);
 
-        if (valueToken?.Type == JTokenType.Date) return new((DateTime)valueToken);
+        if (valueToken?.Type == JTokenType.Date)
+        {
+            return new((DateTime)valueToken);
+        }
 
         return new((string)valueToken);
     }

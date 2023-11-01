@@ -42,19 +42,26 @@ public class ClusterService : IClusterService
             cx.Append('+');
         }
 
-        ConnectionString = cx.ToString().TrimEnd('+');
+        var newCxString  = cx.ToString().TrimEnd('+');
 
-        Connector?.Dispose();
+        if (newCxString != ConnectionString)
+        {
+            ConnectionString = newCxString;
 
-        Connector = new(ConnectionString);
+            Connector?.Dispose();
 
+            Connector = new(ConnectionString);
+            
+        }
+        
         return ConnectionString;
     }
 
     public void Disconnect()
     {
-        Connector?.Dispose();
-        Connector = null;
+        // do nothing
+        // the connector is disposed only when we connect with a different connection string
+
     }
 
     public ClusterInformation GetClusterInformation()

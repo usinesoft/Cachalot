@@ -194,7 +194,7 @@ export class
 
   getConnectionHistory(): void {
     this.http.get<string[]>(this.baseUrl + "Admin/history").subscribe(data => {
-      this.history = data;
+      this.history = data.reverse();
     });
   }
 

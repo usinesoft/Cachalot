@@ -2,10 +2,9 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { interval, Subscription } from "rxjs";
 import { ClusterInformation, ClusterNode, ConnectionData, ServerInfo } from "../model/connection-data";
-import { MatSnackBar } from "@angular/material/snack-bar";
 import { MonitoringService } from "../monitoring.service";
 import { ScreenStateService } from "../screen-state.service";
-//import { ToastrService } from 'ngx-toastr';
+
 
 @Component({
   selector: "app-home",
@@ -16,9 +15,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   connection = new ConnectionData;
 
-  canConnect = false;
+  canConnect = false; // valid information available
 
   private timerSubscription: Subscription | undefined;
+
   private dataSubscription: Subscription | undefined;
 
   get clusterHistory() {
@@ -27,8 +27,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   clusterStatus: ServerInfo[] = [];
 
-  constructor(private service: MonitoringService,
-    private snackBar: MatSnackBar,
+  constructor(private service: MonitoringService,    
     private stateService: ScreenStateService) {
     const defaultNode = new ClusterNode();
     defaultNode.host = "localhost";
@@ -74,30 +73,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     return `${server.host}:${server.port}`;
   }
 
-
-  ngOnInit() {
-
-    this.timerSubscription = interval(400)
-      .subscribe(x => {
-        this.onFastTimer();
-
-      });
-
-
-    this.service.getConnectionHistory();
-
+  subscribeToClusterInformation(){
+    this.dataSubscription?.unsubscribe();
     this.dataSubscription = this.service.clusterInformation.subscribe(data => {
 
       if (!data)
         return;
 
-      if (data?.status == "NotConnected") {
+      if (data?.status == "NotConnected")  {
 
         this.clusterStatus = [];
         return;
       }
 
       this.service.connectionString = data?.connectionString;
+
+      console.log(`received data for ${this.clusterStatus.length} servers`);
 
       if (this.clusterStatus.length == 0) { // init once
         data?.serversStatus.forEach(element => {
@@ -118,6 +109,20 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     });
 
+  }
+
+  ngOnInit() {
+
+    this.timerSubscription = interval(400)
+      .subscribe(x => {
+        this.onFastTimer();
+
+      });
+
+
+    this.service.getConnectionHistory();
+
+    this.subscribeToClusterInformation();
 
   }
 
@@ -138,18 +143,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.clusterStatus = [];
     this.service.connect(this.connection);
     this.stateService.clearScreenState();
+    this.subscribeToClusterInformation(); 
+    this.service.getConnectionHistory();
 
   }
 
   connectWithHistory(entry: string) {
     this.clusterStatus = [];
     this.service.connectWithHistory(entry);
+    this.subscribeToClusterInformation(); 
   }
 
   disconnect() {
 
     this.service.disconnect();
-
+    this.dataSubscription?.unsubscribe();
   }
 
   addServer() {

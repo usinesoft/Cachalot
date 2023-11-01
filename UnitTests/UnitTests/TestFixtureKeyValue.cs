@@ -1,8 +1,10 @@
 ﻿using System;
 using Client.Core;
+using Client.Messages;
 using Client.Tools;
 using NUnit.Framework;
 using Tests.TestTools;
+using static System.DateTime;
 
 namespace Tests.UnitTests
 {
@@ -100,13 +102,13 @@ namespace Tests.UnitTests
         {
             KeyValue date = null;
 
-            var testValue = DateTime.MinValue;
+            DateTime testValue;
 
             string fmt1 = null;
 
             using (var tz = new FakeLocalTimeZone(TimeZoneInfo.Utc))
             {
-                testValue = DateTime.Today;
+                testValue = Today;
 
                 fmt1 = SmartDateTimeConverter.FormatDate(testValue);
 
@@ -130,13 +132,13 @@ namespace Tests.UnitTests
         {
             KeyValue date = null;
 
-            var testValue = DateTime.MinValue;
+            DateTime testValue;
 
             string fmt1 = null;
 
             using (var tz = new FakeLocalTimeZone(TimeZoneInfo.Utc))
             {
-                testValue = DateTime.Now;
+                testValue = Now;
 
                 fmt1 = SmartDateTimeConverter.FormatDate(testValue);
 
@@ -153,6 +155,55 @@ namespace Tests.UnitTests
 
                 Assert.AreEqual(fmt1, fmt2);
             }
+        }
+
+        [Test]
+        public void Format_datetime_as_string_and_json()
+        {
+            var date1 = DateTime.Now;
+            var date2 = DateTime.Today;
+
+            var kv1 = new KeyValue(date1);
+            var kv2 = new KeyValue(date2);
+
+            var str1 = kv1.ToString();
+            var str2 = kv2.ToString();
+
+            var json1 = kv1.ToJson("date");
+            var json2 = kv2.ToJson("date");
+
+            var fromJson1 = (DateTime)json1.Value;
+            var fromJson2 = (DateTime)json2.Value;
+
+            Assert.AreEqual(date1, fromJson1);
+            Assert.AreEqual(date2, fromJson2);
+
+        }
+
+        [Test]
+        public void Format_datetimeoffset_as_string_and_json()
+        {
+            var date1 = DateTimeOffset.Now;
+            
+
+            var kv1 = new KeyValue(date1);
+            
+
+            var str1 = kv1.ToString();
+            
+
+            var json1 = kv1.ToJson("date");
+            
+
+            var fromJson1 = (DateTimeOffset)json1.Value;
+
+            var kvFromJson = json1.Value.JTokenToKeyValue(new KeyInfo("date", 1, IndexType.None));
+
+
+            Assert.AreEqual(date1, fromJson1);
+            
+            Assert.AreEqual(kv1, kvFromJson);
+
         }
     }
 }

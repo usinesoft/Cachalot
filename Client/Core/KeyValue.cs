@@ -71,7 +71,7 @@ public sealed class KeyValue : IComparable<KeyValue>
         //integer types
         if (value is long l)
         {
-            //var longVal = Convert.ToInt64(value);
+            
             FromLong(l, OriginalType.SomeInteger);
             return;
         }
@@ -129,9 +129,17 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return;
             }
 
-
-            FromDateTimeWithTimeZone(new(dt.Ticks, TimeSpan.Zero));
-
+            // ignore the offset if simple date (tough but I think good decision)
+            if (dt == dt.Date)
+            {
+                FromDateTimeWithTimeZone(new(dt.Ticks, TimeSpan.Zero));
+            }
+            else
+            {
+                DateTimeOffset dtoff = dt;
+                FromDateTimeWithTimeZone(new(dtoff.Ticks, dtoff.Offset));
+            }
+            
             return;
         }
 
@@ -197,40 +205,6 @@ public sealed class KeyValue : IComparable<KeyValue>
         }
     }
 
-    private JValue JsonValue
-    {
-        get
-        {
-            switch (Type)
-            {
-                case OriginalType.SomeInteger:
-                    return new(IntValue);
-
-                case OriginalType.SomeFloat:
-                    return new(NumericValue);
-
-                case OriginalType.Boolean:
-                    return new(IntValue != 0);
-
-                case OriginalType.Date:
-                    if (_data.Length == 0) //no offset
-                        return new(new DateTime(IntValue));
-
-                    var offset = BitConverter.ToInt64(_data, 0);
-                    return new(new DateTimeOffset(IntValue, new(offset)));
-
-                case OriginalType.String:
-                    return new(StringValue);
-
-                case OriginalType.Null:
-                    return JValue.CreateNull();
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-    }
-
     public int CompareTo(KeyValue other)
     {
         if (ReferenceEquals(this, other)) return 0;
@@ -279,7 +253,7 @@ public sealed class KeyValue : IComparable<KeyValue>
                     return SmartDateTimeConverter.FormatDate(new(IntValue));
 
                 var offset = BitConverter.ToInt64(_data, 0);
-                return new DateTimeOffset(IntValue, new(offset)).ToString("yyyy-MM-dd");
+                return SmartDateTimeConverter.FormatDate(new DateTimeOffset(IntValue, new(offset)).DateTime);
 
             case OriginalType.String:
                 return StringValue;
@@ -288,7 +262,7 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return "null";
 
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new NotSupportedException("Invalid type");
         }
     }
 

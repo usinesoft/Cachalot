@@ -287,7 +287,10 @@ public class PackedObject
 
     public static PackedObject PackJson(string json, CollectionSchema collectionSchema)
     {
-        var jObject = JObject.Parse(json);
+        JsonReader reader = new JsonTextReader(new StringReader(json));
+        reader.DateParseHandling = DateParseHandling.DateTime;
+
+        var jObject = JObject.Load(reader);
         return PackJson(jObject, collectionSchema);
     }
 

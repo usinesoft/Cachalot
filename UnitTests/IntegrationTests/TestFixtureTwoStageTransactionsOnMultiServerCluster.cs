@@ -553,6 +553,7 @@ namespace Tests.IntegrationTests
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<Account>();
+                connector.DeclareCollection<MoneyTransfer>();
                 var accounts = connector.DataSource<Account>();
 
                 var accountIds = connector.GenerateUniqueIds("account_id", 2);

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Cachalot.Linq;
@@ -76,6 +77,18 @@ namespace Tests.IntegrationTests
             }
         }
 
+        private void TraceBegin([CallerMemberName] string method = null)
+        {
+            Console.WriteLine($"STARTING TEST {method}");
+            Console.WriteLine();
+        }
+
+        private void TraceEnd([CallerMemberName] string method = null)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"FINISHED TEST {method}");
+        }
+
 
         private ClientConfig _clientConfig;
 
@@ -114,6 +127,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Conditional_update_in_transaction()
         {
+            TraceBegin();
             int[] accountIds = null;
 
             using (var connector = new Connector(_clientConfig))
@@ -236,12 +250,16 @@ namespace Tests.IntegrationTests
 
                 Assert.AreEqual(334, transfer.Amount);
             }
+
+            TraceEnd();
         }
 
 
         [Test]
         public void Delete_in_transaction()
         {
+            TraceBegin();
+
             int[] accountIds = null;
 
             using (var connector = new Connector(_clientConfig))
@@ -341,11 +359,14 @@ namespace Tests.IntegrationTests
 
                 Assert.AreEqual(0, transfers.Count());
             }
+
+            TraceEnd();
         }
 
         [Test]
         public void Delete_many_in_transaction()
         {
+            TraceBegin();
             using var connector = new Connector(_clientConfig);
 
             connector.DeclareCollection<Account>("delete_test");
@@ -405,11 +426,15 @@ namespace Tests.IntegrationTests
                         Thread.Sleep(random.Next(200));
                     }
                 });
+            TraceEnd();
         }
 
         [Test]
         public void No_deadlock_if_same_objects_are_updated_in_parallel_by_multiple_clients()
         {
+
+            TraceBegin();
+
             List<Account> myAccounts;
             using (var connector = new Connector(_clientConfig))
             {
@@ -516,12 +541,15 @@ namespace Tests.IntegrationTests
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             }
+
+            TraceEnd();
         }
 
 
         [Test]
         public void No_deadlock_if_same_objects_are_updated_in_parallel_by_one_client()
         {
+            TraceBegin();
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<Account>();
@@ -562,11 +590,15 @@ namespace Tests.IntegrationTests
                     // a transaction can fail. We are testing that there is no deadlock
                 }
             }
+
+            TraceEnd();
         }
 
         [Test]
         public void No_deadlock_if_transactions_and_non_transactional_queries_are_run_in_parallel()
         {
+            TraceBegin();
+
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<Account>();
@@ -653,12 +685,16 @@ namespace Tests.IntegrationTests
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             }
+
+            TraceEnd();
         }
 
 
         [Test]
         public void Consistent_reads_in_parallel()
         {
+            TraceBegin();
+
             using var connector = new Connector(_clientConfig);
 
             connector.DeclareCollection<Account>();
@@ -688,11 +724,15 @@ namespace Tests.IntegrationTests
                     var unused = transfers.Where(t => t.SourceAccount == myAccounts[0].Id).ToList();
                 });
             });
+
+            TraceEnd();
         }
 
         [Test]
         public void Sequential_consistent_reads_and_transactions()
         {
+            TraceBegin();
+
             using var connector = new Connector(_clientConfig);
 
             connector.DeclareCollection<Account>();
@@ -740,12 +780,16 @@ namespace Tests.IntegrationTests
             transaction.Put(all[1]);
             transaction.Put(transfer);
             transaction.Commit();
+
+            TraceEnd();
         }
 
 
         [Test]
         public void Move_data_from_one_collection_to_another_with_transactions()
         {
+            TraceBegin();
+
             using var connector = new Connector(_clientConfig);
 
             connector.DeclareCollection<Order>("new_orders");
@@ -757,7 +801,7 @@ namespace Tests.IntegrationTests
             for (var i = 0; i < count; i++) all.Add(new Order { Id = Guid.NewGuid(), Amount = 50, Category = "geek" });
 
             var newOrders = connector.DataSource<Order>("new_orders");
-            var processedOrders = connector.DataSource<Order>("processed_orders");
+            connector.DataSource<Order>("processed_orders");
 
             newOrders.PutMany(all);
 
@@ -791,11 +835,15 @@ namespace Tests.IntegrationTests
                             Console.WriteLine($"{@new.Count} - {processed.Count}");
                         }, "new_orders", "processed_orders");
                 });
+
+            TraceEnd();
         }
 
         [Test]
         public void Consistent_reads_and_transactions_run_in_parallel()
         {
+            TraceBegin();
+
             using var connector = new Connector(_clientConfig);
 
             connector.DeclareCollection<Account>();
@@ -912,12 +960,16 @@ namespace Tests.IntegrationTests
 
             //    Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             //}
+
+            TraceEnd();
         }
 
 
         [Test]
         public void Simple_transaction()
         {
+            TraceBegin();
+
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<Account>();
@@ -970,6 +1022,8 @@ namespace Tests.IntegrationTests
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             }
+
+            TraceEnd();
         }
     }
 }

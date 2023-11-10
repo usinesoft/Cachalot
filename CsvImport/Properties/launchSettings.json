@@ -2,7 +2,7 @@
   "profiles": {
     "CsvImport": {
       "commandName": "Project",
-      "commandLineArgs": "localhost:48401 e:\\csv\\4m.csv 4m"
+      "commandLineArgs": "51.15.23.61:48401+51.15.23.61:48402+51.15.23.61:48403 e:\\csv\\full.csv huge"
     }
   }
 }

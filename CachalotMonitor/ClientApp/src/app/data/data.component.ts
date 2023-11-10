@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { ConnectionService } from "../connection.service";
 import { ExecutionPlanComponent } from "../execution-plan/execution-plan.component";
@@ -310,24 +310,40 @@ export class DataComponent implements OnInit {
   working = false;
 
   onFileSelected(event: any) {
-    const file: File = event.target.files[0];
+    
+    this.fileToUpload = event.target.files[0];
 
-    if (file && this.selectedCollection) {
-      this.fileName = file.name;
+    if (this.fileToUpload && this.selectedCollection) {
+      this.fileName = this.fileToUpload.name;
+      
+    }
+    
+  }
 
+  fileToUpload:File|undefined;
 
-      this.working = true;
-      this.queryService.UploadFile(file, this.selectedCollection).subscribe(data => {
+  @ViewChild('fileUpload') 
+  upload: ElementRef|undefined;
+  
+  uploadFile(){
+    this.working = true;
+      this.queryService.UploadFile(this.fileToUpload!, this.selectedCollection!).subscribe(data => {
           this.working = false;
-          console.log("done");
+          this.clearUpload();
+          this.snackBar.open("Upload successfull", "", { duration: 2000, panelClass: "green-snackbar" });          
         },
         err => {
           this.working = false;
-          console.log(`eror:${err}`);
+          this.clearUpload();
+          this.snackBar.open(err.errorMessage ?? "Error while uploading", "", { duration: 3000, panelClass: "red-snackbar" });
         });
-    }
 
+  }
 
+  clearUpload(){
+    this.fileName = undefined;
+    this.fileToUpload = undefined;
+    this.upload!.nativeElement.value = "";
   }
 
   fileName: string | undefined;

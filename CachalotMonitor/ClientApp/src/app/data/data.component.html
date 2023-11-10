@@ -20,31 +20,50 @@
     <mat-toolbar style="background: transparent; ">
 
 
-      <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh"
-              (click)="refresh()" style="margin-left: 2rem;">
+      <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh" (click)="refresh()"
+        style="margin-left: 2rem;">
         <mat-icon [tooltip]="helpService.tooltip('data.refresh')" placement="bottom">refresh</mat-icon>
       </button>
 
+      <mat-divider [vertical]="true" class="style-fix"></mat-divider>
+
       <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
-              (click)="exportJson()" [tooltip]="helpService.tooltip('data.export')" placement="bottom">
+        (click)="exportJson()" [tooltip]="helpService.tooltip('data.export')" placement="bottom">
         <mat-icon>download</mat-icon>
       </button>
 
-      <button mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="helpService.tooltip('data.import')" placement="bottom" [disabled]="!isAdmin">
-        <mat-icon>attach_file</mat-icon>
-      </button>
-
-      <input type="file" class="file-input" (change)="onFileSelected($event)"
-             #fileUpload>
-
-
       <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="helpService.tooltip('data.ignore.take')" placement="bottom"
-                    style="font-size: 1rem; font-weight: 400; margin: 1rem;">
+        style="font-size: 1rem; font-weight: 400; margin: 1rem;">
         ignore
         limit
       </mat-checkbox>
 
-      <button mat-icon-button color="warn" (click)="deleteResult()" [tooltip]="helpService.tooltip('data.delete')" placement="bottom" [disabled]="!isAdmin">
+      <mat-divider [vertical]="true" class="style-fix"></mat-divider>
+
+      <button *ngIf="!fileName" mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="helpService.tooltip('data.import')"
+        placement="bottom" [disabled]="!isAdmin">
+        <mat-icon>attach_file</mat-icon>
+      </button>
+
+      <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
+
+      <ng-containner *ngIf="fileName">
+        <button mat-icon-button color="success" (click)="uploadFile()"
+          [tooltip]="'Confirm file upload (admin only)'" placement="bottom" [disabled]="!isAdmin">
+          <mat-icon aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="check">
+          </mat-icon>
+        </button>
+ 
+        <button mat-icon-button color="warn" (click)="clearUpload()" [tooltip]="Cancel"  placement="bottom">
+          <mat-icon aria-hidden="false" color="accent" style="cursor: pointer; font-weight: bold;" fontIcon="close"
+            tooltip="cancel">
+          </mat-icon>
+        </button>
+      </ng-containner>
+      <mat-divider [vertical]="true" class="style-fix"></mat-divider>
+
+      <button mat-icon-button color="warn" (click)="deleteResult()" [tooltip]="helpService.tooltip('data.delete')"
+        placement="bottom" [disabled]="!isAdmin">
         <mat-icon>delete</mat-icon>
       </button>
 
@@ -57,13 +76,12 @@
   <div class="input-container" style="margin-top: 1rem;">
     <div class="query-container" *ngIf="schema">
       <app-and-query [collection]="selectedCollection" [properties]="properties" [(query)]="currentQuery"
-                     style="flex-grow: 2;">
+        style="flex-grow: 2;">
       </app-and-query>
       <div class="sql-container" style="flex-grow: 1;">
 
         <p>{{sql}}</p>
-        <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
-                [cdkCopyToClipboard]="sql">
+        <button class="sql-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy" [cdkCopyToClipboard]="sql">
           <mat-icon>content_copy</mat-icon>
         </button>
       </div>
@@ -72,17 +90,16 @@
     <!--other params like visible columns and order-by-->
     <div class="params-container" *ngIf="schema">
       <app-smart-multi-select [(selectedValues)]="visibleColumns" [allValues]="properties" [canSelectAll]="true"
-                              [canClearAll]="true" [hint]="'select visible columns'" label="Columns"
-                              style="flex-grow: 2; min-width: 20rem;">
+        [canClearAll]="true" [hint]="'select visible columns'" label="Columns" style="flex-grow: 2; min-width: 20rem;">
       </app-smart-multi-select>
 
-      <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take"
-                              [allValues]="['10','50','100', '1000']" [hint]="'limit displayed items'" label="Take">
+      <app-smart-multi-select [singleValue]="true" [(selectedValues)]="take" [allValues]="['10','50','100', '1000']"
+        [hint]="'limit displayed items'" label="Take">
       </app-smart-multi-select>
 
       <app-smart-multi-select *ngIf="orderByProperties.length" [singleValue]="true" [(selectedValues)]="orderBy"
-                              [allValues]="orderByProperties" [clearButton]="true"
-                              [hint]="'select column to order by (must be ordered index)'" label="Order by">
+        [allValues]="orderByProperties" [clearButton]="true"
+        [hint]="'select column to order by (must be ordered index)'" label="Order by">
       </app-smart-multi-select>
       <div *ngIf="orderBy.length > 0" style="min-width: 8rem;">
         <mat-slide-toggle [(ngModel)]="descending">{{descending?'descending':'ascending'}}</mat-slide-toggle>
@@ -97,7 +114,7 @@
         <input matInput placeholder="rue de l'Amour" [(ngModel)]="fullTextQuery" (keyup.enter)="onEnter()">
         <mat-hint>the best matches will be shown first (explicit order by is ignored)</mat-hint>
         <button mat-button *ngIf="fullTextQuery" matSuffix mat-icon-button aria-label="Clear"
-                (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
+          (click)="fullTextQuery=undefined; $event.stopPropagation(); search()">
           <mat-icon>close</mat-icon>
         </button>
 
@@ -115,14 +132,14 @@
     <table *ngIf="schema" class="table">
       <!--header-->
       <thead class="row header black mat-primary">
-      <th class="cell info-cell" colspan="2">
-        <a style="cursor: pointer;" (click)="openPlan()" tooltip="Click visualize the execution plan">
-          client time={{clientTimeInMilliseconds}} ms
-        </a>
-      </th>
-      <th class="cell" *ngFor="let col of visibleColumns">
-        {{col}}
-      </th>
+        <th class="cell info-cell" colspan="2">
+          <a style="cursor: pointer;" (click)="openPlan()" tooltip="Click visualize the execution plan">
+            client time={{clientTimeInMilliseconds}} ms
+          </a>
+        </th>
+        <th class="cell" *ngFor="let col of visibleColumns">
+          {{col}}
+        </th>
       </thead>
       <!--data-->
       <tr *ngIf="data.length == 0">
@@ -149,10 +166,9 @@
           </td>
         </ng-container>
         <ng-container *ngIf="r['#json']">
-          <td style="background-color: white; padding: 1rem; position: relative"
-              [attr.colspan]="visibleColumns.length">
+          <td style="background-color: white; padding: 1rem; position: relative" [attr.colspan]="visibleColumns.length">
             <button class="json-copy" *ngIf="sql" matSuffix mat-icon-button aria-label="Copy"
-                    [cdkCopyToClipboard]="asJson(r)">
+              [cdkCopyToClipboard]="asJson(r)">
               <mat-icon>content_copy</mat-icon>
             </button>
             <ngx-json-viewer [json]="cleanup(r)" style="border: 1px;"></ngx-json-viewer>

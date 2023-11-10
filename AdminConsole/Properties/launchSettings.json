@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AdminConsole": {
+      "commandName": "Project",
+      "commandLineArgs": "sd-144869:48401+sd-144869:48402+sd-144869:48403"
+    }
+  }
+}

@@ -74,12 +74,12 @@ internal class QueryService : IQueryService
 
         var consuming = Task.Run(() =>
         {
-            _clusterService.Connector?.FeedWithJson(collectionName, ObjectConsumer(streamedObjects));
+            _clusterService.Connector?.FeedWithJson(collectionName, streamedObjects.GetConsumingEnumerable());
         });
 
 
         using var sr = new StreamReader(stream);
-        using var reader = new JsonTextReader(sr);
+        await using var reader = new JsonTextReader(sr);
         while (await reader.ReadAsync())
             if (reader.TokenType == JsonToken.StartObject)
             {
@@ -223,12 +223,6 @@ internal class QueryService : IQueryService
         builder.Append($"TAKE {query.Take}");
 
         return builder.ToString();
-    }
-
-
-    private IEnumerable<JObject> ObjectConsumer(BlockingCollection<JObject> queue)
-    {
-        foreach (var item in queue.GetConsumingEnumerable()) yield return item;
     }
 
     private void SimpleQueryToSql(SimpleQuery query, StringBuilder builder)

@@ -89,13 +89,13 @@ if (server != null)
 {
     var addressFeature = server.Features.Get<IServerAddressesFeature>();
 
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Server started successfully");
+    var logger = app.Services.GetService<ILogger<Program>>();
+    
+    logger!.LogInformation("Server started successfully");
     foreach (var address in addressFeature?.Addresses ?? Array.Empty<string>())
     {
-        Console.WriteLine("Your monitoring page is available at:");
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine(address);
+        logger!.LogInformation($"Your monitoring page is available at:{address}");
+        
     }
 }
 

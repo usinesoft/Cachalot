@@ -62,10 +62,25 @@
       </ng-containner>
       <mat-divider [vertical]="true" class="style-fix"></mat-divider>
 
-      <button mat-icon-button color="warn" (click)="deleteResult()" [tooltip]="helpService.tooltip('data.delete')"
-        placement="bottom" [disabled]="!isAdmin">
-        <mat-icon>delete</mat-icon>
-      </button>
+      <button *ngIf="!confirmDeleteMode" mat-icon-button color="warn" (click)="confirmDeleteMode=true" [tooltip]="helpService.tooltip('data.delete')"
+          placement="bottom" [disabled]="!isAdmin">
+          <mat-icon>delete</mat-icon>
+        </button>
+
+      <ng-container *ngIf="confirmDeleteMode">
+        
+        <button mat-icon-button color="success" (click)="deleteResult()"
+          [tooltip]="'Confirm delete (admin only)'" placement="bottom" [disabled]="!isAdmin">
+          <mat-icon aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="check">
+          </mat-icon>
+        </button>
+ 
+        <button mat-icon-button color="warn" (click)="confirmDeleteMode=false" [tooltip]="Cancel"  placement="bottom">
+          <mat-icon aria-hidden="false" color="accent" style="cursor: pointer; font-weight: bold;" fontIcon="close"
+            tooltip="cancel">
+          </mat-icon>
+        </button>
+      </ng-container>
 
     </mat-toolbar>
 

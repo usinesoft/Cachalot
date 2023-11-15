@@ -16,8 +16,7 @@ using Client.Tools;
 
 namespace Client.Interface;
 
-public partial class
-    DataAggregator : IDataClient
+public partial class DataAggregator : IDataClient
 {
     private readonly object _transactionSync = new();
 
@@ -379,7 +378,7 @@ public partial class
 
         // do not work too hard if it is a simple query by primary key
         // System tables (@ACTIVITY) may have the same id on multiple nodes
-        if (!query.CollectionName.StartsWith("@") && query.ByPrimaryKey)
+        if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
         {
             var primaryKey = query.Elements[0].Elements[0].Value;
 
@@ -409,79 +408,90 @@ public partial class
 
         var distinctSet = new HashSet<RankedItem>();
 
-        // for full-text queries the order is given by the result rank
-        // for normal queries order is either explicit (order by clause) or thy are unordered
-        if (!query.IsFullTextQuery)
+
+        try
         {
-            // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
-            if (query.OrderByProperty == null)
+// for full-text queries the order is given by the result rank
+            // for normal queries order is either explicit (order by clause) or thy are unordered
+            if (!query.IsFullTextQuery)
             {
-                var count = 0;
-                while (true)
+                // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
+                if (query.OrderByProperty == null)
                 {
-                    var allFinished = true;
-                    foreach (var clientResult in clientResults)
+                    var count = 0;
+                    while (true)
                     {
-                        // limit the number of returned object if Take linq extension method was used
-                        if (query.Take > 0 && count >= query.Take) yield break;
-
-                        if (clientResult.MoveNext())
+                        var allFinished = true;
+                        foreach (var clientResult in clientResults)
                         {
-                            allFinished = false;
+                            // limit the number of returned object if Take linq extension method was used
+                            if (query.Take > 0 && count >= query.Take) yield break;
 
-                            var current = clientResult.Current;
-                            if (query.Distinct)
+                            if (clientResult.MoveNext())
                             {
-                                if (distinctSet.Add(clientResult.Current))
+                                allFinished = false;
+
+                                var current = clientResult.Current;
+                                if (query.Distinct)
+                                {
+                                    if (distinctSet.Add(clientResult.Current))
+                                    {
+                                        count++;
+                                        yield return current;
+                                    }
+                                }
+                                else
                                 {
                                     count++;
                                     yield return current;
                                 }
                             }
-                            else
-                            {
-                                count++;
-                                yield return current;
-                            }
                         }
-                    }
 
-                    if (allFinished) yield break;
+                        if (allFinished) yield break;
+                    }
+                }
+
+
+                var count1 = 0;
+
+                // if ordered merge results by preserving order (either ascending or descending)
+                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty,
+                             query.OrderByIsDescending,
+                             clientResults))
+                {
+                    yield return item;
+
+                    count1++;
+
+                    if (query.Take > 0 && count1 >= query.Take) yield break;
                 }
             }
-
-
-            var count1 = 0;
-
-            // if ordered merge results by preserving order (either ascending or descending)
-            foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty,
-                         query.OrderByIsDescending,
-                         clientResults))
+            else
             {
-                yield return item;
+                // for full text queries we have to merge all results and sort by rank
+                var all = new List<RankedItem>();
 
-                count1++;
+                Parallel.ForEach(clientResults, r =>
+                {
+                    var resultFromClient = new List<RankedItem>();
+                    while (r.MoveNext()) resultFromClient.Add(r.Current);
 
-                if (query.Take > 0 && count1 >= query.Take) yield break;
+                    lock (all)
+                    {
+                        all.AddRange(resultFromClient);
+                    }
+                });
+
+                foreach (var item in all.OrderByDescending(ri => ri.Rank)) yield return item;
             }
         }
-        else
+        finally
         {
-            // for full text queries we have to merge all results and sort by rank
-            var all = new List<RankedItem>();
-
-            Parallel.ForEach(clientResults, r =>
+            foreach (var enumerator in clientResults)
             {
-                var resultFromClient = new List<RankedItem>();
-                while (r.MoveNext()) resultFromClient.Add(r.Current);
-
-                lock (all)
-                {
-                    all.AddRange(resultFromClient);
-                }
-            });
-
-            foreach (var item in all.OrderByDescending(ri => ri.Rank)) yield return item;
+                enumerator.Dispose();
+            }
         }
     }
 

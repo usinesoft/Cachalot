@@ -253,6 +253,8 @@ export class DataComponent implements OnInit {
     else{
       this.snackBar.open('Empty queries (no WHERE clause) are not allowed ', "", { duration: 3000, panelClass: "red-snackbar" });
     }
+
+    this.confirmDeleteMode = false;
     
   }
 
@@ -319,6 +321,9 @@ export class DataComponent implements OnInit {
     }
     
   }
+
+
+  confirmDeleteMode:boolean = false;
 
   fileToUpload:File|undefined;
 

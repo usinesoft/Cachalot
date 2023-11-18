@@ -1,10 +1,11 @@
-//#define DEBUG_VERBOSE
+
 
 #region
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using Client;
 
 #endregion
@@ -21,21 +22,21 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
 {
     private const int DefaultMaxPendingClaims = 4;
 
-    private readonly Queue<T> _pool;
-
-    private readonly SemaphoreSlim _poolEvent;
+    private readonly BlockingCollection<T> _blockingQueue = new();
 
     private long _maxPendingClaims = DefaultMaxPendingClaims;
 
     private long _pendingResourceClaims;
 
+    private bool _disposed;
+
+    CancellationTokenSource _tokenSource = new CancellationTokenSource();
+
 
     protected PoolStrategy(int poolCapacity)
     {
+        if (poolCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(poolCapacity));
         PoolCapacity = poolCapacity;
-        _pool = new(poolCapacity);
-
-        _poolEvent = new(0, PoolCapacity);
     }
 
     public int PoolCapacity { get; }
@@ -53,17 +54,9 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     /// <summary>
     ///     Currently available resources in the pool
     /// </summary>
-    public int ResourcesInPool
-    {
-        get
-        {
-            lock (_pool)
-            {
-                return (int)_pool?.Count;
-            }
-        }
-    }
+    public int ResourcesInPool => _blockingQueue.Count;
 
+    
     protected void PreLoad(int resourcesToPreLoad)
     {
         for (var i = 0; i < resourcesToPreLoad; i++)
@@ -84,32 +77,22 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     /// <param name="resource"></param>
     private void InternalPut(T resource)
     {
-        lock (_pool)
+
+        if (_disposed)
         {
-            //Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Put");
-
-            Dbg.Trace(
-                $"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut before");
-
-            _pool.Enqueue(resource);
-
-
-            if (_pool.Count > PoolCapacity)
-            {
-                Dbg.Trace("Too many resources. Remove older ones");
-
-                while (_pool.Count > PoolCapacity)
-                {
-                    var toDispose = _pool.Dequeue();
-                    Release(toDispose);
-                }
-            }
-
-            if (_poolEvent.CurrentCount < _pool.Count) _poolEvent.Release(_pool.Count - _poolEvent.CurrentCount);
-
-            Dbg.Trace(
-                $"pool: current {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in InternalPut after");
+            Release(resource);
+            return;
         }
+
+        _blockingQueue.Add(resource);
+
+        while (_blockingQueue.Count > PoolCapacity)
+        {
+            var toRelease = _blockingQueue.Take();
+            Release(toRelease);
+        }
+
+        
     }
 
     /// <summary>
@@ -118,31 +101,31 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     private void AsyncClaimNewResource()
     {
         var pending = Interlocked.Read(ref _pendingResourceClaims);
-        if (pending < MaxPendingClaims)
+
+        if (pending >= MaxPendingClaims) return;
+        
+        Interlocked.Increment(ref _pendingResourceClaims);
+
+        Task.Run(() =>
         {
-            Interlocked.Increment(ref _pendingResourceClaims);
-
-            ThreadPool.QueueUserWorkItem(delegate
+            try
             {
-                try
-                {
-                    var newOne = GetShinyNewResource();
+                var newOne = GetShinyNewResource();
 
-                    Dbg.Trace(newOne != null ? "new resource put into pool" : "can not get new resource");
+                Dbg.Trace(newOne != null ? "new resource put into pool" : "can not get new resource");
 
-                    InternalPut(newOne);
-                    //assume the provider is down
-                }
-                catch (Exception e)
-                {
-                    Dbg.Trace(e.ToString());
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref _pendingResourceClaims);
-                }
-            });
-        }
+                InternalPut(newOne);
+                //assume the provider is down
+            }
+            catch (Exception e)
+            {
+                Dbg.Trace(e.ToString());
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _pendingResourceClaims);
+            }
+        });
     }
 
     /// <summary>
@@ -155,40 +138,35 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     /// </returns>
     public T Get()
     {
-        var poolIsEmpty = false;
 
-        lock (_pool)
+        if (_blockingQueue.Count == 0)
         {
-            //Dbg.Trace($"pool:{string.Join(' ',_pool.Select(p=> p != null?"1":"0"))} in Get");
-            Dbg.Trace(
-                $"pool:{GetHashCode()} resources {_pool.Count} max {PoolCapacity} semaphore {_poolEvent.CurrentCount} pending claims {_pendingResourceClaims} out of {MaxPendingClaims} in Get");
-
-
-            if (_pool.Count == 0)
-            {
-                AsyncClaimNewResource();
-                poolIsEmpty = true;
-            }
-            else
-            {
-                Dbg.Trace($"pool:{GetHashCode()} resource found");
-                var resource = _pool.Dequeue();
-
-                //if null it means the external resource provider is not available anymore
-                if (resource == null)
-                    return null;
-
-                //a pooled resource may not be valid any more
-                if (IsStillValid(resource))
-                    return resource;
-            }
+            AsyncClaimNewResource();
         }
 
-        // wait for new connections outside the pool lock
-        if (poolIsEmpty) _poolEvent.Wait();
+        try
+        {
+            var resource =  _blockingQueue.Take(_tokenSource.Token);
 
+            if (resource == null) // provider not available
+            {
+                return null;
+            }
+        
+            if (IsStillValid(resource))
+            {
+                return resource;
+            }
 
-        return Get(); //recursive call
+            // recursive call (in case a resource is not valid but the provider can produce new valid ones)
+            return Get();
+        }
+        catch (OperationCanceledException e)
+        {
+            return null;
+        }
+
+        
     }
 
     /// <summary>
@@ -208,31 +186,32 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     /// </summary>
     public void ClearAll()
     {
-        lock (_pool)
+        while (_blockingQueue.TryTake(out var toRelease))
         {
-            foreach (var t in _pool)
-                Release(t);
-
-            _pool.Clear();
+            Release(toRelease);
         }
+        
+        
     }
 
     #region IDisposable Members
 
-    private bool _disposed;
-
     public void Dispose()
     {
-        if (!_disposed)
-        {
-            lock (_pool)
-            {
-                ClearAll();
-            }
+        if(_disposed)
+            return;
+        Dispose(true);
 
-            _disposed = true;
-            if (_poolEvent.CurrentCount < PoolCapacity) _poolEvent.Release(PoolCapacity - _poolEvent.CurrentCount);
-        }
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        _tokenSource.Cancel();
+        ClearAll();
+        _blockingQueue.Dispose();
+
     }
 
     #endregion

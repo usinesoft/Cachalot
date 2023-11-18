@@ -162,12 +162,12 @@ namespace Tests.IntegrationTests
             });
 
             var sharedChannel = new TcpClientChannel(new TcpClientPool(1, 1, "localhost", _serverPort));
-
+            using var client = new DataClient { Channel = sharedChannel };
+            
             // parallel requests, shared channel (a if it is used in a server back-end)
             Parallel.For(0, clients, i =>
             {
-                using var client = new DataClient { Channel = sharedChannel };
-
+                
                 IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
                 Assert.AreEqual(items.Count, 200);
             });

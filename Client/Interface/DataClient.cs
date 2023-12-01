@@ -13,7 +13,7 @@ using Client.Tools;
 
 namespace Client.Interface;
 
-public class DataClient : IDataClient
+public sealed class DataClient : IDataClient
 {
     public int ShardIndex { get; set; }
 
@@ -144,7 +144,7 @@ public class DataClient : IDataClient
         var sessionId = Guid.NewGuid();
 
 
-        using var enumerator = items.GetEnumerator();
+        var enumerator = items.GetEnumerator();
 
         var endLoop = false;
 
@@ -167,32 +167,31 @@ public class DataClient : IDataClient
                 }
 
 
-            if (collectionName != null) // null only for empty collection
+            if (collectionName == null) continue;
+
+            var request = new PutRequest(collectionName)
             {
-                var request = new PutRequest(collectionName)
-                {
-                    ExcludeFromEviction = excludeFromEviction,
-                    SessionId = sessionId,
-                    EndOfSession = endLoop
-                };
+                ExcludeFromEviction = excludeFromEviction,
+                SessionId = sessionId,
+                EndOfSession = endLoop
+            };
 
-                foreach (var cachedObject in packet)
-                    if (cachedObject != null)
-                        request.Items.Add(cachedObject);
+            foreach (var cachedObject in packet)
+                if (cachedObject != null)
+                    request.Items.Add(cachedObject);
 
 
-                var split = request.SplitWithMaxSize();
+            var split = request.SplitWithMaxSize();
 
-                foreach (var putRequest in split)
-                {
-                    var response =
-                        Channel.SendRequest(putRequest);
+            foreach (var putRequest in split)
+            {
+                var response =
+                    Channel.SendRequest(putRequest);
 
-                    if (response is ExceptionResponse exResponse)
-                        throw new CacheException(
-                            "Error while writing an object to the cache",
-                            exResponse.Message, exResponse.CallStack);
-                }
+                if (response is ExceptionResponse exResponse)
+                    throw new CacheException(
+                        "Error while writing an object to the cache",
+                        exResponse.Message, exResponse.CallStack);
             }
         }
     }
@@ -396,22 +395,23 @@ public class DataClient : IDataClient
     public void ExecuteTransaction(IList<DataRequest> requests)
     {
         var request = new TransactionRequest(requests)
-            { IsSingleStage = true, TransactionId = Guid.NewGuid() };
+        { IsSingleStage = true, TransactionId = Guid.NewGuid() };
 
         TransactionStatistics.ExecutedAsSingleStage();
 
 
         var response = Channel.SendRequest(request);
 
-        if (response is NullResponse)
-            return;
-
-        if (response is ExceptionResponse exResponse)
-            if (exResponse.ExceptionType != ExceptionType.FailedToAcquireLock)
+        switch (response)
+        {
+            case NullResponse:
+                return;
+            case ExceptionResponse exResponse when exResponse.ExceptionType != ExceptionType.FailedToAcquireLock:
                 throw new CacheException(exResponse.Message, exResponse.ExceptionType);
-
-
-        TransactionStatistics.NewTransactionCompleted();
+            default:
+                TransactionStatistics.NewTransactionCompleted();
+                break;
+        }
     }
 
     public void Import(string collectionName, string jsonFile)
@@ -449,7 +449,7 @@ public class DataClient : IDataClient
 
 
         var request = new PutRequest(testAsQuery.CollectionName)
-            { ExcludeFromEviction = true, Predicate = testAsQuery };
+        { ExcludeFromEviction = true, Predicate = testAsQuery };
 
         request.Items.Add(newValue);
 
@@ -485,7 +485,7 @@ public class DataClient : IDataClient
     {
         Dbg.Trace($"one client release lock for session {sessionId}");
 
-        if (sessionId == default)
+        if (sessionId == Guid.Empty)
             throw new ArgumentException("Invalid sessionId in ReleaseLock");
 
         var request = new LockRequest

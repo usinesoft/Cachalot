@@ -8,6 +8,7 @@
     <SpaProxyServerUrl>http://localhost:48482</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
     <ImplicitUsings>enable</ImplicitUsings>
+	<TrimmerSingleWarn>true</TrimmerSingleWarn>
   </PropertyGroup>
 
   <ItemGroup>

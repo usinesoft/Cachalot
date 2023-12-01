@@ -18,7 +18,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Cachalot.Linq;
 
-public class Connector : IDisposable
+public sealed class Connector : IDisposable
 {
     private readonly Dictionary<string, CollectionSchema> _collectionSchema = new();
 
@@ -49,11 +49,11 @@ public class Connector : IDisposable
             Client = new DataClient { Channel = channel };
 
             _server = new(new()
-                {
-                    IsPersistent = config.IsPersistent,
-                    DataPath = "."
-                })
-                { Channel = channel };
+            {
+                IsPersistent = config.IsPersistent,
+                DataPath = "."
+            })
+            { Channel = channel };
 
             _server.Start();
         }
@@ -191,12 +191,12 @@ public class Connector : IDisposable
 
             // try to get schema from server   
             var info = Client.GetClusterInformation();
-            schema = info.Schema.FirstOrDefault(x =>
+            schema = Array.Find(info.Schema, x =>
                 string.Equals(x.CollectionName, collectionName, StringComparison.CurrentCultureIgnoreCase));
             if (schema == null) return null;
 
             _collectionSchema[schema.CollectionName.ToUpper()] = schema;
-            
+
 
             return schema;
         }
@@ -250,7 +250,7 @@ public class Connector : IDisposable
 
         lock (_collectionSchema)
         {
-            var key = _collectionSchema.Keys.FirstOrDefault(k=>k.Equals(collectionName, StringComparison.InvariantCultureIgnoreCase));
+            var key = _collectionSchema.Keys.FirstOrDefault(k => k.Equals(collectionName, StringComparison.InvariantCultureIgnoreCase));
             if (key != null)
             {
                 _collectionSchema.Remove(key);
@@ -291,7 +291,7 @@ public class Connector : IDisposable
 
 
         var schema = GetCollectionSchema(tableName);
-        
+
         var query = parsed.ToQuery(schema);
 
         // ignore take clause for delete
@@ -351,8 +351,9 @@ public class Connector : IDisposable
             processed++;
             yield return PackedObject.PackJson(item, schema, collectionName);
 
-            if (processed % 10_000 == 0)
-                Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.Progress, processed));
+            if (processed % 10_000 != 0)
+                continue;
+            Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.Progress, processed));
         }
 
         Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.End, processed));
@@ -390,7 +391,7 @@ public class Connector : IDisposable
 
     #region consistent read
 
-    //TODO check if it can work on the aggregator only
+
     private readonly SemaphoreSlim _consistentReadSync = new(10, 10);
 
 
@@ -416,7 +417,7 @@ public class Connector : IDisposable
                         $"Unknown collection {collection}. Use Connector.DeclareCollection");
         }
 
-        Guid sessionId = default;
+        Guid sessionId = Guid.Empty;
         try
         {
             _consistentReadSync.Wait();
@@ -435,7 +436,7 @@ public class Connector : IDisposable
         {
             Dbg.Trace($"exit consistent read session {sessionId}");
 
-            if (sessionId != default)
+            if (sessionId != Guid.Empty)
             {
                 Client.ReleaseLock(sessionId);
                 Client.ReleaseConnections(sessionId);

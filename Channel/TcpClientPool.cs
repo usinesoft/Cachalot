@@ -84,9 +84,9 @@ public class
         if (resource != null)
         {
             // proactive close request
-            //var stream = resource.GetStream();
-            //stream.WriteByte(Constants.CloseCookie);
-            //stream.Flush();
+            var stream = resource.GetStream();
+            stream.WriteByte(Constants.CloseCookie);
+            stream.Flush();
 
             resource.Client.Close();
             resource.Close();

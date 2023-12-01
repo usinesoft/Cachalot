@@ -145,6 +145,11 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
         }
     }
 
+    public override bool IsEmpty()
+    {
+        return false;
+    }
+
     public ICollection<KeyValue> InValues => _inValues;
 
     public IList<KeyValue> Values => _inValues.Count > 0

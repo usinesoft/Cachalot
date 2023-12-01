@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Tests.TestTools
 {
-    public class FakeLocalTimeZone : IDisposable
+    public sealed class FakeLocalTimeZone : IDisposable
     {
         private readonly TimeZoneInfo _actualLocalTimeZoneInfo;
 

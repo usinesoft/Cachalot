@@ -2,7 +2,7 @@
   "profiles": {
     "BookingMarketplace": {
       "commandName": "Project",
-      "commandLineArgs": "localhost:48401"
+      "commandLineArgs": "cachalotdb.com:48401+cachalotdb.com:48402+cachalotdb.com:48403"
     }
   }
 }

@@ -104,15 +104,13 @@ public class PackedObject
             if (!metadata.IsCollection)
             {
                 // if the primary key is an empty Guid generate a value
-                if (metadata.IndexType == IndexType.Primary)
-                    if (Guid.Empty.Equals(value))
-                        value = Guid.NewGuid();
+                if (metadata.IndexType == IndexType.Primary && Guid.Empty.Equals(value)) value = Guid.NewGuid();
 
                 result.Values[pos++] = new(value);
             }
             else
             {
-                if (value is IEnumerable values && !(value is string))
+                if (value is IEnumerable values and not string) // sting is enumerable but not a collection
                 {
                     if (metadata.IndexType == IndexType.Ordered)
                         throw new NotSupportedException(
@@ -367,7 +365,7 @@ public class PackedObject
                         foreach (var jToken1 in child.Children())
                         {
                             var field = (JProperty)jToken1;
-                            if (field.Value.Type == JTokenType.String && !field.Name.StartsWith("$"))
+                            if (field.Value.Type == JTokenType.String && !field.Name.StartsWith('$'))
                                 lines.Add((string)field);
                         }
                     }

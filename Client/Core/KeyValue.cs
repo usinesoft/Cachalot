@@ -103,19 +103,19 @@ public sealed class KeyValue : IComparable<KeyValue>
 
         if (value is double d)
         {
-            FromFloatingPoint(d, OriginalType.SomeFloat);
+            FromFloatingPoint(d);
             return;
         }
 
         if (value is float f)
         {
-            FromFloatingPoint(f, OriginalType.SomeFloat);
+            FromFloatingPoint(f);
             return;
         }
 
         if (value is decimal de)
         {
-            FromFloatingPoint((double)de, OriginalType.SomeFloat);
+            FromFloatingPoint((double)de);
             return;
         }
 
@@ -343,14 +343,13 @@ public sealed class KeyValue : IComparable<KeyValue>
         Type = type;
     }
 
-    private void FromFloatingPoint(double floatValue, OriginalType type)
+    private void FromFloatingPoint(double floatValue )
     {
         IntValue = (long)(floatValue * FloatingPrecision);
 
         Type = OriginalType.SomeFloat;
 
-        //TODO use spans
-
+        
         // If no precision was lost, no need to keep the original value otherwise store it
         // If possible, storing it as an int mai handle the precision better than the double (1.7 for example )
         if (IntValue % 10 != 0)
@@ -369,9 +368,7 @@ public sealed class KeyValue : IComparable<KeyValue>
     {
         StableHashForString(stringValue);
 
-        //_hashCode = stringValue.GetHashCode();
-
-
+        
         var estimatedSize = Encoding.UTF8.GetByteCount(stringValue);
 
         _data = new byte[estimatedSize];
@@ -411,9 +408,7 @@ public sealed class KeyValue : IComparable<KeyValue>
 
     private bool Equals(KeyValue other)
     {
-        if (Type is OriginalType.SomeFloat or OriginalType.SomeInteger)
-            if (other.Type is OriginalType.SomeFloat or OriginalType.SomeInteger)
-                return Math.Abs(NumericValue - other.NumericValue) < double.Epsilon;
+        if (Type is OriginalType.SomeFloat or OriginalType.SomeInteger && other.Type is OriginalType.SomeFloat or OriginalType.SomeInteger) return Math.Abs(NumericValue - other.NumericValue) < double.Epsilon;
 
 
         if (IntValue != other.IntValue)

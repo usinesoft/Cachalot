@@ -76,13 +76,7 @@ namespace Tests.IntegrationTests
         [Test]
         public void Feed_many_sends_all_data()
         {
-            // check that empty request are correctly split
-            //var empty = new PutRequest("test"){EndOfSession = true, SessionId = Guid.NewGuid()};
-            //var split = empty.SplitWithMaxSize();
-            //Assert.AreEqual(1,split.Count);
-            //Assert.IsTrue(split[0].EndOfSession);
-            //Assert.IsEmpty(split[0].Items);
-
+           
 
             using var connector = new Connector(_clientConfig);
             connector.AdminInterface().DropDatabase();
@@ -368,7 +362,7 @@ namespace Tests.IntegrationTests
 
                 Assert.Throws<CacheException>(() =>
                 {
-                    var unused = orders.Where(o => o.IsDelivered).ToList();
+                    var _ = orders.Where(o => o.IsDelivered).ToList();
                 });
             }
 

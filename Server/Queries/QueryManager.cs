@@ -477,7 +477,7 @@ public class QueryManager : IRequestManager
 
         // if not ORDER BY use the primary index
         var result = orQuery.OrderByProperty == null
-            ? _dataStore.PrimaryIndex.GetAll().Where(query.Match).ToList()
+            ? _dataStore.PrimaryIndex.GetAll()
             : null;
 
         // otherwise use an ordered index
@@ -488,11 +488,27 @@ public class QueryManager : IRequestManager
                 throw new CacheException(
                     $"Order by can be applied only on ordered indexes, {orQuery.OrderByProperty} is not one");
 
-            result = index.GetAll(orQuery.OrderByIsDescending).Where(query.Match).ToList();
+            result = index.GetAll(orQuery.OrderByIsDescending);
         }
 
-        // this will apply DISTINCT and TAKE (if required)
-        return PostProcessResult(orQuery, result);
+        if (!query.IsEmpty())
+        {
+            result = result.Where(x => query.Match(x));
+        }
+
+        // no post-processing required
+        if (!orQuery.Distinct && orQuery.Take == 0)
+        {
+            return result;
+        }
+
+        if (!orQuery.Distinct)
+        {
+            return result.Take(orQuery.Take);
+        }
+
+        // this will apply DISTINCT and TAKE 
+        return PostProcessResult(orQuery, result.ToList());
     }
 
     private void ProcessGetRequest(GetRequest request, IClient client)

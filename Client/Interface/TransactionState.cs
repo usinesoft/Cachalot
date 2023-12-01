@@ -12,9 +12,9 @@ namespace Client.Interface;
 /// <summary>
 ///     State machine mor two stage transactions
 /// </summary>
-public partial class DataAggregator
+public sealed partial class DataAggregator
 {
-    private class TransactionState
+    private sealed class TransactionState
     {
         public enum Status
         {
@@ -237,7 +237,7 @@ public partial class DataAggregator
             {
                 // this code should never be reached
                 throw new CacheException(
-                    $"Error in the first stage of a two stage transaction:{e.InnerExceptions.First()}");
+                    $"Error in the first stage of a two stage transaction:{e.InnerExceptions[0]}");
             }
 
             var locksOk = AllOk;

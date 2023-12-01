@@ -100,11 +100,11 @@ namespace Tests.UnitTests
         [Test]
         public void Date_does_not_use_local_timezone()
         {
-            KeyValue date = null;
+            KeyValue date;
 
             DateTime testValue;
 
-            string fmt1 = null;
+            string fmt1;
 
             using (var tz = new FakeLocalTimeZone(TimeZoneInfo.Utc))
             {
@@ -124,6 +124,10 @@ namespace Tests.UnitTests
                 var fmt2 = SmartDateTimeConverter.FormatDate(tst);
 
                 Assert.AreEqual(fmt1, fmt2);
+
+                var date2 = new KeyValue(Today);
+
+                Assert.AreEqual(date, date2);
             }
         }
 

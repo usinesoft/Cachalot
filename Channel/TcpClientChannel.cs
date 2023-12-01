@@ -10,7 +10,7 @@ using ProtoBuf;
 
 namespace Channel;
 
-public class TcpClientChannel : IClientChannel
+public sealed class TcpClientChannel : IClientChannel
 {
     private readonly Dictionary<Guid, TcpClient> _connectionBySession = new();
     private readonly TcpClientPool _connectionPool;
@@ -49,7 +49,7 @@ public class TcpClientChannel : IClientChannel
         }
     }
 
-    private class TcpSession : Session
+    private sealed class TcpSession : Session
     {
         public TcpSession([NotNull] TcpClient client)
         {
@@ -65,12 +65,11 @@ public class TcpClientChannel : IClientChannel
 
     public void Dispose()
     {
-        if (!_disposed)
-        {
-            _connectionPool?.Dispose();
+        if (_disposed) return;
 
-            _disposed = true;
-        }
+        _connectionPool?.Dispose();
+
+        _disposed = true;
     }
 
     #endregion
@@ -82,13 +81,13 @@ public class TcpClientChannel : IClientChannel
         if (request == null)
             throw new ArgumentNullException(nameof(request));
 
-        Guid sessionId = default;
+        var sessionId = Guid.Empty;
         if (request is IHasSession hasSession) sessionId = hasSession.SessionId;
 
         var connection = InternalGetConnection(sessionId);
 
 
-        if (connection == null || connection.Connected == false)
+        if (connection is not { Connected: true })
             throw new CacheException("Not connected to server");
 
         var stream = connection.GetStream();
@@ -106,14 +105,14 @@ public class TcpClientChannel : IClientChannel
         {
             Streamer.SendAck(stream);
 
-            if (sessionId == default) _connectionPool.Put(connection);
+            if (sessionId == Guid.Empty) _connectionPool.Put(connection);
         }
     }
 
     public Session BeginSession()
     {
         var client = _connectionPool.Get();
-        if (client == null || client.Connected == false)
+        if (client is not { Connected: true })
             throw new CacheException("Not connected to server");
 
         return new TcpSession(client);
@@ -121,7 +120,7 @@ public class TcpClientChannel : IClientChannel
 
     public void EndSession(Session session)
     {
-        if (!(session is TcpSession tcpSession))
+        if (session is not TcpSession tcpSession)
             throw new ArgumentException("Invalid session type", nameof(session));
 
 
@@ -130,13 +129,14 @@ public class TcpClientChannel : IClientChannel
 
     public void PushRequest(Session session, Request request)
     {
-        if (!(session is TcpSession tcpSession))
+        if (session is not TcpSession tcpSession)
             throw new ArgumentException("Invalid session type", nameof(session));
 
         var client = tcpSession.Client;
 
-        if (client == null || client.Connected == false)
+        if (client is not { Connected: true })
             throw new CacheException("Not connected to server");
+
         var stream = client.GetStream();
 
         stream.WriteByte(Constants.RequestCookie);
@@ -146,12 +146,12 @@ public class TcpClientChannel : IClientChannel
 
     private Response SendRequest(Session session, Request request)
     {
-        if (!(session is TcpSession tcpSession))
+        if (session is not TcpSession tcpSession)
             throw new ArgumentException("Invalid session type", nameof(session));
 
         var client = tcpSession.Client;
 
-        if (client == null || client.Connected == false)
+        if (client is not { Connected: true })
             throw new CacheException("Not connected to server");
 
         var stream = client.GetStream();
@@ -169,12 +169,12 @@ public class TcpClientChannel : IClientChannel
 
     public Response GetResponse(Session session)
     {
-        if (!(session is TcpSession tcpSession))
+        if (session is not TcpSession tcpSession)
             throw new ArgumentException("Invalid session type", nameof(session));
 
         var client = tcpSession.Client;
 
-        if (client == null || client.Connected == false)
+        if (client is not { Connected: true })
             throw new CacheException("Not connected to server");
         var stream = client.GetStream();
 
@@ -201,7 +201,7 @@ public class TcpClientChannel : IClientChannel
     /// <returns></returns>
     private TcpClient InternalGetConnection(Guid sessionId)
     {
-        TcpClient connection = null;
+        TcpClient connection;
 
 
         lock (_connectionBySession)
@@ -221,14 +221,14 @@ public class TcpClientChannel : IClientChannel
             throw new ArgumentNullException(nameof(request));
 
 
-        Guid sessionId = default;
+        var sessionId = Guid.Empty;
         if (request is IHasSession hasSession) sessionId = hasSession.SessionId;
 
         var connection = InternalGetConnection(sessionId);
 
         try
         {
-            if (connection == null || connection.Connected == false)
+            if (connection is not { Connected: true })
                 throw new CacheException("Not connected to server");
 
             var stream = connection.GetStream();
@@ -249,7 +249,7 @@ public class TcpClientChannel : IClientChannel
         }
         finally
         {
-            if (sessionId == default && connection != null) // not in a session so return the connection to the pool
+            if (sessionId == Guid.Empty && connection != null) // not in a session so return the connection to the pool
                 _connectionPool.Put(connection);
         }
     }

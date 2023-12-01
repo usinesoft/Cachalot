@@ -2,14 +2,19 @@
 <div class="query-container">
 
   <!--property-->
-  <mat-form-field appearance="fill">
+  <!-- <mat-form-field appearance="fill">
     <mat-label>Property</mat-label>
     <mat-select [(value)]="selectedProperty">
       <mat-option *ngFor="let property of properties" [value]="property">
         {{property}}
       </mat-option>
-    </mat-select>
-  </mat-form-field>
+    </mat-select> 
+    
+  </mat-form-field> -->
+  <app-smart-multi-select [(selectedValues)]="selectedProperties" [allValues]="properties" [canSelectAll]="false"
+    [canClearAll]="false" [isSingleValue]=true [hint]="'select property'" label="property"
+    style="flex-grow: 2; min-width: 20rem;">
+  </app-smart-multi-select>
   <!--operator-->
   <mat-form-field appearance="fill" style="max-width: 6rem;">
     <mat-label>Operator</mat-label>
@@ -27,7 +32,7 @@
       <!--search box only if more than 10 values-->
       <mat-option *ngIf="values.length > 10">
         <ngx-mat-select-search [(ngModel)]="searchText" placeholderLabel="Search..."
-                               noEntriesFoundLabel="'no matching value'">
+          noEntriesFoundLabel="'no matching value'">
         </ngx-mat-select-search>
       </mat-option>
       <mat-option class="clear" *ngIf="values.length > 10">
@@ -41,7 +46,7 @@
     <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>
   </mat-form-field>
   <mat-form-field appearance="fill" *ngIf="(!multipleValuesAllowed || !canSelectValues) && hasValue "
-                  style="flex-grow: 2">
+    style="flex-grow: 2">
     <mat-label>Value</mat-label>
     <input matInput placeholder="Value" [(ngModel)]="singleValue">
     <mat-hint *ngIf="multipleValuesAllowed">multiple values allowed (use ,)</mat-hint>

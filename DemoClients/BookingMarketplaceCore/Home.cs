@@ -37,6 +37,9 @@ namespace BookingMarketplace
         public decimal PriceInEuros { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)]
+        public DateTime LastUpdate { get; set; } 
+
+        [ServerSideValue(IndexType.Dictionary)]
         public List<DateTime> AvailableDates { get; set; } = new List<DateTime>(); 
     
         [FullTextIndexation]

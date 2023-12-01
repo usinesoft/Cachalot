@@ -27,7 +27,7 @@ public static class SqlExtensions
         if (tableNode == null) throw new NotSupportedException("Collection name not specified");
 
 
-        var query = new OrQuery(tableNode.Children.First()
+        var query = new OrQuery(tableNode.Children[0]
             .Token); // the one qnd only child of the "from" node is the table name
 
         // projection
@@ -219,11 +219,11 @@ public static class SqlExtensions
                 if (valueAfter != null)
                 {
                     valueAfter = valueAfter.Trim('\'', '"');
-                    if (valueAfter.StartsWith("%") && valueAfter.EndsWith("%")) return QueryOperator.StrContains;
+                    if (valueAfter.StartsWith('%') && valueAfter.EndsWith('%')) return QueryOperator.StrContains;
 
-                    if (valueAfter.StartsWith("%")) return QueryOperator.StrEndsWith;
+                    if (valueAfter.StartsWith('%')) return QueryOperator.StrEndsWith;
 
-                    if (valueAfter.EndsWith("%")) return QueryOperator.StrStartsWith;
+                    if (valueAfter.EndsWith('%')) return QueryOperator.StrStartsWith;
                 }
 
                 break;

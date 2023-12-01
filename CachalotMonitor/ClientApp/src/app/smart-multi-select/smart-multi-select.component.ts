@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
 
 
 @Component({
@@ -8,7 +8,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 })
 export class SmartMultiSelectComponent implements OnInit {
 
-  constructor() {}
+  constructor() { }
 
   ngOnInit(): void {
   }
@@ -26,6 +26,9 @@ export class SmartMultiSelectComponent implements OnInit {
 
   @Input()
   clearButton = false;
+
+  @ViewChild('multiSelect') select: any;
+
 
   // all values
   private _values: string[] = [];
@@ -87,7 +90,32 @@ export class SmartMultiSelectComponent implements OnInit {
         this.selectedValuesChange.emit(this._selectedValues);
       }
 
-    } else {
+    }
+    else if (this.isSingleValue) {
+      console.log('single value mode');
+
+      let selected = [];
+
+      if (this._selectedValues.length > 0) {
+        let newElements = v.filter(x => !this._selectedValues.includes(x));
+        console.log(newElements);
+        selected = newElements;        
+      }
+      else{
+        selected = v;
+      }
+
+      let newv = selected[0];
+      let oldv = this._selectedValues[0]
+      if(newv != oldv && newv){
+        this._selectedValues = [newv];
+        this.selectedValuesChange.emit(this._selectedValues);
+        this.select.close();
+      }
+      
+
+    }
+    else {
       const filtered = v.filter(x => x); // remove empty values
       if (!this.arraysAreEqual(filtered, this._selectedValues)) {
         this._selectedValues = filtered;

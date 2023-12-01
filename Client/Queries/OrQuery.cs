@@ -16,7 +16,7 @@ namespace Client.Queries;
 ///     A list of and queries bound by an OR operator
 /// </summary>
 [ProtoContract]
-public class OrQuery : Query
+public sealed class OrQuery : Query
 {
     public OrQuery(string collectionName)
     {
@@ -45,7 +45,7 @@ public class OrQuery : Query
 
     public bool IsFullTextQuery => !string.IsNullOrWhiteSpace(FullTextSearch);
 
-    public bool IsEmpty()
+    public override bool IsEmpty()
     {
         return Elements.Count == 0;
     }

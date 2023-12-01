@@ -14,7 +14,7 @@ namespace Client.Queries;
 ///     A list of atomic queries bound by an AND operator
 /// </summary>
 [ProtoContract]
-public class AndQuery : Query
+public sealed class AndQuery : Query
 {
     /// <summary>
     ///     Create an empty query (called internally by the query builder)
@@ -27,7 +27,12 @@ public class AndQuery : Query
 
     public override bool IsValid
     {
-        get { return Elements.All(atomicQuery => atomicQuery.IsValid); }
+        get { return Elements.TrueForAll(atomicQuery => atomicQuery.IsValid); }
+    }
+
+    public override bool IsEmpty()
+    {
+        return Elements.Count == 0;
     }
 
     /// <summary>

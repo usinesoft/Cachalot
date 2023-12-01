@@ -411,7 +411,7 @@ public partial class DataAggregator : IDataClient
 
         try
         {
-// for full-text queries the order is given by the result rank
+            // for full-text queries the order is given by the result rank
             // for normal queries order is either explicit (order by clause) or thy are unordered
             if (!query.IsFullTextQuery)
             {
@@ -581,7 +581,10 @@ public partial class DataAggregator : IDataClient
 
     public void ImportDump(string path)
     {
-        var nodesFromPath = path.Split('_').FirstOrDefault(x => x.Contains("nodes"));
+        var parts = path.Split('_');
+
+        var nodesFromPath = Array.Find(parts, x => x.Contains("nodes"));
+
         if (nodesFromPath != null)
         {
             var nodes = int.Parse(nodesFromPath[..2]);
@@ -856,7 +859,7 @@ public partial class DataAggregator : IDataClient
                 i => { resultByClient[i] = CacheClients[i].TryAcquireLock(sessionId, writeAccess, collections); });
 
             // all succeeded
-            if (resultByClient.All(r => r))
+            if (Array.TrueForAll(resultByClient, r => r))
                 return true;
 
             // otherwise release the successful locks to avoid deadlocks

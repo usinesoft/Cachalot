@@ -59,6 +59,25 @@ export class SimpleQueryComponent implements OnInit {
 
   filteredValues: string[] = [];
 
+  // adapter for smart-multiselect component
+  get selectedProperties():string[]{
+    if(!this.selectedProperty){
+      return [];
+    }
+    
+    return [this.selectedProperty];
+  }
+  
+  set selectedProperties(value:string[]){
+    if(value.length > 0){
+      this.selectedProperty = value[0];
+    }
+    else{
+      this.selectedProperty = undefined;
+    }
+  }
+
+    
   get values(): string[] {
     return this._query.possibleValues;
   }

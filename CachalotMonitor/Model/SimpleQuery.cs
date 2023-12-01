@@ -28,7 +28,7 @@ public class SimpleQuery
         {
             if (Values.Length == 0) return false;
 
-            if (Values.Any(string.IsNullOrWhiteSpace)) return false;
+            if (Array.Exists(Values, string.IsNullOrWhiteSpace)) return false;
         }
 
         return true;

@@ -30,7 +30,7 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
 
     private bool _disposed;
 
-    CancellationTokenSource _tokenSource = new CancellationTokenSource();
+    readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
 
 
     protected PoolStrategy(int poolCapacity)
@@ -161,7 +161,7 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
             // recursive call (in case a resource is not valid but the provider can produce new valid ones)
             return Get();
         }
-        catch (OperationCanceledException e)
+        catch (OperationCanceledException)
         {
             return null;
         }
@@ -198,19 +198,23 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
 
     public void Dispose()
     {
-        if(_disposed)
-            return;
+        
         Dispose(true);
 
-        _disposed = true;
+        
         GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)
     {
+        if(_disposed)
+            return;
+
         _tokenSource.Cancel();
         ClearAll();
         _blockingQueue.Dispose();
+
+        _disposed = true;
 
     }
 

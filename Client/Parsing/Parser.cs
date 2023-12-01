@@ -57,7 +57,7 @@ public class Parser
             }
             else // multiple elements like property1 alias1, property2 alias 2
             {
-                if (beforeFrom.First().NormalizedText == "distinct")
+                if (beforeFrom[0].NormalizedText == "distinct")
                 {
                     projectionNode.Children.Add(new() { Token = "distinct" });
                     beforeFrom = beforeFrom.Skip(1);
@@ -239,8 +239,7 @@ public class Parser
 
     private string TryNormalizeValue(string value)
     {
-        //value = value.Trim('\'', '"');
-
+        
         var commas = value.Count(c => c == ',');
 
         if (commas > 1)

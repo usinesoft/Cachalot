@@ -68,9 +68,7 @@ public class TcpServerChannel : IServerChannel
             Dbg.Trace("before _listener.Server.Disconnect();");
             _listener.Server.Disconnect(false);
             Dbg.Trace("after _listener.Server.Disconnect();");
-
-
-            //_listener.Stop();
+            
         }
         catch (Exception)
         {
@@ -195,7 +193,7 @@ public class TcpServerChannel : IServerChannel
     /// <summary>
     ///     Client as seen from the server
     /// </summary>
-    private class ServerClient : IClient
+    private sealed class ServerClient : IClient
     {
         private readonly TcpClient _tcpClient;
 
@@ -206,30 +204,13 @@ public class TcpServerChannel : IServerChannel
 
         #region IClient Members
 
-        public void SendMany(ICollection<JObject> items)
-        {
-            Stream stream = _tcpClient.GetStream();
-
-            var memStream = new MemoryStream();
-            Streamer.ToStreamMany(memStream, items);
-            Task.Run(() =>
-            {
-                memStream.Seek(0, SeekOrigin.Begin);
-                stream.Write(memStream.GetBuffer(), 0,
-                    (int)memStream.Length);
-            });
-        }
+        
 
         public bool? ShouldContinue()
         {
             try
             {
                 SendResponse(new ReadyResponse());
-
-
-                //#if !DEBUG
-                //                    _tcpClient.ReceiveTimeout = Constants.ReceiveTimeoutInMilliseconds;
-                //#endif
 
                 Stream stream = _tcpClient.GetStream();
 
@@ -262,15 +243,27 @@ public class TcpServerChannel : IServerChannel
 
                 Streamer.ToStream(stream, response);
             }
-            // ReSharper disable EmptyGeneralCatchClause
             catch (Exception)
-                // ReSharper restore EmptyGeneralCatchClause
             {
+                //ignore
             }
 
-            //_dataReceived.Set();
+            
         }
 
+        public void SendMany(ICollection<JObject> items)
+        {
+            Stream stream = _tcpClient.GetStream();
+
+            var memStream = new MemoryStream();
+            Streamer.ToStreamMany(memStream, items);
+            Task.Run(() =>
+            {
+                memStream.Seek(0, SeekOrigin.Begin);
+                stream.Write(memStream.GetBuffer(), 0,
+                    (int)memStream.Length);
+            });
+        }
 
         public void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases)
         {
@@ -295,10 +288,10 @@ public class TcpServerChannel : IServerChannel
                     Streamer.ToStreamMany(stream, items, selectedIndexes, aliases);
                 }
             }
-            // ReSharper disable EmptyGeneralCatchClause
+            
             catch (Exception)
-                // ReSharper restore EmptyGeneralCatchClause
             {
+                //ignore
             }
         }
 

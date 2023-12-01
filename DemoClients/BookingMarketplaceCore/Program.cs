@@ -30,23 +30,26 @@ namespace BookingMarketplace
 
             var result = new List<Home>(ids.Length);
 
-            var today = DateTime.Today;
+            var today = DateTime.UtcNow.Date;
+            
             var tomorrow = today.AddDays(1);
 
             // one in ten is available today, one in 100 is available tomorrow
 
+            DateTime lastUpdate = DateTime.UtcNow.Date;
             
             for (var i = 0; i < ids.Length - 3; i++)
             {
                 var availableDates = new List<DateTime>();
                 if (i % 10 == 0)
                 {
-                    availableDates.Add(today);
+                    availableDates.Add(today.Date);
                 }
 
                 if (i % 100 == 0)
                 {
-                    availableDates.Add(tomorrow);
+                    availableDates.Add(tomorrow.Date);
+                    
                 }
 
                 var property = new Home
@@ -58,7 +61,9 @@ namespace BookingMarketplace
                     PriceInEuros = rand.Next(50, 300),
                     Rooms = rand.Next(1,5),
                     Town = towns[i%4][rand.Next(4)],
-                    AvailableDates = availableDates
+                    AvailableDates = availableDates,
+                    LastUpdate = lastUpdate
+
                 };
 
                 result.Add(property);

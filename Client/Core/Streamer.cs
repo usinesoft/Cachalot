@@ -276,7 +276,7 @@ public static class Streamer
         if (exceptionHandler == null)
             throw new ArgumentNullException(nameof(exceptionHandler));
 
-        //BufferedStream bufferedStream = new BufferedStream(stream);
+        
         var reader = new BinaryReader(stream);
 
 
@@ -350,7 +350,6 @@ public static class Streamer
 
     public static bool ReadAck(Stream stream)
     {
-        //BufferedStream bufferedStream = new BufferedStream(stream);
         var reader = new BinaryReader(stream);
         var ack = reader.ReadInt64();
         Dbg.CheckThat(ack == Ack);

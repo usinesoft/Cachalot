@@ -151,7 +151,7 @@ internal class QueryService : IQueryService
                         return metadata;
 
                     if (pr.IsCollection)
-                        MetadataForCollectionProperty(property, result!, metadata);
+                        MetadataForCollectionProperty(result!, metadata);
                     else
                         MetadataForScalarProperty(property, result!, metadata);
 
@@ -194,14 +194,13 @@ internal class QueryService : IQueryService
         {
             var q = query.SimpleQueries[i];
             SimpleQueryToSql(q, builder);
-            if (i < query.SimpleQueries.Length - 1)
-                if (query.SimpleQueries[i + 1].CheckIsValid())
-                {
-                    builder.Append(" ");
-                    builder.Append("AND");
-                    builder.Append(Environment.NewLine);
-                    builder.Append(" ");
-                }
+            if (i < query.SimpleQueries.Length - 1 && query.SimpleQueries[i + 1].CheckIsValid())
+            {
+                builder.Append(" ");
+                builder.Append("AND");
+                builder.Append(Environment.NewLine);
+                builder.Append(" ");
+            }
         }
 
         if (query.OrderBy != null)
@@ -443,7 +442,7 @@ internal class QueryService : IQueryService
         }
     }
 
-    private static void MetadataForCollectionProperty(string property, List<JObject> result, QueryMetadata metadata)
+    private static void MetadataForCollectionProperty(List<JObject> result, QueryMetadata metadata)
     {
         if (result == null) throw new ArgumentNullException(nameof(result));
         metadata.PropertyIsCollection = true;

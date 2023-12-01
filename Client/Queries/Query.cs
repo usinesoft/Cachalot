@@ -17,6 +17,8 @@ public abstract class Query
     /// </summary>
     public abstract bool IsValid { get; }
 
+    public abstract bool IsEmpty();
+        
     public static Query Empty { get; } = new EmptyQuery();
 
     /// <summary>

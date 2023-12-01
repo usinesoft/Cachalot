@@ -44,8 +44,7 @@ public class DataSource<T> : QueryableBase<T>
                         [NotNull] CollectionSchema collectionSchema, Guid sessionId = default)
         : base(CreateParser(), new QueryExecutor(connector.Client, collectionSchema, sessionId, collectionName))
     {
-        if (connector == null) throw new ArgumentNullException(nameof(connector));
-
+        
         _client = connector.Client;
 
         _collectionName = collectionName ?? throw new ArgumentNullException(nameof(collectionName));
@@ -272,7 +271,7 @@ public class DataSource<T> : QueryableBase<T>
         var executor = new NullExecutor(_collectionSchema, collectionName);
         var queryable = new NullQueryable<T>(executor);
 
-        var unused = queryable.Where(where).ToList();
+        var _ = queryable.Where(where).ToList();
 
         var query = executor.Expression;
         query.CollectionName = _collectionName;

@@ -7,6 +7,7 @@ using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
 using Tests.TestData;
+using Tests.TestTools;
 
 namespace Tests.UnitTests
 {
@@ -267,6 +268,29 @@ namespace Tests.UnitTests
         private static AtomicQuery FindAtomicQuery(OrQuery query, string property)
         {
             return query.Elements.SelectMany(e => e.Elements).FirstOrDefault(e => e.PropertyName == property);
+        }
+
+        [Test]
+        [TestCase("Pacific Standard Time")]
+        [TestCase("Tokyo Standard Time")]
+        public void No_offset_when_parsing_pure_dates(string timeZone)
+        {
+            using var tz = new FakeLocalTimeZone(TimeZoneInfo.FindSystemTimeZoneById(timeZone));
+
+            var schema = SchemaFactory.New("collection").PrimaryKey("id")
+                .WithServerSideValue("date")
+                .Build();
+
+            var result =
+                new Parser().ParseSql("select from collection where date =2023-01-01 ");
+
+            var query = result.ToQuery(schema);
+
+            Assert.IsNotNull(query);
+            var value = query.Elements.FirstOrDefault()?.Elements.FirstOrDefault()?.Value;
+            Assert.IsNotNull(value);
+            Assert.AreEqual(KeyValue.OriginalType.Date, value.Type);
+            Assert.AreEqual(0, value.DateValue.Value.Offset.Ticks);
         }
 
         [Test]

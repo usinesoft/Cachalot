@@ -94,7 +94,11 @@ export class SimpleQueryComponent implements OnInit {
   }
 
   set selectedProperty(v: string | undefined) {
-    this._query.propertyName = v;
+    
+    if(v == this._query.propertyName)
+      return;
+    
+      this._query.propertyName = v;
     this._query.values = [];
 
     // get metadata => data type => acceptable operators and values list if not too big (limited to 1000 values)

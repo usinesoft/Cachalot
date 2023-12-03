@@ -77,7 +77,7 @@ export class
     },
       err => {
         this.working = false;
-        this.displayError(err ?? "connection error");
+        this.displayError(err.message ?? "connection error");
       });
 
   }

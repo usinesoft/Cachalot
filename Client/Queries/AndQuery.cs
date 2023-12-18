@@ -68,12 +68,12 @@ public sealed class AndQuery : Query
 
     public override bool Match(PackedObject item)
     {
-        return Elements.All(t => t.Match(item));
+        return Elements.TrueForAll(t => t.Match(item));
     }
 
     public bool IsSubsetOf(AndQuery query)
     {
-        return query.Elements.All(e => Elements.Any(q => q.IsSubsetOf(e)));
+        return query.Elements.TrueForAll(e => Elements.Exists(q => q.IsSubsetOf(e)));
     }
 
     public string Description()

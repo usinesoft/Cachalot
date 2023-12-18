@@ -3,6 +3,7 @@
 
   <div class="connection-container" *ngIf="!connected">
 
+    <ng-container *ngIf="history.length">
     <p class="title">Connect to a known cluster</p>
     <div class="actions-container">
       <button  *ngFor="let h of history" mat-raised-button color="primary"
@@ -11,6 +12,7 @@
         <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
       </button>
     </div>
+  </ng-container>
 
     <p class="title" style="margin-top: 4rem;">Connect to a new cluster of servers</p>
     <div class="servers-container" *ngIf="!connected">

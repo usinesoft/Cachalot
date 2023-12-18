@@ -78,14 +78,14 @@ public class QueryManager : IRequestManager
                     // no need to count for the primary index. Waste of time as it wil always be the only index used
                     return new List<IndexRanking> { new(index, atomicQuery, -1) };
 
-                var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator);
+                var indexResultCount = index.GetCount(atomicQuery.GetValues(), atomicQuery.Operator);
                 result.Add(new(index, atomicQuery, indexResultCount));
             }
             else if (atomicQuery.IsComparison) // in this case we can only use ordered indexes
             {
                 if (index.IndexType == IndexType.Ordered)
                 {
-                    var indexResultCount = index.GetCount(atomicQuery.Values, atomicQuery.Operator, true);
+                    var indexResultCount = index.GetCount(atomicQuery.GetValues(), atomicQuery.Operator, true);
 
                     result.Add(new(index, atomicQuery, indexResultCount));
                 }
@@ -101,9 +101,10 @@ public class QueryManager : IRequestManager
         queryExecutionPlan.StartPlanning();
         var indexesThatCanBeUsed = GetIndexesForQuery(query);
         var indexesUsed = indexesThatCanBeUsed.OrderBy(p => p.Ranking).Take(2).ToArray();
-        // remove the second index if it matches much more items than the first one
+        // Remove the second index if it matches much more items than the first one
+        // Surprisingly crossing two indexes takes a significant time. Scan may be faster
         if (indexesUsed.Length > 1)
-            if (indexesUsed[1].Ranking > indexesUsed[0].Ranking * 4)
+            if (indexesUsed[1].Ranking > indexesUsed[0].Ranking * 2)
                 indexesUsed = new[] { indexesUsed[0] };
 
         queryExecutionPlan.EndPlanning(indexesUsed.Select(r => r.Index.Name).ToList());
@@ -123,7 +124,7 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.Trace($"single index: {plan.ResolvedQuery.PropertyName}");
 
-            result = plan.Index.GetMany(plan.ResolvedQuery.Values, plan.ResolvedQuery.Operator);
+            result = plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator);
 
             // this query was resolved by an index so no need to check it manually
             restOfTheQuery.Elements.Remove(plan.ResolvedQuery);
@@ -138,12 +139,12 @@ public class QueryManager : IRequestManager
             {
                 if (result == null)
                 {
-                    result = plan.Index.GetMany(plan.ResolvedQuery.Values, plan.ResolvedQuery.Operator);
+                    result = plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator);
                     queryExecutionPlan.Trace($"first index: {plan.ResolvedQuery.PropertyName} = {plan.Ranking}");
                 }
                 else
                 {
-                    result.IntersectWith(plan.Index.GetMany(plan.ResolvedQuery.Values, plan.ResolvedQuery.Operator));
+                    result.IntersectWith(plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator));
                     queryExecutionPlan.Trace(
                         $"then index: {plan.ResolvedQuery.PropertyName} = {plan.Ranking} => {result.Count}");
                 }
@@ -398,7 +399,7 @@ public class QueryManager : IRequestManager
             if (atomicQuery.IndexType == IndexType.Primary)
             {
                 queryExecutionPlan.UsedIndexes = new() { _dataStore.PrimaryIndex.Name };
-                return _dataStore.PrimaryIndex.GetMany(atomicQuery.Values).ToList();
+                return _dataStore.PrimaryIndex.GetMany(atomicQuery.GetValues()).ToList();
             }
 
 
@@ -412,7 +413,7 @@ public class QueryManager : IRequestManager
                     queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                     queryExecutionPlan.StartIndexUse();
                     queryExecutionPlan.UsedIndexes = new() { index.Name };
-                    return index.GetMany(atomicQuery.Values).ToList();
+                    return index.GetMany(atomicQuery.GetValues()).ToList();
                 }
                 finally
                 {
@@ -425,7 +426,7 @@ public class QueryManager : IRequestManager
                     queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                     queryExecutionPlan.StartIndexUse();
                     queryExecutionPlan.UsedIndexes = new() { index.Name };
-                    return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
+                    return index.GetMany(atomicQuery.GetValues(), atomicQuery.Operator).ToList();
                 }
                 finally
                 {
@@ -438,7 +439,7 @@ public class QueryManager : IRequestManager
                     queryExecutionPlan.Trace($"single index: {atomicQuery.PropertyName}");
                     queryExecutionPlan.StartIndexUse();
                     queryExecutionPlan.UsedIndexes = new() { index.Name };
-                    return index.GetMany(atomicQuery.Values, atomicQuery.Operator).ToList();
+                    return index.GetMany(atomicQuery.GetValues(), atomicQuery.Operator).ToList();
                 }
                 finally
                 {

@@ -47,109 +47,74 @@ public sealed class KeyValue : IComparable<KeyValue>
 
     public KeyValue(object value)
     {
-        if (value is null)
+        switch (value)
         {
-            FromNull();
-            return;
-        }
-
-
-        if (value is Enum e)
-        {
-            var longVal = Convert.ToInt64(e);
-            FromLong(longVal, OriginalType.SomeInteger);
-            return;
-        }
-
-        if (value is bool b)
-        {
-            var longVal = b ? 1 : 0;
-            FromLong(longVal, OriginalType.Boolean);
-            return;
-        }
-
-        //integer types
-        if (value is long l)
-        {
-            
-            FromLong(l, OriginalType.SomeInteger);
-            return;
-        }
-
-        if (value is int i)
-        {
-            FromLong(i, OriginalType.SomeInteger);
-            return;
-        }
-
-        if (value is short s)
-        {
-            FromLong(s, OriginalType.SomeInteger);
-            return;
-        }
-
-        if (value is char c)
-        {
-            FromLong(c, OriginalType.SomeInteger);
-            return;
-        }
-
-        if (value is byte bt)
-        {
-            FromLong(bt, OriginalType.SomeInteger);
-            return;
-        }
-
-
-        if (value is double d)
-        {
-            FromFloatingPoint(d);
-            return;
-        }
-
-        if (value is float f)
-        {
-            FromFloatingPoint(f);
-            return;
-        }
-
-        if (value is decimal de)
-        {
-            FromFloatingPoint((double)de);
-            return;
-        }
-
-        if (value is DateTime dt)
-        {
-            // the default DateTime can not be directly converted to DateTimeOffset
-
-            if (dt == default)
+            case null:
+                FromNull();
+                return;
+            case Enum e:
             {
-                FromDateTimeWithTimeZone(default);
+                var longVal = Convert.ToInt64(e);
+                FromLong(longVal, OriginalType.SomeInteger);
                 return;
             }
-
+            case bool b:
+            {
+                var longVal = b ? 1 : 0;
+                FromLong(longVal, OriginalType.Boolean);
+                return;
+            }
+            //integer types
+            case long l:
+                FromLong(l, OriginalType.SomeInteger);
+                return;
+            case int i:
+                FromLong(i, OriginalType.SomeInteger);
+                return;
+            case short s:
+                FromLong(s, OriginalType.SomeInteger);
+                return;
+            case char c:
+                FromLong(c, OriginalType.SomeInteger);
+                return;
+            case byte bt:
+                FromLong(bt, OriginalType.SomeInteger);
+                return;
+            case double d:
+                FromFloatingPoint(d);
+                return;
+            case float f:
+                FromFloatingPoint(f);
+                return;
+            case decimal de:
+                FromFloatingPoint((double)de);
+                return;
+            // the default DateTime can not be directly converted to DateTimeOffset
+            case DateTime dt when dt == default:
+                FromDateTimeWithTimeZone(default);
+                return;
             // ignore the offset if simple date (tough but I think good decision)
-            if (dt == dt.Date)
+            case DateTime dt:
             {
-                FromDateTimeWithTimeZone(new(dt.Ticks, TimeSpan.Zero));
-            }
-            else
-            {
-                DateTimeOffset dtoff = dt;
-                FromDateTimeWithTimeZone(new(dtoff.Ticks, dtoff.Offset));
-            }
-            
-            return;
-        }
+                if (dt == dt.Date)
+                {
+                    FromDateTimeWithTimeZone(new(dt.Ticks, TimeSpan.Zero));
+                }
+                else
+                {
+                    DateTimeOffset offset = dt;
+                    FromDateTimeWithTimeZone(new(offset.Ticks, offset.Offset));
+                }
 
-        if (value is DateTimeOffset dto)
-        {
-            FromDateTimeWithTimeZone(dto);
-            return;
+                return;
+            }
+            case DateTimeOffset dto:
+                FromDateTimeWithTimeZone(dto);
+                return;
+            default:
+                FromString(value.ToString());
+                break;
         }
-
-        FromString(value.ToString());
     }
 
     /// <summary>
@@ -250,7 +215,7 @@ public sealed class KeyValue : IComparable<KeyValue>
 
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
-                    return SmartDateTimeConverter.FormatDate(new(IntValue));
+                    return SmartDateTimeConverter.FormatDate(new(IntValue, DateTimeKind.Utc));
 
                 var offset = BitConverter.ToInt64(_data, 0);
                 return SmartDateTimeConverter.FormatDate(new DateTimeOffset(IntValue, new(offset)).DateTime);
@@ -262,29 +227,8 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return "null";
 
             default:
-                throw new NotSupportedException("Invalid type");
+                return StringValue;
         }
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-
-        if (obj is int i) return IntValue == i;
-
-        if (obj is long l) return IntValue == l;
-
-        if (obj is string s) return StringValue == s;
-
-
-        return Equals((KeyValue)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return (int)(IntValue % int.MaxValue);
     }
 
     public JProperty ToJson(string name)
@@ -304,7 +248,7 @@ public sealed class KeyValue : IComparable<KeyValue>
 
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
-                    return new(name, new DateTime(IntValue));
+                    return new(name, new DateTime(IntValue, DateTimeKind.Utc));
 
                 var offset = BitConverter.ToInt64(_data, 0);
 
@@ -314,11 +258,50 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return new(name, StringValue);
 
             case OriginalType.Null:
-                return new(name, null);
+                return new(name, null!);
 
             default:
-                throw new ArgumentOutOfRangeException();
+                return new(name, StringValue);
         }
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+
+        return obj switch
+        {
+            int i => IntValue == i,
+            long l => IntValue == l,
+            string s => StringValue == s,
+            _ => Equals((KeyValue)obj)
+        };
+    }
+
+    public bool IsNumericValue => Type is OriginalType.SomeInteger or OriginalType.SomeFloat;
+
+    private bool Equals(KeyValue other)
+    {
+        if (Type == OriginalType.SomeInteger && other.Type == OriginalType.SomeInteger)
+        {
+            return IntValue == other.IntValue;
+        }
+        
+        if (IsNumericValue && other.IsNumericValue)
+            return Math.Abs(NumericValue - other.NumericValue) < double.Epsilon;
+        
+        if (IntValue != other.IntValue)
+            return false;
+
+
+        if (Type != other.Type) return false;
+
+        if (IntValue == 0 && other.IntValue == 0)
+            // consider zero and null the same for indexing
+            return true;
+
+        return _data.SequenceEqual(other._data);
     }
 
     private void StableHashForString(string value)
@@ -337,19 +320,28 @@ public sealed class KeyValue : IComparable<KeyValue>
         }
     }
 
+    public override int GetHashCode()
+    {
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        unchecked
+        {
+            return (int)(IntValue % Int32.MaxValue);
+        }
+    }
+
     private void FromLong(long longValue, OriginalType type)
     {
         IntValue = longValue;
         Type = type;
     }
 
-    private void FromFloatingPoint(double floatValue )
+    private void FromFloatingPoint(double floatValue)
     {
         IntValue = (long)(floatValue * FloatingPrecision);
 
         Type = OriginalType.SomeFloat;
 
-        
+
         // If no precision was lost, no need to keep the original value otherwise store it
         // If possible, storing it as an int mai handle the precision better than the double (1.7 for example )
         if (IntValue % 10 != 0)
@@ -368,7 +360,7 @@ public sealed class KeyValue : IComparable<KeyValue>
     {
         StableHashForString(stringValue);
 
-        
+
         var estimatedSize = Encoding.UTF8.GetByteCount(stringValue);
 
         _data = new byte[estimatedSize];
@@ -404,24 +396,6 @@ public sealed class KeyValue : IComparable<KeyValue>
         _data = new byte[offsetBytes.Length];
 
         Buffer.BlockCopy(offsetBytes, 0, _data, 0, offsetBytes.Length);
-    }
-
-    private bool Equals(KeyValue other)
-    {
-        if (Type is OriginalType.SomeFloat or OriginalType.SomeInteger && other.Type is OriginalType.SomeFloat or OriginalType.SomeInteger) return Math.Abs(NumericValue - other.NumericValue) < double.Epsilon;
-
-
-        if (IntValue != other.IntValue)
-            return false;
-
-
-        if (Type != other.Type) return false;
-
-        if (IntValue == 0 && other.IntValue == 0)
-            // consider zero and null the same for indexing
-            return true;
-
-        return _data.SequenceEqual(other._data);
     }
 
 

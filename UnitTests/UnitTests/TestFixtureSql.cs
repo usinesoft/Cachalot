@@ -359,9 +359,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(3, q.GetValues().Count);
                 Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
             }
 
             {
@@ -369,9 +369,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(3, q.GetValues().Count);
                 Assert.AreEqual(QueryOperator.NotIn, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
             }
         }
 
@@ -392,7 +392,7 @@ namespace Tests.UnitTests
                 var q = FindAtomicQuery(query, "tags");
 
                 Assert.AreEqual(QueryOperator.Contains, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.String));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
             }
 
             {
@@ -401,7 +401,7 @@ namespace Tests.UnitTests
                 var q = FindAtomicQuery(query, "tags");
 
                 Assert.AreEqual(QueryOperator.NotContains, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.String));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
             }
         }
 
@@ -459,9 +459,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(3, q.GetValues().Count);
                 Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
 
                 Assert.AreEqual(2, query.SelectClause.Count);
                 Assert.AreEqual("fx", query.SelectClause[0].Name);
@@ -475,9 +475,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.Values.Count);
+                Assert.AreEqual(3, q.GetValues().Count);
                 Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.Values.All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
 
                 Assert.AreEqual(2, query.SelectClause.Count);
                 Assert.AreEqual("fx", query.SelectClause[0].Name);

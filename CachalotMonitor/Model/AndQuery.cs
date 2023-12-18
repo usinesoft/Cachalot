@@ -12,4 +12,6 @@ public class AndQuery
     public bool Descending { get; set; }
 
     public SimpleQuery[] SimpleQueries { get; set; } = Array.Empty<SimpleQuery>();
+
+    public string? FullTextQuery { get; set; }
 }

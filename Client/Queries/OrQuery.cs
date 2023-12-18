@@ -64,7 +64,7 @@ public sealed class OrQuery : Query
     {
         if (query.IsEmpty()) return true;
 
-        return Elements.All(q => query.Elements.Any(q.IsSubsetOf));
+        return Elements.TrueForAll(q => query.Elements.Exists(q.IsSubsetOf));
     }
 
     #region persistent properties
@@ -150,7 +150,7 @@ public sealed class OrQuery : Query
 
     public override bool IsValid
     {
-        get { return Elements.All(element => element.IsValid); }
+        get { return Elements.TrueForAll(element => element.IsValid); }
     }
 
     /// <summary>
@@ -260,7 +260,7 @@ public sealed class OrQuery : Query
     public override bool Match(PackedObject item)
     {
         // an empty query matches everything
-        return IsEmpty() || Elements.Any(t => t.Match(item));
+        return IsEmpty() || Elements.Exists(t => t.Match(item));
     }
 
     #endregion

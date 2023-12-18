@@ -38,7 +38,7 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
         if (value == null) throw new ArgumentNullException(nameof(value));
 
         // only scalar operators can be used here
-        if (oper == QueryOperator.In || oper == QueryOperator.NotIn || oper.IsRangeOperator())
+        if (oper is QueryOperator.In or QueryOperator.NotIn || oper.IsRangeOperator())
             throw new ArgumentException("invalid operator");
 
 
@@ -120,17 +120,16 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
 
 
             // two values are valid only for range operators
-            if (!ReferenceEquals(Value2, null))
-                if (!Operator.IsRangeOperator())
+            if (Value2 is not null && !Operator.IsRangeOperator()) return false;
+
+            switch (Operator)
+            {
+                // IN requires a list of values
+                case QueryOperator.In when InValues.Count == 0:
+                // NOT IN requires a list of values
+                case QueryOperator.NotIn when InValues.Count == 0:
                     return false;
-
-            // IN requires a list of values
-            if (Operator == QueryOperator.In && InValues.Count == 0)
-                return false;
-
-            // NOT IN requires a list of values
-            if (Operator == QueryOperator.NotIn && InValues.Count == 0)
-                return false;
+            }
 
             // only IN and NOT IN accept a list of values
             if (Operator != QueryOperator.In && Operator != QueryOperator.NotIn && InValues.Count > 0)
@@ -152,11 +151,17 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
 
     public ICollection<KeyValue> InValues => _inValues;
 
-    public IList<KeyValue> Values => _inValues.Count > 0
-        ? _inValues.ToList()
-        : !ReferenceEquals(Value2, null)
-            ? new() { Value, Value2 }
-            : new List<KeyValue> { Value };
+    public IList<KeyValue> GetValues()
+    {
+        if (_inValues.Count > 0)
+        {
+            return _inValues.ToList();
+        }
+        
+        return Value2 is not null
+                ? new() { Value, Value2 }
+                : new List<KeyValue> { Value };
+    }
 
     public bool IsComparison =>
         Operator is QueryOperator.Eq or QueryOperator.Le or QueryOperator.Lt or QueryOperator.Ge or QueryOperator.Gt ||
@@ -423,13 +428,13 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
             if (withParamValues)
             {
                 result += Value.ToString();
-                if (!ReferenceEquals(Value2, null))
+                if (Value2 is not null)
                     result += ", " + Value2;
             }
             else
             {
                 result += "?";
-                if (!ReferenceEquals(Value2, null))
+                if (Value2 is not null)
                     result += ", ?";
             }
         }
@@ -444,62 +449,27 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
     /// <returns></returns>
     public override bool Match(PackedObject item)
     {
-        switch (Operator)
+        return Operator switch
         {
-            case QueryOperator.Eq:
-                return MatchEq(item, Value);
-
-            case QueryOperator.Ge:
-                return MatchGe(item, Value);
-
-            case QueryOperator.Gt:
-                return MatchGt(item, Value);
-
-            case QueryOperator.Le:
-                return MatchLe(item, Value);
-
-            case QueryOperator.Lt:
-                return MatchLt(item, Value);
-
-            case QueryOperator.GeLe:
-                return MatchGe(item, Value) && MatchLe(item, Value2);
-
-            case QueryOperator.GeLt:
-                return MatchGe(item, Value) && MatchLt(item, Value2);
-
-            case QueryOperator.GtLt:
-                return MatchGt(item, Value) && MatchLt(item, Value2);
-
-            case QueryOperator.GtLe:
-                return MatchGt(item, Value) && MatchLe(item, Value2);
-
-            case QueryOperator.In:
-                return MatchIn(item);
-
-            case QueryOperator.Contains:
-                return MatchContains(item);
-
-            case QueryOperator.NotContains:
-                return !MatchContains(item);
-
-            case QueryOperator.NotIn:
-                return !MatchIn(item);
-
-            case QueryOperator.NotEq:
-                return !MatchEq(item, Value);
-
-            case QueryOperator.StrStartsWith:
-                return MatchStartsWith(item, Value);
-
-            case QueryOperator.StrEndsWith:
-                return MatchEndsWith(item, Value);
-
-            case QueryOperator.StrContains:
-                return MatchContains(item, Value);
-
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+            QueryOperator.Eq => MatchEq(item, Value),
+            QueryOperator.Ge => MatchGe(item, Value),
+            QueryOperator.Gt => MatchGt(item, Value),
+            QueryOperator.Le => MatchLe(item, Value),
+            QueryOperator.Lt => MatchLt(item, Value),
+            QueryOperator.GeLe => MatchGe(item, Value) && MatchLe(item, Value2),
+            QueryOperator.GeLt => MatchGe(item, Value) && MatchLt(item, Value2),
+            QueryOperator.GtLt => MatchGt(item, Value) && MatchLt(item, Value2),
+            QueryOperator.GtLe => MatchGt(item, Value) && MatchLe(item, Value2),
+            QueryOperator.In => MatchIn(item),
+            QueryOperator.Contains => MatchContains(item),
+            QueryOperator.NotContains => !MatchContains(item),
+            QueryOperator.NotIn => !MatchIn(item),
+            QueryOperator.NotEq => !MatchEq(item, Value),
+            QueryOperator.StrStartsWith => MatchStartsWith(item, Value),
+            QueryOperator.StrEndsWith => MatchEndsWith(item, Value),
+            QueryOperator.StrContains => MatchContains(item, Value),
+            _ => throw new ArgumentOutOfRangeException(nameof(item), "Unknown query operator"),
+        };
     }
 
     private bool MatchLt(PackedObject item, KeyValue value)
@@ -524,16 +494,24 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
 
     private bool MatchIn(PackedObject item)
     {
-        return Values.Contains(item[Metadata.Order]);
+        return GetValues().Contains(item[Metadata.Order]);
     }
 
     private bool MatchContains(PackedObject item)
     {
         var collection = item.Collection(Metadata.Order);
 
-        return collection.Values.Any(v => Value == v);
+        return Array.Exists(collection.Values, v => Value == v);
     }
 
+
+    private bool MatchContains(PackedObject item, KeyValue value)
+    {
+        var v1 = item[Metadata.Order].StringValue;
+        var v2 = value.StringValue;
+
+        return v1 != null && v2 != null && v1.Contains(v2, StringComparison.InvariantCultureIgnoreCase);
+    }
 
     private bool MatchEq(PackedObject item, KeyValue value)
     {
@@ -556,21 +534,13 @@ public sealed class AtomicQuery : Query, IEquatable<AtomicQuery>
         return v1 != null && v2 != null && v1.EndsWith(v2, StringComparison.InvariantCultureIgnoreCase);
     }
 
-    private bool MatchContains(PackedObject item, KeyValue value)
-    {
-        var v1 = item[Metadata.Order].StringValue;
-        var v2 = value.StringValue;
-
-        return v1 != null && v2 != null && v1.Contains(v2, StringComparison.InvariantCultureIgnoreCase);
-    }
-
 
     public AtomicQuery Clone()
     {
         if (InValues.Count > 0)
             return new(Metadata, InValues, Operator);
 
-        if (!ReferenceEquals(Value2, null))
+        if (Value2 is not null)
             return new(Metadata, Value, Value2);
 
         return new(Metadata, Value, Operator);

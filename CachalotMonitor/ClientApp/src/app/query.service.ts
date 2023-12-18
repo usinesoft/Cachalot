@@ -22,6 +22,10 @@ export class QueryService {
     return this.http.post<SqlResponse>(this.baseUrl + `Data/query/sql/${collection}`, query);
   }
 
+  Execute(collection: string, query: AndQuery): Observable<DataResponse> {
+    return this.http.post<DataResponse>(this.baseUrl + `Data/query/execute/${collection}`, query);
+  }
+
   GetExecutionPlan(queryId: string): Observable<ExecutionPlan> {
     return this.http.get<ExecutionPlan>(this.baseUrl + `Data/query/plan/${queryId}`);
   }

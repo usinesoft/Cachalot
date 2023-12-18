@@ -46,7 +46,7 @@ namespace BookingMarketplace
                     availableDates.Add(today.Date);
                 }
 
-                if (i % 100 == 0)
+                if (i % 100 == 0) 
                 {
                     availableDates.Add(tomorrow.Date);
                     

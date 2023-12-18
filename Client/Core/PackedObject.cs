@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Client.Messages;
 using Client.Tools;
@@ -19,7 +20,7 @@ namespace Client.Core;
 ///     network. Only server-side values are available for queries, the rest of the object is serialized as json
 /// </summary>
 [ProtoContract]
-public class PackedObject
+public sealed class PackedObject
 {
     /// <summary>
     ///     Default constructor for serialization only
@@ -73,7 +74,7 @@ public class PackedObject
 
 
     public string GlobalKey => CollectionName + PrimaryKey;
-
+    
     public KeyValue this[int order] => Values[order];
 
 

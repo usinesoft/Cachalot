@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Client.Core;
+using JetBrains.Annotations;
 
 namespace Client.Tools;
 
@@ -239,6 +240,35 @@ public class CsvSchemaBuilder
         ProcessValueTypes(values, schema);
     }
 
+    public static string FirstCharToUpper(string input) =>
+        input switch
+        {
+            null => throw new ArgumentNullException(nameof(input)),
+            "" => throw new ArgumentException($"{nameof(input)} cannot be empty", nameof(input)),
+            _ => string.Concat(input[0].ToString().ToUpper(), input.AsSpan(1))
+        };
+
+    /// <summary>
+    /// Remove spaces from column name
+    /// </summary>
+    /// <returns></returns>
+    private static string NormalizeColumnName([NotNull] string name)
+    {
+        if (name == null) throw new ArgumentNullException(nameof(name), "Empty column name");
+
+        name = name.Trim();
+        
+        if (!name.Contains(' ')) return FirstCharToUpper(name);
+        
+        var parts = name.Split(' ')
+            .Where(x=> !string.IsNullOrWhiteSpace(x))
+            .Select(FirstCharToUpper)
+            .ToList();
+
+        return string.Join(null, parts);
+
+    }
+
     private void ProcessHeader(string header, CsvSchema result)
     {
         Separator = CsvHelper.DetectSeparator(header);
@@ -249,27 +279,11 @@ public class CsvSchemaBuilder
         foreach (var part in parts)
         {
             if (string.IsNullOrWhiteSpace(part)) throw new FormatException($"Empty column name in header:{header}");
-            result.Columns.Add(new() { Name = part.Trim(), ColumnIndex = index++ });
+            result.Columns.Add(new() { Name = NormalizeColumnName(part), ColumnIndex = index++ });
         }
     }
 
-    private void DetectSeparator(string header)
-    {
-        if (string.IsNullOrWhiteSpace(header))
-            throw new ArgumentException($"'{nameof(header)}' cannot be null or whitespace.", nameof(header));
-
-
-        // automatically detect ",", "\t" or ";" used as separator; 
-        if (header.Contains(','))
-            Separator = ',';
-        else if (header.Contains(';'))
-            Separator = ';';
-        else if (header.Contains('\t')) Separator = '\t';
-
-        if (Separator == default) throw new FormatException($"Can not detect column separator from header {header}");
-    }
-
-
+    
     private BucketMetrics ComputeBucketMetrics(int bucket)
     {
         var max = Buckets[bucket].Max(x => x.Value.Count);

@@ -259,6 +259,40 @@ export class DataComponent implements OnInit {
   }
 
   private getData(force: boolean = false) {
+
+    this.currentQuery!.fullTextQuery = this.fullTextQuery;
+
+    this.queryService.Execute(this.selectedCollection!, this.currentQuery!).subscribe(
+      data=> {
+
+        this.sql = data.sql;
+        if (data.json) {
+          this.data = JSON.parse(data.json);
+
+          // add line numbers and formatting information
+          for (let index = 0; index < this.data.length; index++) {
+            const element = this.data[index];
+            // add line number
+            element["#"] = index;
+            // add expansion flag for display
+            element["#json"] = false;
+
+          }
+          console.log(this.data.length + " items received");
+          this.clientTimeInMilliseconds = data.clientTimeInMilliseconds;
+          this.lastQueryId = data.queryId;
+          console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
+
+        }
+
+      },
+      error=>{
+        this.sql = error;
+      }
+
+    );
+      
+
     this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
 
         const oldSql = this.sql;

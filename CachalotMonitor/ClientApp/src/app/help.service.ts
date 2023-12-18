@@ -180,6 +180,7 @@ export class HelpService {
       <p>Applies to data export.</p>
       <p>With an empty query all the collection will be exported.</p>
     </div>
+    (admin only)
     `
     ,
     'data.delete':`    

@@ -2,7 +2,9 @@
 using CachalotMonitor.Model;
 using CachalotMonitor.Services;
 using Client.Core;
+using Client.Queries;
 using Microsoft.AspNetCore.Mvc;
+using AndQuery = CachalotMonitor.Model.AndQuery;
 
 namespace CachalotMonitor.Controllers;
 
@@ -28,6 +30,37 @@ public class DataController : ControllerBase
     {
         var sql = _queryService.ClientQueryToSql(collection, clientQuery);
         return new() { Sql = sql };
+    }
+
+    [HttpPost("query/execute/{collection}")]
+    public DataResponse Execute(string collection, [FromBody] AndQuery clientQuery)
+    {
+        var sql = _queryService.ClientQueryToSql(collection, clientQuery);
+
+
+        var result = new DataResponse{Sql = sql};
+
+        var watch = new Stopwatch();
+
+        var queryId = Guid.NewGuid();
+        try
+        {
+            watch.Start();
+            result.Json = _queryService.QueryAsJson(sql, clientQuery.FullTextQuery, queryId);
+        }
+        catch (Exception ex)
+        {
+            result.Error = ex.Message;
+        }
+        finally
+        {
+            watch.Stop();
+            result.ClientTimeInMilliseconds = (int)watch.ElapsedMilliseconds;
+            result.QueryId = queryId;
+        }
+
+
+        return result;
     }
 
     [HttpGet("query/plan/{queryId}")]
@@ -109,7 +142,7 @@ public class DataController : ControllerBase
         // get the collection name from query
         var parts = query.Sql?.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         for (var i = 0; i < parts?.Length; i++)
-            if (parts[i].ToLower() == "from")
+            if (parts![i].ToLower() == "from")
                 if (parts.Length > i + 1)
                     fileName = parts[i + 1];
 

@@ -19,7 +19,7 @@
 
     <mat-toolbar style="background: transparent; ">
 
-
+      <!--refresh-->
       <button mat-button *ngIf="selectedCollection" mat-icon-button aria-label="Refresh" (click)="refresh()"
         style="margin-left: 2rem;">
         <mat-icon [tooltip]="helpService.tooltip('data.refresh')" placement="bottom">refresh</mat-icon>
@@ -27,34 +27,35 @@
 
       <mat-divider [vertical]="true" class="style-fix"></mat-divider>
 
+      <!--export Json-->
       <button mat-button *ngIf="selectedCollection" color="primary" mat-icon-button aria-label="Export"
         (click)="exportJson()" [tooltip]="helpService.tooltip('data.export')" placement="bottom">
         <mat-icon>download</mat-icon>
       </button>
-
+      
       <mat-checkbox [(ngModel)]="ignoreLimit" [tooltip]="helpService.tooltip('data.ignore.take')" placement="bottom"
-        style="font-size: 1rem; font-weight: 400; margin: 1rem;">
-        ignore
-        limit
+        style="font-size: 1rem; font-weight: 400; margin: 1rem;" [disabled]="!isAdmin">
+        ignore limit
       </mat-checkbox>
 
       <mat-divider [vertical]="true" class="style-fix"></mat-divider>
 
-      <button *ngIf="!fileName" mat-icon-button color="warn" (click)="fileUpload.click()" [tooltip]="helpService.tooltip('data.import')"
-        placement="bottom" [disabled]="!isAdmin">
+      <!--import Json-->
+      <button *ngIf="!fileName" mat-icon-button color="warn" (click)="fileUpload.click()"
+        [tooltip]="helpService.tooltip('data.import')" placement="bottom" [disabled]="!isAdmin">
         <mat-icon>attach_file</mat-icon>
       </button>
 
       <input type="file" class="file-input" (change)="onFileSelected($event)" #fileUpload>
 
       <ng-containner *ngIf="fileName">
-        <button mat-icon-button color="success" (click)="uploadFile()"
-          [tooltip]="'Confirm file upload (admin only)'" placement="bottom" [disabled]="!isAdmin">
+        <button mat-icon-button color="success" (click)="uploadFile()" [tooltip]="'Confirm file upload (admin only)'"
+          placement="bottom" [disabled]="!isAdmin">
           <mat-icon aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="check">
           </mat-icon>
         </button>
- 
-        <button mat-icon-button color="warn" (click)="clearUpload()" [tooltip]="Cancel"  placement="bottom">
+
+        <button mat-icon-button color="warn" (click)="clearUpload()" [tooltip]="Cancel" placement="bottom">
           <mat-icon aria-hidden="false" color="accent" style="cursor: pointer; font-weight: bold;" fontIcon="close"
             tooltip="cancel">
           </mat-icon>
@@ -62,20 +63,21 @@
       </ng-containner>
       <mat-divider [vertical]="true" class="style-fix"></mat-divider>
 
-      <button *ngIf="!confirmDeleteMode" mat-icon-button color="warn" (click)="confirmDeleteMode=true" [tooltip]="helpService.tooltip('data.delete')"
-          placement="bottom" [disabled]="!isAdmin">
-          <mat-icon>delete</mat-icon>
-        </button>
+      <!--delete-->
+      <button *ngIf="!confirmDeleteMode" mat-icon-button color="warn" (click)="confirmDeleteMode=true"
+        [tooltip]="helpService.tooltip('data.delete')" placement="bottom" [disabled]="!isAdmin">
+        <mat-icon>delete</mat-icon>
+      </button>
 
       <ng-container *ngIf="confirmDeleteMode">
-        
-        <button mat-icon-button color="success" (click)="deleteResult()"
-          [tooltip]="'Confirm delete (admin only)'" placement="bottom" [disabled]="!isAdmin">
+
+        <button mat-icon-button color="success" (click)="deleteResult()" [tooltip]="'Confirm delete (admin only)'"
+          placement="bottom" [disabled]="!isAdmin">
           <mat-icon aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="check">
           </mat-icon>
         </button>
- 
-        <button mat-icon-button color="warn" (click)="confirmDeleteMode=false" [tooltip]="Cancel"  placement="bottom">
+
+        <button mat-icon-button color="warn" (click)="confirmDeleteMode=false" [tooltip]="Cancel" placement="bottom">
           <mat-icon aria-hidden="false" color="accent" style="cursor: pointer; font-weight: bold;" fontIcon="close"
             tooltip="cancel">
           </mat-icon>

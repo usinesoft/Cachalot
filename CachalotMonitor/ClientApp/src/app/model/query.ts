@@ -25,6 +25,7 @@ export class AndQuery {
   orderBy: string | undefined;
   descending=false;
   take = "100";
+  fullTextQuery:string|undefined
 }
 
 export class SearchRequest {
@@ -41,4 +42,5 @@ export class DataResponse {
   clientTimeInMilliseconds = 0;
   queryId: string | undefined;
   itemsChanged:number = 0;
+  sql: string | undefined;
 }

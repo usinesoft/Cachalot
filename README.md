@@ -25,6 +25,8 @@ All data is available in memory and distributed on multiple nodes, allowing for 
 ## How fast is it?
 #### Very fast
 
+You can test it yourself at https://cachalot-db.com/
+
 Two demo applications are available in the release package:
 -	**BookingMarketplace** is testing feeding data and query capabilities
 -	**Accounts** is testing the transactional capabilities

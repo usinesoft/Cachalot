@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
@@ -245,6 +246,54 @@ public static class Streamer
                 result = SerializationHelper.ObjectFromStream<JObject>(memStream, mode, useCompression);
                 if (!result.HasValues)
                     deserializationFailure = true;
+            }
+            catch (Exception)
+            {
+                deserializationFailure = true;
+            }
+
+            if (deserializationFailure)
+            {
+                memStream.Seek(0, SeekOrigin.Begin);
+                var exception = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
+                    useCompression);
+
+                if (exception != null) throw new CacheException("Exception from server:" + exception.Message);
+
+                var message = "Received an unknown item type while expecting JObject";
+                throw new StreamingException(message);
+            }
+
+
+            yield return new(rank, result);
+        }
+    }
+
+    public static IEnumerable<RankedItem2> EnumerableFromStream2(Stream stream)
+    {
+        var reader = new BinaryReader(stream);
+
+        var items = reader.ReadInt32();
+        for (var i = 0; i < items; i++)
+        {
+            var useProtocolBuffers = reader.ReadBoolean();
+            var useCompression = reader.ReadBoolean();
+            var rank = reader.ReadDouble();
+            var dataSize = reader.ReadInt32();
+            var data = reader.ReadBytes(dataSize);
+
+            using var memStream = new MemoryStream(data);
+
+            var mode = SerializationMode.Json;
+            if (useProtocolBuffers)
+                mode = SerializationMode.ProtocolBuffers;
+
+            var deserializationFailure = false;
+            JsonDocument result = null;
+            try
+            {
+                result = SerializationHelper.JsonDocumentFromStream(memStream, useCompression);
+                
             }
             catch (Exception)
             {

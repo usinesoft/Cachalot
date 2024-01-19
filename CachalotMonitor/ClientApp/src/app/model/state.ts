@@ -10,3 +10,8 @@ export class DataScreenState {
 export class SchemaScreenState {
   collectionName: string | undefined;
 }
+
+export class HistoryResponse{
+  showcaseMode:boolean = false;
+  knownClusters:string[] = [];
+}

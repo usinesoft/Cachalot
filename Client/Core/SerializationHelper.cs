@@ -2,11 +2,13 @@
 
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using ICSharpCode.SharpZipLib.GZip;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using ProtoBuf;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 #endregion
 
@@ -70,6 +72,28 @@ public static class SerializationHelper
 
         reader = new(new StreamReader(stream));
         return Serializer.Deserialize<TItem>(reader);
+    }
+
+    public static JsonDocument JsonDocumentFromStream(Stream stream, bool compress)
+    {
+
+        string text;
+        if (compress)
+        {
+            var zInStream = new GZipInputStream(stream);
+            TextReader reader = new StreamReader(zInStream);
+
+
+            text=reader.ReadToEnd();
+        }
+        else
+        {
+            TextReader reader = new StreamReader(stream);
+            text=reader.ReadToEnd();
+        }
+
+
+        return JsonDocument.Parse(text);
     }
 
 

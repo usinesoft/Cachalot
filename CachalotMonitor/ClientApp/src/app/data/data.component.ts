@@ -22,15 +22,14 @@ export class DataComponent implements OnInit {
     private queryService: QueryService,
     private stateService: ScreenStateService,
     public dialog: MatDialog,
-    public helpService:HelpService,
+    public helpService: HelpService,
     private snackBar: MatSnackBar,
-    private connectionService:ConnectionService)
-    {}
+    private connectionService: ConnectionService) { }
 
 
-    public get isAdmin(){
-      return this.connectionService.isAdmin;
-    }
+  public get isAdmin() {
+    return this.connectionService.isAdmin;
+  }
 
   private differentValues(a: any, b: any) {
     const s1 = JSON.stringify(a);
@@ -163,7 +162,7 @@ export class DataComponent implements OnInit {
 
   }
 
-  
+
 
   refresh(): void {
     this.getData(true);
@@ -241,29 +240,38 @@ export class DataComponent implements OnInit {
   }
 
 
-  public deleteResult(){
-    
-    
+  public deleteResult() {
 
-    if(this.sql && this.sql.toLowerCase().includes('where')){
-      this.queryService.ExecuteDelete(this.sql).subscribe(data=>{
+
+
+    if (this.sql && this.sql.toLowerCase().includes('where')) {
+      this.queryService.ExecuteDelete(this.sql).subscribe(data => {
         this.snackBar.open(`${data.itemsChanged} items deleted`, "", { duration: 3000, panelClass: "green-snackbar" });
       })
     }
-    else{
+    else {
       this.snackBar.open('Empty queries (no WHERE clause) are not allowed ', "", { duration: 3000, panelClass: "red-snackbar" });
     }
 
     this.confirmDeleteMode = false;
-    
+
   }
+
+
+  public fetchingData:boolean = false;
 
   private getData(force: boolean = false) {
 
+    // avoid multiple calls
+    if(this.fetchingData){
+      return;
+    }
+
     this.currentQuery!.fullTextQuery = this.fullTextQuery;
 
+    this.fetchingData = true;
     this.queryService.Execute(this.selectedCollection!, this.currentQuery!).subscribe(
-      data=> {
+      data => {
 
         this.sql = data.sql;
         if (data.json) {
@@ -283,53 +291,19 @@ export class DataComponent implements OnInit {
           this.lastQueryId = data.queryId;
           console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
 
+          this.fetchingData = false;
+
         }
 
       },
-      error=>{
+      error => {
         this.sql = error;
+        this.fetchingData = false;
       }
 
     );
-      
-
-    this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
-
-        const oldSql = this.sql;
-        this.sql = data.sql;
-
-        let shouldFetchData = force; // if forced
-        if (!shouldFetchData) { // if sql changed
-          shouldFetchData = data.sql != undefined && data.sql != oldSql;
-        }
-
-        if (shouldFetchData) {
 
 
-          this.queryService.ExecuteQuery(data.sql, this.fullTextQuery).subscribe(d => {
-            if (d.json) {
-              this.data = JSON.parse(d.json);
-
-              // add line numbers and formatting information
-              for (let index = 0; index < this.data.length; index++) {
-                const element = this.data[index];
-                // add line number
-                element["#"] = index;
-                // add expansion flag for display
-                element["#json"] = false;
-
-              }
-              console.log(this.data.length + " items received");
-              this.clientTimeInMilliseconds = d.clientTimeInMilliseconds;
-              this.lastQueryId = d.queryId;
-              console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
-
-            }
-
-          });
-        }
-      },
-      err => this.sql = err);
 
   }
 
@@ -346,40 +320,40 @@ export class DataComponent implements OnInit {
   working = false;
 
   onFileSelected(event: any) {
-    
+
     this.fileToUpload = event.target.files[0];
 
     if (this.fileToUpload && this.selectedCollection) {
       this.fileName = this.fileToUpload.name;
-      
+
     }
-    
+
   }
 
 
-  confirmDeleteMode:boolean = false;
+  confirmDeleteMode: boolean = false;
 
-  fileToUpload:File|undefined;
+  fileToUpload: File | undefined;
 
-  @ViewChild('fileUpload') 
-  upload: ElementRef|undefined;
-  
-  uploadFile(){
+  @ViewChild('fileUpload')
+  upload: ElementRef | undefined;
+
+  uploadFile() {
     this.working = true;
-      this.queryService.UploadFile(this.fileToUpload!, this.selectedCollection!).subscribe(data => {
-          this.working = false;
-          this.clearUpload();
-          this.snackBar.open("Upload successfull", "", { duration: 2000, panelClass: "green-snackbar" });          
-        },
-        err => {
-          this.working = false;
-          this.clearUpload();
-          this.snackBar.open(err.errorMessage ?? "Error while uploading", "", { duration: 3000, panelClass: "red-snackbar" });
-        });
+    this.queryService.UploadFile(this.fileToUpload!, this.selectedCollection!).subscribe(data => {
+      this.working = false;
+      this.clearUpload();
+      this.snackBar.open("Upload successfull", "", { duration: 2000, panelClass: "green-snackbar" });
+    },
+      err => {
+        this.working = false;
+        this.clearUpload();
+        this.snackBar.open(err.errorMessage ?? "Error while uploading", "", { duration: 3000, panelClass: "red-snackbar" });
+      });
 
   }
 
-  clearUpload(){
+  clearUpload() {
     this.fileName = undefined;
     this.fileToUpload = undefined;
     this.upload!.nativeElement.value = "";

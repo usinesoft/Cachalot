@@ -381,7 +381,7 @@ public class FullTextIndex
         if (documents.Count > 0)
         {
             var maxScore = documents.Max(d => d.Score);
-            var mostInterestingOnes = documents.Where(d => d.Score >= maxScore / 100);
+            var mostInterestingOnes = documents.Where(d => d.Score >= maxScore / 20);
             if (maxResults > 0) return mostInterestingOnes.Take(maxResults).ToList();
 
             return mostInterestingOnes.ToList();

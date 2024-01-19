@@ -102,7 +102,7 @@ public class AdminController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("history")]
-    public string[] GetConnectionHistory()
+    public HistoryResponse GetConnectionHistory()
     {
         return ClusterService.GetHistoryEntries();
     }

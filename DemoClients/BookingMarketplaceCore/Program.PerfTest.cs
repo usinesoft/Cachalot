@@ -217,13 +217,26 @@ namespace BookingMarketplace
             }
             Console.WriteLine();
 
+            Header($"select distinct Town from home");
+
+            var distinctResult1 = items.Select(h => new {h.Town}).Distinct().ToList();
+            resultCount = distinctResult.Count;
+
             Benchmark(() =>
             {
-                var distinctResult1 = homes.SqlQuery("select distinct CountryCode, Town from home").ToList();
+                var distinctResult1 = homes.Select(h => new {h.Town}).Distinct().ToList();
 
                 CheckThat(r => r.Count == resultCount, "wrong number of objects in result", distinctResult1);
-            }, $"reading {resultCount} objects with sql");
+            }, $"reading {resultCount} objects with linq");
 
+            ResultHeader();
+            foreach (var result in distinctResult1)
+            {
+                Console.WriteLine(result.ToString());
+            }
+            Console.WriteLine();
+            
+            
 
             //////////////////////////////////////////////////////
             // 7 full text search
@@ -233,9 +246,9 @@ namespace BookingMarketplace
             int ftCount = 0;
             Benchmark(() =>
             {
-                var result = homes.FullTextSearch("Nice beach").ToList();
+                var result = homes.FullTextSearch("beautiful view").ToList();
                 ftCount = result.Count;
-            }, "searching for 'Nice beach'");
+            }, "searching for 'beautiful view'");
             Console.WriteLine($" -> found {ftCount} objects ");
 
 
@@ -248,16 +261,16 @@ namespace BookingMarketplace
 
             Benchmark(() =>
             {
-                var result = homes.FullTextSearch("close metro").ToList();
+                var result = homes.FullTextSearch("ps4").ToList();
                 ftCount = result.Count;
             }, "searching for 'ps4'");
             Console.WriteLine($" -> found {ftCount} objects ");
 
             Benchmark(() =>
             {
-                var result = homes.FullTextSearch("rue de la mort").ToList();
+                var result = connector.SqlQueryAsJson("select from home take 10", "rue de la mort").ToList();
                 ftCount = result.Count;
-            }, "searching for 'rue de la mort'");
+            }, "mixed search 'rue de la mort'");
             Console.WriteLine($" -> found {ftCount} objects ");
 
 

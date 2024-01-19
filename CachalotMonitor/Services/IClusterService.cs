@@ -1,4 +1,5 @@
 ﻿using Cachalot.Linq;
+using CachalotMonitor.Model;
 using Client.Interface;
 using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
@@ -18,5 +19,5 @@ public interface IClusterService : IDisposable
 
     ConnectionInfo GetFromConnectionHistory(string name);
 
-    string[] GetHistoryEntries();
+    HistoryResponse GetHistoryEntries();
 }

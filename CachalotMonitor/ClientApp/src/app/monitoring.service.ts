@@ -5,6 +5,7 @@ import { BehaviorSubject, interval, Observable, Subscription } from "rxjs";
 import { ClusterInformation, ConnectionData, ConnectionResponse, ServerHistory } from "./model/connection-data";
 import { SchemaUpdateRequest } from "./model/schema";
 import { CanActivate } from "@angular/router";
+import { HistoryResponse } from "./model/state";
 
 @Injectable({
   providedIn: "root"
@@ -20,6 +21,8 @@ export class
   connectionString: string | undefined;
 
   history: string[] = [];
+
+  showcaseMode:boolean = false;
 
   private timerSubscription: Subscription | undefined;
 
@@ -193,8 +196,9 @@ export class
   }
 
   getConnectionHistory(): void {
-    this.http.get<string[]>(this.baseUrl + "Admin/history").subscribe(data => {
-      this.history = data.reverse();
+    this.http.get<HistoryResponse>(this.baseUrl + "Admin/history").subscribe(data => {
+      this.history = data.knownClusters.reverse();
+      this.showcaseMode = data.showcaseMode;
     });
   }
 

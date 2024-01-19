@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using CachalotMonitor.Model;
 using CachalotMonitor.Services;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
@@ -60,15 +61,25 @@ builder.Services.AddSingleton<ISchemaService, SchemaService>();
 
 builder.Services.AddTransient<IAuthenticationService, AuthenticationService>();
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+builder.Services.Configure<ShowcaseConfig>(
+    builder.Configuration.GetSection(nameof(ShowcaseConfig)));
+
 
 var app = builder.Build();
 
+app.UseResponseCompression();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 //app.UseHttpsRedirection();
 

@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using Tests.TestData;
 using Tests.TestData.Events;
+// ReSharper disable ReturnValueOfPureMethodIsNotUsed
 
 namespace Tests.IntegrationTests
 {
@@ -109,9 +110,9 @@ namespace Tests.IntegrationTests
             dataSource.PutMany(orders);
 
             // warm up
-            var _ = dataSource.Where(o => o.Category == "geek").ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
-            _ = dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
+            dataSource.Where(o => o.Category == "geek").ToList();
+            dataSource.Where(o => o.Category == "geek").OrderBy(o => o.Amount).ToList();
+            dataSource.Where(o => o.Category == "geek").OrderByDescending(o => o.Amount).ToList();
 
             var watch = new Stopwatch();
             watch.Start();
@@ -417,6 +418,9 @@ namespace Tests.IntegrationTests
             Assert.AreEqual(2, events.Count);
 
             RestartOneServer();
+
+            // the validity validity of the connection is checked every 10 seconds to avoid useless ping
+            Thread.Sleep(10_000);
 
             events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
@@ -1619,6 +1623,37 @@ namespace Tests.IntegrationTests
 
             var r3 = dataSource.SqlQuery("select distinct Category from order").ToList();
             Assert.AreEqual(5, r3.Count);
+        }
+
+        [Test]
+        public void Performance_test_get_many()
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(10_000);
+
+            dataSource.PutMany(testData);
+
+            var watch = new Stopwatch();
+
+            const int iterations = 100;
+
+            watch.Start();
+            for (int i = 0; i < iterations; i++)
+            {
+                var r1 = dataSource.SqlQuery("select from order").ToList();
+                Assert.AreEqual(10_000, r1.Count);
+            }
+
+            watch.Stop();
+
+            Console.WriteLine($"avg time for 10000 objects {watch.ElapsedMilliseconds / (float)iterations}");
+            
+
         }
 
         [Test]

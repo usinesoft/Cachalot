@@ -3,7 +3,7 @@
 
 
 ![cachalot db](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot.svg?raw=true) 
-# Cachalot DB v2
+# Cachalot DB v2.5
 
  
 

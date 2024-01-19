@@ -3,6 +3,8 @@
   "ClusterName": "test",
   "TcpPort": 48401,
   "DataPath": "root",
-  "MemoryLimitInGigabytes": 16
-
+  "MemoryLimitInGigabytes": 16,
+  "FullTextConfig": {
+    "TokensToIgnore": [ "qui", "du", "rue" ]
+  }
 }

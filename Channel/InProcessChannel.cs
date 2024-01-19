@@ -138,6 +138,20 @@ public class InProcessChannel : IClientChannel, IServerChannel
         return new List<RankedItem>();
     }
 
+    public IEnumerable<RankedItem2> SendStreamRequest2(Request request)
+    {
+        if (RequestReceived != null)
+        {
+            var client = new ClientData();
+            RequestReceived(this, new(request, client));
+            var stream = client.WaitForData();
+            return Streamer.EnumerableFromStream2(stream);
+        }
+
+        // otherwise return empty collection
+        return new List<RankedItem2>();
+    }
+
 
     public Session BeginSession()
     {

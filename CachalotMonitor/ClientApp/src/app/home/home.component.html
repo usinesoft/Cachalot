@@ -4,55 +4,59 @@
   <div class="connection-container" *ngIf="!connected">
 
     <ng-container *ngIf="history.length">
-    <p class="title">Connect to a known cluster</p>
-    <div class="actions-container">
-      <button  *ngFor="let h of history" mat-raised-button color="primary"
-        aria-label="Connect" [tooltip]="'Connect to cluster from connection history'" triggers="mouseenter:mouseleave"
-        (click)="connectWithHistory(h)">
-        <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
-      </button>
-    </div>
-  </ng-container>
-
-    <p class="title" style="margin-top: 4rem;">Connect to a new cluster of servers</p>
-    <div class="servers-container" *ngIf="!connected">
-      <mat-progress-bar mode="indeterminate" *ngIf="working || disconnecting"></mat-progress-bar>
-      <div *ngFor="let server of connection.nodes; index as i" class="server-container">
-        <!--host-->
-        <mat-form-field appearance="fill" style="flex-grow: 2">
-          <mat-label>hostname</mat-label>
-          <input matInput type="text" [(ngModel)]="server.host">
-          <mat-hint>may be DNS name or IP address</mat-hint>
-        </mat-form-field>
-        <!--port-->
-        <mat-form-field appearance="fill">
-          <mat-label>port</mat-label>
-          <input matInput type="number" [(ngModel)]="server.port">
-          <mat-hint>TCP port</mat-hint>
-          <!--add/remove-->
-          <button *ngIf="i==0" matSuffix mat-icon-button color="primary" style="height: auto;" aria-label="add"
-            (click)="addServer()" [tooltip]="'Add a new server'" triggers="mouseenter:mouseleave">
-            <mat-icon>add</mat-icon>
-          </button>
-          <button *ngIf="i!=0" matSuffix color="warn" mat-icon-button style="height: auto;" aria-label="remove"
-            (click)="removeServer(server)" [tooltip]="'Remove this server'" triggers="mouseenter:mouseleave">
-            <mat-icon>remove</mat-icon>
-          </button>
-        </mat-form-field>
-
-
-      </div>
-      <div class="actions-container" *ngIf="!connected">
-        <button mat-raised-button color="primary" aria-label="Connect" [tooltip]="'Connect to cluster'"
-          triggers="mouseenter:mouseleave" [disabled]="!canConnect" (click)="connect()">
-          <mat-icon>electrical_services</mat-icon>
+      <p class="title">Connect to a known cluster</p>
+      <div class="actions-container">
+        <button *ngFor="let h of history" mat-raised-button color="primary" aria-label="Connect"
+          [tooltip]="'Connect to cluster from connection history'" triggers="mouseenter:mouseleave"
+          (click)="connectWithHistory(h)">
+          <mat-icon style="margin-right: 1rem;">electrical_services</mat-icon>{{h}}
         </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="!showcaseMode">
+      <p class="title" style="margin-top: 4rem;">Connect to a new cluster of servers</p>
+      <div class="servers-container" *ngIf="!connected">
+        <mat-progress-bar mode="indeterminate" *ngIf="working || disconnecting"></mat-progress-bar>
+        <div *ngFor="let server of connection.nodes; index as i" class="server-container">
+          <!--host-->
+          <mat-form-field appearance="fill" style="flex-grow: 2">
+            <mat-label>hostname</mat-label>
+            <input matInput type="text" [(ngModel)]="server.host">
+            <mat-hint>may be DNS name or IP address</mat-hint>
+          </mat-form-field>
+          <!--port-->
+          <mat-form-field appearance="fill">
+            <mat-label>port</mat-label>
+            <input matInput type="number" [(ngModel)]="server.port">
+            <mat-hint>TCP port</mat-hint>
+            <!--add/remove-->
+            <button *ngIf="i==0" matSuffix mat-icon-button color="primary" style="height: auto;" aria-label="add"
+              (click)="addServer()" [tooltip]="'Add a new server'" triggers="mouseenter:mouseleave">
+              <mat-icon>add</mat-icon>
+            </button>
+            <button *ngIf="i!=0" matSuffix color="warn" mat-icon-button style="height: auto;" aria-label="remove"
+              (click)="removeServer(server)" [tooltip]="'Remove this server'" triggers="mouseenter:mouseleave">
+              <mat-icon>remove</mat-icon>
+            </button>
+          </mat-form-field>
+
+
+        </div>
+
+        <div class="actions-container" *ngIf="!connected">
+          <button mat-raised-button color="primary" aria-label="Connect" [tooltip]="'Connect to cluster'"
+            triggers="mouseenter:mouseleave" [disabled]="!canConnect" (click)="connect()">
+            <mat-icon>electrical_services</mat-icon>
+          </button>
+
+        </div>
 
       </div>
-    </div>
+    </ng-container>
 
 
-    
+
   </div>
   <!--connection status when connected-->
   <div class="status-container" *ngIf="connected">

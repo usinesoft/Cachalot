@@ -252,6 +252,14 @@ public sealed class DataClient : IDataClient
         return Channel.SendStreamRequest(request);
     }
 
+    public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
+    {
+        Dbg.Trace($"one client GetMany for session {sessionId}");
+        var request = new GetRequest(query, sessionId);
+
+        return Channel.SendStreamRequest2(request);
+    }
+
 
     public bool Ping()
     {

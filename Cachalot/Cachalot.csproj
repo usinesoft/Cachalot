@@ -10,7 +10,7 @@
 		<Company>USINESOFT</Company>
 		<Description>Fastest transactional database for dotnet applications. It can also be used as a very powerful distributed cache</Description>
 		<Copyright>USINESOFT</Copyright>
-		<Version>2.5.4</Version>
+		<Version>2.5.6</Version>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -19,6 +19,9 @@
 		<PackageIcon>cachalot_64.png</PackageIcon>
 		<RepositoryUrl>https://github.com/usinesoft/Cachalot</RepositoryUrl>
 		<PackageTags>nosql;cache;distributed;database</PackageTags>
+		<Title>Client for Cachalot-DB</Title>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<ItemGroup>

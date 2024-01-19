@@ -2,10 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Channel;
+using Client.Core;
 using Client.Interface;
+using Client.Messages;
+using Client.Queries;
 using NUnit.Framework;
 using Server;
 using Tests.TestData;
@@ -132,6 +136,80 @@ namespace Tests.IntegrationTests
                 _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
 
             Assert.AreEqual(itemsReloaded.Count, 113);
+        }
+
+        [Test]
+        public void SpeedTestReadOne()
+        {
+            var items = new List<CacheableTypeOk>();
+            for (var i = 0; i < 50000; i++)
+            {
+                var item1 = new CacheableTypeOk(i, 1000 + i, "aaa", new DateTime(2010, 10, 10), 1500);
+                items.Add(item1);
+            }
+
+
+            _client.PutMany(items, true);
+
+
+            Console.WriteLine("With Newtonsoft Json");
+            var watch = new Stopwatch();
+            watch.Start();
+
+            const int count = 10_000;
+            for (var i = 0; i < count; i++)
+            {
+                var query = new OrQuery(nameof(CacheableTypeOk))
+                {
+                    Elements =
+                    {
+                        new AndQuery
+                        {
+                            Elements =
+                            {
+                                new AtomicQuery(new KeyInfo("PrimaryKey", 0, IndexType.Primary), new KeyValue(i),
+                                    QueryOperator.Eq)
+                            }
+                        }
+                    }
+                };
+                var _ = _client.GetMany(query).FirstOrDefault();
+
+                
+            }
+            
+            watch.Stop();
+
+            Console.WriteLine($"Took {watch.ElapsedMilliseconds} ms for {count} items avg={watch.ElapsedMilliseconds / (float)count}");
+
+            Console.WriteLine("With System.Text.Json");
+            watch.Restart();
+
+            
+            for (var i = 0; i < count; i++)
+            {
+                var query = new OrQuery(nameof(CacheableTypeOk))
+                {
+                    Elements =
+                    {
+                        new AndQuery
+                        {
+                            Elements =
+                            {
+                                new AtomicQuery(new KeyInfo("PrimaryKey", 0, IndexType.Primary), new KeyValue(i),
+                                    QueryOperator.Eq)
+                            }
+                        }
+                    }
+                };
+                var _ = _client.GetMany2(query).FirstOrDefault();
+
+                
+            }
+            
+            watch.Stop();
+
+            Console.WriteLine($"Took {watch.ElapsedMilliseconds} ms for {count} items avg={watch.ElapsedMilliseconds / (float)count}");
         }
 
 

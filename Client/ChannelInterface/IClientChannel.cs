@@ -30,6 +30,7 @@ public interface IClientChannel : IDisposable
 
 
     IEnumerable<RankedItem> SendStreamRequest(Request request);
+    IEnumerable<RankedItem2> SendStreamRequest2(Request request);
 
     //Start a complex communication session
     Session BeginSession();

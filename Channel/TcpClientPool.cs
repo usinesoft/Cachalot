@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using Client.Core;
@@ -35,7 +36,13 @@ public class
     {
         try
         {
-            var client = new TcpClient(AddressFamily.InterNetworkV6) { Client = { DualMode = true }, NoDelay = true };
+            var client = new TcpClient(AddressFamily.InterNetworkV6)
+            {
+                Client = { DualMode = true }, 
+                NoDelay = true,
+                ReceiveBufferSize = 1_024_000,
+                SendBufferSize = 1_024_000
+            };
 
             client.Connect(_address, _port);
 
@@ -53,11 +60,32 @@ public class
         }
     }
 
+    private readonly Dictionary<TcpClient, DateTime> _lastTimeCheckedByConnection = new();
+
+    public static readonly TimeSpan CheckPeriod = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// To avoid pinging the server each time we get a connection from the pool
+    /// </summary>
+    /// <param name="client"></param>
+    /// <returns></returns>
+    bool WasCheckedRecently(TcpClient client)
+    {
+        if (_lastTimeCheckedByConnection.TryGetValue(client, out var time) && (DateTime.Now - time)  < CheckPeriod)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     protected override bool IsStillValid(TcpClient tcp)
     {
         if (tcp == null)
             return false;
 
+        if (WasCheckedRecently(tcp))
+            return true;
 
         try
         {
@@ -71,7 +99,14 @@ public class
             // this should never happen. 
             if (pingAnswer != Constants.PingCookie) throw new NotSupportedException("Wrong answer to ping request");
 
-            return pingAnswer == Constants.PingCookie;
+            bool isValid = pingAnswer == Constants.PingCookie;
+
+            if (isValid)
+            {
+                _lastTimeCheckedByConnection[tcp] = DateTime.Now;
+            }
+
+            return isValid;
         }
         catch (Exception)
         {
@@ -81,15 +116,16 @@ public class
 
     protected override void Release(TcpClient resource)
     {
-        if (resource != null)
-        {
-            // proactive close request
-            var stream = resource.GetStream();
-            stream.WriteByte(Constants.CloseCookie);
-            stream.Flush();
+        if (resource == null) return;
+        
+        // proactive close request
+        var stream = resource.GetStream();
+        stream.WriteByte(Constants.CloseCookie);
+        stream.Flush();
 
-            resource.Client.Close();
-            resource.Close();
-        }
+        resource.Client.Close();
+        resource.Close();
+
+        _lastTimeCheckedByConnection.Remove(resource);
     }
 }

@@ -1,0 +1,174 @@
+TESTING WITH DESKTOP-FALICC8:54321+DESKTOP-FALICC8:54322 AND 1000000 OBJECTS
+
+
+Feeding data
+ feeding the collection with 1000000 objects took 15699 ms
+
+Reading objects one by one
+ 10 times reading 1000 objects using primary key took 5070 ms average=507 ms
+ 10 times reading 1000 objects using linq took 8701 ms average=870 ms
+ 10 times reading 1000 objects using sql took 1467 ms average=146 ms
+
+select from home where town = Paris
+ 10 times reading 62622 objects with linq took 10191 ms average=1019 ms
+ 10 times reading 62622 objects with sql  took 10141 ms average=1014 ms
+
+select from home where town=Paris and PriceInEuros >= 150 and PriceInEuros <= 200 and rooms > 2
+ 10 times reading 6383 objects with linq took 1411 ms average=141 ms
+ 10 times reading 6383 objects with sql took 1505 ms average=150 ms
+
+select from home where town=Paris and AvailableDates contains 1/14/2024
+ 10 times reading 12540 objects with linq took 2241 ms average=224 ms
+ 10 times reading 12540 objects with sql took 2303 ms average=230 ms
+
+select from home where town=Paris and AvailableDates contains 1/14/2024 order by PriceInEuros descending take 10
+ 10 times reading 10 objects with linq took 219 ms average=21 ms
+ 10 times reading 10 objects with sql took 225 ms average=22 ms
+
+select from home where town=Paris and AvailableDates contains 1/14/2024 order by PriceInEuros
+ 10 times reading 12540 objects with linq took 2445 ms average=244 ms
+ 10 times reading 12540 objects with sql took 2494 ms average=249 ms
+
+select distinct CountryCode, Town from home
+ 10 times reading 16 objects with linq took 1382 ms average=138 ms
+
+result:
+{ CountryCode = SP, Town = Barcelona }
+{ CountryCode = FR, Town = Marseille }
+{ CountryCode = FR, Town = Nice }
+{ CountryCode = US, Town = Chicago }
+{ CountryCode = SP, Town = Sevilia }
+{ CountryCode = SP, Town = Cordoba }
+{ CountryCode = FR, Town = Toulouse }
+{ CountryCode = CA, Town = Vancouver }
+{ CountryCode = SP, Town = Madrid }
+{ CountryCode = CA, Town = Quebec }
+{ CountryCode = FR, Town = Paris }
+{ CountryCode = US, Town = Santa Clara }
+{ CountryCode = CA, Town = Ottawa }
+{ CountryCode = US, Town = New York }
+{ CountryCode = US, Town = Seattle }
+{ CountryCode = CA, Town = Toronto }
+
+
+select distinct Town from home
+ 10 times reading 16 objects with linq took 6 ms average=0 ms
+
+result:
+{ Town = Marseille }
+{ Town = Chicago }
+{ Town = Cordoba }
+{ Town = Vancouver }
+{ Town = Nice }
+{ Town = Quebec }
+{ Town = Santa Clara }
+{ Town = Barcelona }
+{ Town = Ottawa }
+{ Town = Sevilia }
+{ Town = Toulouse }
+{ Town = New York }
+{ Town = Madrid }
+{ Town = Paris }
+{ Town = Seattle }
+{ Town = Toronto }
+
+
+full-text search
+ 10 times searching for 'beautiful view' took 2 ms average=0 ms
+ -> found 1 objects
+ 10 times searching for 'close metro' took 2 ms average=0 ms
+ -> found 2 objects
+ 10 times searching for 'ps4' took 2 ms average=0 ms
+ -> found 1 objects
+ 10 times mixed search 'rue de la mort' took 16499 ms average=1649 ms
+ -> found 11 objects
+
+computing pivot without filter (full data)
+ 10 times computing pivot without filter took 1823 ms average=182 ms
+
+result:
+ColumnName: Rooms, Count: 1000000, Sum: 2499302
+ColumnName: PriceInEuros, Count: 1000000, Sum: 174618648
+    CountryCode = US
+    ColumnName: Rooms, Count: 249999, Sum: 625513
+    ColumnName: PriceInEuros, Count: 249999, Sum: 43632978
+        Town = Chicago
+        ColumnName: Rooms, Count: 62563, Sum: 156256
+        ColumnName: PriceInEuros, Count: 62563, Sum: 10883935
+        Town = Santa Clara
+        ColumnName: Rooms, Count: 62545, Sum: 156613
+        ColumnName: PriceInEuros, Count: 62545, Sum: 10939932
+        Town = Seattle
+        ColumnName: Rooms, Count: 62220, Sum: 155875
+        ColumnName: PriceInEuros, Count: 62220, Sum: 10874705
+        Town = New York
+        ColumnName: Rooms, Count: 62671, Sum: 156769
+        ColumnName: PriceInEuros, Count: 62671, Sum: 10934406
+    CountryCode = SP
+    ColumnName: Rooms, Count: 249999, Sum: 624825
+    ColumnName: PriceInEuros, Count: 249999, Sum: 43698559
+        Town = Cordoba
+        ColumnName: Rooms, Count: 62328, Sum: 156366
+        ColumnName: PriceInEuros, Count: 62328, Sum: 10882124
+        Town = Sevilia
+        ColumnName: Rooms, Count: 62590, Sum: 155923
+        ColumnName: PriceInEuros, Count: 62590, Sum: 10942925
+        Town = Madrid
+        ColumnName: Rooms, Count: 62639, Sum: 156348
+        ColumnName: PriceInEuros, Count: 62639, Sum: 10941721
+        Town = Barcelona
+        ColumnName: Rooms, Count: 62442, Sum: 156188
+        ColumnName: PriceInEuros, Count: 62442, Sum: 10931789
+    CountryCode = CA
+    ColumnName: Rooms, Count: 249999, Sum: 624647
+    ColumnName: PriceInEuros, Count: 249999, Sum: 43635645
+        Town = Quebec
+        ColumnName: Rooms, Count: 62781, Sum: 156929
+        ColumnName: PriceInEuros, Count: 62781, Sum: 10936824
+        Town = Toronto
+        ColumnName: Rooms, Count: 62505, Sum: 156217
+        ColumnName: PriceInEuros, Count: 62505, Sum: 10927686
+        Town = Ottawa
+        ColumnName: Rooms, Count: 62247, Sum: 155261
+        ColumnName: PriceInEuros, Count: 62247, Sum: 10867542
+        Town = Vancouver
+        ColumnName: Rooms, Count: 62466, Sum: 156240
+        ColumnName: PriceInEuros, Count: 62466, Sum: 10903593
+    CountryCode = FR
+    ColumnName: Rooms, Count: 250003, Sum: 624317
+    ColumnName: PriceInEuros, Count: 250003, Sum: 43651466
+        Town = Nice
+        ColumnName: Rooms, Count: 62351, Sum: 155892
+        ColumnName: PriceInEuros, Count: 62351, Sum: 10869865
+        Town = Marseille
+        ColumnName: Rooms, Count: 62657, Sum: 156183
+        ColumnName: PriceInEuros, Count: 62657, Sum: 10954448
+        Town = Toulouse
+        ColumnName: Rooms, Count: 62373, Sum: 155517
+        ColumnName: PriceInEuros, Count: 62373, Sum: 10898400
+        Town = Paris
+        ColumnName: Rooms, Count: 62622, Sum: 156725
+        ColumnName: PriceInEuros, Count: 62622, Sum: 10928753
+
+
+computing pivot with filter (CountryCode = FR)
+ 10 times computing pivot with filter took 1003 ms average=100 ms
+
+result:
+ColumnName: Rooms, Count: 250003, Sum: 624317
+ColumnName: PriceInEuros, Count: 250003, Sum: 43651466
+    CountryCode = FR
+    ColumnName: Rooms, Count: 250003, Sum: 624317
+    ColumnName: PriceInEuros, Count: 250003, Sum: 43651466
+        Town = Marseille
+        ColumnName: Rooms, Count: 62657, Sum: 156183
+        ColumnName: PriceInEuros, Count: 62657, Sum: 10954448
+        Town = Nice
+        ColumnName: Rooms, Count: 62351, Sum: 155892
+        ColumnName: PriceInEuros, Count: 62351, Sum: 10869865
+        Town = Paris
+        ColumnName: Rooms, Count: 62622, Sum: 156725
+        ColumnName: PriceInEuros, Count: 62622, Sum: 10928753
+        Town = Toulouse
+        ColumnName: Rooms, Count: 62373, Sum: 155517
+        ColumnName: PriceInEuros, Count: 62373, Sum: 10898400

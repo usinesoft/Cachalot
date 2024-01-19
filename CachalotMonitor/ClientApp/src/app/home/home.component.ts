@@ -66,6 +66,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.service.history;
   }
 
+  get showcaseMode(): boolean {
+    return this.service.showcaseMode;
+  }
+
   identifyServer(index: Number, server: ServerInfo) {
     if (!server) {
       return "";

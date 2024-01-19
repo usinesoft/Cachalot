@@ -372,6 +372,62 @@ public partial class DataAggregator : IDataClient
         return sum;
     }
 
+
+    private IEnumerable<T> MixResults<T>(IEnumerator<T>[] clientResults, OrQuery query) where T : IWithComparableMember
+    {
+        var distinctSet = new HashSet<T>();
+        // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
+        if (query.OrderByProperty == null)
+        {
+            var count = 0;
+            while (true)
+            {
+                var allFinished = true;
+                foreach (var clientResult in clientResults)
+                {
+                    // limit the number of returned object if Take linq extension method was used
+                    if (query.Take > 0 && count >= query.Take) yield break;
+
+                    if (clientResult.MoveNext())
+                    {
+                        allFinished = false;
+
+                        var current = clientResult.Current;
+                        if (query.Distinct)
+                        {
+                            if (distinctSet.Add(clientResult.Current))
+                            {
+                                count++;
+                                yield return current;
+                            }
+                        }
+                        else
+                        {
+                            count++;
+                            yield return current;
+                        }
+                    }
+                }
+
+                if (allFinished) yield break;
+            }
+        }
+
+
+        var count1 = 0;
+
+        // if ordered merge results by preserving order (either ascending or descending)
+        foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty,
+                     query.OrderByIsDescending,
+                     clientResults))
+        {
+            yield return item;
+
+            count1++;
+            if (query.Take > 0 && count1 >= query.Take) yield break;
+        }
+    }
+
     public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"GetMany for session {sessionId}");
@@ -385,9 +441,8 @@ public partial class DataAggregator : IDataClient
             var node = WhichNode(primaryKey);
 
             var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
-            if (one != null) yield return one;
-
-            yield break;
+            
+            return one != null ? new[]{one} : Enumerable.Empty<RankedItem>();
         }
 
         var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
@@ -405,67 +460,14 @@ public partial class DataAggregator : IDataClient
             if (e.InnerException != null) throw e.InnerException;
         }
 
-
-        var distinctSet = new HashSet<RankedItem>();
-
-
+        
         try
         {
             // for full-text queries the order is given by the result rank
             // for normal queries order is either explicit (order by clause) or thy are unordered
             if (!query.IsFullTextQuery)
             {
-                // if no order-by clause simply merge the results (in a way that guarantees a stable order between calls)
-                if (query.OrderByProperty == null)
-                {
-                    var count = 0;
-                    while (true)
-                    {
-                        var allFinished = true;
-                        foreach (var clientResult in clientResults)
-                        {
-                            // limit the number of returned object if Take linq extension method was used
-                            if (query.Take > 0 && count >= query.Take) yield break;
-
-                            if (clientResult.MoveNext())
-                            {
-                                allFinished = false;
-
-                                var current = clientResult.Current;
-                                if (query.Distinct)
-                                {
-                                    if (distinctSet.Add(clientResult.Current))
-                                    {
-                                        count++;
-                                        yield return current;
-                                    }
-                                }
-                                else
-                                {
-                                    count++;
-                                    yield return current;
-                                }
-                            }
-                        }
-
-                        if (allFinished) yield break;
-                    }
-                }
-
-
-                var count1 = 0;
-
-                // if ordered merge results by preserving order (either ascending or descending)
-                foreach (var item in OrderByHelper.MixOrderedEnumerators(query.OrderByProperty,
-                             query.OrderByIsDescending,
-                             clientResults))
-                {
-                    yield return item;
-
-                    count1++;
-
-                    if (query.Take > 0 && count1 >= query.Take) yield break;
-                }
+                return MixResults(clientResults, query);
             }
             else
             {
@@ -483,15 +485,13 @@ public partial class DataAggregator : IDataClient
                     }
                 });
 
-                foreach (var item in all.OrderByDescending(ri => ri.Rank)) yield return item;
+                return all.OrderByDescending(ri => ri.Rank);
+                
             }
         }
         finally
         {
-            foreach (var enumerator in clientResults)
-            {
-                enumerator.Dispose();
-            }
+            foreach (var enumerator in clientResults) enumerator.Dispose();
         }
     }
 

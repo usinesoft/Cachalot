@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Client.Core;
-using Newtonsoft.Json.Linq;
 
 namespace Client.Tools;
 
@@ -15,20 +14,20 @@ public static class OrderByHelper
     /// <param name="descending"></param>
     /// <param name="sources"></param>
     /// <returns></returns>
-    public static IEnumerable<RankedItem> MixOrderedEnumerators(string orderedPropertyName, bool descending = false,
-                                                                params IEnumerator<RankedItem>[] sources)
+    public static IEnumerable<T> MixOrderedEnumerators<T>(string orderedPropertyName, bool descending = false,
+                                                                params IEnumerator<T>[] sources) where T : IWithComparableMember
     {
         return descending
             ? MergePreserveOrderDescending(sources,
-                ri => (JValue)ri.Item.GetValue(orderedPropertyName, StringComparison.InvariantCultureIgnoreCase))
+                ri => ri.GetComparableMember(orderedPropertyName))
             : MergePreserveOrderAscending(sources,
-                ri => (JValue)ri.Item.GetValue(orderedPropertyName, StringComparison.InvariantCultureIgnoreCase));
+                ri => ri.GetComparableMember(orderedPropertyName));
     }
 
 
     private static IEnumerable<T> MergePreserveOrderAscending<T, TOrder>(
         this IEnumerable<IEnumerator<T>> inputs,
-        Func<T, TOrder> orderFunc) where TOrder : IComparable<TOrder>
+        Func<T, TOrder> orderFunc) where TOrder : IComparable
     {
         var items = inputs.Where(ee => ee.MoveNext())
             .Select(ee => Tuple.Create(orderFunc(ee.Current), ee))
@@ -63,7 +62,7 @@ public static class OrderByHelper
 
     private static IEnumerable<T> MergePreserveOrderDescending<T, TOrder>(
         this IEnumerable<IEnumerator<T>> inputs,
-        Func<T, TOrder> orderFunc) where TOrder : IComparable<TOrder>
+        Func<T, TOrder> orderFunc) where TOrder : IComparable
     {
         var items = inputs.Where(ee => ee.MoveNext())
             .Select(ee => Tuple.Create(orderFunc(ee.Current), ee))

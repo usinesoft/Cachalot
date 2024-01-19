@@ -1,7 +1,9 @@
 ﻿using System.Text;
 using Cachalot.Linq;
+using CachalotMonitor.Model;
 using Client.Interface;
 using Client.Messages;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
@@ -17,9 +19,13 @@ public class ClusterService : IClusterService
 
     private readonly ILogger<ClusterService> _logger;
 
-    public ClusterService(ILogger<ClusterService> logger)
+    private readonly ShowcaseConfig _showcaseConfig;
+
+    public ClusterService(ILogger<ClusterService> logger, IOptions<ShowcaseConfig> showcaseOptions)
     {
         _logger = logger;
+
+        _showcaseConfig = showcaseOptions.Value;
 
         LoadConnectionHistory();
     }
@@ -92,9 +98,9 @@ public class ClusterService : IClusterService
         return _connectionHistoryCache[name];
     }
 
-    public string[] GetHistoryEntries()
+    public HistoryResponse GetHistoryEntries()
     {
-        return _connectionHistoryCache.Keys.ToArray();
+        return new(_showcaseConfig.ShowcaseMode, _connectionHistoryCache.Keys.ToArray());
     }
 
     public void Dispose()

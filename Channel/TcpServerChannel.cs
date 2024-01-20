@@ -37,8 +37,8 @@ public class TcpServerChannel : IServerChannel
             Server =
             {
                 DualMode = true,
-                ReceiveBufferSize = 1_024_000,
-                SendBufferSize = 1_024_000
+                //ReceiveBufferSize = 1_024_000,
+                //SendBufferSize = 1_024_000
             }
         };
         _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);

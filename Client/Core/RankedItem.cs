@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Newtonsoft.Json.Linq;
 
@@ -57,7 +58,8 @@ public class RankedItem2:IWithComparableMember
 
         public int CompareTo(object obj)
         {
-            var other = (JsonElement)obj;
+            var comparable = (AsComparable)obj;
+            var other = comparable._element;
             
 
             switch (other.ValueKind)
@@ -104,11 +106,18 @@ public class RankedItem2:IWithComparableMember
             throw new ArgumentException($"Cannot compare {_element} with {other}");
         }
     }
-    
+
+    private readonly Dictionary<string, JsonElement> _valueByCaseInsensitiveName = new();
+
     public RankedItem2(double rank, JsonDocument item)
     {
         Rank = rank;
         Item = item;
+        foreach (var child in item.RootElement.EnumerateObject())
+        {
+            _valueByCaseInsensitiveName[child.Name.ToLower()] = child.Value;
+        }
+        
     }
 
     public double Rank { get; }
@@ -118,9 +127,7 @@ public class RankedItem2:IWithComparableMember
 
     public IComparable GetComparableMember(string name)
     {
-        var value = Item.RootElement.GetProperty(name);
-
-        return new AsComparable(value);
+        return new AsComparable(_valueByCaseInsensitiveName[name]);
     }
 }
 

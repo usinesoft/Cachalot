@@ -413,7 +413,7 @@ public partial class DataAggregator : IDataClient
             }
         }
 
-
+      
         var count1 = 0;
 
         // if ordered merge results by preserving order (either ascending or descending)
@@ -477,6 +477,73 @@ public partial class DataAggregator : IDataClient
                 Parallel.ForEach(clientResults, r =>
                 {
                     var resultFromClient = new List<RankedItem>();
+                    while (r.MoveNext()) resultFromClient.Add(r.Current);
+
+                    lock (all)
+                    {
+                        all.AddRange(resultFromClient);
+                    }
+                });
+
+                return all.OrderByDescending(ri => ri.Rank);
+                
+            }
+        }
+        finally
+        {
+            foreach (var enumerator in clientResults) enumerator.Dispose();
+        }
+    }
+
+    public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
+    {
+        Dbg.Trace($"GetMany for session {sessionId}");
+
+        // do not work too hard if it is a simple query by primary key
+        // System tables (@ACTIVITY) may have the same id on multiple nodes
+        if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
+        {
+            var primaryKey = query.Elements[0].Elements[0].Value;
+
+            var node = WhichNode(primaryKey);
+
+            var one = CacheClients[node].GetMany2(query, sessionId).FirstOrDefault();
+            
+            return one != null ? new[]{one} : Enumerable.Empty<RankedItem2>();
+        }
+
+        var clientResults = new IEnumerator<RankedItem2>[CacheClients.Count];
+
+        try
+        {
+            Parallel.ForEach(CacheClients, client =>
+            {
+                var resultsFromThisNode = client.GetMany2(query, sessionId);
+                clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
+            });
+        }
+        catch (AggregateException e)
+        {
+            if (e.InnerException != null) throw e.InnerException;
+        }
+
+        
+        try
+        {
+            // for full-text queries the order is given by the result rank
+            // for normal queries order is either explicit (order by clause) or thy are unordered
+            if (!query.IsFullTextQuery)
+            {
+                return MixResults(clientResults, query);
+            }
+            else
+            {
+                // for full text queries we have to merge all results and sort by rank
+                var all = new List<RankedItem2>();
+
+                Parallel.ForEach(clientResults, r =>
+                {
+                    var resultFromClient = new List<RankedItem2>();
                     while (r.MoveNext()) resultFromClient.Add(r.Current);
 
                     lock (all)

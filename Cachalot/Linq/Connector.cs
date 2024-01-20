@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using Cachalot.Extensions;
 using Channel;
@@ -10,6 +11,7 @@ using Client;
 using Client.Core;
 using Client.Interface;
 using Client.Parsing;
+using Client.Queries;
 using Client.Tools;
 using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
@@ -302,6 +304,44 @@ public sealed class Connector : IDisposable
 
     public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
     {
+        var query = SqlToQuery(sql, fullTextQuery, queryId);
+
+
+        if (query.CountOnly)
+        {
+            var (_, count) = Client.EvalQuery(query);
+
+            var result = new JObject
+            {
+                ["count"] = count
+            };
+
+            return new[] { result };
+        }
+
+        return Client.GetMany(query).Select(ri => ri.Item);
+    }
+    public IEnumerable<JsonDocument> SqlQueryAsJson2(string sql, string fullTextQuery = null, Guid queryId = default)
+    {
+        var query = SqlToQuery(sql, fullTextQuery, queryId);
+
+
+        if (query.CountOnly)
+        {
+            var (_, count) = Client.EvalQuery(query);
+
+
+            var result = JsonDocument.Parse($"{{count={count}}}");
+            
+
+            return new[] { result };
+        }
+
+        return Client.GetMany2(query).Select(ri => ri.Item);
+    }
+
+    private OrQuery SqlToQuery(string sql, string fullTextQuery, Guid queryId)
+    {
         var parsed = new Parser().ParseSql(sql);
 
         var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from");
@@ -319,24 +359,10 @@ public sealed class Connector : IDisposable
         query.FullTextSearch = fullTextQuery;
 
         query.QueryId = queryId;
-
-
-        if (query.CountOnly)
-        {
-            var (_, count) = Client.EvalQuery(query);
-
-            var result = new JObject
-            {
-                ["count"] = count
-            };
-
-            return new[] { result };
-        }
-
-        return Client.GetMany(query).Select(ri => ri.Item);
+        return query;
     }
 
-   
+
     public event EventHandler<ProgressEventArgs> Progress;
 
 

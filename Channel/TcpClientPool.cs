@@ -40,8 +40,8 @@ public class
             {
                 Client = { DualMode = true }, 
                 NoDelay = true,
-                ReceiveBufferSize = 1_024_000,
-                SendBufferSize = 1_024_000
+                //ReceiveBufferSize = 1_024_000,
+                //SendBufferSize = 1_024_000
             };
 
             client.Connect(_address, _port);

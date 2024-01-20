@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Cachalot.Linq;
 using CachalotMonitor.Model;
 using Client.Core;
@@ -25,12 +27,23 @@ internal class QueryService : IQueryService
 
     public string QueryAsJson(string? sql, string? fullTextQuery = null, Guid queryId = default)
     {
-        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToList();
+        var result = _clusterService.Connector?.SqlQueryAsJson2(sql, fullTextQuery, queryId).ToArray();
 
+        var builder = new StringBuilder();
         if (result != null)
         {
-            var ja = new JArray(result);
-            return ja.ToString(Formatting.None, new SmartDateTimeConverter());
+            builder.Append('[');
+            for(int i = 0; i < result.Length;i++)
+            {
+                var jsonDocument = result[i];
+                     
+                builder.Append(jsonDocument.RootElement.GetRawText());
+                if(i < result.Length - 1) { builder.Append(','); }
+            }
+
+            builder.Append(']');
+
+            return builder.ToString();
         }
 
         return "[]";

@@ -1626,7 +1626,7 @@ namespace Tests.IntegrationTests
         }
 
         [Test]
-        public void Performance_test_get_many()
+        public void Order_by_with_system_text_json()
         {
             using var connector = new Connector(_clientConfig);
 
@@ -1634,25 +1634,61 @@ namespace Tests.IntegrationTests
 
             var dataSource = connector.DataSource<Order>();
 
-            var testData = Order.GenerateTestData(10_000);
+            var testData = Order.GenerateTestData(100);
+
+            dataSource.PutMany(testData);
+
+            var r1 = connector.SqlQueryAsJson2("select from order order by amount").ToList();
+            Assert.AreEqual(100, r1.Count);
+
+            var r2 = connector.SqlQueryAsJson2("select from order order by amount descending").ToList();
+            Assert.AreEqual(100, r2.Count);
+        }
+
+        [Test]
+        [TestCase(100)]
+        [TestCase(1000)]
+        [TestCase(10000)]
+        public void Performance_test_get_many(int items)
+        {
+            using var connector = new Connector(_clientConfig);
+
+            connector.DeclareCollection<Order>();
+
+            var dataSource = connector.DataSource<Order>();
+
+            var testData = Order.GenerateTestData(items);
 
             dataSource.PutMany(testData);
 
             var watch = new Stopwatch();
 
-            const int iterations = 100;
+            const int iterations = 20;
 
+            Console.WriteLine("Test with Newtonsoft Json");
             watch.Start();
             for (int i = 0; i < iterations; i++)
             {
-                var r1 = dataSource.SqlQuery("select from order").ToList();
-                Assert.AreEqual(10_000, r1.Count);
+                var r1 = connector.SqlQueryAsJson("select from order").ToList();
+                Assert.AreEqual(items, r1.Count);
             }
 
             watch.Stop();
 
-            Console.WriteLine($"avg time for 10000 objects {watch.ElapsedMilliseconds / (float)iterations}");
+            Console.WriteLine($"avg time for {items} objects {watch.ElapsedMilliseconds / (float)iterations}");
             
+            Console.WriteLine("Test with System.Text.Json");
+            watch.Restart();
+            for (int i = 0; i < iterations; i++)
+            {
+                var r1 = connector.SqlQueryAsJson2("select from order").ToList();
+                Assert.AreEqual(items, r1.Count);
+            }
+
+            watch.Stop();
+
+            Console.WriteLine($"avg time for {items} objects {watch.ElapsedMilliseconds / (float)iterations}");
+
 
         }
 

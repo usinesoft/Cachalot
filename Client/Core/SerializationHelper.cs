@@ -74,6 +74,7 @@ public static class SerializationHelper
         return Serializer.Deserialize<TItem>(reader);
     }
 
+    
     public static JsonDocument JsonDocumentFromStream(Stream stream, bool compress)
     {
 

@@ -45,7 +45,7 @@ public class TcpServerChannel : IServerChannel
 
         _listener.Start();
 
-        if (!(_listener.LocalEndpoint is IPEndPoint endpoint))
+        if (_listener.LocalEndpoint is not IPEndPoint endpoint)
             throw new NotSupportedException("Can not initialize server");
 
         return endpoint.Port;
@@ -121,31 +121,38 @@ public class TcpServerChannel : IServerChannel
 
         try
         {
-            while (client.Connected)
+            while (true)
             {
                 var buffer = new byte[1];
                 var bytesCount = await clientStream.ReadAsync(buffer, 0, 1);
 
                 if (bytesCount == 0) // connection closed
+                {
+                    Dbg.Trace("0 bytes received:connection closed by client");
                     break;
+                }
+                    
 
                 var inputType = buffer[0];
 
                 Dbg.Trace($"input type {inputType}");
 
 
-                // if its a simple ping do not expect a request
+                // if it is a simple ping do not expect a request
                 if (inputType == Constants.PingCookie)
                 {
+                    Dbg.Trace("send ping cookie");
                     clientStream.WriteByte(Constants.PingCookie);
                 }
-
                 else if (inputType == Constants.CloseCookie)
                 {
+                    Dbg.Trace($"received close cookie", true);
                     break;
                 }
                 else
                 {
+                    Dbg.Trace($"received request cookie");
+
                     var request = await Streamer.FromStreamAsync<Request>(clientStream);
 
                     Dbg.Trace("request received in client loop");
@@ -162,30 +169,35 @@ public class TcpServerChannel : IServerChannel
 
                     if (request.IsSimple)
                     {
-                        // ReSharper disable once RedundantAssignment
-                        var ackOkay = Streamer.ReadAck(clientStream);
-                        Debug.Assert(ackOkay);
+                        
+                        Streamer.ReadAck(clientStream);
+                        Dbg.Trace($"received ack");
                     }
                 }
             }
         }
         catch (IOException)
         {
+            Dbg.Trace("client disconnected", true);
             //client disconnected (nothing to do)
         }
         // ReSharper disable EmptyGeneralCatchClause
         catch (Exception)
             // ReSharper restore EmptyGeneralCatchClause
         {
+            Dbg.Trace("unknown exception while reading client", true);
             //ignore 
         }
         finally
         {
+            Dbg.Trace("client disconnected", true);
             lock (_connectedClients)
             {
                 _connectedClients.Remove(client);
                 Interlocked.Decrement(ref _connections);
             }
+            client.Close();
+
         }
     }
 

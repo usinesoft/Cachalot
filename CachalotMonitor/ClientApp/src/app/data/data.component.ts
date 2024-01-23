@@ -258,10 +258,18 @@ export class DataComponent implements OnInit {
     
   }
 
+  fetchingData:boolean = false;
+
   private getData(force: boolean = false) {
 
+    // avoid recursive calls after control update
+    if(this.fetchingData){
+      return;
+    }
+      
     this.currentQuery!.fullTextQuery = this.fullTextQuery;
 
+    this.fetchingData = true;
     this.queryService.Execute(this.selectedCollection!, this.currentQuery!).subscribe(
       data=> {
 
@@ -283,53 +291,18 @@ export class DataComponent implements OnInit {
           this.lastQueryId = data.queryId;
           console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
 
+          this.fetchingData = false;
         }
 
       },
       error=>{
         this.sql = error;
+        this.fetchingData = false;
       }
 
     );
       
 
-    this.queryService.GetAsSql(this.selectedCollection!, this.currentQuery!).subscribe(data => {
-
-        const oldSql = this.sql;
-        this.sql = data.sql;
-
-        let shouldFetchData = force; // if forced
-        if (!shouldFetchData) { // if sql changed
-          shouldFetchData = data.sql != undefined && data.sql != oldSql;
-        }
-
-        if (shouldFetchData) {
-
-
-          this.queryService.ExecuteQuery(data.sql, this.fullTextQuery).subscribe(d => {
-            if (d.json) {
-              this.data = JSON.parse(d.json);
-
-              // add line numbers and formatting information
-              for (let index = 0; index < this.data.length; index++) {
-                const element = this.data[index];
-                // add line number
-                element["#"] = index;
-                // add expansion flag for display
-                element["#json"] = false;
-
-              }
-              console.log(this.data.length + " items received");
-              this.clientTimeInMilliseconds = d.clientTimeInMilliseconds;
-              this.lastQueryId = d.queryId;
-              console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
-
-            }
-
-          });
-        }
-      },
-      err => this.sql = err);
 
   }
 

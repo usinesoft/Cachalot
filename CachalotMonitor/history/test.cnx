@@ -1,1 +1,1 @@
-{"ClusterName":null,"Nodes":[{"Host":"localhost","Port":48401}]}
+{"ClusterName":null,"Nodes":[{"Host":"localhost","Port":48401},{"Host":"localhost","Port":48402}]}

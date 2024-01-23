@@ -257,16 +257,16 @@ export class DataComponent implements OnInit {
 
   }
 
+  fetchingData:boolean = false;
 
-  public fetchingData:boolean = false;
 
   private getData(force: boolean = false) {
 
-    // avoid multiple calls
+    // avoid recursive calls after control update
     if(this.fetchingData){
       return;
     }
-
+      
     this.currentQuery!.fullTextQuery = this.fullTextQuery;
 
     this.fetchingData = true;

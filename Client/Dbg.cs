@@ -12,8 +12,10 @@ public static class Dbg
     private static int _simulatedException;
     private static int _shardToFail = -1;
 
+    private static readonly ConsoleColor NormalColor = Console.ForegroundColor;
+
     [Conditional("DEBUG_VERBOSE")]
-    public static void Trace(string message)
+    public static void Trace(string message, bool important = false)
     {
         var totalThreads = Process.GetCurrentProcess().Threads.Count;
         var msg =
@@ -21,12 +23,24 @@ public static class Dbg
 
         if (message.ToLower().StartsWith("end ") || message.ToLower().StartsWith("stop ")) Debug.Unindent();
 
-        Debug.WriteLine(message);
+        Debug.WriteLine(msg);
 
         var indent = new string(' ', Debug.IndentLevel * 4);
-        Console.WriteLine(indent + msg);
 
-        if (message.ToLower().StartsWith("start ") || message.ToLower().StartsWith("begin ")) Debug.Indent();
+        if (important)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(indent + msg);
+            Console.ForegroundColor = NormalColor;
+        }
+        else
+        {
+            Console.ForegroundColor = NormalColor;
+            Console.WriteLine(indent + msg);
+        }
+        
+
+        if (message.ToLower().StartsWith("start ") || message.ToLower().StartsWith("begin ")) Debug.Indent();        
     }
 
     [Conditional("DEBUG_VERBOSE")]

@@ -1,4 +1,4 @@
-
+//#define DEBUG_VERBOSE
 
 #region
 
@@ -59,6 +59,8 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     
     protected void PreLoad(int resourcesToPreLoad)
     {
+        Dbg.Trace($"preload the pool with {resourcesToPreLoad} resources");
+
         for (var i = 0; i < resourcesToPreLoad; i++)
         {
             var res = GetShinyNewResource();
@@ -78,6 +80,8 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     private void InternalPut(T resource)
     {
 
+        Dbg.Trace($"begin internal put pool={ResourcesInPool}/{PoolCapacity}");
+
         if (_disposed)
         {
             Release(resource);
@@ -92,7 +96,7 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
             Release(toRelease);
         }
 
-        
+        Dbg.Trace($"end internal put pool={ResourcesInPool}/{PoolCapacity}");
     }
 
     /// <summary>
@@ -139,8 +143,11 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     public T Get()
     {
 
+        Dbg.Trace("get one resource from the pool");
+
         if (_blockingQueue.Count == 0)
         {
+            Dbg.Trace("pool is empty");
             AsyncClaimNewResource();
         }
 
@@ -157,6 +164,9 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
             {
                 return resource;
             }
+
+            
+            Release(resource);
 
             // recursive call (in case a resource is not valid but the provider can produce new valid ones)
             return Get();
@@ -175,10 +185,13 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
     /// <param name="resource"></param>
     public void Put(T resource)
     {
+        Dbg.Trace("begin put resource back into te pool");
+
         if (resource == null)
             throw new ArgumentNullException(nameof(resource));
 
         InternalPut(resource);
+        Dbg.Trace("end put resource back into te pool");
     }
 
     /// <summary>

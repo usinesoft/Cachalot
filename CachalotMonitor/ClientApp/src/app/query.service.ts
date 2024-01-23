@@ -18,10 +18,6 @@ export class QueryService {
   }
 
 
-  GetAsSql(collection: string, query: AndQuery): Observable<SqlResponse> {
-    return this.http.post<SqlResponse>(this.baseUrl + `Data/query/sql/${collection}`, query);
-  }
-
   Execute(collection: string, query: AndQuery): Observable<DataResponse> {
     return this.http.post<DataResponse>(this.baseUrl + `Data/query/execute/${collection}`, query);
   }
@@ -39,14 +35,7 @@ export class QueryService {
     return this.downloadFileAsStream(this.baseUrl + "data/query/stream", "POST", request);
   }
 
-  ExecuteQuery(sql: string | undefined, fullTextQuery: string | undefined) {
-
-    const request = new SearchRequest();
-    request.sql = sql;
-    request.fullText = fullTextQuery;
-    return this.http.post<DataResponse>(this.baseUrl + "Data/query/execute", request);
-  }
-
+  
   ExecuteDelete(sql: string ) {
 
     const request = new SearchRequest();

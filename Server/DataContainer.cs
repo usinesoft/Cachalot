@@ -274,54 +274,54 @@ public class DataContainer
                 switch (dataRequest)
                 {
                     case RemoveManyRequest removeManyRequest:
-                    {
-                        var mgr = new DeleteManager(dataStore, PersistenceEngine);
-
-                        mgr.ProcessRequest(removeManyRequest, client);
-
-                        if (removeManyRequest.Drop)
                         {
+                            var mgr = new DeleteManager(dataStore, PersistenceEngine);
 
-                            var key = DataStores.Keys.FirstOrDefault(k => k.Equals(removeManyRequest.CollectionName,
-                                StringComparison.InvariantCultureIgnoreCase));
+                            mgr.ProcessRequest(removeManyRequest, client);
 
-                            // remove the data store for the collection
-                            DataStores.Remove(key);
+                            if (removeManyRequest.Drop)
+                            {
 
-                            // delete schema information after truncate
-                            _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+                                var key = DataStores.Keys.FirstOrDefault(k => k.Equals(removeManyRequest.CollectionName,
+                                    StringComparison.InvariantCultureIgnoreCase));
+
+                                // remove the data store for the collection
+                                DataStores.Remove(key);
+
+                                // delete schema information after truncate
+                                _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+                            }
+
+                            break;
                         }
-
-                        break;
-                    }
                     case PutRequest putRequest:
-                    {
-                        var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore,
-                            _serviceContainer.Log);
+                        {
+                            var mgr = new PutManager(PersistenceEngine, _serviceContainer.FeedSessionManager, dataStore,
+                                _serviceContainer.Log);
 
-                        mgr.ProcessRequest(putRequest, client);
-                        break;
-                    }
+                            mgr.ProcessRequest(putRequest, client);
+                            break;
+                        }
                     case DomainDeclarationRequest domainDeclarationRequest:
-                    {
-                        var mgr = new CacheOnlyManager(dataStore);
+                        {
+                            var mgr = new CacheOnlyManager(dataStore);
 
-                        mgr.ProcessRequest(domainDeclarationRequest, client);
-                        break;
-                    }
+                            mgr.ProcessRequest(domainDeclarationRequest, client);
+                            break;
+                        }
                     case EvictionSetupRequest evictionSetupRequest:
-                    {
-                        var mgr = new CacheOnlyManager(dataStore);
+                        {
+                            var mgr = new CacheOnlyManager(dataStore);
 
-                        mgr.ProcessRequest(evictionSetupRequest, client);
-                        break;
-                    }
+                            mgr.ProcessRequest(evictionSetupRequest, client);
+                            break;
+                        }
                 }
             }, dataRequest.CollectionName);
         }
         else
         {
-            if (dataRequest.SessionId != default) // request inside a consistent read context
+            if (dataRequest.SessionId != Guid.Empty) // request inside a consistent read context
             {
                 if (lockManager.CheckLock(dataRequest.SessionId, false, dataRequest.CollectionName))
                 {
@@ -661,7 +661,7 @@ public class DataContainer
         foreach (var store in DataStores.Pairs) collectionsDescriptions.Add(store.Key, store.Value.CollectionSchema);
 
         return new()
-            { ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions };
+        { ShardIndex = ShardIndex, ShardCount = ShardCount, CollectionsDescriptions = collectionsDescriptions };
     }
 
     public void LoadSchema(string path)

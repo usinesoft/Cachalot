@@ -40,17 +40,23 @@ public class
         try
         {
             Dbg.Trace("begin get shiny new resource");
+
             var client = new TcpClient(AddressFamily.InterNetworkV6) { Client = { DualMode = true }, NoDelay = true };
 
-
-            client.Connect(_address, _port);
+            try
+            {
+                client.Connect(_address, _port);
+            }
+            catch (Exception )
+            {
+                Dbg.Trace("can not connect to server");
+                return null;
+            }
 
 
             Dbg.Trace("end get shiny new resource");
 
-            if (!client.Connected)
-                return null;
-
+            
             return client;
 
             
@@ -152,6 +158,7 @@ public class
 
             stream.Close();
         resource.Close();
+
 
         _lastTimeCheckedByConnection.Remove(resource);
     }

@@ -266,7 +266,7 @@ export class DataComponent implements OnInit {
     if(this.fetchingData){
       return;
     }
-      
+
     this.currentQuery!.fullTextQuery = this.fullTextQuery;
 
     this.fetchingData = true;

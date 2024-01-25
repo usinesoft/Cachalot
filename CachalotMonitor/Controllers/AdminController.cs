@@ -107,7 +107,8 @@ public class AdminController : ControllerBase
         return ClusterService.GetHistoryEntries();
     }
 
-
+    //private static ClusterInformation? _clusterInformation;
+    
     /// <summary>
     ///     Get information about cluster nodes and collections
     /// </summary>
@@ -115,6 +116,14 @@ public class AdminController : ControllerBase
     [HttpGet]
     public ClusterInformation GetClusterInformation()
     {
+        //if (_clusterInformation?.Status == ClusterInformation.ClusterStatus.Ok)
+        //{
+        //    return _clusterInformation;
+        //}
+        //_clusterInformation = ClusterService.GetClusterInformation();
+        
+        //return _clusterInformation;
+
         return ClusterService.GetClusterInformation();
     }
 

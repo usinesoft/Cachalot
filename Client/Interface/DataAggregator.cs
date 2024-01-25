@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -407,13 +408,18 @@ public partial class DataAggregator : IDataClient
                             yield return current;
                         }
                     }
+                    else
+                    {
+                        clientResult.Dispose();
+                    }
                 }
+                
 
                 if (allFinished) yield break;
             }
         }
 
-      
+  
         var count1 = 0;
 
         // if ordered merge results by preserving order (either ascending or descending)
@@ -426,6 +432,29 @@ public partial class DataAggregator : IDataClient
             count1++;
             if (query.Take > 0 && count1 >= query.Take) yield break;
         }
+        
+        
+    }
+
+    public IEnumerable<T> MixResultsForFullTextQuery<T>(IEnumerator<T>[] clientResults) where T : IRankedItem
+    {
+        // for full text queries we have to merge all results and sort by rank
+        var all = new List<T>();
+
+        Parallel.ForEach(clientResults, r =>
+        {
+            var resultFromClient = new List<T>();
+            while (r.MoveNext()) resultFromClient.Add(r.Current);
+            r.Dispose();
+
+            lock (all)
+            {
+                all.AddRange(resultFromClient);
+            }
+        });
+
+        
+        return all.OrderByDescending(ri => ri.Rank);
     }
 
     public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
@@ -461,38 +490,18 @@ public partial class DataAggregator : IDataClient
         }
 
         
-        try
+       
+        // for full-text queries the order is given by the result rank
+        // for normal queries order is either explicit (order by clause) or they are unordered
+        if (query.IsFullTextQuery)
         {
-            // for full-text queries the order is given by the result rank
-            // for normal queries order is either explicit (order by clause) or thy are unordered
-            if (!query.IsFullTextQuery)
-            {
-                return MixResults(clientResults, query);
-            }
-            else
-            {
-                // for full text queries we have to merge all results and sort by rank
-                var all = new List<RankedItem>();
-
-                Parallel.ForEach(clientResults, r =>
-                {
-                    var resultFromClient = new List<RankedItem>();
-                    while (r.MoveNext()) resultFromClient.Add(r.Current);
-
-                    lock (all)
-                    {
-                        all.AddRange(resultFromClient);
-                    }
-                });
-
-                return all.OrderByDescending(ri => ri.Rank);
-                
-            }
+            return MixResultsForFullTextQuery(clientResults);
+            
         }
-        finally
-        {
-            foreach (var enumerator in clientResults) enumerator.Dispose();
-        }
+
+        // for full text queries we have to merge all results and sort by rank
+        return MixResults(clientResults, query);
+
     }
 
     public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
@@ -528,38 +537,16 @@ public partial class DataAggregator : IDataClient
         }
 
         
-        try
+        // for full-text queries the order is given by the result rank
+        // for normal queries order is either explicit (order by clause) or thy are unordered
+        if (query.IsFullTextQuery)
         {
-            // for full-text queries the order is given by the result rank
-            // for normal queries order is either explicit (order by clause) or thy are unordered
-            if (!query.IsFullTextQuery)
-            {
-                return MixResults(clientResults, query);
-            }
-            else
-            {
-                // for full text queries we have to merge all results and sort by rank
-                var all = new List<RankedItem2>();
-
-                Parallel.ForEach(clientResults, r =>
-                {
-                    var resultFromClient = new List<RankedItem2>();
-                    while (r.MoveNext()) resultFromClient.Add(r.Current);
-
-                    lock (all)
-                    {
-                        all.AddRange(resultFromClient);
-                    }
-                });
-
-                return all.OrderByDescending(ri => ri.Rank);
-                
-            }
+            return MixResultsForFullTextQuery(clientResults);
+            
         }
-        finally
-        {
-            foreach (var enumerator in clientResults) enumerator.Dispose();
-        }
+
+        return MixResults(clientResults, query);
+
     }
 
     public void ReleaseLock(Guid sessionId)

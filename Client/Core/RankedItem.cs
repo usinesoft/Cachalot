@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Client.Core;
 
-public class RankedItem:IWithComparableMember
+public class RankedItem:IWithComparableMember, IRankedItem
 {
     private readonly JTokenEqualityComparer _comparer = new();
 
@@ -43,7 +43,7 @@ public class RankedItem:IWithComparableMember
     }
 }
 
-public class RankedItem2:IWithComparableMember
+public class RankedItem2:IWithComparableMember, IRankedItem
 {
 
     class AsComparable : IComparable
@@ -137,4 +137,9 @@ public class RankedItem2:IWithComparableMember
 public interface IWithComparableMember
 {
     IComparable GetComparableMember(string name);
+}
+
+public interface IRankedItem
+{
+    public double Rank { get; }
 }

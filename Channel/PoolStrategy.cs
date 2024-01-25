@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Client;
@@ -87,7 +88,11 @@ public abstract class PoolStrategy<T> : IDisposable where T : class
             Release(resource);
             return;
         }
-
+        
+        if (_blockingQueue.Contains(resource))
+        {
+            throw new InvalidOperationException("Putting a resource twice in the pool");
+        }
         _blockingQueue.Add(resource);
 
         while (_blockingQueue.Count > PoolCapacity)

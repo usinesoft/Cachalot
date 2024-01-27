@@ -103,8 +103,7 @@ public sealed class TcpClientChannel : IClientChannel
         }
         finally
         {
-            //Streamer.SendAck(stream);
-
+            
             if (sessionId == Guid.Empty) _connectionPool.Put(connection);
         }
     }
@@ -136,8 +135,7 @@ public sealed class TcpClientChannel : IClientChannel
         }
         finally
         {
-            //Streamer.SendAck(stream);
-
+            
             if (sessionId == Guid.Empty) _connectionPool.Put(connection);
         }
     }
@@ -272,8 +270,7 @@ public sealed class TcpClientChannel : IClientChannel
 
             var response = Streamer.FromStream<Response>(stream);
 
-            //Streamer.SendAck(stream);
-
+            
             if (response == null)
                 throw new CacheException("Error : invalid response from server");
 

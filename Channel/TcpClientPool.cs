@@ -151,15 +151,16 @@ public class
         if (resource != null)
         {
             Dbg.Trace("Release: closing connection");
-        // proactive close request
-        var stream = resource.GetStream();
-        stream.WriteByte(Constants.CloseCookie);
-        stream.Flush();
+            
+            // proactive close request
+            var stream = resource.GetStream();
+            stream.WriteByte(Constants.CloseCookie);
+            stream.Flush();
 
             stream.Close();
-        resource.Close();
-
-
-        _lastTimeCheckedByConnection.Remove(resource);
+            resource.Close();
+            
+            _lastTimeCheckedByConnection.Remove(resource);
+        }
     }
 }

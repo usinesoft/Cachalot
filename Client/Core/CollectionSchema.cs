@@ -25,7 +25,7 @@ namespace Client.Core;
 ///     Usage of data compression
 /// </summary>
 [ProtoContract]
-public class CollectionSchema : IEquatable<CollectionSchema>
+public sealed class CollectionSchema : IEquatable<CollectionSchema>
 {
     /// <summary>
     ///     Compatibility level between two schemas
@@ -83,6 +83,17 @@ public class CollectionSchema : IEquatable<CollectionSchema>
 
     /// <summary>
     /// </summary>
+    /// <param name="obj"> </param>
+    /// <returns> </returns>
+    public override bool Equals(object obj)
+    {
+        if (ReferenceEquals(this, obj))
+            return true;
+        return Equals(obj as CollectionSchema);
+    }
+
+    /// <summary>
+    /// </summary>
     /// <param name="collectionSchema"> </param>
     /// <returns> </returns>
     public bool Equals(CollectionSchema collectionSchema)
@@ -123,7 +134,7 @@ public class CollectionSchema : IEquatable<CollectionSchema>
 
     public int OrderOf(string name)
     {
-        var property = ServerSide.FirstOrDefault(k => k.Name.ToLower() == name.ToLower());
+        var property = ServerSide.Find(k => string.Equals(k.Name, name, StringComparison.CurrentCultureIgnoreCase));
         if (property != null)
             return property.Order;
 
@@ -198,20 +209,9 @@ public class CollectionSchema : IEquatable<CollectionSchema>
     {
         name = name.ToLower();
 
-        return ServerSide.FirstOrDefault(k => k.Name.ToLower() == name);
+        return ServerSide.Find(k => k.Name.ToLower() == name);
     }
 
-
-    /// <summary>
-    /// </summary>
-    /// <param name="obj"> </param>
-    /// <returns> </returns>
-    public override bool Equals(object obj)
-    {
-        if (ReferenceEquals(this, obj))
-            return true;
-        return Equals(obj as CollectionSchema);
-    }
 
     /// <summary>
     /// </summary>

@@ -169,12 +169,7 @@ public class TcpServerChannel : IServerChannel
                         break;
                     }
 
-                    //if (request.IsSimple)
-                    //{
-                        
-                    //    Streamer.ReadAck(clientStream);
-                    //    Dbg.Trace($"received ack");
-                    //}
+                  
                 }
             }
         }

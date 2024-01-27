@@ -21,8 +21,6 @@ namespace Client.Core;
 /// </summary>
 public static class Streamer
 {
-    private const long Ack = 0xABCDEF00;
-
     public static TItem FromStream<TItem>(Stream stream)
     {
         var reader = new BinaryReader(stream);
@@ -45,6 +43,78 @@ public static class Streamer
             mode = SerializationMode.ProtocolBuffers;
 
         return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
+    }
+
+    public static void FromStream<TItemType>(Stream stream, DataHandler<TItemType> dataHandler,
+                                             ExceptionHandler exceptionHandler)
+    {
+        if (dataHandler == null)
+            throw new ArgumentNullException(nameof(dataHandler));
+        if (exceptionHandler == null)
+            throw new ArgumentNullException(nameof(exceptionHandler));
+
+
+        var reader = new BinaryReader(stream);
+
+
+        var items = reader.ReadInt32();
+        for (var i = 0; i < items; i++)
+        {
+            var useProtocolBuffers = reader.ReadBoolean();
+            var useCompression = reader.ReadBoolean();
+            reader.ReadDouble(); // the rank is not used in this case
+            var dataSize = reader.ReadInt32();
+
+            var data = reader.ReadBytes(dataSize);
+
+            using var memStream = new MemoryStream(data);
+
+            try
+            {
+                var mode = SerializationMode.Json;
+                if (useProtocolBuffers)
+                    mode = SerializationMode.ProtocolBuffers;
+
+                var deserializationFailure = false;
+                object result;
+                try
+                {
+                    result = SerializationHelper.ObjectFromStream<TItemType>(memStream, mode, useCompression);
+                    dataHandler((TItemType)result, i + 1, items);
+                }
+                catch (Exception)
+                {
+                    deserializationFailure = true;
+                }
+
+                if (deserializationFailure)
+                {
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    result = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
+                        useCompression);
+
+                    if (result != null)
+                    {
+                        exceptionHandler((ExceptionResponse)result);
+                    }
+                    else
+                    {
+                        var message = $"Received an unknown item type while expecting {typeof(TItemType)}";
+                        throw new StreamingException(message);
+                    }
+                }
+            }
+            catch (IOException ex)
+            {
+                var exResponse = new ExceptionResponse(ex);
+                exceptionHandler(exResponse);
+            }
+            catch (SerializationException ex)
+            {
+                var exResponse = new ExceptionResponse(ex);
+                exceptionHandler(exResponse);
+            }
+        }
     }
 
     public static async Task<TItem> FromStreamAsync<TItem>(Stream stream)
@@ -108,7 +178,8 @@ public static class Streamer
 
         var useProtocolBuffers =
             collectionSchema == null; // use protocol buffers only for requests not for business objects
-        var useCompression = collectionSchema != null && collectionSchema.StorageLayout == Layout.Compressed;
+
+        var useCompression = collectionSchema is { StorageLayout: Layout.Compressed };
 
         var mode = SerializationMode.ProtocolBuffers;
         if (!useProtocolBuffers)
@@ -293,7 +364,6 @@ public static class Streamer
             try
             {
                 result = SerializationHelper.JsonDocumentFromStream(memStream, useCompression);
-                
             }
             catch (Exception)
             {
@@ -315,94 +385,5 @@ public static class Streamer
 
             yield return new(rank, result);
         }
-    }
-
-    public static void FromStream<TItemType>(Stream stream, DataHandler<TItemType> dataHandler,
-                                             ExceptionHandler exceptionHandler)
-    {
-        if (dataHandler == null)
-            throw new ArgumentNullException(nameof(dataHandler));
-        if (exceptionHandler == null)
-            throw new ArgumentNullException(nameof(exceptionHandler));
-
-        
-        var reader = new BinaryReader(stream);
-
-
-        var items = reader.ReadInt32();
-        for (var i = 0; i < items; i++)
-        {
-            var useProtocolBuffers = reader.ReadBoolean();
-            var useCompression = reader.ReadBoolean();
-            reader.ReadDouble(); // the rank is not used in this case
-            var dataSize = reader.ReadInt32();
-
-            var data = reader.ReadBytes(dataSize);
-
-            using var memStream = new MemoryStream(data);
-
-            try
-            {
-                var mode = SerializationMode.Json;
-                if (useProtocolBuffers)
-                    mode = SerializationMode.ProtocolBuffers;
-
-                var deserializationFailure = false;
-                object result;
-                try
-                {
-                    result = SerializationHelper.ObjectFromStream<TItemType>(memStream, mode, useCompression);
-                    dataHandler((TItemType)result, i + 1, items);
-                }
-                catch (Exception)
-                {
-                    deserializationFailure = true;
-                }
-
-                if (deserializationFailure)
-                {
-                    memStream.Seek(0, SeekOrigin.Begin);
-                    result = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
-                        useCompression);
-
-                    if (result != null)
-                    {
-                        exceptionHandler((ExceptionResponse)result);
-                    }
-                    else
-                    {
-                        var message = $"Received an unknown item type while expecting {typeof(TItemType)}";
-                        throw new StreamingException(message);
-                    }
-                }
-            }
-            catch (IOException ex)
-            {
-                var exResponse = new ExceptionResponse(ex);
-                exceptionHandler(exResponse);
-            }
-            catch (SerializationException ex)
-            {
-                var exResponse = new ExceptionResponse(ex);
-                exceptionHandler(exResponse);
-            }
-        }
-    }
-
-    public static void SendAck(Stream stream)
-    {
-        var bufferedStream = new BufferedStream(stream);
-        var writer = new BinaryWriter(bufferedStream);
-        writer.Write(Ack);
-        writer.Flush();
-    }
-
-    public static bool ReadAck(Stream stream)
-    {
-        var reader = new BinaryReader(stream);
-        var ack = reader.ReadInt64();
-        Dbg.CheckThat(ack == Ack);
-
-        return ack == Ack;
     }
 }

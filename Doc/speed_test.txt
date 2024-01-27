@@ -1,0 +1,45 @@
+
+
+SELECT FROM Invoice WHERE
+ClientId = 41338
+TAKE 100
+=4ms
+windows=0ms
+
+
+SELECT FROM Invoice WHERE
+Date = 2023-04-06
+ ORDER BY DiscountPercentage
+TAKE 100
+=16ms
+windows=7ms
+
+
+SELECT FROM Invoice WHERE
+Date = 2023-04-06
+ ORDER BY DiscountPercentage
+TAKE 1000
+=30ms
+windows=9ms
+
+SELECT FROM Client WHERE
+FirstName = 'Kailee'
+TAKE 100
+=4ms
+windows=0ms
+
+SELECT FROM huge WHERE
+Portfolio = 'MUNSA'
+TAKE 100
+=32
+
+SELECT FROM huge WHERE
+Portfolio = 'MUNSA'
+TAKE 1000
+= 180
+
+SELECT FROM huge WHERE
+Portfolio = 'MUNSA' AND
+ Leg != 'Currency'
+TAKE 1000
+= 5

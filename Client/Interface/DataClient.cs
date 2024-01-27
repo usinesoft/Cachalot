@@ -256,8 +256,20 @@ public sealed class DataClient : IDataClient
     {
         Dbg.Trace($"one client GetMany for session {sessionId}");
         var request = new GetRequest(query, sessionId);
-
-        return Channel.SendStreamRequest2(request);
+        var result = Channel.SendStreamRequest2(request).GetEnumerator();
+        try
+        {
+            while (result.MoveNext())
+            {
+                yield return result.Current;
+            }
+            
+        }
+        finally
+        {
+            result.Dispose();
+        }
+        
     }
 
 

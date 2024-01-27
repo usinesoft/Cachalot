@@ -130,7 +130,7 @@ public class TcpServerChannel : IServerChannel
 
                 if (bytesCount == 0) // connection closed
                 {
-                    Dbg.Trace("0 bytes received:connection closed by client");
+                    Dbg.Trace("0 bytes received:connection closed by client",true);
                     break;
                 }
                     
@@ -169,12 +169,12 @@ public class TcpServerChannel : IServerChannel
                         break;
                     }
 
-                    if (request.IsSimple)
-                    {
+                    //if (request.IsSimple)
+                    //{
                         
-                        Streamer.ReadAck(clientStream);
-                        Dbg.Trace($"received ack");
-                    }
+                    //    Streamer.ReadAck(clientStream);
+                    //    Dbg.Trace($"received ack");
+                    //}
                 }
             }
         }

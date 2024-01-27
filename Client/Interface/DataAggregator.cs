@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -408,18 +407,14 @@ public partial class DataAggregator : IDataClient
                             yield return current;
                         }
                     }
-                    else
-                    {
-                        clientResult.Dispose();
-                    }
                 }
-                
+
 
                 if (allFinished) yield break;
             }
         }
 
-  
+
         var count1 = 0;
 
         // if ordered merge results by preserving order (either ascending or descending)
@@ -432,8 +427,6 @@ public partial class DataAggregator : IDataClient
             count1++;
             if (query.Take > 0 && count1 >= query.Take) yield break;
         }
-        
-        
     }
 
     public IEnumerable<T> MixResultsForFullTextQuery<T>(IEnumerator<T>[] clientResults) where T : IRankedItem
@@ -445,7 +438,7 @@ public partial class DataAggregator : IDataClient
         {
             var resultFromClient = new List<T>();
             while (r.MoveNext()) resultFromClient.Add(r.Current);
-            r.Dispose();
+
 
             lock (all)
             {
@@ -453,100 +446,150 @@ public partial class DataAggregator : IDataClient
             }
         });
 
-        
+
         return all.OrderByDescending(ri => ri.Rank);
+    }
+
+    /// <summary>
+    /// This one required some debug time
+    /// Even by calling explicitly Dispose() on an iterator it will not execute the code
+    /// in the finally{} block if the iteration is not finished.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="clientResults"></param>
+    private void CloseIterators<T>(IEnumerator<T>[] clientResults)
+    {
+
+        foreach (var enumerator in clientResults)
+        {
+            while (enumerator.MoveNext())
+            {
+                //do nothing, just consume and throw data
+            }
+            
+            enumerator.Dispose();
+        }
     }
 
     public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"GetMany for session {sessionId}");
-
-        // do not work too hard if it is a simple query by primary key
-        // System tables (@ACTIVITY) may have the same id on multiple nodes
-        if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
-        {
-            var primaryKey = query.Elements[0].Elements[0].Value;
-
-            var node = WhichNode(primaryKey);
-
-            var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
-            
-            return one != null ? new[]{one} : Enumerable.Empty<RankedItem>();
-        }
-
+        
         var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
         try
         {
-            Parallel.ForEach(CacheClients, client =>
+            // do not work too hard if it is a simple query by primary key
+            // System tables (@ACTIVITY) may have the same id on multiple nodes
+            if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
             {
-                var resultsFromThisNode = client.GetMany(query, sessionId);
-                clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
-            });
-        }
-        catch (AggregateException e)
-        {
-            if (e.InnerException != null) throw e.InnerException;
-        }
+                var primaryKey = query.Elements[0].Elements[0].Value;
 
-        
-       
-        // for full-text queries the order is given by the result rank
-        // for normal queries order is either explicit (order by clause) or they are unordered
-        if (query.IsFullTextQuery)
-        {
-            return MixResultsForFullTextQuery(clientResults);
+                var node = WhichNode(primaryKey);
+
+                var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
+
+                if (one != null)
+                {
+                    yield return one;
+                }
+                 
+                yield break;
+            }
+
             
+            try
+            {
+                Parallel.ForEach(CacheClients, client =>
+                {
+                    var resultsFromThisNode = client.GetMany(query, sessionId);
+                    clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
+                });
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException ?? e;
+            }
+
+            // for full-text queries the order is given by the result rank
+            // for normal queries order is either explicit (order by clause) or they are unordered
+            // for full text queries we have to merge all results and sort by rank
+            var result = query.IsFullTextQuery
+                ? MixResultsForFullTextQuery(clientResults)
+                : MixResults(clientResults, query);
+
+            foreach (var item in result)
+            {
+                yield return item;
+            }
+
         }
-
-        // for full text queries we have to merge all results and sort by rank
-        return MixResults(clientResults, query);
-
+        finally
+        {
+            CloseIterators(clientResults);
+        }
     }
 
     public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"GetMany for session {sessionId}");
-
-        // do not work too hard if it is a simple query by primary key
-        // System tables (@ACTIVITY) may have the same id on multiple nodes
-        if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
-        {
-            var primaryKey = query.Elements[0].Elements[0].Value;
-
-            var node = WhichNode(primaryKey);
-
-            var one = CacheClients[node].GetMany2(query, sessionId).FirstOrDefault();
-            
-            return one != null ? new[]{one} : Enumerable.Empty<RankedItem2>();
-        }
-
         var clientResults = new IEnumerator<RankedItem2>[CacheClients.Count];
 
         try
         {
-            Parallel.ForEach(CacheClients, client =>
+
+
+            // do not work too hard if it is a simple query by primary key
+            // System tables (@ACTIVITY) may have the same id on multiple nodes
+            if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
             {
-                var resultsFromThisNode = client.GetMany2(query, sessionId);
-                clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
-            });
+                var primaryKey = query.Elements[0].Elements[0].Value;
+
+                var node = WhichNode(primaryKey);
+
+                var one = CacheClients[node].GetMany2(query, sessionId).FirstOrDefault();
+
+                if (one != null)
+                {
+                    yield return one;
+                }
+
+                yield break;
+            }
+
+
+
+            try
+            {
+                Parallel.ForEach(CacheClients, client =>
+                {
+                    var resultsFromThisNode = client.GetMany2(query, sessionId);
+                    clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
+                });
+
+                
+            }
+            catch (AggregateException e)
+            {
+                throw e.InnerException ?? e;
+            }
+
+            // for full-text queries the order is given by the result rank
+            // for normal queries order is either explicit (order by clause) or thy are unordered
+            var result =  query.IsFullTextQuery
+                ? MixResultsForFullTextQuery(clientResults)
+                : MixResults(clientResults, query);
+
+            foreach (var item in result)
+            {
+                yield return item;
+            }
+
         }
-        catch (AggregateException e)
+        finally // closed when the external iteration ends (iterator disposed)
         {
-            if (e.InnerException != null) throw e.InnerException;
+            CloseIterators(clientResults);
         }
-
-        
-        // for full-text queries the order is given by the result rank
-        // for normal queries order is either explicit (order by clause) or thy are unordered
-        if (query.IsFullTextQuery)
-        {
-            return MixResultsForFullTextQuery(clientResults);
-            
-        }
-
-        return MixResults(clientResults, query);
-
     }
 
     public void ReleaseLock(Guid sessionId)
@@ -904,6 +947,7 @@ public partial class DataAggregator : IDataClient
     private bool TryAcquireLock(Guid sessionId, bool writeAccess, params string[] collections)
     {
         var resultByClient = new bool[CacheClients.Count];
+
         try
         {
             // to avoid deadlock between the pool and the distributed locks reserve connections for all servers

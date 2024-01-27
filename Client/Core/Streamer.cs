@@ -47,22 +47,6 @@ public static class Streamer
         return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
     }
 
-    public static async Task<byte[]> ReadDataAsync(Stream stream, int dataSize)
-    {
-        var result = new byte[dataSize];
-
-        var offset = 0;
-
-        while (offset < dataSize)
-        {
-            var read = await stream.ReadAsync(result, offset, dataSize - offset);
-            offset += read;
-        }
-
-        return result;
-    }
-
-
     public static async Task<TItem> FromStreamAsync<TItem>(Stream stream)
     {
         // itemCount always one here
@@ -100,6 +84,22 @@ public static class Streamer
 
         return SerializationHelper.ObjectFromBytes<TItem>(data, mode, useCompression);
     }
+
+    public static async Task<byte[]> ReadDataAsync(Stream stream, int dataSize)
+    {
+        var result = new byte[dataSize];
+
+        var offset = 0;
+
+        while (offset < dataSize)
+        {
+            var read = await stream.ReadAsync(result, offset, dataSize - offset);
+            offset += read;
+        }
+
+        return result;
+    }
+
 
     public static void ToStream<TItem>(Stream stream, TItem item, CollectionSchema collectionSchema = null)
     {

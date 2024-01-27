@@ -53,10 +53,7 @@ public static class OrderByHelper
 
                 if (ii == items.Count) items.Add(Tuple.Create(value, next.Item2));
             }
-            else
-            {
-                next.Item2.Dispose();
-            }
+            
         }
     }
 
@@ -88,10 +85,7 @@ public static class OrderByHelper
 
                 if (ii == items.Count) items.Add(Tuple.Create(value, next.Item2));
             }
-            else
-            {
-                next.Item2.Dispose();
-            }
+            
         }
     }
 }

@@ -153,14 +153,21 @@ public class
             Dbg.Trace("Release: closing connection");
             
             // proactive close request
-            var stream = resource.GetStream();
-            stream.WriteByte(Constants.CloseCookie);
-            stream.Flush();
+            try
+            {
+                var stream = resource.GetStream();
+                stream.WriteByte(Constants.CloseCookie);
+                stream.Flush();
 
-            stream.Close();
-            resource.Close();
+                stream.Close();
+                resource.Close();
             
-            _lastTimeCheckedByConnection.Remove(resource);
+                _lastTimeCheckedByConnection.Remove(resource);
+            }
+            catch (Exception )
+            {
+                // ignore (the server is down, no need to release)
+            }
         }
     }
 }

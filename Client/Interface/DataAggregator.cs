@@ -459,16 +459,21 @@ public partial class DataAggregator : IDataClient
     /// <param name="clientResults"></param>
     private void CloseIterators<T>(IEnumerator<T>[] clientResults)
     {
-
-        foreach (var enumerator in clientResults)
+        Task.Run(() =>
         {
-            while (enumerator.MoveNext())
+            foreach (var enumerator in clientResults)
             {
-                //do nothing, just consume and throw data
-            }
+                if(enumerator == null) continue;
+
+                while (enumerator.MoveNext())
+                {
+                    //do nothing, just consume and throw data
+                }
             
-            enumerator.Dispose();
-        }
+                enumerator.Dispose();
+            }
+        });
+        
     }
 
     public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)

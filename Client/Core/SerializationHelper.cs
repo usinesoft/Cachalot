@@ -78,23 +78,15 @@ public static class SerializationHelper
     public static JsonDocument JsonDocumentFromStream(Stream stream, bool compress)
     {
 
-        string text;
         if (compress)
         {
             var zInStream = new GZipInputStream(stream);
-            TextReader reader = new StreamReader(zInStream);
-
-
-            text=reader.ReadToEnd();
-        }
-        else
-        {
-            TextReader reader = new StreamReader(stream);
-            text=reader.ReadToEnd();
+            
+            return JsonDocument.Parse(zInStream);
         }
 
+        return JsonDocument.Parse(stream);
 
-        return JsonDocument.Parse(text);
     }
 
 

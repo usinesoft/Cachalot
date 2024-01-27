@@ -1,0 +1,5 @@
+<<<<<<< HEAD
+{"ClusterName":null,"Nodes":[{"Host":"localhost","Port":54321},{"Host":"localhost","Port":54322}]}
+=======
+{"ClusterName":null,"Nodes":[{"Host":"localhost","Port":48401},{"Host":"localhost","Port":48402}]}
+>>>>>>> 301d605 (remove zombie connections)

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
+using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 
 #endregion
@@ -265,6 +266,37 @@ public static class Streamer
         }
 
         writer.Flush();
+    }
+
+    /// <summary>
+    /// Faster processing for 0 or 1 items
+    /// </summary>
+    /// <param name="stream"></param>
+    /// <param name="item"></param>
+    /// <param name="selectedIndexes"></param>
+    /// <param name="aliases"></param>
+    public static void OneToStream(Stream stream, [CanBeNull] PackedObject item, int[] selectedIndexes,
+                                    string[] aliases)
+    {
+        var writer = new BinaryWriter(stream);
+        
+        var itemCount = item == null?0:1;
+        
+        writer.Write(itemCount);
+
+        if (item != null)
+        {
+            var data = selectedIndexes.Length > 0 ? item.GetData(selectedIndexes, aliases) : item.ObjectData;
+
+            writer.Write(false);
+            writer.Write(item.Layout == Layout.Compressed);
+            writer.Write(item.Rank);
+            writer.Write(data.Length);
+            writer.Write(data);
+        }
+        
+        writer.Flush();
+        
     }
 
     public static void ToStreamMany(Stream stream, ICollection<JObject> items)

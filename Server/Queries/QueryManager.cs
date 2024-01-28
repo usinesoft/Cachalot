@@ -73,9 +73,9 @@ public class QueryManager : IRequestManager
 
             if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In or QueryOperator.Contains)
             {
-                // for primary or unique key we do not need more than one index 
+                // For primary or unique key we do not need more than one index. 
+                // No need to count for the primary index. Waste of time as it wil always be the only index used
                 if (index.IndexType == IndexType.Primary)
-                    // no need to count for the primary index. Waste of time as it wil always be the only index used
                     return new List<IndexRanking> { new(index, atomicQuery, -1) };
 
                 var indexResultCount = index.GetCount(atomicQuery.GetValues(), atomicQuery.Operator);
@@ -83,12 +83,11 @@ public class QueryManager : IRequestManager
             }
             else if (atomicQuery.IsComparison) // in this case we can only use ordered indexes
             {
-                if (index.IndexType == IndexType.Ordered)
-                {
-                    var indexResultCount = index.GetCount(atomicQuery.GetValues(), atomicQuery.Operator, true);
+                if (index.IndexType != IndexType.Ordered) continue;
 
-                    result.Add(new(index, atomicQuery, indexResultCount));
-                }
+                var indexResultCount = index.GetCount(atomicQuery.GetValues(), atomicQuery.Operator, true);
+
+                result.Add(new(index, atomicQuery, indexResultCount));
             }
         }
 
@@ -100,27 +99,29 @@ public class QueryManager : IRequestManager
     {
         queryExecutionPlan.StartPlanning();
         var indexesThatCanBeUsed = GetIndexesForQuery(query);
-        var indexesUsed = indexesThatCanBeUsed.OrderBy(p => p.Ranking).Take(2).ToArray();
-        // Remove the second index if it matches much more items than the first one
-        // Surprisingly crossing two indexes takes a significant time. Scan may be faster
-        if (indexesUsed.Length > 1)
-            if (indexesUsed[1].Ranking > indexesUsed[0].Ranking * 2)
-                indexesUsed = new[] { indexesUsed[0] };
 
-        queryExecutionPlan.EndPlanning(indexesUsed.Select(r => r.Index.Name).ToList());
+        // A difficult decision after many tests. Using more than one index is almost always slower than 
+        // using only the most efficient index and scan the result to check for the rest of the conditions.
+        // This is probably true only for in-memory databases
+        var indexesUsed = indexesThatCanBeUsed.MinBy(p => p.Ranking);
+
+        var usedIndexes = new List<string>();
+        if (indexesUsed != null) usedIndexes.Add(indexesUsed.Index.Name);
+
+        queryExecutionPlan.EndPlanning(usedIndexes);
 
         // this will contain all queries that have can not be resolved by indexes and need to be checked manually 
         var restOfTheQuery = query.Clone();
 
-        ISet<PackedObject> result = null;
+        ISet<PackedObject> result;
 
         var finalResult = new List<PackedObject>();
 
 
-        if (indexesUsed.Length == 1) // only one index can be used so do not bother with extra logic
+        if (indexesUsed != null) // only one index can be used so do not bother with extra logic
         {
             queryExecutionPlan.StartIndexUse();
-            var plan = indexesUsed[0];
+            var plan = indexesUsed;
 
             queryExecutionPlan.Trace($"single index: {plan.ResolvedQuery.PropertyName}");
 
@@ -128,33 +129,6 @@ public class QueryManager : IRequestManager
 
             // this query was resolved by an index so no need to check it manually
             restOfTheQuery.Elements.Remove(plan.ResolvedQuery);
-
-            queryExecutionPlan.EndIndexUse();
-        }
-        else if (indexesUsed.Length > 1)
-        {
-            queryExecutionPlan.StartIndexUse();
-
-            foreach (var plan in indexesUsed) // no more than two indexes
-            {
-                if (result == null)
-                {
-                    result = plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator);
-                    queryExecutionPlan.Trace($"first index: {plan.ResolvedQuery.PropertyName} = {plan.Ranking}");
-                }
-                else
-                {
-                    result.IntersectWith(plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator));
-                    queryExecutionPlan.Trace(
-                        $"then index: {plan.ResolvedQuery.PropertyName} = {plan.Ranking} => {result.Count}");
-                }
-
-                // do not work too hard if indexes found nothing
-                if (result.Count == 0) break;
-
-                // this query was resolved by an index so no need to check it manually
-                restOfTheQuery.Elements.Remove(plan.ResolvedQuery);
-            }
 
             queryExecutionPlan.EndIndexUse();
         }
@@ -180,9 +154,7 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.StartScan();
 
-            foreach (var item in result)
-                if (restOfTheQuery.Match(item))
-                    finalResult.Add(item);
+            finalResult.AddRange(result.Where(restOfTheQuery.Match));
 
             queryExecutionPlan.EndScan();
         }
@@ -219,8 +191,6 @@ public class QueryManager : IRequestManager
                 // special processing for distinct clause on a single column
                 if (query.Distinct && query.SelectClause.Count == 1)
                     ExecutionPlan.SimpleDistinct = true;
-
-                //TODO simple distinct
 
                 return SmartFullScan(query)
                     .ToList();
@@ -353,9 +323,8 @@ public class QueryManager : IRequestManager
 
         if (index.IndexType == IndexType.Ordered)
         {
-            foreach (var o in index.GetAll(descending))
-                if (set.Contains(o))
-                    result.Add(o);
+            // sort with an ordered index: iterate through the whole index and retain only objects that match the query
+            result.AddRange(index.GetAll(descending).Where(set.Contains));
 
             return result;
         }
@@ -395,12 +364,11 @@ public class QueryManager : IRequestManager
         var queryExecutionPlan = ExecutionPlan.QueryPlans[0];
         queryExecutionPlan.SimpleQueryStrategy = true;
 
-        if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In)
-            if (atomicQuery.IndexType == IndexType.Primary)
-            {
-                queryExecutionPlan.UsedIndexes = new() { _dataStore.PrimaryIndex.Name };
-                return _dataStore.PrimaryIndex.GetMany(atomicQuery.GetValues()).ToList();
-            }
+        if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In && atomicQuery.IndexType == IndexType.Primary)
+        {
+            queryExecutionPlan.UsedIndexes = new() { _dataStore.PrimaryIndex.Name };
+            return _dataStore.PrimaryIndex.GetMany(atomicQuery.GetValues()).ToList();
+        }
 
 
         var index = _dataStore.TryGetIndex(atomicQuery.PropertyName);
@@ -492,21 +460,12 @@ public class QueryManager : IRequestManager
             result = index.GetAll(orQuery.OrderByIsDescending);
         }
 
-        if (!query.IsEmpty())
-        {
-            result = result.Where(x => query.Match(x));
-        }
+        if (!query.IsEmpty()) result = result.Where(query.Match);
 
         // no post-processing required
-        if (!orQuery.Distinct && orQuery.Take == 0)
-        {
-            return result;
-        }
+        if (!orQuery.Distinct && orQuery.Take == 0) return result;
 
-        if (!orQuery.Distinct)
-        {
-            return result.Take(orQuery.Take);
-        }
+        if (!orQuery.Distinct) return result.Take(orQuery.Take);
 
         // this will apply DISTINCT and TAKE 
         return PostProcessResult(orQuery, result.ToList());
@@ -617,9 +576,8 @@ public class QueryManager : IRequestManager
                 () => { ftResult = ProcessFullTextQuery(query.FullTextSearch, query.Take); });
 
             // the order will be the one in the full-text result (it is ranked by pertinence)
-            foreach (var o in ftResult)
-                if (queryResult.Contains(o))
-                    result.Add(o);
+            foreach (var o in ftResult.Where(queryResult.Contains))
+                result.Add(o);
         }
         // No full-text, structured query
         else
@@ -645,7 +603,7 @@ public class QueryManager : IRequestManager
         if (take == 0) take = int.MaxValue;
 
         var metadata = _dataStore.CollectionSchema.ServerSide
-            .FirstOrDefault(x => x.Name.Equals(column, StringComparison.InvariantCultureIgnoreCase));
+            .Find(x => x.Name.Equals(column, StringComparison.InvariantCultureIgnoreCase));
 
         if (metadata == null)
             throw new ArgumentException($"Unknown property {column}");
@@ -788,7 +746,7 @@ public class QueryManager : IRequestManager
     /// <summary>
     ///     Internally used to select the most efficient indexes for a query
     /// </summary>
-    private class IndexRanking
+    private sealed class IndexRanking
     {
         public IndexRanking(IReadOnlyIndex index, AtomicQuery resolvedQuery, int ranking)
         {

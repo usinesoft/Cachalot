@@ -274,21 +274,18 @@ public sealed class Connector : IDisposable
     }
 
 
-    public int DeleteManyWithSQL(string sql)
+    public int DeleteManyWithSql(string sql)
     {
         sql = sql.Trim();
 
-        // if a delete query is received rewrite it as select; the parser already exist
+        // if a delete query is received rewrite it as select to use the existing parser
         if (sql.StartsWith("delete", StringComparison.InvariantCultureIgnoreCase))
         {
-            sql = "select" + sql.Substring(6);
+            sql = "select" + sql[6..];
         }
         var parsed = new Parser().ParseSql(sql);
 
-        var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from");
-
-        if (fromNode == null) throw new CacheException($"Collection name missing in {sql}. FROM clause not found");
-
+        var fromNode = parsed.Children.FirstOrDefault(n => n.Token == "from") ?? throw new CacheException($"Collection name missing in {sql}. FROM clause not found");
         var tableName = fromNode.Children.Single().Token;
 
 
@@ -302,6 +299,13 @@ public sealed class Connector : IDisposable
         return Client.RemoveMany(query);
     }
 
+    /// <summary>
+    /// Return the result of an SQL query as a collection Of JObject(Newtonsoft)
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="fullTextQuery"></param>
+    /// <param name="queryId"></param>
+    /// <returns></returns>
     public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
     {
         var query = SqlToQuery(sql, fullTextQuery, queryId);
@@ -321,6 +325,14 @@ public sealed class Connector : IDisposable
 
         return Client.GetMany(query).Select(ri => ri.Item);
     }
+
+    /// <summary>
+    /// Return the result of an SQL query as a collection Of JsonDocument(Microsoft)
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="fullTextQuery"></param>
+    /// <param name="queryId"></param>
+    /// <returns></returns>
     public IEnumerable<JsonDocument> SqlQueryAsJson2(string sql, string fullTextQuery = null, Guid queryId = default)
     {
         var query = SqlToQuery(sql, fullTextQuery, queryId);
@@ -378,8 +390,10 @@ public sealed class Connector : IDisposable
             processed++;
             yield return PackedObject.PackJson(item, schema, collectionName);
 
+            // Sonar complaining about this is definitely a Sonar issue
             if (processed % 10_000 != 0)
                 continue;
+
             Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.Progress, processed));
         }
 

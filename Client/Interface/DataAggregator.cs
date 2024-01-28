@@ -451,7 +451,7 @@ public partial class DataAggregator : IDataClient
     }
 
     /// <summary>
-    /// This one required some debug time
+    /// This one required some debug time.
     /// Even by calling explicitly Dispose() on an iterator it will not execute the code
     /// in the finally{} block if the iteration is not finished.
     /// </summary>
@@ -482,6 +482,8 @@ public partial class DataAggregator : IDataClient
         
         var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
+        bool singleNodeUsed = false;
+
         try
         {
             // do not work too hard if it is a simple query by primary key
@@ -491,6 +493,7 @@ public partial class DataAggregator : IDataClient
                 var primaryKey = query.Elements[0].Elements[0].Value;
 
                 var node = WhichNode(primaryKey);
+                singleNodeUsed = true;
 
                 var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
 
@@ -516,6 +519,8 @@ public partial class DataAggregator : IDataClient
                 throw e.InnerException ?? e;
             }
 
+            
+
             // for full-text queries the order is given by the result rank
             // for normal queries order is either explicit (order by clause) or they are unordered
             // for full text queries we have to merge all results and sort by rank
@@ -531,19 +536,32 @@ public partial class DataAggregator : IDataClient
         }
         finally
         {
-            CloseIterators(clientResults);
+            // When multiple nodes are used with the Take operator the iteration on the results from each node stops usually
+            // before all the iterators reach the end. In this case the Dispose would not be called on the iterators which
+            // produces dangling connections never returned to the pool.
+            if (!singleNodeUsed)
+            {
+                CloseIterators(clientResults);
+            }
+            
         }
     }
 
+    /// <summary>
+    /// Same but using System.Text.Json instead of Newtonsoft
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="sessionId"></param>
+    /// <returns></returns>
     public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"GetMany for session {sessionId}");
         var clientResults = new IEnumerator<RankedItem2>[CacheClients.Count];
 
+        bool singleNodeUsed = false;
         try
         {
-
-
+            
             // do not work too hard if it is a simple query by primary key
             // System tables (@ACTIVITY) may have the same id on multiple nodes
             if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
@@ -551,6 +569,8 @@ public partial class DataAggregator : IDataClient
                 var primaryKey = query.Elements[0].Elements[0].Value;
 
                 var node = WhichNode(primaryKey);
+
+                singleNodeUsed = true;
 
                 var one = CacheClients[node].GetMany2(query, sessionId).FirstOrDefault();
 
@@ -591,9 +611,15 @@ public partial class DataAggregator : IDataClient
             }
 
         }
-        finally // closed when the external iteration ends (iterator disposed)
+        finally 
         {
-            CloseIterators(clientResults);
+            // When multiple nodes are used with the Take operator the iteration on the results from each node stops usually
+            // before all the iterators reach the end. In this case the Dispose would not be called on the iterators which
+            // produces dangling connections never returned to the pool.
+            if (!singleNodeUsed)
+            {
+                CloseIterators(clientResults);
+            }
         }
     }
 

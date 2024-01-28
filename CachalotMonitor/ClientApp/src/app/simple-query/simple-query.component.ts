@@ -98,7 +98,7 @@ export class SimpleQueryComponent implements OnInit {
     if(v == this._query.propertyName)
       return;
     
-      this._query.propertyName = v;
+    this._query.propertyName = v;
     this._query.values = [];
 
     // get metadata => data type => acceptable operators and values list if not too big (limited to 1000 values)
@@ -195,7 +195,7 @@ export class SimpleQueryComponent implements OnInit {
 
   set searchText(v: string | undefined) {
     this._searchText = v;
-    let normalized = v?.toLowerCase();
+    let normalized = v?.toLowerCase().trim();
     if (normalized) {
       this.filteredValues = this.values.filter(x => x.toLowerCase().indexOf(normalized!) > -1);
     } else {

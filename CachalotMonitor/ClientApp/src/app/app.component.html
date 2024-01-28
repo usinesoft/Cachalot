@@ -1,39 +1,40 @@
 <mat-toolbar color="primary" style="height: fit-content;flex-wrap: wrap;padding: 0.4rem;">
+  <!--hamburger menu-->
   <button mat-icon-button (click)="isExpanded = !isExpanded">
     <mat-icon>menu</mat-icon>
   </button>
+  <!--trademark-->
   <div style="margin-left: 5rem;">
     <a class="navbar-brand" [routerLink]="['/']">Cachalot DB monitor</a>
-    <p style="font-size: 0.8rem;margin:0;margin-top:-0.5rem">v1.8.9 <span *ngIf="cluster" tooltip="cluster name">&nbsp;[{{cluster}}]</span></p>
+    <p style="font-size: 0.8rem;margin:0;margin-top:-0.5rem">v1.8.9 <span *ngIf="cluster"
+        tooltip="cluster name">&nbsp;[{{cluster}}]</span></p>
   </div>
-  
-  
+<!--login/user area-->
 
-  <div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;" *ngIf="!isAdmin">
+<div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;margin-right: 3rem;" *ngIf="!isAdmin">
 
-    <div>guest</div>
-    <mat-icon>person</mat-icon>
-    <button mat-icon-button (click)="login()" [disabled]="!adminCode">
-      <mat-icon style="margin-right: 2rem">login</mat-icon>
-    </button>
-    <input name="code" type="text" style="min-width: 10rem;float:right" [(ngModel)]="adminCode" type="password">
-    <label for="code">admin code</label>
-  </div>
-  <div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;" *ngIf="isAdmin">
-    <button mat-icon-button (click)="logout()">
-      <mat-icon style="margin-right: 2rem">logout</mat-icon>
-    </button>
-    <div>admin</div>
-    <mat-icon>person</mat-icon>
-
-  </div>
+  <div>guest</div>
+  <mat-icon>person</mat-icon>
+  <button mat-icon-button (click)="login()" [disabled]="!adminCode">
+    <mat-icon >login</mat-icon>
+  </button>
+  <input name="code" type="text" style="min-width: 10rem;float:right" [(ngModel)]="adminCode" type="password">
+  <label for="code">admin code</label>
+</div>
+<div style="flex-grow: 2;display: flex; flex-direction: row-reverse; align-items: center;gap: 4px;margin-right: 3rem;" *ngIf="isAdmin">
+  <button mat-icon-button (click)="logout()">
+    <mat-icon>logout</mat-icon>
+  </button>
+  <div>admin</div>
+  <mat-icon>person</mat-icon>
+</div>
 
 </mat-toolbar>
 <mat-sidenav-container class="sidenav-container" autosize>
   <mat-sidenav #sidenav class="simple-sidenav" mode="side" [opened]="isExpanded" (mouseenter)="mouseenter()"
     (mouseleave)="mouseleave()">
     <mat-nav-list>
-      
+
       <a mat-list-item [routerLink]="['/']">Cluster</a>
       <a mat-list-item [routerLink]="'/collections'" *ngIf="isConnected"> Collections </a>
       <a mat-list-item [routerLink]="'/schema'" *ngIf="isConnected"> Schema </a>
@@ -41,7 +42,8 @@
       <a mat-list-item [routerLink]="'/admin'" *ngIf="isConnected"> Admin </a>
 
     </mat-nav-list>
-    <mat-slide-toggle [(ngModel)]="detailMode" style="margin-left: 1rem;font-size: 1rem;margin-top: 2rem;" tooltip="switch on/off detailed tooltips"></mat-slide-toggle>
+    <mat-slide-toggle [(ngModel)]="detailMode" style="margin-left: 1rem;font-size: 1rem;margin-top: 2rem;"
+      tooltip="switch on/off detailed tooltips"></mat-slide-toggle>
   </mat-sidenav>
 
   <div class="sidenav-content">

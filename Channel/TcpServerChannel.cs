@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -280,21 +281,36 @@ public class TcpServerChannel : IServerChannel
             {
                 Stream stream = _tcpClient.GetStream();
 
-                // if less items than a threshold serialize into a buffer so the read-lock can be released immediately
-                if (items.Count < Constants.StreamingThreshold)
+                switch (items.Count)
                 {
-                    var memStream = new MemoryStream();
-                    Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);
-                    Task.Run(() =>
+                    // fastest processing for 0 or 1 items
+                    case 0:
+                        Streamer.OneToStream(stream, null, selectedIndexes, aliases);
+                        break;
+                    case 1:
+                        Streamer.OneToStream(stream, items.First(), selectedIndexes, aliases);
+                        break;
+                    // if less items than a threshold serialize into a buffer so the read-lock can be released immediately
+                    default:
                     {
-                        memStream.Seek(0, SeekOrigin.Begin);
-                        stream.Write(memStream.GetBuffer(), 0,
-                            (int)memStream.Length);
-                    });
-                }
-                else
-                {
-                    Streamer.ToStreamMany(stream, items, selectedIndexes, aliases);
+                        if (items.Count < Constants.StreamingThreshold)
+                        {
+                            var memStream = new MemoryStream();
+                            Streamer.ToStreamMany(memStream, items, selectedIndexes, aliases);
+                            Task.Run(() =>
+                            {
+                                memStream.Seek(0, SeekOrigin.Begin);
+                                stream.Write(memStream.GetBuffer(), 0,
+                                    (int)memStream.Length);
+                            });
+                        }
+                        else
+                        {
+                            Streamer.ToStreamMany(stream, items, selectedIndexes, aliases);
+                        }
+
+                        break;
+                    }
                 }
             }
             

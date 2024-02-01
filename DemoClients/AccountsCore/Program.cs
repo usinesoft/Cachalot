@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Cachalot.Linq;
@@ -84,13 +85,18 @@ namespace Accounts
             transfers.Truncate();
 
             Header($"creating {_testIterations} accounts");
-            
+
+            List<Account> accountsList = new List<Account>();
+
             RunOnce(() =>
             {
                 for (int i = 0; i < _testIterations; i++)
                 {
-                    accounts.Put(new Account { Id = i, Balance = 1000 });
+                    accountsList.Add(new Account { Id = i, Balance = 1000 });
+                    
                 }
+
+                accounts.PutMany(accountsList);
             }, "account creation");
             
 

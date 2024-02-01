@@ -2,7 +2,7 @@
   "profiles": {
     "Accounts": {
       "commandName": "Project",
-      "commandLineArgs": "DESKTOP-FALICC8:54321+DESKTOP-FALICC8:54322"
+      "commandLineArgs": "localhost:48401+localhost:48402"
     }
   }
 }

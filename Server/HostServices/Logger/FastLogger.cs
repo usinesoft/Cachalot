@@ -152,7 +152,7 @@ internal class FastLogger : ILog
 
                         StoreInCache(item.ToString());
 
-                        //Console.WriteLine(item);
+                        Console.WriteLine(item);
                     }
 
                     _writer.Dispose();

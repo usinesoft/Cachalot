@@ -38,7 +38,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsvImport", "CsvImport\CsvI
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsService", "WindowsService\WindowsService.csproj", "{725E763C-91F8-4865-A0ED-C9C4E91A3D06}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashalotMonitor.Tests", "CashalotMonitot.Tests\CashalotMonitor.Tests.csproj", "{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CashalotMonitor.Tests", "CashalotMonitot.Tests\CashalotMonitor.Tests.csproj", "{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreHost8", "CoreHost\CoreHost8.csproj", "{FC052273-0412-4647-8125-EF649D736BE5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,6 +108,10 @@ Global
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC052273-0412-4647-8125-EF649D736BE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC052273-0412-4647-8125-EF649D736BE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC052273-0412-4647-8125-EF649D736BE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC052273-0412-4647-8125-EF649D736BE5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

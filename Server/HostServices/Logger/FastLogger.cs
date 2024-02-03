@@ -30,7 +30,7 @@ internal class FastLogger : ILog
 
     private volatile bool _shouldStop;
     private Thread _worker;
-    private StreamWriter _writer;
+    
 
 
     public DataStore ActivityTable { get; set; }
@@ -97,7 +97,7 @@ internal class FastLogger : ILog
     /// </summary>
     private void DoHouseKeeping()
     {
-        var logFiles = Directory.EnumerateFiles(_logDirectory, "*.log").ToList().OrderBy(n => n).ToList();
+        var logFiles = Directory.EnumerateFiles(_logDirectory, "*.log").OrderBy(n => n).ToList();
         if (logFiles.Count > MaxFilesToKeep)
             for (var i = 0; i < logFiles.Count - MaxFilesToKeep; i++)
                 File.Delete(logFiles[i]);
@@ -144,18 +144,20 @@ internal class FastLogger : ILog
                 {
                     var fileName = DateTime.Now.ToString("yyyy-MM-dd") + ".log";
 
-                    _writer = new(Path.Combine(_logDirectory, fileName), true);
+
+
+                    StreamWriter writer = new(Path.Combine(_logDirectory, fileName), true);
 
                     foreach (var item in newItems.Where(i => i.Entry == null))
                     {
-                        _writer.WriteLine(item);
+                        writer.WriteLine(item);
 
                         StoreInCache(item.ToString());
 
                         Console.WriteLine(item);
                     }
 
-                    _writer.Dispose();
+                    writer.Dispose();
 
                     var entries = new List<PackedObject>();
                     foreach (var item in newItems.Where(i => i.Entry != null))
@@ -195,7 +197,7 @@ internal class FastLogger : ILog
         Error
     }
 
-    private class Item
+    private sealed class Item
     {
         /// <summary>
         ///     free format log item
@@ -225,7 +227,7 @@ internal class FastLogger : ILog
         {
             Entry = new()
             {
-                Id = queryId == default ? Guid.NewGuid() : queryId,
+                Id = queryId == Guid.Empty ? Guid.NewGuid() : queryId,
                 ExecutionPlan = plan,
                 Type = type,
                 Detail = detail,

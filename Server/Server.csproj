@@ -6,7 +6,7 @@
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>cachealot.snk</AssemblyOriginatorKeyFile>
 		<AssemblyName>ServerComponents</AssemblyName>
-		<Version>2.5.8</Version>
+		<Version>2.5.9</Version>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

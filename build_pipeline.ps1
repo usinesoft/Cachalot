@@ -3,7 +3,7 @@
 # Build pipeline for Cachalot-DB
 ###############################################################
 $releasePath="d:\release"
-$version="2.5.8"
+$version="2.5.9"
 
 # clean the output directory
 Remove-Item -Force -Recurse -Path "$releasePath\*"

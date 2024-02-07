@@ -22,4 +22,4 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release --framework net8.0
     - name: Test
-      run: dotnet test --no-build --verbosity normal --framework net8.0
+      run: dotnet test --no-build --verbosity normal --configuration Release --framework net8.0

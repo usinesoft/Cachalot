@@ -33,7 +33,7 @@ internal interface IDataClient : IDisposable
 
     /// <summary>
     ///     Generate <paramref name="quantity" /> unique identifiers
-    ///     They are guaranteed to be unique but they are not necessary in a contiguous range
+    ///     They are guaranteed to be unique, but they are not necessary in a contiguous range
     /// </summary>
     /// <param name="generatorName">name of the generator</param>
     /// <param name="quantity">number of unique ids to generate</param>

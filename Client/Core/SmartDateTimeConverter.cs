@@ -53,7 +53,11 @@ public class SmartDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
     {
         if (value.Offset.TotalSeconds == 0)
         {
-            if (value == value.Date)
+            if (value == default)
+            {
+                writer.WriteStringValue(value.ToString("o"));
+            }
+            else if (value == value.Date)
             {
                 writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
             }

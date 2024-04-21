@@ -17,9 +17,17 @@ public class SmartDateTimeConverter : JsonConverter<DateTime>
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        if (value.Kind is DateTimeKind.Unspecified or DateTimeKind.Utc || value == value.Date)
+        if (value.Kind is DateTimeKind.Unspecified or DateTimeKind.Utc)
         {
-            writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
+            if (value == value.Date)
+            {
+                writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
+            }
+            else
+            {
+                writer.WriteStringValue(value.ToString("yyyy-MM-dd hh:mm:ss"));
+            }
+            
             
         }
         else
@@ -43,9 +51,16 @@ public class SmartDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 
     public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
     {
-        if (value.Offset.TotalSeconds == 0 || value == value.Date)
+        if (value.Offset.TotalSeconds == 0)
         {
-            writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
+            if (value == value.Date)
+            {
+                writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
+            }
+            else
+            {
+                writer.WriteStringValue(value.ToString("yyyy-MM-dd hh:mm:ss"));
+            }
             
         }
         else

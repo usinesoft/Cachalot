@@ -273,7 +273,7 @@ namespace Tests.UnitTests
 
             var json = SerializationHelper.ObjectToJson(schema);
 
-            var schema1 = SerializationHelper.ObjectFromJson<Schema>(json);
+            var schema1 = SerializationHelper.ObjectFromJson<CollectionSchema>(json);
 
             ClassicAssert.AreEqual(schema, schema1, "The schema can not be serialized to json");
         }

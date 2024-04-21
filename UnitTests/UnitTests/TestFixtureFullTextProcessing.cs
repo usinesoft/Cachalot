@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using Client;
 using Client.Core;
 using Client.Tools;
@@ -218,19 +219,19 @@ namespace Tests.UnitTests
 
             var desc = TypedSchemaFactory.FromType<Home>();
 
-            //// warm up
-            //var unused = PackedObject.Pack(home, desc);
-            //var v1 = unused.ToString();
+            
 
-            var unused = PackedObject.Pack(home, desc);
-            var v2 = unused.ToString();
+            var packed = PackedObject.Pack(home, desc);
+            var v2 = packed.ToString();
+            var json1 = Encoding.UTF8.GetString(packed.ObjectData);
 
-            var json = SerializationHelper.ObjectToJson(home);
-            unused = PackedObject.PackJson(json, desc);
-            var v3 = unused.ToString();
+            var json = SerializationHelper.ObjectToCompactJson(home);
+            packed = PackedObject.PackJson(json, desc);
+            var v3 = packed.ToString();
+            var json2 = Encoding.UTF8.GetString(packed.ObjectData);
 
-            //ClassicAssert.AreEqual(v1, v2);
-            ClassicAssert.AreEqual(v2, v3);
+            Assert.That(json1, Is.EqualTo(json2));
+            Assert.That(v2, Is.EqualTo(v3));
         }
 
 

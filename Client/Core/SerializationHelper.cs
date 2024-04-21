@@ -33,7 +33,8 @@ public static class SerializationHelper
     static readonly JsonSerializerOptions CompactOptions = new()
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new SmartDateTimeConverter(), new SmartDateTimeOffsetConverter() }
     };
 
     public static TItem ObjectFromStream<TItem>(Stream stream, SerializationMode mode, bool compress)
@@ -152,7 +153,7 @@ public static class SerializationHelper
 
     public static TItem ObjectFromJson<TItem>(string json)
     {
-        return JsonSerializer.Deserialize<TItem>(json, CompactOptions);
+        return JsonSerializer.Deserialize<TItem>(json, Options);
     }
 
     public static string ObjectToCompactJson<TItem>(TItem obj)

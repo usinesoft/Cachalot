@@ -2,7 +2,7 @@
   "profiles": {
     "Accounts": {
       "commandName": "Project",
-      "commandLineArgs": "localhost:48401+localhost:48402"
+      "commandLineArgs": "localhost:48401"
     }
   }
 }

@@ -150,7 +150,7 @@ public static class ExpressionTreeHelper
         {
             foreach (var val in values) result.AddRange(ToStrings(val));
         }
-        else
+        else if(value is not DateTime or DateTimeOffset ) 
         {
             if (value != null) result.AddRange(ToStrings(value));
         }

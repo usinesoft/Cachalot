@@ -27,8 +27,13 @@ public static class JExtensions
         {
             case JsonValueKind.String:
             {
+                
+
                 var txt = parent.GetString();
-                if (!string.IsNullOrWhiteSpace(txt))
+                bool isDate = txt.Length >= 10 && txt.Substring(0, 10).Count(x => x == '-') == 2;
+                
+                // ignore dates for full-text indexation
+                if (!string.IsNullOrWhiteSpace(txt) && !isDate)
                 {
                     lines.Add(txt);
                 }

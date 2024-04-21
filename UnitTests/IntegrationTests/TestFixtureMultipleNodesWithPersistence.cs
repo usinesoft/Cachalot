@@ -169,29 +169,29 @@ namespace Tests.IntegrationTests
             dataSource.Put(new Home
                 { Id = 3, CountryCode = "CA", Town = "Toronto", Rooms = 3, Bathrooms = 2, PriceInEuros = 55.5M });
 
-            var all = connector.SqlQueryAsJson2("select from home").ToList();
+            var all = connector.SqlQueryAsJson("select from home").ToList();
             ClassicAssert.AreEqual(3, all.Count);
 
-            var r1 = connector.SqlQueryAsJson2("select from home where countryCode=CA").ToList();
+            var r1 = connector.SqlQueryAsJson("select from home where countryCode=CA").ToList();
             ClassicAssert.AreEqual(1, r1.Count);
             ClassicAssert.AreEqual("Toronto", r1[0].RootElement.GetProperty("Town").GetString());
 
-            var r2 = connector.SqlQueryAsJson2("select from home where rooms in (1, 2)").ToList();
+            var r2 = connector.SqlQueryAsJson("select from home where rooms in (1, 2)").ToList();
             ClassicAssert.AreEqual(2, r2.Count);
 
-            var r3 = connector.SqlQueryAsJson2("select from home where rooms not in (1, 2)").ToList();
+            var r3 = connector.SqlQueryAsJson("select from home where rooms not in (1, 2)").ToList();
             ClassicAssert.AreEqual(1, r3.Count);
 
 
-            var r4 = connector.SqlQueryAsJson2("select from home where CountryCode not in (FR, 'CA')").ToList();
+            var r4 = connector.SqlQueryAsJson("select from home where CountryCode not in (FR, 'CA')").ToList();
             ClassicAssert.AreEqual(0, r4.Count);
 
-            var r5 = connector.SqlQueryAsJson2("select from home where PriceInEuros < 56").ToList();
+            var r5 = connector.SqlQueryAsJson("select from home where PriceInEuros < 56").ToList();
             ClassicAssert.AreEqual(1, r5.Count);
-            r5 = connector.SqlQueryAsJson2("select from home where PriceInEuros < 56 and PriceInEuros > 55").ToList();
+            r5 = connector.SqlQueryAsJson("select from home where PriceInEuros < 56 and PriceInEuros > 55").ToList();
             ClassicAssert.AreEqual(1, r5.Count);
 
-            r5 = connector.SqlQueryAsJson2("select from home where PriceInEuros <= 56").ToList();
+            r5 = connector.SqlQueryAsJson("select from home where PriceInEuros <= 56").ToList();
             ClassicAssert.AreEqual(1, r5.Count);
         }
 
@@ -1523,14 +1523,14 @@ namespace Tests.IntegrationTests
                 { InstrumentName = "instr02", Tags = new List<string> { "x", "y", "z" } });
 
             // scalar property (indexed)
-            var ji = connector.SqlQueryAsJson2("select distinct InstrumentName from AllKindsOfProperties").ToList();
+            var ji = connector.SqlQueryAsJson("select distinct InstrumentName from AllKindsOfProperties").ToList();
             ClassicAssert.AreEqual(2, ji.Count);
 
             var instruments = collection.Select(x => x.InstrumentName).Distinct().ToList();
             ClassicAssert.AreEqual(2, instruments.Count);
 
             // collection property (indexed)
-            var jt = connector.SqlQueryAsJson2("select distinct tags from AllKindsOfProperties").ToList();
+            var jt = connector.SqlQueryAsJson("select distinct tags from AllKindsOfProperties").ToList();
             ClassicAssert.AreEqual(6, jt.Count);
         }
 
@@ -1638,10 +1638,10 @@ namespace Tests.IntegrationTests
 
             dataSource.PutMany(testData);
 
-            var r1 = connector.SqlQueryAsJson2("select from order order by amount").ToList();
+            var r1 = connector.SqlQueryAsJson("select from order order by amount").ToList();
             ClassicAssert.AreEqual(100, r1.Count);
 
-            var r2 = connector.SqlQueryAsJson2("select from order order by amount descending").ToList();
+            var r2 = connector.SqlQueryAsJson("select from order order by amount descending").ToList();
             ClassicAssert.AreEqual(100, r2.Count);
         }
 
@@ -1670,7 +1670,7 @@ namespace Tests.IntegrationTests
             watch.Restart();
             for (int i = 0; i < iterations; i++)
             {
-                var r1 = connector.SqlQueryAsJson2("select from order").ToList();
+                var r1 = connector.SqlQueryAsJson("select from order").ToList();
                 ClassicAssert.AreEqual(items, r1.Count);
             }
 

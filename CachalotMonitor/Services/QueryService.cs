@@ -24,7 +24,7 @@ internal class QueryService : IQueryService
 
     public string QueryAsJson(string? sql, string? fullTextQuery = null, Guid queryId = default)
     {
-        var result = _clusterService.Connector?.SqlQueryAsJson2(sql, fullTextQuery, queryId).ToArray();
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery, queryId).ToArray();
 
         var builder = new StringBuilder();
         if (result != null)
@@ -50,7 +50,7 @@ internal class QueryService : IQueryService
     {
         await using var writer = new StreamWriter(targetStream, Encoding.UTF8);
 
-        var result = _clusterService.Connector?.SqlQueryAsJson2(sql, fullTextQuery);
+        var result = _clusterService.Connector?.SqlQueryAsJson(sql, fullTextQuery);
 
         if (result == null)
             return;
@@ -148,7 +148,7 @@ internal class QueryService : IQueryService
 
                     // query distinct values of the property
                     var result = _clusterService.Connector
-                        ?.SqlQueryAsJson2(
+                        ?.SqlQueryAsJson(
                             $"select distinct {property} from {collection} take {QueryMetadata.MaxValues + 10}")
                         .ToList();
 
@@ -369,32 +369,32 @@ internal class QueryService : IQueryService
             if (type == PropertyType.Unknown)
             {
                 type = ct;
-                continue;
+                
             }
 
             // float replace integers
-            if (type == PropertyType.SomeInteger && ct == PropertyType.SomeFloat)
+            else if (type == PropertyType.SomeInteger && ct == PropertyType.SomeFloat)
             {
                 type = ct;
-                continue;
+                
             }
             
             // a real type overrides null
-            if (type == PropertyType.Null && ct != PropertyType.Null)
+            else if (type == PropertyType.Null && ct != PropertyType.Null)
             {
                 type = ct;
-                continue;
+                
             }
 
             // string overrides everything
-            if (ct == PropertyType.String)
+            else if (ct == PropertyType.String)
             {
                 type = ct;
-                continue;
+                
             }
 
             
-            string? val = null;
+            string? val = jo.RootElement.EnumerateObject().First().Value.ToString();
 
             
             if (!string.IsNullOrEmpty(val))

@@ -87,7 +87,7 @@ namespace Tests.IntegrationTests
                 ClassicAssert.IsNotNull(reloaded);
                 ClassicAssert.AreEqual(13, reloaded.Id);
 
-                var result = connector.SqlQueryAsJson2("select from AllKindsOfProperties where nominal < 150").ToList();
+                var result = connector.SqlQueryAsJson("select from AllKindsOfProperties where nominal < 150").ToList();
                 ClassicAssert.AreEqual(1, result.Count);
             }
         }
@@ -129,7 +129,7 @@ namespace Tests.IntegrationTests
 
             invoices.PutMany(data);
 
-            var result = connector.SqlQueryAsJson2("select from invoice where TotalAmount < 1005").ToList();
+            var result = connector.SqlQueryAsJson("select from invoice where TotalAmount < 1005").ToList();
             ClassicAssert.AreEqual(2, result.Count);
         }
     }

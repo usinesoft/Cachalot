@@ -188,7 +188,7 @@ namespace Tests.IntegrationTests
             {
                 connector.FeedCsvWithAutomaticSchema("TestData/csv/20klines.csv", "20k");
 
-                var result = connector.SqlQueryAsJson2("select from 20k where dealid=25958469").ToList();
+                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
 
                 ClassicAssert.AreEqual(12, result.Count);
             }
@@ -196,15 +196,15 @@ namespace Tests.IntegrationTests
             // check they are found after reload
             using (var connector = new Connector(_clientConfig))
             {
-                var result = connector.SqlQueryAsJson2("select from 20k where dealid=25958469").ToList();
+                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
 
                 ClassicAssert.AreEqual(12, result.Count);
 
                 //MonthBucket
-                result = connector.SqlQueryAsJson2("select  distinct ClientName from 20k").ToList();
+                result = connector.SqlQueryAsJson("select  distinct ClientName from 20k").ToList();
                 ClassicAssert.AreEqual(61, result.Count);
 
-                var count = connector.SqlQueryAsJson2("count from 20k where dealid=25958469").ToList();
+                var count = connector.SqlQueryAsJson("count from 20k where dealid=25958469").ToList();
 
                 // should return a single object with the count property
                 ClassicAssert.AreEqual(1, count.Count);

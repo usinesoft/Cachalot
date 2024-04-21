@@ -308,7 +308,7 @@ public sealed class Connector : IDisposable
     /// <param name="fullTextQuery"></param>
     /// <param name="queryId"></param>
     /// <returns></returns>
-    public IEnumerable<JsonDocument> SqlQueryAsJson2(string sql, string fullTextQuery = null, Guid queryId = default)
+    public IEnumerable<JsonDocument> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
     {
         var query = SqlToQuery(sql, fullTextQuery, queryId);
 

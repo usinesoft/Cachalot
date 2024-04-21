@@ -4,10 +4,11 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using Client.Core;
 using Client.Interface;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
+
 
 namespace Client.Tools;
 
@@ -20,7 +21,7 @@ public static class DumpHelper
 
         var json = File.ReadAllText(jsonPath);
 
-        var array = JArray.Parse(json);
+        var array = JsonDocument.Parse(json);
 
         var info = @this.GetClusterInformation();
 
@@ -31,7 +32,7 @@ public static class DumpHelper
 
         var collectionSchema = schemaByName[collectionName];
 
-        foreach (var item in array.Children<JObject>())
+        foreach (var item in array.RootElement.EnumerateArray())
         {
             var cachedObject = PackedObject.PackJson(item.ToString(), collectionSchema);
             yield return cachedObject;

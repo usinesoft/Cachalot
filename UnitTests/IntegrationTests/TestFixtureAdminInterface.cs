@@ -7,6 +7,7 @@ using Client.Interface;
 using Client.Tools;
 using Newtonsoft.Json;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 using Tests.TestData;
 
@@ -73,12 +74,12 @@ namespace Tests.IntegrationTests
             dataSource.Truncate();
 
             var zero = dataSource.Count();
-            Assert.AreEqual(0, zero);
+            ClassicAssert.AreEqual(0, zero);
 
             connector.Client.Import("trades", path);
 
             var count = dataSource.Count();
-            Assert.AreEqual(1010, count);
+            ClassicAssert.AreEqual(1010, count);
         }
 
         [Test]
@@ -118,21 +119,21 @@ namespace Tests.IntegrationTests
                 admin.Dump(dumpPath);
 
 
-                Assert.IsTrue(Directory.Exists(dumpPath));
+                ClassicAssert.IsTrue(Directory.Exists(dumpPath));
 
                 var fullPath = DumpHelper.NormalizeDumpPath(dumpPath);
 
 
-                Assert.IsTrue(Directory.Exists(fullPath),
+                ClassicAssert.IsTrue(Directory.Exists(fullPath),
                     $"not found {fullPath} current directory = {Directory.GetCurrentDirectory()}");
                 var files = Directory.EnumerateFiles(fullPath).ToList();
 
 
-                Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
-                Assert.IsTrue(files.Any(f => f.Contains("sequence")), "sequences where not stored in the dump");
+                ClassicAssert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
+                ClassicAssert.IsTrue(files.Any(f => f.Contains("sequence")), "sequences where not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json")).ToList();
-                Assert.AreEqual(2, dataFiles.Count); // one data file and the sequence file
+                ClassicAssert.AreEqual(2, dataFiles.Count); // one data file and the sequence file
 
                 // add some data after dump
                 dataSource.Put(new Trade(2000, 3000, "TITI", DateTime.Now.Date, 150));
@@ -156,8 +157,8 @@ namespace Tests.IntegrationTests
                 var minId1 = connector.GenerateUniqueIds("blahblah", 20).Max();
                 var minId2 = connector.GenerateUniqueIds("foobar", 20).Max();
 
-                Assert.Greater(minId1, maxId1, "the sequences ware not correctly restored from dump");
-                Assert.Greater(minId2, maxId2, "the sequences ware not correctly restored from dump");
+                ClassicAssert.Greater(minId1, maxId1, "the sequences ware not correctly restored from dump");
+                ClassicAssert.Greater(minId2, maxId2, "the sequences ware not correctly restored from dump");
 
 
                 var dataSource = connector.DataSource<Trade>();
@@ -166,36 +167,36 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                Assert.AreEqual(1010, list.Count);
+                ClassicAssert.AreEqual(1010, list.Count);
 
                 var count = dataSource.Count(t => t.Folder == "TITI");
-                Assert.AreEqual(0, count, "this object should not be found as it was added after dump");
+                ClassicAssert.AreEqual(0, count, "this object should not be found as it was added after dump");
 
                 dataSource.DeleteMany(t => t.Folder == "TATA");
 
                 count = dataSource.Count(t => t.Folder == "TATA");
-                Assert.AreEqual(0, count);
+                ClassicAssert.AreEqual(0, count);
 
                 count = dataSource.Count(t => t.Folder == "TOTO");
-                Assert.IsTrue(count > 0 && count < 1000, "count > 0 && count < 1000");
+                ClassicAssert.IsTrue(count > 0 && count < 1000, "count > 0 && count < 1000");
 
                 admin.Dump(dumpPath);
 
                 // less than 1000 items. The dump should now contain one single data file
-                Assert.IsTrue(Directory.Exists(dumpPath));
+                ClassicAssert.IsTrue(Directory.Exists(dumpPath));
 
                 var fullPath = DumpHelper.NormalizeDumpPath(dumpPath);
 
-                Assert.IsTrue(Directory.Exists(fullPath),
+                ClassicAssert.IsTrue(Directory.Exists(fullPath),
                     $"not found {fullPath} current directory = {Directory.GetCurrentDirectory()}");
 
                 var files = Directory.EnumerateFiles(fullPath).ToList();
 
 
-                Assert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
+                ClassicAssert.IsTrue(files.Any(f => f.Contains("schema.json")), "schema.json was not stored in the dump");
 
                 var dataFiles = files.Where(f => !f.Contains("schema.json") && !f.Contains("sequence")).ToList();
-                Assert.AreEqual(1, dataFiles.Count,
+                ClassicAssert.AreEqual(1, dataFiles.Count,
                     "A single file should be generated in the dump (less than 1000 items)");
             }
 
@@ -210,8 +211,8 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                Assert.IsTrue(list.Count > 0, "list.Count > 0");
-                Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
+                ClassicAssert.IsTrue(list.Count > 0, "list.Count > 0");
+                ClassicAssert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
 
             // import a dump into an empty database            
@@ -233,11 +234,11 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                Assert.IsTrue(list.Count > 0, "list.Count > 0");
+                ClassicAssert.IsTrue(list.Count > 0, "list.Count > 0");
 
                 var list1 = dataSource.Where(t => t.Folder == "TATA").ToList();
 
-                Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
+                ClassicAssert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
 
             // reinitialize from dump
@@ -258,8 +259,8 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                Assert.IsTrue(list.Count > 0, "list.Count > 0");
-                Assert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
+                ClassicAssert.IsTrue(list.Count > 0, "list.Count > 0");
+                ClassicAssert.IsTrue(list.All(t => t.Folder == "TOTO"), "list.All(t=>t.Folder == 'TOTO')");
             }
         }
 
@@ -322,15 +323,15 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                Assert.AreEqual(1010, list.Count);
+                ClassicAssert.AreEqual(1010, list.Count);
 
                 dataSource.DeleteMany(t => t.Folder == "TATA");
 
                 var count = dataSource.Count(t => t.Folder == "TATA");
-                Assert.AreEqual(0, count);
+                ClassicAssert.AreEqual(0, count);
 
                 count = dataSource.Count(t => t.Folder == "TITI");
-                Assert.AreEqual(1, count, "this object should exist as the dump import failed");
+                ClassicAssert.AreEqual(1, count, "this object should exist as the dump import failed");
             }
 
 #endif

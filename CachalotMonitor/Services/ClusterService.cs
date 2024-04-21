@@ -1,10 +1,10 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Cachalot.Linq;
 using CachalotMonitor.Model;
 using Client.Interface;
 using Client.Messages;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using ConnectionInfo = CachalotMonitor.Model.ConnectionInfo;
 
 namespace CachalotMonitor.Services;
@@ -17,14 +17,12 @@ public class ClusterService : IClusterService
 
     private readonly Dictionary<string, ConnectionInfo> _connectionHistoryCache = new();
 
-    private readonly ILogger<ClusterService> _logger;
-
+    
     private readonly ShowcaseConfig _showcaseConfig;
 
-    public ClusterService(ILogger<ClusterService> logger, IOptions<ShowcaseConfig> showcaseOptions)
+    public ClusterService(IOptions<ShowcaseConfig> showcaseOptions)
     {
-        _logger = logger;
-
+    
         _showcaseConfig = showcaseOptions.Value;
 
         LoadConnectionHistory();
@@ -84,7 +82,7 @@ public class ClusterService : IClusterService
 
         if (!Directory.Exists(historyPath)) Directory.CreateDirectory(historyPath);
 
-        var json = JsonConvert.SerializeObject(info);
+        var json = JsonSerializer.Serialize(info);
 
         var filePath = Path.Combine(historyPath, $"{name}.{HistoryExtension}");
 
@@ -118,7 +116,7 @@ public class ClusterService : IClusterService
         foreach (var file in files)
         {
             var json = File.ReadAllText(file);
-            var info = JsonConvert.DeserializeObject<ConnectionInfo>(json);
+            var info = JsonSerializer.Deserialize<ConnectionInfo>(json);
             if (info != null) _connectionHistoryCache[Path.GetFileNameWithoutExtension(file)] = info;
         }
     }

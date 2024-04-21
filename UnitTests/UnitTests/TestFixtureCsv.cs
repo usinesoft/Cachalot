@@ -3,6 +3,7 @@ using System.Linq;
 using Client.Core;
 using Client.Tools;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Tests.UnitTests
 {
@@ -21,13 +22,13 @@ namespace Tests.UnitTests
             var collectionSchema = schema.ToCollectionSchema();
 
             var dealId = collectionSchema.ServerSide.FirstOrDefault(x => x.Name == "DealId");
-            Assert.IsNotNull(dealId);
-            Assert.AreEqual(dealId.IndexType, IndexType.Dictionary);
-            Assert.AreEqual(1, dealId.Order);
+            ClassicAssert.IsNotNull(dealId);
+            ClassicAssert.AreEqual(dealId.IndexType, IndexType.Dictionary);
+            ClassicAssert.AreEqual(1, dealId.Order);
 
             var currentValue = collectionSchema.ServerSide.FirstOrDefault(x => x.Name == "CurrentValue");
-            Assert.IsNotNull(currentValue);
-            Assert.AreEqual(currentValue.IndexType, IndexType.None, "float values should not be indexed");
+            ClassicAssert.IsNotNull(currentValue);
+            ClassicAssert.AreEqual(currentValue.IndexType, IndexType.None, "float values should not be indexed");
         }
 
         [Test]
@@ -42,7 +43,7 @@ namespace Tests.UnitTests
             var val = JExtensions.SmartParse(value);
             var type = new KeyValue(val).Type;
 
-            Assert.AreEqual(expectedType, type);
+            ClassicAssert.AreEqual(expectedType, type);
         }
 
 
@@ -54,7 +55,7 @@ namespace Tests.UnitTests
 
             var values = CsvHelper.SplitCsvLine(line, ',');
 
-            Assert.AreEqual(120, values.Count);
+            ClassicAssert.AreEqual(120, values.Count);
         }
     }
 }

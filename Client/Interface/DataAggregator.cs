@@ -476,16 +476,22 @@ public partial class DataAggregator : IDataClient
         
     }
 
+    
+    /// <summary>
+    /// Same but using System.Text.Json instead of Newtonsoft
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="sessionId"></param>
+    /// <returns></returns>
     public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"GetMany for session {sessionId}");
-        
         var clientResults = new IEnumerator<RankedItem>[CacheClients.Count];
 
         bool singleNodeUsed = false;
-
         try
         {
+            
             // do not work too hard if it is a simple query by primary key
             // System tables (@ACTIVITY) may have the same id on multiple nodes
             if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
@@ -493,6 +499,7 @@ public partial class DataAggregator : IDataClient
                 var primaryKey = query.Elements[0].Elements[0].Value;
 
                 var node = WhichNode(primaryKey);
+
                 singleNodeUsed = true;
 
                 var one = CacheClients[node].GetMany(query, sessionId).FirstOrDefault();
@@ -501,94 +508,17 @@ public partial class DataAggregator : IDataClient
                 {
                     yield return one;
                 }
-                 
+
                 yield break;
             }
 
-            
+
+
             try
             {
                 Parallel.ForEach(CacheClients, client =>
                 {
                     var resultsFromThisNode = client.GetMany(query, sessionId);
-                    clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
-                });
-            }
-            catch (AggregateException e)
-            {
-                throw e.InnerException ?? e;
-            }
-
-            
-
-            // for full-text queries the order is given by the result rank
-            // for normal queries order is either explicit (order by clause) or they are unordered
-            // for full text queries we have to merge all results and sort by rank
-            var result = query.IsFullTextQuery
-                ? MixResultsForFullTextQuery(clientResults)
-                : MixResults(clientResults, query);
-
-            foreach (var item in result)
-            {
-                yield return item;
-            }
-
-        }
-        finally
-        {
-            // When multiple nodes are used with the Take operator the iteration on the results from each node stops usually
-            // before all the iterators reach the end. In this case the Dispose would not be called on the iterators which
-            // produces dangling connections never returned to the pool.
-            if (!singleNodeUsed)
-            {
-                CloseIterators(clientResults);
-            }
-            
-        }
-    }
-
-    /// <summary>
-    /// Same but using System.Text.Json instead of Newtonsoft
-    /// </summary>
-    /// <param name="query"></param>
-    /// <param name="sessionId"></param>
-    /// <returns></returns>
-    public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
-    {
-        Dbg.Trace($"GetMany for session {sessionId}");
-        var clientResults = new IEnumerator<RankedItem2>[CacheClients.Count];
-
-        bool singleNodeUsed = false;
-        try
-        {
-            
-            // do not work too hard if it is a simple query by primary key
-            // System tables (@ACTIVITY) may have the same id on multiple nodes
-            if (!query.CollectionName.StartsWith('@') && query.ByPrimaryKey)
-            {
-                var primaryKey = query.Elements[0].Elements[0].Value;
-
-                var node = WhichNode(primaryKey);
-
-                singleNodeUsed = true;
-
-                var one = CacheClients[node].GetMany2(query, sessionId).FirstOrDefault();
-
-                if (one != null)
-                {
-                    yield return one;
-                }
-
-                yield break;
-            }
-
-
-
-            try
-            {
-                Parallel.ForEach(CacheClients, client =>
-                {
-                    var resultsFromThisNode = client.GetMany2(query, sessionId);
                     clientResults[client.ShardIndex] = resultsFromThisNode.GetEnumerator();
                 });
 

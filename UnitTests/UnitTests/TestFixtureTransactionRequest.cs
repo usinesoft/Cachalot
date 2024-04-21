@@ -4,6 +4,7 @@ using System.Linq;
 using Client.Core;
 using Client.Messages;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 
 namespace Tests.UnitTests
@@ -66,19 +67,19 @@ namespace Tests.UnitTests
             var total = split.Values.Sum(r => r.ChildRequests.Count);
 
             // 300 uniformly distributed + 5 (delete many) cloned on each server
-            Assert.AreEqual(305, total);
+            ClassicAssert.AreEqual(305, total);
 
-            Assert.IsTrue(split.Values.All(s => s.TransactionId == transactionRequest.TransactionId));
+            ClassicAssert.IsTrue(split.Values.All(s => s.TransactionId == transactionRequest.TransactionId));
 
             var tr0 = split[0];
 
-            Assert.IsTrue(tr0.ConditionalRequests.All(r => r.HasCondition));
-            Assert.IsTrue(tr0.ConditionalRequests.Any());
+            ClassicAssert.IsTrue(tr0.ConditionalRequests.All(r => r.HasCondition));
+            ClassicAssert.IsTrue(tr0.ConditionalRequests.Any());
 
             var deleteManyCount = tr0.ChildRequests.Count(r => r is RemoveManyRequest);
-            Assert.AreEqual(1, deleteManyCount);
+            ClassicAssert.AreEqual(1, deleteManyCount);
 
-            Assert.AreEqual(2, tr0.AllCollections.Length); // orders and orders1
+            ClassicAssert.AreEqual(2, tr0.AllCollections.Length); // orders and orders1
         }
     }
 }

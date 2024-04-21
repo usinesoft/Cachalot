@@ -14,7 +14,7 @@ using Client.Parsing;
 using Client.Queries;
 using Client.Tools;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
+
 
 // ReSharper disable AssignNullToNotNullAttribute
 
@@ -29,7 +29,7 @@ public sealed class Connector : IDisposable
     private Server.Server _server;
 
     /// <summary>
-    ///     No parameters => we will create an internal, non persistent server
+    ///     No parameters => we will create an internal, non-persistent server
     /// </summary>
     public Connector(bool isPersistent = false) : this(new ClientConfig { IsPersistent = isPersistent })
     {
@@ -155,7 +155,7 @@ public sealed class Connector : IDisposable
                 _collectionSchema[key] = schema;
             }
 
-            // redeclare anyway in case the server is a non persistent cache and it has restarted since the last declaration
+            // redeclare anyway in case the server is a non-persistent cache, and it has restarted since the last declaration
             Client.DeclareCollection(collectionName, schema);
         }
     }
@@ -215,7 +215,7 @@ public sealed class Connector : IDisposable
 
     /// <summary>
     ///     Generate <paramref name="quantity" /> unique identifiers
-    ///     They are guaranteed to be unique but they are not necessary in a contiguous range
+    ///     They are guaranteed to be unique, but they are not necessary in a contiguous range
     /// </summary>
     /// <param name="generatorName">name of the generator</param>
     /// <param name="quantity">number of unique ids to generate</param>
@@ -299,32 +299,7 @@ public sealed class Connector : IDisposable
         return Client.RemoveMany(query);
     }
 
-    /// <summary>
-    /// Return the result of an SQL query as a collection Of JObject(Newtonsoft)
-    /// </summary>
-    /// <param name="sql"></param>
-    /// <param name="fullTextQuery"></param>
-    /// <param name="queryId"></param>
-    /// <returns></returns>
-    public IEnumerable<JObject> SqlQueryAsJson(string sql, string fullTextQuery = null, Guid queryId = default)
-    {
-        var query = SqlToQuery(sql, fullTextQuery, queryId);
-
-
-        if (query.CountOnly)
-        {
-            var (_, count) = Client.EvalQuery(query);
-
-            var result = new JObject
-            {
-                ["count"] = count
-            };
-
-            return new[] { result };
-        }
-
-        return Client.GetMany(query).Select(ri => ri.Item);
-    }
+    
 
     /// <summary>
     /// Return the result of an SQL query as a collection Of JsonDocument(Microsoft)
@@ -343,13 +318,13 @@ public sealed class Connector : IDisposable
             var (_, count) = Client.EvalQuery(query);
 
 
-            var result = JsonDocument.Parse($"{{count={count}}}");
+            var result = JsonDocument.Parse($"{{\"count\":{count}}}");
             
 
             return new[] { result };
         }
 
-        return Client.GetMany2(query).Select(ri => ri.Item);
+        return Client.GetMany(query).Select(ri => ri.Item);
     }
 
     private OrQuery SqlToQuery(string sql, string fullTextQuery, Guid queryId)
@@ -378,7 +353,7 @@ public sealed class Connector : IDisposable
     public event EventHandler<ProgressEventArgs> Progress;
 
 
-    private IEnumerable<PackedObject> PackJson(IEnumerable<JObject> items, CollectionSchema schema,
+    private IEnumerable<PackedObject> PackJson(IEnumerable<JsonDocument> items, CollectionSchema schema,
                                                string collectionName = null)
     {
         Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.Start, 0));
@@ -400,7 +375,7 @@ public sealed class Connector : IDisposable
         Progress?.Invoke(this, new(ProgressEventArgs.ProgressNotification.End, processed));
     }
 
-    public void FeedWithJson(string collectionName, IEnumerable<JObject> items)
+    public void FeedWithJson(string collectionName, IEnumerable<JsonDocument> items)
     {
         var schema = GetCollectionSchema(collectionName);
 

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using Client.Queries;
-using Newtonsoft.Json.Linq;
 using Remotion.Linq;
 
 namespace Cachalot.Linq;
@@ -71,15 +71,22 @@ internal class QueryExecutor : IQueryExecutor
         return _client.GetMany(visitor.RootExpression, _sessionId).Select(ri => FromJObject<T>(ri.Item));
     }
 
-    public static T FromJObject<T>(JObject jObject)
+    public static T FromJObject<T>(JsonDocument jObject)
     {
         var t = typeof(T);
         var isPrimitiveType = t.IsPrimitive || t.IsValueType || t == typeof(string) || t == typeof(DateTime) ||
                               t == typeof(DateTimeOffset) || t == typeof(decimal);
 
-        if (jObject.Count == 1 && isPrimitiveType) return jObject.Properties().First().Value.ToObject<T>();
+        var children = jObject.RootElement.EnumerateObject().ToList();
 
-        return jObject.ToObject<T>(SerializationHelper.Serializer);
+        if (isPrimitiveType && children.Count == 1)
+        {
+            var obj = children[0].Value.Deserialize<T>();
+            return obj;
+        }
+
+        return SerializationHelper.DeserializeJson<T>(jObject);
+        
     }
 
     public static void Probe(Action<OrQuery> action)

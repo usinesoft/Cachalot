@@ -10,6 +10,7 @@ using Client.Core;
 using Client.Interface;
 using Client.Queries;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -67,20 +68,20 @@ namespace Tests.IntegrationTests
 
             //reload the first one by primary key
             var item1Reloaded = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 1);
-            Assert.AreEqual(item1, item1Reloaded);
+            ClassicAssert.AreEqual(item1, item1Reloaded);
 
             //try to load nonexistent object by primary key
             var itemNull = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 2055);
-            Assert.IsNull(itemNull);
+            ClassicAssert.IsNull(itemNull);
 
             //try to load nonexistent object by unique key
             itemNull = _client.GetOne<CacheableTypeOk>(i => i.UniqueKey == 55);
-            Assert.IsNull(itemNull);
+            ClassicAssert.IsNull(itemNull);
 
             //reload both items by folder name
             IList<CacheableTypeOk> itemsInAaa =
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 2);
+            ClassicAssert.AreEqual(itemsInAaa.Count, 2);
 
             //change the folder of the first item and put it back into the cache
             item1.IndexKeyFolder = "bbb";
@@ -88,38 +89,38 @@ namespace Tests.IntegrationTests
 
             //now it should be only one item left in aaa
             itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 1);
+            ClassicAssert.AreEqual(itemsInAaa.Count, 1);
 
             //get both of them again by date
             IList<CacheableTypeOk> allItems = _client
                 .GetMany<CacheableTypeOk>(i => i.IndexKeyDate == new DateTime(2010, 10, 10)).ToList();
 
-            Assert.AreEqual(allItems.Count, 2);
+            ClassicAssert.AreEqual(allItems.Count, 2);
 
 
             //get both of them using an In query
 
             var folders = new[] { "aaa", "bbb" };
             allItems = _client.GetMany<CacheableTypeOk>(i => folders.Contains(i.IndexKeyFolder)).ToList();
-            Assert.AreEqual(allItems.Count, 2);
+            ClassicAssert.AreEqual(allItems.Count, 2);
 
             //remove the first one
             _client.RemoveMany<CacheableTypeOk>(i => i.PrimaryKey == 1);
 
             //removing non existent item should not throw exception
             var removed = _client.RemoveMany<CacheableTypeOk>(i => i.PrimaryKey == 46546);
-            Assert.AreEqual(0, removed);
+            ClassicAssert.AreEqual(0, removed);
 
             //COUNT should also return 1
             var count = _client.Count<CacheableTypeOk>(i => folders.Contains(i.IndexKeyFolder));
-            Assert.AreEqual(count, 1);
+            ClassicAssert.AreEqual(count, 1);
         }
 
         [Test]
         public void DomainDescription()
         {
             var evalResult = _client.IsComplete<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa");
-            Assert.IsFalse(evalResult);
+            ClassicAssert.IsFalse(evalResult);
 
 
             var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -129,7 +130,7 @@ namespace Tests.IntegrationTests
             _client.PutOne(item2);
 
             evalResult = _client.IsComplete<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa");
-            Assert.IsFalse(evalResult);
+            ClassicAssert.IsFalse(evalResult);
 
             var description = new DomainDescription(OrQuery.Empty<CacheableTypeOk>());
 
@@ -137,16 +138,16 @@ namespace Tests.IntegrationTests
             _client.DeclareDomain(description);
 
             evalResult = _client.IsComplete<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa");
-            Assert.IsTrue(evalResult);
+            ClassicAssert.IsTrue(evalResult);
         }
 
         [Test]
         public void GetServerInfo()
         {
             var desc = _client.GetServerDescription();
-            Assert.AreEqual(2, desc.KnownTypesByFullName.Count);
+            ClassicAssert.AreEqual(2, desc.KnownTypesByFullName.Count);
 
-            Assert.AreEqual(2, desc.DataStoreInfoByFullName.Count);
+            ClassicAssert.AreEqual(2, desc.DataStoreInfoByFullName.Count);
         }
 
 
@@ -167,7 +168,7 @@ namespace Tests.IntegrationTests
                 IList<CacheableTypeOk> items =
                     _client.GetMany<CacheableTypeOk>(i => i.IndexKeyValue < 1700)
                         .ToList();
-                Assert.AreEqual(items.Count, 200);
+                ClassicAssert.AreEqual(items.Count, 200);
             });
         }
 
@@ -187,11 +188,11 @@ namespace Tests.IntegrationTests
 
             var all = _client.GetMany<Trade>(t => t.Accounts.Contains(101)).ToList();
 
-            Assert.AreEqual(all.Count, 1);
+            ClassicAssert.AreEqual(all.Count, 1);
 
             all = _client.GetMany<Trade>(t => t.Accounts.Contains(7)).ToList();
 
-            Assert.AreEqual(all.Count, 2);
+            ClassicAssert.AreEqual(all.Count, 2);
         }
 
         [Test]
@@ -206,14 +207,14 @@ namespace Tests.IntegrationTests
 
             IList<CacheableTypeOk> itemsInAaa =
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 2);
+            ClassicAssert.AreEqual(itemsInAaa.Count, 2);
 
             var collectionName = typeof(CacheableTypeOk).Name ?? throw new InvalidOperationException();
 
             var desc = _client.GetServerDescription();
             var hits = desc.DataStoreInfoByFullName[collectionName].HitCount;
 
-            Assert.AreEqual(hits, 1);
+            ClassicAssert.AreEqual(hits, 1);
 
             _client.Truncate(collectionName);
 
@@ -221,8 +222,8 @@ namespace Tests.IntegrationTests
             hits = desc.DataStoreInfoByFullName[collectionName].HitCount;
             var count = desc.DataStoreInfoByFullName[collectionName].Count;
 
-            Assert.AreEqual(hits, 0);
-            Assert.AreEqual(count, 0);
+            ClassicAssert.AreEqual(hits, 0);
+            ClassicAssert.AreEqual(count, 0);
         }
     }
 }

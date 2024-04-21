@@ -1,49 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Newtonsoft.Json.Linq;
+
 
 namespace Client.Core;
 
+
 public class RankedItem:IWithComparableMember, IRankedItem
-{
-    private readonly JTokenEqualityComparer _comparer = new();
-
-    public RankedItem(double rank, JObject item)
-    {
-        Rank = rank;
-        Item = item;
-    }
-
-    public double Rank { get; }
-
-    public JObject Item { get; }
-
-    private bool Equals(RankedItem other)
-    {
-        return _comparer.Equals(Item, other.Item);
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (ReferenceEquals(null, obj)) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((RankedItem)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        return _comparer.GetHashCode(Item);
-    }
-
-    public IComparable GetComparableMember(string name)
-    {
-        return (JValue)Item.GetValue(name, StringComparison.InvariantCultureIgnoreCase);
-    }
-}
-
-public class RankedItem2:IWithComparableMember, IRankedItem
 {
 
     class AsComparable : IComparable
@@ -109,8 +72,10 @@ public class RankedItem2:IWithComparableMember, IRankedItem
 
     private readonly Dictionary<string, JsonElement> _valueByCaseInsensitiveName = new();
 
-    public RankedItem2(double rank, JsonDocument item)
+    public RankedItem(double rank, JsonDocument item)
     {
+        // used by equals
+        Json = item.RootElement.GetRawText();
         Rank = rank;
         Item = item;
         foreach (var child in item.RootElement.EnumerateObject())
@@ -120,6 +85,8 @@ public class RankedItem2:IWithComparableMember, IRankedItem
         
     }
 
+    public string Json { get; }
+
     public double Rank { get; }
 
     public JsonDocument Item { get; }
@@ -127,7 +94,24 @@ public class RankedItem2:IWithComparableMember, IRankedItem
 
     public IComparable GetComparableMember(string name)
     {
-        return new AsComparable(_valueByCaseInsensitiveName[name]);
+        return new AsComparable(_valueByCaseInsensitiveName[name.ToLowerInvariant()]);
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is RankedItem other)
+        {
+            
+
+            return Json.Equals(other.Json);
+        }
+
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return Json.GetHashCode();
     }
 }
 

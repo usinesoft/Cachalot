@@ -11,6 +11,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Queries;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -76,21 +77,21 @@ namespace Tests.IntegrationTests
             _client.DeclareDomain<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa");
 
             var eval = _client.IsComplete<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa");
-            Assert.IsTrue(eval); //domain is complete
+            ClassicAssert.IsTrue(eval); //domain is complete
 
 
             eval = _client.IsComplete<CacheableTypeOk>(x => x.IndexKeyFolder == "bbb");
-            Assert.IsFalse(eval); //domain is incomplete
+            ClassicAssert.IsFalse(eval); //domain is incomplete
 
 
             //reload the first one by primary key
             var item1Reloaded = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 1);
-            Assert.AreEqual(item1, item1Reloaded);
+            ClassicAssert.AreEqual(item1, item1Reloaded);
 
             //reload both items by folder name
             var itemsInAaa = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
 
-            Assert.AreEqual(2, itemsInAaa.Count);
+            ClassicAssert.AreEqual(2, itemsInAaa.Count);
 
             //change the folder of the first item and put it back into the cache
             item1.IndexKeyFolder = "bbb";
@@ -98,25 +99,25 @@ namespace Tests.IntegrationTests
 
             //now it should be only one item left in aaa
             itemsInAaa = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(1, itemsInAaa.Count);
+            ClassicAssert.AreEqual(1, itemsInAaa.Count);
 
             //get both of them again by date
             var allItems = _client.GetMany<CacheableTypeOk>(x => x.IndexKeyDate == new DateTime(2010, 10, 10)).ToList();
-            Assert.AreEqual(allItems.Count, 2);
+            ClassicAssert.AreEqual(allItems.Count, 2);
 
             //get both of them using an In query
 
             var folders = new[] { "aaa", "bbb" };
 
             allItems = _client.GetMany<CacheableTypeOk>(x => folders.Contains(x.IndexKeyFolder)).ToList();
-            Assert.AreEqual(allItems.Count, 2);
+            ClassicAssert.AreEqual(allItems.Count, 2);
 
             //remove the first one
             _client.RemoveMany<CacheableTypeOk>(x => x.PrimaryKey == 1);
 
             //the previous query should now return only one item
             allItems = _client.GetMany<CacheableTypeOk>(x => folders.Contains(x.IndexKeyFolder)).ToList();
-            Assert.AreEqual(allItems.Count, 1);
+            ClassicAssert.AreEqual(allItems.Count, 1);
         }
 
         [Test]
@@ -135,7 +136,7 @@ namespace Tests.IntegrationTests
             IList<CacheableTypeOk> itemsReloaded =
                 _client.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
 
-            Assert.AreEqual(itemsReloaded.Count, 113);
+            ClassicAssert.AreEqual(itemsReloaded.Count, 113);
         }
 
         [Test]
@@ -202,7 +203,7 @@ namespace Tests.IntegrationTests
                         }
                     }
                 };
-                var _ = _client.GetMany2(query).FirstOrDefault();
+                var _ = _client.GetMany(query).FirstOrDefault();
 
                 
             }
@@ -236,7 +237,7 @@ namespace Tests.IntegrationTests
                 client.Channel = clientChannel;
 
                 IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
-                Assert.AreEqual(items.Count, 200);
+                ClassicAssert.AreEqual(items.Count, 200);
             });
 
             var sharedChannel = new TcpClientChannel(new TcpClientPool(1, 1, "localhost", _serverPort));
@@ -247,7 +248,7 @@ namespace Tests.IntegrationTests
             {
                 
                 IList<CacheableTypeOk> items = client.GetMany<CacheableTypeOk>(x => x.IndexKeyValue < 1700).ToList();
-                Assert.AreEqual(items.Count, 200);
+                ClassicAssert.AreEqual(items.Count, 200);
             });
         }
     }

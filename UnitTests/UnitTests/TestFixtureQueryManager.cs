@@ -8,6 +8,7 @@ using Client.Messages;
 using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Server.Queries;
 using Tests.TestData;
@@ -94,7 +95,7 @@ namespace Tests.UnitTests
 
             var count = queries.Count;
 
-            Assert.AreEqual(count, predicates.Count);
+            ClassicAssert.AreEqual(count, predicates.Count);
 
             var objects = Order.GenerateTestData(1000);
 
@@ -120,7 +121,7 @@ namespace Tests.UnitTests
                 Console.WriteLine();
 
 
-                Assert.AreEqual(fromObjects.Count, fromDataSource.Count);
+                ClassicAssert.AreEqual(fromObjects.Count, fromDataSource.Count);
             }
         }
 
@@ -135,7 +136,7 @@ namespace Tests.UnitTests
 
             var count = queries.Count;
 
-            Assert.AreEqual(count, predicates.Count);
+            ClassicAssert.AreEqual(count, predicates.Count);
 
             var objects = GenerateAllKinds(1000);
 
@@ -161,7 +162,7 @@ namespace Tests.UnitTests
                 Console.WriteLine();
 
 
-                Assert.AreEqual(fromObjects.Count, fromDataSource.Count);
+                ClassicAssert.AreEqual(fromObjects.Count, fromDataSource.Count);
             }
         }
 
@@ -188,9 +189,9 @@ namespace Tests.UnitTests
 
             Console.WriteLine(qm.ExecutionPlan);
 
-            Assert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
-            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
-            Assert.IsFalse(qm.ExecutionPlan.QueryPlans[0].FullScan);
+            ClassicAssert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
+            ClassicAssert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
+            ClassicAssert.IsFalse(qm.ExecutionPlan.QueryPlans[0].FullScan);
 
             // first time for warm-up
             qm.ProcessQuery(ExpressionTreeHelper.PredicateToQuery<AllKindsOfProperties>(a =>
@@ -199,10 +200,10 @@ namespace Tests.UnitTests
             var result =
                 qm.ProcessQuery(ExpressionTreeHelper.PredicateToQuery<AllKindsOfProperties>(a =>
                     a.Tags.Contains("food") && a.Tags.Contains("space")));
-            Assert.AreEqual(0, result.Count);
-            Assert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
-            Assert.IsFalse(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
-            Assert.IsFalse(qm.ExecutionPlan.QueryPlans[0].FullScan,
+            ClassicAssert.AreEqual(0, result.Count);
+            ClassicAssert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
+            ClassicAssert.IsFalse(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy);
+            ClassicAssert.IsFalse(qm.ExecutionPlan.QueryPlans[0].FullScan,
                 "this query should be solved by an index not a full-scan");
 
             Console.WriteLine(qm.ExecutionPlan);
@@ -215,11 +216,11 @@ namespace Tests.UnitTests
                 ExpressionTreeHelper.PredicateToQuery<AllKindsOfProperties>(a => a.Quantity > 1 && a.Quantity < 2));
             Console.WriteLine(qm.ExecutionPlan);
 
-            Assert.AreEqual(0, result.Count);
-            Assert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
-            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy,
+            ClassicAssert.AreEqual(0, result.Count);
+            ClassicAssert.AreEqual(1, qm.ExecutionPlan.QueryPlans.Count);
+            ClassicAssert.IsTrue(qm.ExecutionPlan.QueryPlans[0].SimpleQueryStrategy,
                 "this query should have been optimized as a range query and executed as a simple query");
-            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan,
+            ClassicAssert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan,
                 "this query should be executed as full-scan as the index is not ordered");
 
             // first time for warm-up
@@ -230,15 +231,15 @@ namespace Tests.UnitTests
                 ExpressionTreeHelper.PredicateToQuery<AllKindsOfProperties>(a => a.Quantity >= 1 || a.Quantity <= 2));
             Console.WriteLine(qm.ExecutionPlan);
 
-            Assert.AreEqual(100_000, result.Count);
-            Assert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count,
+            ClassicAssert.AreEqual(100_000, result.Count);
+            ClassicAssert.AreEqual(2, qm.ExecutionPlan.QueryPlans.Count,
                 "this query should have been decomposed in two queries");
-            Assert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan, "can not use index, as the it is not ordered");
+            ClassicAssert.IsTrue(qm.ExecutionPlan.QueryPlans[0].FullScan, "can not use index, as the it is not ordered");
 
 
             // empty query. Should return everything
             result = qm.ProcessQuery(OrQuery.Empty<AllKindsOfProperties>());
-            Assert.AreEqual(100_000, result.Count);
+            ClassicAssert.AreEqual(100_000, result.Count);
             Console.WriteLine(qm.ExecutionPlan);
         }
 
@@ -279,7 +280,7 @@ namespace Tests.UnitTests
                 var qm = new QueryManager(ds);
                 var result = qm.ProcessQuery(query);
 
-                Assert.AreEqual(1, result.Count);
+                ClassicAssert.AreEqual(1, result.Count);
             }
 
             //////////////////////////////////////////////////////////
@@ -313,7 +314,7 @@ namespace Tests.UnitTests
             //    var qm = new QueryManager(ds);
             //    var result = qm.ProcessQuery(query);
 
-            //    Assert.AreEqual(2, result.Count);
+            //    ClassicAssert.AreEqual(2, result.Count);
             //}
 
             //////////////////////////////////////////////////////////
@@ -340,7 +341,7 @@ namespace Tests.UnitTests
                     var qm = new QueryManager(ds);
                     var result = qm.ProcessQuery(query);
 
-                    Assert.AreEqual(2, result.Count);
+                    ClassicAssert.AreEqual(2, result.Count);
                 }
 
                 {
@@ -354,7 +355,7 @@ namespace Tests.UnitTests
                     var qm = new QueryManager(ds);
                     var result = qm.ProcessQuery(query);
 
-                    Assert.IsTrue(result.Count >= 1);
+                    ClassicAssert.IsTrue(result.Count >= 1);
                 }
 
                 {
@@ -368,7 +369,7 @@ namespace Tests.UnitTests
                     var qm = new QueryManager(ds);
                     var result = qm.ProcessQuery(query);
 
-                    Assert.IsTrue(result.Count >= 1);
+                    ClassicAssert.IsTrue(result.Count >= 1);
                 }
             }
         }
@@ -400,7 +401,7 @@ namespace Tests.UnitTests
             var qm = new QueryManager(ds);
             var result = qm.ProcessQuery(query);
 
-            Assert.IsTrue(result.Count > 0);
+            ClassicAssert.IsTrue(result.Count > 0);
         }
 
 
@@ -473,22 +474,22 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(objects.Count, result.Count);
+                ClassicAssert.AreEqual(objects.Count, result.Count);
 
                 // check sorted ascending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
 
                 q.OrderByIsDescending = true;
 
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
-                Assert.AreEqual(objects.Count, result.Count);
+                ClassicAssert.AreEqual(objects.Count, result.Count);
 
                 // check sorted descending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
             }
 
             // atomic query
@@ -505,22 +506,22 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 // check sorted ascending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
 
                 q.OrderByIsDescending = true;
 
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 // check sorted descending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
             }
 
             // simple AND query
@@ -537,10 +538,10 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
 
                 q.OrderByIsDescending = true;
@@ -548,10 +549,10 @@ namespace Tests.UnitTests
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
             }
 
             // complex OR query
@@ -570,10 +571,10 @@ namespace Tests.UnitTests
 
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
 
                 q.OrderByIsDescending = true;
@@ -582,16 +583,16 @@ namespace Tests.UnitTests
 
                 Console.WriteLine(qm.ExecutionPlan.ToString());
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
                 // check that TAKE operator is applied after ORDER BY
                 q.Take = 1;
                 var max = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).Single();
 
-                Assert.AreEqual(max.Amount, result[0].Amount);
+                ClassicAssert.AreEqual(max.Amount, result[0].Amount);
             }
 
             // order small subset (it will be ordered without index)
@@ -611,7 +612,7 @@ namespace Tests.UnitTests
 
                 // check sorted ascending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.LessOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
 
 
                 q.OrderByIsDescending = true;
@@ -622,7 +623,7 @@ namespace Tests.UnitTests
 
                 // check sorted descending
                 for (var i = 0; i < result.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
+                    ClassicAssert.GreaterOrEqual((int)result[i].Amount * 10000, (int)result[i + 1].Amount * 10000);
             }
         }
 
@@ -654,7 +655,7 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
             }
 
             // atomic query
@@ -674,7 +675,7 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
             }
 
             // simple and query
@@ -694,7 +695,7 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
             }
 
             // complex or query
@@ -716,11 +717,11 @@ namespace Tests.UnitTests
                 var result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
 
 
-                Assert.AreEqual(raw.Count, result.Count);
+                ClassicAssert.AreEqual(raw.Count, result.Count);
 
                 q.Take = 3;
                 result = qm.ProcessQuery(q).Select(x => PackedObject.Unpack<Order>(x, schema)).ToList();
-                Assert.AreEqual(3, result.Count);
+                ClassicAssert.AreEqual(3, result.Count);
             }
         }
     }

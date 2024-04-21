@@ -7,6 +7,7 @@ using Client.Core;
 using Client.Interface;
 using Client.Messages.Pivot;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 
 #endregion
@@ -53,13 +54,13 @@ namespace Tests.UnitTests
 
             var cached = PackedObject.Pack(object1, description);
 
-            Assert.IsNotNull(cached);
-            Assert.IsNotNull(cached.PrimaryKey);
-            Assert.AreEqual(cached.PrimaryKey, 11);
+            ClassicAssert.IsNotNull(cached);
+            ClassicAssert.IsNotNull(cached.PrimaryKey);
+            ClassicAssert.AreEqual(cached.PrimaryKey, 11);
 
 
             var fromCache = PackedObject.Unpack<CacheableTypeOk>(cached, description);
-            Assert.AreEqual(object1, fromCache);
+            ClassicAssert.AreEqual(object1, fromCache);
         }
 
         [Test]
@@ -76,7 +77,7 @@ namespace Tests.UnitTests
                 SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
 
-            Assert.AreEqual(13, reloaded.PrimaryKey.IntValue);
+            ClassicAssert.AreEqual(13, reloaded.PrimaryKey.IntValue);
         }
 
 
@@ -86,14 +87,14 @@ namespace Tests.UnitTests
             // now try attributes on type
             //var description = TypedSchemaFactory.FromType(typeof(Order));
 
-            //Assert.AreEqual(2, description.ServerSideValues.Count());
-            //Assert.AreEqual("Amount", description.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+            //ClassicAssert.AreEqual(2, description.ServerSideValues.Count());
+            //ClassicAssert.AreEqual("Amount", description.ServerSideValues.Single(v=>v.Name == "Amount").Name);
 
             //var desc1 = description;
-            //Assert.AreEqual(2, desc1.ServerSideValues.Count);
-            //Assert.AreEqual("Amount", desc1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
-            //Assert.AreEqual(IndexType.Ordered, desc1.ServerSideValues.Single(v=>v.Name == "Amount").IndexType);
-            //Assert.AreEqual(IndexType.None, desc1.ServerSideValues.Single(v=>v.Name == "Quantity").IndexType);
+            //ClassicAssert.AreEqual(2, desc1.ServerSideValues.Count);
+            //ClassicAssert.AreEqual("Amount", desc1.ServerSideValues.Single(v=>v.Name == "Amount").Name);
+            //ClassicAssert.AreEqual(IndexType.Ordered, desc1.ServerSideValues.Single(v=>v.Name == "Amount").IndexType);
+            //ClassicAssert.AreEqual(IndexType.None, desc1.ServerSideValues.Single(v=>v.Name == "Quantity").IndexType);
 
 
             //// pack an object using different kinds of type description
@@ -105,31 +106,31 @@ namespace Tests.UnitTests
             //};
 
             //var packed = PackedObject.Pack(order, description);
-            //Assert.AreEqual(2, packed.Values.Length);
-            //Assert.AreEqual("Amount", packed.Values[0].KeyName);
-            //Assert.AreEqual(order.Amount, packed.Values[0].NumericValue);
-            //Assert.AreEqual("Quantity", packed.Values[1].KeyName);
-            //Assert.AreEqual(order.Quantity, packed.Values[1].NumericValue);
+            //ClassicAssert.AreEqual(2, packed.Values.Length);
+            //ClassicAssert.AreEqual("Amount", packed.Values[0].KeyName);
+            //ClassicAssert.AreEqual(order.Amount, packed.Values[0].NumericValue);
+            //ClassicAssert.AreEqual("Quantity", packed.Values[1].KeyName);
+            //ClassicAssert.AreEqual(order.Quantity, packed.Values[1].NumericValue);
 
             // TODO review after refactoring
 
             //var packed1 = PackedObject.Pack(order, desc);
-            //Assert.AreEqual(2, packed1.Values.Length);
-            //Assert.AreEqual("Amount", packed1.Values[0].Name);
-            //Assert.AreEqual(order.Amount, packed1.Values[0].Value);
-            //Assert.AreEqual("Quantity", packed1.Values[1].Name);
-            //Assert.AreEqual(order.Quantity, packed1.Values[1].Value);
+            //ClassicAssert.AreEqual(2, packed1.Values.Length);
+            //ClassicAssert.AreEqual("Amount", packed1.Values[0].Name);
+            //ClassicAssert.AreEqual(order.Amount, packed1.Values[0].Value);
+            //ClassicAssert.AreEqual("Quantity", packed1.Values[1].Name);
+            //ClassicAssert.AreEqual(order.Quantity, packed1.Values[1].Value);
 
             //var json = JsonConvert.SerializeObject(order);
             //var packed2 = PackedObject.PackJson(json, desc);
-            //Assert.AreEqual(2, packed2.Values.Length);
-            //Assert.AreEqual("Amount", packed1.Values[0].Name);
-            //Assert.AreEqual(order.Amount, packed2.Values[0].Value);
+            //ClassicAssert.AreEqual(2, packed2.Values.Length);
+            //ClassicAssert.AreEqual("Amount", packed1.Values[0].Name);
+            //ClassicAssert.AreEqual(order.Amount, packed2.Values[0].Value);
 
             //var packed3 = PackedObject.Pack(order);
-            //Assert.AreEqual(2, packed3.Values.Length);
-            //Assert.AreEqual("Amount", packed3.Values[0].Name);
-            //Assert.AreEqual(order.Amount, packed3.Values[0].Value);
+            //ClassicAssert.AreEqual(2, packed3.Values.Length);
+            //ClassicAssert.AreEqual("Amount", packed3.Values[0].Name);
+            //ClassicAssert.AreEqual(order.Amount, packed3.Values[0].Value);
         }
 
 
@@ -152,7 +153,7 @@ namespace Tests.UnitTests
 
             var description1 = TypedSchemaFactory.FromType<Order>();
 
-            Assert.AreEqual(description, description1);
+            ClassicAssert.AreEqual(description, description1);
         }
 
         [Test]
@@ -193,12 +194,12 @@ namespace Tests.UnitTests
 
 
             // Amount and Quantity should be aggregated
-            Assert.AreEqual(2, pivot.AggregatedValues.Count);
+            ClassicAssert.AreEqual(2, pivot.AggregatedValues.Count);
 
             var agg = pivot.AggregatedValues.First(v => v.ColumnName == "Amount");
 
-            Assert.AreEqual(2, agg.Count);
-            Assert.AreEqual(order1.Amount + order2.Amount, agg.Sum);
+            ClassicAssert.AreEqual(2, agg.Count);
+            ClassicAssert.AreEqual(order1.Amount + order2.Amount, agg.Sum);
 
 
             Console.WriteLine(pivot.ToString());
@@ -257,19 +258,19 @@ namespace Tests.UnitTests
 
 
             // Amount and Quantity should be aggregated
-            Assert.AreEqual(2, pivot.AggregatedValues.Count);
+            ClassicAssert.AreEqual(2, pivot.AggregatedValues.Count);
 
             var agg = pivot.AggregatedValues.First(v => v.ColumnName == "Amount");
 
-            Assert.AreEqual(3, agg.Count);
-            Assert.AreEqual(order1.Amount + order2.Amount + order3.Amount, agg.Sum);
+            ClassicAssert.AreEqual(3, agg.Count);
+            ClassicAssert.AreEqual(order1.Amount + order2.Amount + order3.Amount, agg.Sum);
 
 
-            Assert.IsTrue(pivot.Children.Values.All(v => v.AxisValue.Name == "Category"));
+            ClassicAssert.IsTrue(pivot.Children.Values.All(v => v.AxisValue.Name == "Category"));
 
             var geek = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
-            Assert.AreEqual(2, geek.AggregatedValues.Count);
+            ClassicAssert.AreEqual(2, geek.AggregatedValues.Count);
 
             // then with two axis
 
@@ -283,8 +284,8 @@ namespace Tests.UnitTests
 
             var geek1 = pivot.Children.Values.First(p => p.AxisValue.Value.StringValue == "geek");
 
-            Assert.AreEqual(2, geek1.AggregatedValues.Count);
-            Assert.AreEqual(2, geek1.Children.Count);
+            ClassicAssert.AreEqual(2, geek1.AggregatedValues.Count);
+            ClassicAssert.AreEqual(2, geek1.Children.Count);
 
 
             // check pivot merging
@@ -323,7 +324,7 @@ namespace Tests.UnitTests
             var sum1 = pivot1.AggregatedValues.First(v => v.ColumnName == "Amount").Sum;
             var sum2 = pivot1.Children.Sum(c => c.Value.AggregatedValues.First(v => v.ColumnName == "Amount").Sum);
 
-            Assert.AreEqual(sum1, sum2);
+            ClassicAssert.AreEqual(sum1, sum2);
         }
 
         [Test]
@@ -336,7 +337,7 @@ namespace Tests.UnitTests
 
             var pk = Guid.Parse(packed.PrimaryKey.ToString());
 
-            Assert.AreNotEqual(Guid.Empty, pk);
+            ClassicAssert.AreNotEqual(Guid.Empty, pk);
         }
     }
 }

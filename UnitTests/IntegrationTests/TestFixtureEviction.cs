@@ -8,6 +8,7 @@ using Channel;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -56,13 +57,13 @@ namespace Tests.IntegrationTests
 
             var desc = _client.GetServerDescription();
 
-            Assert.IsNotNull(desc);
-            Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
+            ClassicAssert.IsNotNull(desc);
+            ClassicAssert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
 
             var info = desc.DataStoreInfoByFullName[CollectionName];
 
-            Assert.IsNotNull(info);
-            Assert.AreEqual(info.EvictionPolicy, EvictionType.LessRecentlyUsed);
+            ClassicAssert.IsNotNull(info);
+            ClassicAssert.AreEqual(info.EvictionPolicy, EvictionType.LessRecentlyUsed);
 
             //add one item
             var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -70,7 +71,7 @@ namespace Tests.IntegrationTests
 
             //reload the item by primary key
             var item1Reloaded = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 1);
-            Assert.AreEqual(item1, item1Reloaded);
+            ClassicAssert.AreEqual(item1, item1Reloaded);
 
             //add 100 items; eviction should be triggered(10 items should be removed)
             for (var i = 0; i < 100; i++)
@@ -83,13 +84,13 @@ namespace Tests.IntegrationTests
             IList<CacheableTypeOk> itemsInAaa =
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
 
-            Assert.AreEqual(91, itemsInAaa.Count); //eviction triggered at 100 removed 10 added 1
+            ClassicAssert.AreEqual(91, itemsInAaa.Count); //eviction triggered at 100 removed 10 added 1
 
             var itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
             //check that the first 10 items were evicted
-            Assert.IsTrue(itemsAsList[0].PrimaryKey == 11);
+            ClassicAssert.IsTrue(itemsAsList[0].PrimaryKey == 11);
 
             //update the first item. This should prevent it from being evicted
             _client.PutOne(new CacheableTypeOk(11, 1001, "aaa", new DateTime(2010, 10, 10), 1500));
@@ -101,15 +102,15 @@ namespace Tests.IntegrationTests
             }
 
             itemsInAaa = _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 91); //(100 - 10 +1)
+            ClassicAssert.AreEqual(itemsInAaa.Count, 91); //(100 - 10 +1)
 
 
             itemsAsList = new List<CacheableTypeOk>(itemsInAaa);
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
             //check that the item having 11 as primary key was not evicted
-            Assert.AreEqual(11, itemsAsList[0].PrimaryKey);
-            Assert.AreEqual(22, itemsAsList[1].PrimaryKey);
+            ClassicAssert.AreEqual(11, itemsAsList[0].PrimaryKey);
+            ClassicAssert.AreEqual(22, itemsAsList[1].PrimaryKey);
         }
 
         [Test]
@@ -118,12 +119,12 @@ namespace Tests.IntegrationTests
             _client.ConfigEviction(CollectionName, EvictionType.LessRecentlyUsed, 100, 10, 0);
 
             var desc = _client.GetServerDescription();
-            Assert.IsNotNull(desc);
-            Assert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
+            ClassicAssert.IsNotNull(desc);
+            ClassicAssert.AreEqual(desc.DataStoreInfoByFullName.Count, 1);
 
             var info = desc.DataStoreInfoByFullName[CollectionName];
-            Assert.IsNotNull(info);
-            Assert.AreEqual(info.EvictionPolicy, EvictionType.LessRecentlyUsed);
+            ClassicAssert.IsNotNull(info);
+            ClassicAssert.AreEqual(info.EvictionPolicy, EvictionType.LessRecentlyUsed);
 
             //add one item
             var item1 = new CacheableTypeOk(1, 1001, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -131,7 +132,7 @@ namespace Tests.IntegrationTests
 
             //reload the item by primary key
             var item1Reloaded = _client.GetOne<CacheableTypeOk>(i => i.PrimaryKey == 1);
-            Assert.AreEqual(item1, item1Reloaded);
+            ClassicAssert.AreEqual(item1, item1Reloaded);
 
             //add 100 items; eviction should be triggered(10 items should be removed)
             var itemsToPut = new List<CacheableTypeOk>();
@@ -146,7 +147,7 @@ namespace Tests.IntegrationTests
             //reload all items
             IList<CacheableTypeOk> itemsInAaa =
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
-            Assert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
+            ClassicAssert.AreEqual(itemsInAaa.Count, 90); //(100 - 10)(capacity-evictionCount)
         }
 
         [Test]
@@ -170,8 +171,8 @@ namespace Tests.IntegrationTests
             itemsAsList.Sort((x, y) => x.PrimaryKey.CompareTo(y.PrimaryKey));
 
             //check that the first item was not evicted
-            Assert.AreEqual(92, itemsAsList.Count);
-            Assert.IsTrue(itemsAsList[0].PrimaryKey == 0);
+            ClassicAssert.AreEqual(92, itemsAsList.Count);
+            ClassicAssert.IsTrue(itemsAsList[0].PrimaryKey == 0);
         }
 
 
@@ -198,8 +199,8 @@ namespace Tests.IntegrationTests
             IList<CacheableTypeOk> itemsInAaa =
                 _client.GetMany<CacheableTypeOk>(i => i.IndexKeyFolder == "aaa").ToList();
 
-            Assert.AreEqual(2, itemsInAaa.Count);
-            Assert.IsFalse(itemsInAaa.Any(i => i.PrimaryKey == 1), "only item 1 should have been evicted");
+            ClassicAssert.AreEqual(2, itemsInAaa.Count);
+            ClassicAssert.IsFalse(itemsInAaa.Any(i => i.PrimaryKey == 1), "only item 1 should have been evicted");
         }
     }
 }

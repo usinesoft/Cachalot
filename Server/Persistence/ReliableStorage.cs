@@ -1,7 +1,9 @@
-﻿using System;
+﻿#define DEBUG_VERBOSE
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using Client;
 
 namespace Server.Persistence;
 
@@ -228,6 +230,8 @@ public class ReliableStorage : IDisposable
                 BlockInfoByPrimaryKey[block.PrimaryKey] =
                     new(block.Offset, block.LastTransactionId);
 
+                Dbg.Trace($"read block {block.PrimaryKey} offset {block.Offset}");
+
                 // only active blocks contain objects 
                 if (useObjectProcessor && block.BlockStatus == BlockStatus.Active)
                     ObjectProcessor.Process(block.RawData);
@@ -360,6 +364,7 @@ public class ReliableStorage : IDisposable
             UsedDataSize = data.Length
         };
 
+        
 
         if (BlockInfoByPrimaryKey.TryGetValue(primaryKey, out var blockInfo)) // updating an object
         {
@@ -382,7 +387,7 @@ public class ReliableStorage : IDisposable
                 validBlock = false;
             }
 
-            bool wasUpdatedInPlace;
+            
             switch (validBlock)
             {
                 // If enough space is available do in-place update
@@ -390,36 +395,51 @@ public class ReliableStorage : IDisposable
                     block.ReservedDataSize = oldBlock.ReservedDataSize;
 
                     WriteBlock(block, blockInfo.Offset);
-                    wasUpdatedInPlace = true;
+                    Dbg.Trace($"Store block in place {primaryKey} offset {blockInfo.Offset}");
+                    
                     StoredInPlace++;
                     break;
                 // Not enough space to store the new version in-place
                 // Add it at the end as a new block and mark the old block as dirty
                 case true:
-                    // mark old block as dirty so it will be removed during the next cleanup
+                    // mark old block as dirty, so it will be removed during the next cleanup
                     oldBlock.BlockStatus = BlockStatus.Dirty;
 
                     InactiveBlockCount++;
 
+                    Dbg.Trace($"Mark old block as dirty {primaryKey} offset {blockInfo.Offset}");
+
                     WriteBlock(oldBlock, blockInfo.Offset);
+
+                    var offset1 = StorageSize; // will be stored at the end
 
                     // store the object in a new block at the end of the storage
                     block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
                     StorageSize = WriteBlock(block, StorageSize);
 
-                    wasUpdatedInPlace = false;
+                    BlockInfoByPrimaryKey[primaryKey] = new(offset1, block.LastTransactionId);
+
+                    Dbg.Trace($"Write new block at the end  {primaryKey} at offset {StorageSize}");
+
+                    
                     Relocated++;
                     break;
                 // The old block is not valid, this means the storage media has issues
                 // We write the new block at the end of the storage
                 case false:
+                    
                     block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
+                    Dbg.Trace($"Old block not valid. Write new block at the end {primaryKey} size in storage = {block.ReservedDataSize}  at offset {StorageSize}");
+
+                    var offset = StorageSize; // will be stored at the end
+                    
                     StorageSize = WriteBlock(block, StorageSize);
-                    wasUpdatedInPlace = false;
+
+                    BlockInfoByPrimaryKey[primaryKey] = new(offset, block.LastTransactionId);
+                    
                     break;
             }
-
-            if (!wasUpdatedInPlace) BlockInfoByPrimaryKey[primaryKey] = new(StorageSize, block.LastTransactionId);
+            
         }
         else // a new object not already in the persistent storage
         {
@@ -427,8 +447,11 @@ public class ReliableStorage : IDisposable
             block.ReservedDataSize = (int)(block.UsedDataSize * 1.5);
 
             var offset = StorageSize;
+            Dbg.Trace($"New object. Write new block at the end  {primaryKey} size in storage = {block.ReservedDataSize} at offset {StorageSize}");
+
             StorageSize = WriteBlock(block, StorageSize);
 
+            
             BlockInfoByPrimaryKey[primaryKey] = new(offset, block.LastTransactionId);
         }
 

@@ -142,7 +142,7 @@ public static class ExpressionTreeHelper
         var value = Getter<TEntity>(propertyName)(instance);
 
         if (value is string text
-           ) // string is also an IEnumerable but we do not want to be processed as a collection
+           ) // string is also an IEnumerable, but we do not want to be processed as a collection
         {
             result.Add(text);
         }

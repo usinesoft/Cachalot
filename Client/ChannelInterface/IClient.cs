@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Client.Core;
-using Newtonsoft.Json.Linq;
+
 
 namespace Client.ChannelInterface;
 
@@ -24,11 +26,8 @@ public interface IClient
     /// <param name="aliases">names of the properties sent to the client</param>
     void SendMany(ICollection<PackedObject> items, int[] selectedIndexes, string[] aliases);
 
-    /// <summary>
-    ///     Send raw Json objects
-    /// </summary>
-    /// <param name="items"></param>
-    void SendMany(ICollection<JObject> items);
+    
+    void SendMany(ICollection<JsonDocument> items);
 
     /// <summary>
     ///     Wait for client confirmation (used in two-stage transactions).

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Core;
@@ -8,7 +10,7 @@ using Client.Interface;
 using Client.Messages;
 using Client.Messages.Pivot;
 using Client.Queries;
-using Newtonsoft.Json.Linq;
+
 
 namespace Server.Queries;
 
@@ -488,11 +490,11 @@ public class QueryManager : IRequestManager
                 var values = SimpleDistinct(propertyName, query.Take);
 
                 //pack values as Json objects
-                var valuesList = new List<JObject>(values.Count);
+                var valuesList = new List<JsonDocument>(values.Count);
                 foreach (var value in values)
                 {
-                    var jo = new JObject { value.ToJson(propertyName) };
-                    valuesList.Add(jo);
+                    var jo = new JsonObject( new []{ new KeyValuePair<string, JsonNode>(propertyName, value.ToJsonValue())});
+                    valuesList.Add(jo.Deserialize<JsonDocument>());
                 }
 
 

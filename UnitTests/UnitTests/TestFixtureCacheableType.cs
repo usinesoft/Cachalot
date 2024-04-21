@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using Client.Core;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 
 #endregion
@@ -18,12 +19,12 @@ namespace Tests.UnitTests
         {
             var hash = new KeyValue("66666").GetHashCode();
 
-            Assert.IsTrue(hash > 0, "hash > 0");
+            ClassicAssert.IsTrue(hash > 0, "hash > 0");
 
             hash = new KeyValue(999999999999999)
                 .GetHashCode();
 
-            Assert.IsTrue(hash > 0, "hash > 0");
+            ClassicAssert.IsTrue(hash > 0, "hash > 0");
         }
 
 
@@ -34,80 +35,80 @@ namespace Tests.UnitTests
                 byte bt = 12;
                 var kv = new KeyValue(bt);
 
-                Assert.AreEqual(bt, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+                ClassicAssert.AreEqual(bt, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
             }
 
             {
                 byte? bt = 12;
                 var kv = new KeyValue(bt);
 
-                Assert.AreEqual(bt, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+                ClassicAssert.AreEqual(bt, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
             }
 
             {
                 byte? bt = null;
                 var kv = new KeyValue(bt);
 
-                Assert.AreEqual(0, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
+                ClassicAssert.AreEqual(0, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
             }
 
             {
                 var dt = DateTime.Now;
                 var kv = new KeyValue(dt);
 
-                Assert.AreEqual(dt.Ticks, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                ClassicAssert.AreEqual(dt.Ticks, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
             }
 
             {
                 DateTime? dt = DateTime.Now;
                 var kv = new KeyValue(dt);
 
-                Assert.AreEqual(dt.Value.Ticks, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                ClassicAssert.AreEqual(dt.Value.Ticks, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
             }
 
             {
                 DateTime? dt = null;
                 var kv = new KeyValue(dt);
 
-                Assert.AreEqual(0, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
+                ClassicAssert.AreEqual(0, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
             }
 
             {
                 DateTime dt = default;
                 var kv = new KeyValue(dt);
 
-                Assert.AreEqual(0, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                ClassicAssert.AreEqual(0, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
             }
 
             {
                 var dow = DayOfWeek.Friday;
                 var kv = new KeyValue(dow);
 
-                Assert.AreEqual(5, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+                ClassicAssert.AreEqual(5, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
             }
 
             {
                 DayOfWeek? dow = DayOfWeek.Friday;
                 var kv = new KeyValue(dow);
 
-                Assert.AreEqual(5, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
+                ClassicAssert.AreEqual(5, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.SomeInteger, kv.Type);
             }
 
             {
                 var tf = true;
                 var kv = new KeyValue(tf);
 
-                Assert.AreEqual(1, kv.IntValue);
-                Assert.AreEqual(KeyValue.OriginalType.Boolean, kv.Type);
+                ClassicAssert.AreEqual(1, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Boolean, kv.Type);
             }
         }
 
@@ -136,21 +137,21 @@ namespace Tests.UnitTests
                 SerializationMode
                     .ProtocolBuffers,
                 false);
-            Assert.IsNotNull(deserializedDescription);
-            Assert.AreEqual(serializableDescription, deserializedDescription);
-            Assert.AreEqual(serializableDescription.GetHashCode(), deserializedDescription.GetHashCode());
+            ClassicAssert.IsNotNull(deserializedDescription);
+            ClassicAssert.AreEqual(serializableDescription, deserializedDescription);
+            ClassicAssert.AreEqual(serializableDescription.GetHashCode(), deserializedDescription.GetHashCode());
         }
 
         [Test]
         public void TestTypeOk()
         {
             var schema = TypedSchemaFactory.FromType(typeof(CacheableTypeOk));
-            Assert.IsNotNull(schema.PrimaryKeyField);
-            Assert.AreEqual(schema.CollectionName, nameof(CacheableTypeOk));
+            ClassicAssert.IsNotNull(schema.PrimaryKeyField);
+            ClassicAssert.AreEqual(schema.CollectionName, nameof(CacheableTypeOk));
 
 
-            Assert.AreEqual(schema.IndexFields.Count, 5);
-            Assert.AreEqual(schema.FullText.Count, 2);
+            ClassicAssert.AreEqual(schema.IndexFields.Count, 5);
+            ClassicAssert.AreEqual(schema.FullText.Count, 2);
         }
     }
 }

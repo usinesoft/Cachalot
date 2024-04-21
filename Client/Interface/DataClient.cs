@@ -244,21 +244,14 @@ public sealed class DataClient : IDataClient
     }
 
 
-    public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
-    {
-        Dbg.Trace($"one client GetMany for session {sessionId}");
-        var request = new GetRequest(query, sessionId);
-
-        return Channel.SendStreamRequest(request);
-    }
-
+    
     /// <summary>
     /// Same but using System.Text.Json instead of Newtonsoft
     /// </summary>
     /// <param name="query"></param>
     /// <param name="sessionId"></param>
     /// <returns></returns>
-    public IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default)
+    public IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default)
     {
         Dbg.Trace($"one client GetMany for session {sessionId}");
         var request = new GetRequest(query, sessionId);
@@ -613,7 +606,7 @@ public sealed class DataClient : IDataClient
         var response = Channel.SendRequest(request);
 
         if (response is ExceptionResponse exceptionResponse)
-            throw new CacheException("Error while importing dump.", exceptionResponse.Message,
+             throw new CacheException("Error while importing dump.", exceptionResponse.Message,
                 exceptionResponse.CallStack);
     }
 

@@ -6,6 +6,7 @@ using Cachalot.Linq;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 using Tests.TestData;
 using Tests.TestData.Events;
@@ -45,17 +46,17 @@ namespace Tests.IntegrationTests
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256"));
 
-                Assert.IsTrue(wasAdded);
+                ClassicAssert.IsTrue(wasAdded);
 
                 // the second time it should return false as it is already there
                 wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 160, "EQ-256"));
 
-                Assert.IsFalse(wasAdded);
+                ClassicAssert.IsFalse(wasAdded);
 
                 var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
-                Assert.AreEqual(150, reloaded.Value);
+                ClassicAssert.AreEqual(150, reloaded.Value);
             }
 
             // check also that it has not been saved in the persistence storage
@@ -68,7 +69,7 @@ namespace Tests.IntegrationTests
                 var reloaded = (FixingEvent)events[1];
 
                 // check that the original value is still there
-                Assert.AreEqual(150, reloaded.Value);
+                ClassicAssert.AreEqual(150, reloaded.Value);
             }
         }
 
@@ -86,7 +87,7 @@ namespace Tests.IntegrationTests
 
                 var wasAdded = events.TryAdd(new FixingEvent(1, "AXA", 150, "EQ-256") { Timestamp = DateTime.Now });
 
-                Assert.IsTrue(wasAdded);
+                ClassicAssert.IsTrue(wasAdded);
 
                 var reloaded = (FixingEvent)events[1];
                 var oldTimestamp = reloaded.Timestamp;
@@ -94,7 +95,7 @@ namespace Tests.IntegrationTests
                 reloaded.Value = 160;
                 reloaded.Timestamp = DateTime.Now.AddTicks(1); // to be sure we are not too fast
 
-                Assert.AreNotEqual(oldTimestamp.Ticks, reloaded.Timestamp.Ticks);
+                ClassicAssert.AreNotEqual(oldTimestamp.Ticks, reloaded.Timestamp.Ticks);
 
                 events.UpdateIf(reloaded, evt => evt.Timestamp == oldTimestamp);
 
@@ -115,7 +116,7 @@ namespace Tests.IntegrationTests
                 var reloaded = (FixingEvent)events[1];
 
                 // check that the updated value is persistent
-                Assert.AreEqual(160, reloaded.Value);
+                ClassicAssert.AreEqual(160, reloaded.Value);
             }
         }
 
@@ -153,15 +154,15 @@ namespace Tests.IntegrationTests
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                    Assert.AreEqual(1000, list.Count);
+                    ClassicAssert.AreEqual(1000, list.Count);
 
                     list = dataSource.Where(t => t.Folder == "TOTO").ToList();
 
-                    Assert.AreEqual(100, list.Count);
+                    ClassicAssert.AreEqual(100, list.Count);
 
                     var t1 = dataSource[4];
-                    Assert.IsNotNull(t1);
-                    Assert.AreEqual(4, t1.Id);
+                    ClassicAssert.IsNotNull(t1);
+                    ClassicAssert.AreEqual(4, t1.Id);
                 }
             }
         }
@@ -177,13 +178,13 @@ namespace Tests.IntegrationTests
             {
                 var ids = connector.GenerateUniqueIds("test", 12);
 
-                Assert.AreEqual(12, ids.Length);
+                ClassicAssert.AreEqual(12, ids.Length);
 
                 CollectionAssert.AllItemsAreUnique(ids, "identifiers are not unique");
 
                 max = ids.Max();
 
-                Assert.IsTrue(ids.Min() > 0, "unique ids should be strictly positive");
+                ClassicAssert.IsTrue(ids.Min() > 0, "unique ids should be strictly positive");
             }
 
 
@@ -192,12 +193,12 @@ namespace Tests.IntegrationTests
             {
                 var ids = connector.GenerateUniqueIds("test", 12);
 
-                Assert.AreEqual(12, ids.Length);
+                ClassicAssert.AreEqual(12, ids.Length);
 
                 CollectionAssert.AllItemsAreUnique(ids, "identifiers are not unique");
 
 
-                Assert.IsTrue(ids.Min() > max, "sequence persistence failure");
+                ClassicAssert.IsTrue(ids.Min() > max, "sequence persistence failure");
             }
         }
 
@@ -222,7 +223,7 @@ namespace Tests.IntegrationTests
 
                 var list = dataSource.ToList();
 
-                Assert.AreEqual(3, list.Count);
+                ClassicAssert.AreEqual(3, list.Count);
             }
         }
 
@@ -248,11 +249,11 @@ namespace Tests.IntegrationTests
 
                 var count = dataSource.Count(evt => evt.DealId == "EQ-256");
 
-                Assert.AreEqual(2, count);
+                ClassicAssert.AreEqual(2, count);
 
                 count = dataSource.Count(evt => evt.DealId == null);
 
-                Assert.AreEqual(1, count);
+                ClassicAssert.AreEqual(1, count);
             }
         }
 
@@ -279,25 +280,25 @@ namespace Tests.IntegrationTests
 
                 var events = dataSource.Where(evt => evt.DealId == "EQ-256").ToList();
 
-                Assert.AreEqual(2, events.Count);
+                ClassicAssert.AreEqual(2, events.Count);
 
                 events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
-                Assert.AreEqual(2, events.Count);
+                ClassicAssert.AreEqual(2, events.Count);
 
                 // check that empty result is managed
                 var count = dataSource.Count(e => e.EventId == 3 && e.DealId == "none");
-                Assert.AreEqual(0, count);
+                ClassicAssert.AreEqual(0, count);
 
                 var empty = dataSource.Where(e => e.EventId == 3 && e.DealId == "none").ToList();
-                Assert.IsEmpty(empty);
+                ClassicAssert.IsEmpty(empty);
 
                 // delete one fixing event
                 dataSource.Delete(events[0]);
 
                 events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
 
-                Assert.AreEqual(1, events.Count);
+                ClassicAssert.AreEqual(1, events.Count);
             }
 
 
@@ -310,12 +311,12 @@ namespace Tests.IntegrationTests
 
                 // check same data after reload
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
-                Assert.AreEqual(1, events.Count);
+                ClassicAssert.AreEqual(1, events.Count);
 
                 dataSource.DeleteMany(evt => evt.EventType == "FIXING");
 
                 events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
-                Assert.AreEqual(0, events.Count);
+                ClassicAssert.AreEqual(0, events.Count);
             }
 
 
@@ -327,7 +328,7 @@ namespace Tests.IntegrationTests
 
                 // check same data after reload
                 var events = dataSource.Where(evt => evt.EventType == "FIXING").ToList();
-                Assert.AreEqual(0, events.Count);
+                ClassicAssert.AreEqual(0, events.Count);
             }
         }
 
@@ -352,11 +353,11 @@ namespace Tests.IntegrationTests
 
 
                 var deals = dataSource.ToList().Select(e => e.DealId).Distinct().ToList();
-                Assert.AreEqual(2, deals.Count);
+                ClassicAssert.AreEqual(2, deals.Count);
 
                 deals = dataSource.Where(e => e.EventType == "FIXING").ToList().Select(e => e.DealId).Distinct()
                     .ToList();
-                Assert.AreEqual(2, deals.Count);
+                ClassicAssert.AreEqual(2, deals.Count);
             }
         }
 
@@ -381,11 +382,11 @@ namespace Tests.IntegrationTests
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                    Assert.AreEqual(2, list.Count);
+                    ClassicAssert.AreEqual(2, list.Count);
 
                     var t1 = dataSource[1];
-                    Assert.IsNotNull(t1);
-                    Assert.AreEqual(1, t1.Id);
+                    ClassicAssert.IsNotNull(t1);
+                    ClassicAssert.AreEqual(1, t1.Id);
                 }
 
                 dataSource.Put(new Trade(4, 5468, "TOTO", DateTime.Now.Date.AddDays(+1), 150));
@@ -395,11 +396,11 @@ namespace Tests.IntegrationTests
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                    Assert.AreEqual(3, list.Count);
+                    ClassicAssert.AreEqual(3, list.Count);
 
                     var t1 = dataSource[4];
-                    Assert.IsNotNull(t1);
-                    Assert.AreEqual(4, t1.Id);
+                    ClassicAssert.IsNotNull(t1);
+                    ClassicAssert.AreEqual(4, t1.Id);
                 }
             }
 
@@ -415,11 +416,11 @@ namespace Tests.IntegrationTests
 
                     var list = dataSource.Where(t => folders.Contains(t.Folder)).ToList();
 
-                    Assert.AreEqual(3, list.Count);
+                    ClassicAssert.AreEqual(3, list.Count);
 
                     var t1 = dataSource[4];
-                    Assert.IsNotNull(t1);
-                    Assert.AreEqual(4, t1.Id);
+                    ClassicAssert.IsNotNull(t1);
+                    ClassicAssert.AreEqual(4, t1.Id);
                 }
             }
         }
@@ -445,7 +446,7 @@ namespace Tests.IntegrationTests
 
                 var newOne = (FixingEvent)dataSource[2];
 
-                Assert.AreEqual(180, newOne.Value);
+                ClassicAssert.AreEqual(180, newOne.Value);
 
                 dataSource.PutMany(new Event[]
                 {
@@ -456,7 +457,7 @@ namespace Tests.IntegrationTests
 
                 var updated = (FixingEvent)dataSource[2];
 
-                Assert.AreEqual(190, updated.Value);
+                ClassicAssert.AreEqual(190, updated.Value);
             }
         }
 
@@ -482,7 +483,7 @@ namespace Tests.IntegrationTests
 
                 var count = dataSource.Count(evt => evt.DealId == "EQ-256");
 
-                Assert.AreEqual(2, count);
+                ClassicAssert.AreEqual(2, count);
             }
         }
 
@@ -507,21 +508,21 @@ namespace Tests.IntegrationTests
                 });
 
                 var count = dataSource.Count(evt => evt.EventType == "FIXING");
-                Assert.AreEqual(3, count);
+                ClassicAssert.AreEqual(3, count);
 
                 // check that count works with empty query
                 count = dataSource.Count();
-                Assert.AreEqual(4, count);
+                ClassicAssert.AreEqual(4, count);
 
 
                 var only2 = dataSource.Where(evt => evt.EventType == "FIXING").Take(2);
 
                 // here we Count on the sever
-                Assert.AreEqual(2, only2.Count());
+                ClassicAssert.AreEqual(2, only2.Count());
 
                 // here we count on the client
                 var list = dataSource.Where(evt => evt.EventType == "FIXING").Take(2).ToList();
-                Assert.AreEqual(2, list.Count);
+                ClassicAssert.AreEqual(2, list.Count);
             }
         }
 
@@ -612,10 +613,10 @@ namespace Tests.IntegrationTests
                 homes.Put(h3);
 
                 var result = homes.FullTextSearch("gral le clerc");
-                Assert.AreEqual(h3.Id, result.First().Id);
+                ClassicAssert.AreEqual(h3.Id, result.First().Id);
 
                 result = homes.FullTextSearch("amour");
-                Assert.AreEqual(h2.Id, result.First().Id);
+                ClassicAssert.AreEqual(h2.Id, result.First().Id);
             }
         }
 
@@ -646,8 +647,8 @@ namespace Tests.IntegrationTests
 
             var all1 = homes1.ToList();
 
-            Assert.AreEqual(1, all.Count);
-            Assert.AreEqual(2, all1.Count);
+            ClassicAssert.AreEqual(1, all.Count);
+            ClassicAssert.AreEqual(2, all1.Count);
         }
 
         [Test]
@@ -675,7 +676,7 @@ namespace Tests.IntegrationTests
             connector.ConsistentRead(ctx =>
             {
                 var all = ctx.Collection<Home>("homes").ToList();
-                Assert.AreEqual(1, all.Count);
+                ClassicAssert.AreEqual(1, all.Count);
 
                 // should throw an exception because "homes1" is not available in this context
                 Assert.Throws<NotSupportedException>(() => { all = ctx.Collection<Home>("homes1").ToList(); });
@@ -684,11 +685,11 @@ namespace Tests.IntegrationTests
             connector.ConsistentRead(ctx =>
             {
                 var all = ctx.Collection<Home>("homes").ToList();
-                Assert.AreEqual(1, all.Count);
+                ClassicAssert.AreEqual(1, all.Count);
 
 
                 all = ctx.Collection<Home>("homes1").ToList();
-                Assert.AreEqual(2, all.Count);
+                ClassicAssert.AreEqual(2, all.Count);
             }, "homes", "homes1");
         }
 
@@ -716,18 +717,18 @@ namespace Tests.IntegrationTests
 
             var reloaded1 = dataSource.Where(o => o.Category == "vibes").ToList();
 
-            Assert.AreEqual(1, reloaded1.Count);
+            ClassicAssert.AreEqual(1, reloaded1.Count);
 
             var reloaded2 = dataSource.Where(o => o.Category == "sf").ToList();
 
-            Assert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
+            ClassicAssert.AreEqual(reloaded0.Count - 1, reloaded2.Count);
 
             reloaded0[1].Category = "vibes";
             dataSource.PutMany(reloaded0.Take(60)); // update more than the bulk insert threshold
 
             var reloaded3 = dataSource.Where(o => o.Category == "sf").ToList();
 
-            Assert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
+            ClassicAssert.AreEqual(reloaded0.Count - 2, reloaded3.Count);
         }
     }
 }

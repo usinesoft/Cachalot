@@ -1,12 +1,13 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
 namespace Tests.TestData
 {
     public class Review
     {
-        [JsonProperty("text")] public string Text { get; set; }
+        [JsonPropertyName("text")] public string Text { get; set; }
 
-        [JsonProperty("date")] public DateTimeOffset Date { get; set; }
+        [JsonPropertyName("date")] public DateTimeOffset Date { get; set; }
     }
 }

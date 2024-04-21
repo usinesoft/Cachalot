@@ -1,6 +1,6 @@
-﻿using Cachalot.Linq;
+﻿using System.Text.Json;
+using Cachalot.Linq;
 using Client.Interface;
-using Newtonsoft.Json;
 
 namespace CachalotMonitor.Services;
 
@@ -25,7 +25,7 @@ public class AdminService : IAdminService
         {
             var json = File.ReadAllText(AdminConfig);
             if (!string.IsNullOrWhiteSpace(json))
-                _settings = JsonConvert.DeserializeObject<Dictionary<string, string>>(json)!;
+                _settings = JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
         }
 
         _adminDatabase = new(true); // persistent in-process
@@ -52,7 +52,7 @@ public class AdminService : IAdminService
         {
             _settings[clusterName] = backupDirectory;
 
-            var json = JsonConvert.SerializeObject(_settings);
+            var json = JsonSerializer.Serialize(_settings);
             File.WriteAllText(AdminConfig, json);
         }
     }

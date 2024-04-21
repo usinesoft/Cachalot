@@ -6,6 +6,7 @@ using Client.Messages;
 using Client.Parsing;
 using Client.Queries;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 using Tests.TestTools;
 
@@ -17,11 +18,11 @@ namespace Tests.UnitTests
         private static (string a, string op, string b) ExtractUnitaryQuery(Node root, int nthQuery = 0)
         {
             var where = root.Children.FirstOrDefault(x => x.Token == "where");
-            Assert.IsNotNull(where);
+            ClassicAssert.IsNotNull(where);
 
             var expr = where.Children[0]?.Children[0]?.Children[nthQuery];
-            Assert.IsNotNull(expr);
-            Assert.AreEqual(2, expr.Children.Count);
+            ClassicAssert.IsNotNull(expr);
+            ClassicAssert.AreEqual(2, expr.Children.Count);
 
 
             return (expr.Children[0].Token, expr.Token, expr.Children[1].Token);
@@ -36,9 +37,9 @@ namespace Tests.UnitTests
         public void Tokenizer_test(string input, params string[] tokens)
         {
             var tks = Tokenizer.TokenizeOneLine(input);
-            Assert.IsNotNull(tokens);
-            Assert.AreEqual(tokens.Length, tks.Count);
-            for (var i = 0; i < tokens.Length; i++) Assert.AreEqual(tokens[i], tks[i].Text);
+            ClassicAssert.IsNotNull(tokens);
+            ClassicAssert.AreEqual(tokens.Length, tks.Count);
+            for (var i = 0; i < tokens.Length; i++) ClassicAssert.AreEqual(tokens[i], tks[i].Text);
         }
 
         [Test]
@@ -46,11 +47,11 @@ namespace Tests.UnitTests
         {
             var result = new Parser().ParseSql("select * from theTable");
 
-            Assert.IsNull(result.ErrorMessage);
+            Assert.That(result.ErrorMessage, Is.Null);
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(2, result.Children.Count);
-            Assert.AreEqual("thetable", result.Children[1].Children[0].Token);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(2, result.Children.Count);
+            ClassicAssert.AreEqual("thetable", result.Children[1].Children[0].Token);
 
             Console.WriteLine(result);
         }
@@ -63,23 +64,23 @@ namespace Tests.UnitTests
         public void Parsing_with_single_expression(string expression, string a, string op, string b, int nth)
         {
             var result = new Parser().ParseSql(expression);
-            Assert.IsNull(result.ErrorMessage);
+            Assert.That(result.ErrorMessage, Is.Null);
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(3, result.Children.Count);
-            Assert.AreEqual("projection", result.Children[0].Token);
-            Assert.AreEqual("from", result.Children[1].Token);
-            Assert.AreEqual("where", result.Children[2].Token);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(3, result.Children.Count);
+            ClassicAssert.AreEqual("projection", result.Children[0].Token);
+            ClassicAssert.AreEqual("from", result.Children[1].Token);
+            ClassicAssert.AreEqual("where", result.Children[2].Token);
 
-            Assert.IsNull(result.ErrorMessage);
+            Assert.That(result.ErrorMessage, Is.Null);
 
             var (va, vop, vb) = ExtractUnitaryQuery(result, nth);
-            Assert.IsNotNull(va);
-            Assert.IsNotNull(vb);
-            Assert.IsNotNull(vop);
-            Assert.AreEqual(a, va);
-            Assert.AreEqual(b, vb);
-            Assert.AreEqual(op, vop);
+            ClassicAssert.IsNotNull(va);
+            ClassicAssert.IsNotNull(vb);
+            ClassicAssert.IsNotNull(vop);
+            ClassicAssert.AreEqual(a, va);
+            ClassicAssert.AreEqual(b, vb);
+            ClassicAssert.AreEqual(op, vop);
 
             Console.WriteLine(result);
         }
@@ -89,24 +90,24 @@ namespace Tests.UnitTests
         public void Ignore_keywords_inside_strings()
         {
             var result = new Parser().ParseSql("select from persons where a== 'select b from c'");
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(3, result.Children.Count);
-            Assert.AreEqual("projection", result.Children[0].Token);
-            Assert.AreEqual("from", result.Children[1].Token);
-            Assert.AreEqual("where", result.Children[2].Token);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(3, result.Children.Count);
+            ClassicAssert.AreEqual("projection", result.Children[0].Token);
+            ClassicAssert.AreEqual("from", result.Children[1].Token);
+            ClassicAssert.AreEqual("where", result.Children[2].Token);
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
             var (va, vop, vb) = ExtractUnitaryQuery(result);
-            Assert.IsNotNull(va);
-            Assert.IsNotNull(vb);
-            Assert.IsNotNull(vop);
+            ClassicAssert.IsNotNull(va);
+            ClassicAssert.IsNotNull(vb);
+            ClassicAssert.IsNotNull(vop);
 
-            Assert.AreEqual("a", va);
-            Assert.AreEqual("'select b from c'", vb);
-            Assert.AreEqual("=", vop);
+            ClassicAssert.AreEqual("a", va);
+            ClassicAssert.AreEqual("'select b from c'", vb);
+            ClassicAssert.AreEqual("=", vop);
 
             Console.WriteLine(result);
         }
@@ -116,24 +117,24 @@ namespace Tests.UnitTests
         public void Ignore_escaped_string_delimiters_inside_strings(string expression)
         {
             var result = new Parser().ParseSql(expression);
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(3, result.Children.Count);
-            Assert.AreEqual("projection", result.Children[0].Token);
-            Assert.AreEqual("from", result.Children[1].Token);
-            Assert.AreEqual("where", result.Children[2].Token);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(3, result.Children.Count);
+            ClassicAssert.AreEqual("projection", result.Children[0].Token);
+            ClassicAssert.AreEqual("from", result.Children[1].Token);
+            ClassicAssert.AreEqual("where", result.Children[2].Token);
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
             var (va, vop, vb) = ExtractUnitaryQuery(result);
-            Assert.IsNotNull(va);
-            Assert.IsNotNull(vb);
-            Assert.IsNotNull(vop);
+            ClassicAssert.IsNotNull(va);
+            ClassicAssert.IsNotNull(vb);
+            ClassicAssert.IsNotNull(vop);
 
-            Assert.AreEqual("a", va);
-            Assert.AreEqual("'rue d'Antin'", vb);
-            Assert.AreEqual("=", vop);
+            ClassicAssert.AreEqual("a", va);
+            ClassicAssert.AreEqual("'rue d'Antin'", vb);
+            ClassicAssert.AreEqual("=", vop);
 
             Console.WriteLine(result);
         }
@@ -144,10 +145,10 @@ namespace Tests.UnitTests
             var result =
                 new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x >= 0,5 take 1 ");
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(4, result.Children.Count);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(4, result.Children.Count);
 
 
             Console.WriteLine(result);
@@ -156,23 +157,23 @@ namespace Tests.UnitTests
                 "select from collection where client in (x, y , z) or category in 'geek', 'games' take 20");
 
 
-            Assert.AreEqual("select", result.Token);
-            Assert.AreEqual(4, result.Children.Count);
+            ClassicAssert.AreEqual("select", result.Token);
+            ClassicAssert.AreEqual(4, result.Children.Count);
 
-            Assert.IsTrue(result.Children.Any(c => c.Token == "from"));
-            Assert.IsTrue(result.Children.Any(c => c.Token == "projection"));
-            Assert.IsTrue(result.Children.Any(c => c.Token == "take"));
-            Assert.IsTrue(result.Children.Any(c => c.Token == "where"));
+            ClassicAssert.IsTrue(result.Children.Any(c => c.Token == "from"));
+            ClassicAssert.IsTrue(result.Children.Any(c => c.Token == "projection"));
+            ClassicAssert.IsTrue(result.Children.Any(c => c.Token == "take"));
+            ClassicAssert.IsTrue(result.Children.Any(c => c.Token == "where"));
 
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
             Console.WriteLine(result);
 
             // check parsing errors
             result = new Parser().ParseSql("select from collection where a<>'ttt' or x < 1.22 and x + 1>= 0,5  ");
 
-            Assert.IsNotNull(result.ErrorMessage);
+            ClassicAssert.IsNotNull(result.ErrorMessage);
         }
 
         [Test]
@@ -183,7 +184,7 @@ namespace Tests.UnitTests
                     "select from collection where a<>'ttt' or tags contains 'geek' and clients contains 156 take 10 ");
 
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
             Console.WriteLine(result);
         }
@@ -196,7 +197,7 @@ namespace Tests.UnitTests
                 new Parser().ParseSql(
                     "select from collection where a not in ('ttt', 'xxx') or tags not contains 'geek' and clients not contains 156  ");
 
-            Assert.IsNull(result.ErrorMessage);
+            ClassicAssert.IsNull(result.ErrorMessage);
 
             Console.WriteLine(result);
         }
@@ -233,36 +234,36 @@ namespace Tests.UnitTests
         {
             var vi = JExtensions.SmartParse("123");
 
-            Assert.IsTrue(vi is int);
+            ClassicAssert.IsTrue(vi is int);
 
             var vf = JExtensions.SmartParse("123,1");
 
-            Assert.IsTrue(vf is double);
+            ClassicAssert.IsTrue(vf is double);
 
             vf = JExtensions.SmartParse("123.1");
 
-            Assert.IsTrue(vf is double);
+            ClassicAssert.IsTrue(vf is double);
 
             var vd = JExtensions.SmartParse("2012-05-01");
 
-            Assert.IsTrue(vd is DateTime);
+            ClassicAssert.IsTrue(vd is DateTime);
 
             vd = JExtensions.SmartParse("01/05/2012");
 
-            Assert.IsTrue(vd is DateTime);
+            ClassicAssert.IsTrue(vd is DateTime);
 
             // looks like a data but it is not correct so it will be parsed like a string
             vd = JExtensions.SmartParse("45/15/2012");
 
-            Assert.IsTrue(vd is string);
+            ClassicAssert.IsTrue(vd is string);
 
             var vb = JExtensions.SmartParse("true");
-            Assert.IsTrue(vb is bool);
+            ClassicAssert.IsTrue(vb is bool);
 
             vb = JExtensions.SmartParse("false");
-            Assert.IsTrue(vb is bool);
+            ClassicAssert.IsTrue(vb is bool);
 
-            Assert.IsNull(JExtensions.SmartParse("null"));
+            ClassicAssert.IsNull(JExtensions.SmartParse("null"));
         }
 
         private static AtomicQuery FindAtomicQuery(OrQuery query, string property)
@@ -286,11 +287,11 @@ namespace Tests.UnitTests
 
             var query = result.ToQuery(schema);
 
-            Assert.IsNotNull(query);
+            ClassicAssert.IsNotNull(query);
             var value = query.Elements.FirstOrDefault()?.Elements.FirstOrDefault()?.Value;
-            Assert.IsNotNull(value);
-            Assert.AreEqual(KeyValue.OriginalType.Date, value.Type);
-            Assert.AreEqual(0, value.DateValue.Value.Offset.Ticks);
+            ClassicAssert.IsNotNull(value);
+            ClassicAssert.AreEqual(KeyValue.OriginalType.Date, value.Type);
+            ClassicAssert.AreEqual(0, value.DateValue.Value.Offset.Ticks);
         }
 
         [Test]
@@ -308,9 +309,9 @@ namespace Tests.UnitTests
 
             var query = result.ToQuery(schema);
 
-            Assert.AreEqual("collection", query.CollectionName);
+            ClassicAssert.AreEqual("collection", query.CollectionName);
 
-            Assert.IsTrue(query.IsValid);
+            ClassicAssert.IsTrue(query.IsValid);
 
             var result1 =
                 new Parser().ParseSql(
@@ -319,29 +320,29 @@ namespace Tests.UnitTests
             var query1 = result1.ToQuery(schema);
 
             // the two queries must be identical
-            Assert.AreEqual(query.ToString(), query1.ToString());
+            ClassicAssert.AreEqual(query.ToString(), query1.ToString());
 
             // check if the atomic queries have been correctly generated
             var q1 = FindAtomicQuery(query, "a");
-            Assert.NotNull(q1);
-            Assert.AreEqual(KeyValue.OriginalType.String, q1.Value.Type);
-            Assert.AreEqual(QueryOperator.NotEq, q1.Operator);
+            ClassicAssert.NotNull(q1);
+            ClassicAssert.AreEqual(KeyValue.OriginalType.String, q1.Value.Type);
+            ClassicAssert.AreEqual(QueryOperator.NotEq, q1.Operator);
 
             var q2 = FindAtomicQuery(query, "x");
-            Assert.NotNull(q2);
-            Assert.AreEqual(KeyValue.OriginalType.SomeFloat, q2.Value.Type);
-            Assert.AreEqual(QueryOperator.GeLt, q2.Operator, "query should be optimized as range operator");
+            ClassicAssert.NotNull(q2);
+            ClassicAssert.AreEqual(KeyValue.OriginalType.SomeFloat, q2.Value.Type);
+            ClassicAssert.AreEqual(QueryOperator.GeLt, q2.Operator, "query should be optimized as range operator");
 
             var q3 = FindAtomicQuery(query, "age");
-            Assert.NotNull(q3);
-            Assert.AreEqual(KeyValue.OriginalType.SomeInteger, q3.Value.Type);
-            Assert.AreEqual(QueryOperator.Gt, q3.Operator);
+            ClassicAssert.NotNull(q3);
+            ClassicAssert.AreEqual(KeyValue.OriginalType.SomeInteger, q3.Value.Type);
+            ClassicAssert.AreEqual(QueryOperator.Gt, q3.Operator);
 
             var query2 = new Parser().ParseSql("select * from collection where date = 2012-01-31 ").ToQuery(schema);
             var q4 = FindAtomicQuery(query2, "date");
-            Assert.NotNull(q4);
-            Assert.AreEqual(KeyValue.OriginalType.Date, q4.Value.Type);
-            Assert.AreEqual(QueryOperator.Eq, q4.Operator);
+            ClassicAssert.NotNull(q4);
+            ClassicAssert.AreEqual(KeyValue.OriginalType.Date, q4.Value.Type);
+            ClassicAssert.AreEqual(QueryOperator.Eq, q4.Operator);
         }
 
         [Test]
@@ -359,9 +360,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.GetValues().Count);
-                Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                ClassicAssert.AreEqual(3, q.GetValues().Count);
+                ClassicAssert.AreEqual(QueryOperator.In, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
             }
 
             {
@@ -369,9 +370,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.GetValues().Count);
-                Assert.AreEqual(QueryOperator.NotIn, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                ClassicAssert.AreEqual(3, q.GetValues().Count);
+                ClassicAssert.AreEqual(QueryOperator.NotIn, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
             }
         }
 
@@ -387,12 +388,12 @@ namespace Tests.UnitTests
                     .ParseSql("select from items where tags contains 'geek' or tags contains electronics")
                     .ToQuery(schema);
 
-                Assert.AreEqual("items", query.CollectionName);
+                ClassicAssert.AreEqual("items", query.CollectionName);
 
                 var q = FindAtomicQuery(query, "tags");
 
-                Assert.AreEqual(QueryOperator.Contains, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
+                ClassicAssert.AreEqual(QueryOperator.Contains, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
             }
 
             {
@@ -400,8 +401,8 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "tags");
 
-                Assert.AreEqual(QueryOperator.NotContains, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
+                ClassicAssert.AreEqual(QueryOperator.NotContains, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.String));
             }
         }
 
@@ -417,9 +418,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "name");
 
-                Assert.AreEqual(QueryOperator.StrStartsWith, q.Operator);
-                Assert.AreEqual("john", q.Value.StringValue);
-                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+                ClassicAssert.AreEqual(QueryOperator.StrStartsWith, q.Operator);
+                ClassicAssert.AreEqual("john", q.Value.StringValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
             }
 
             {
@@ -427,9 +428,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "name");
 
-                Assert.AreEqual(QueryOperator.StrEndsWith, q.Operator);
-                Assert.AreEqual("john", q.Value.StringValue);
-                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+                ClassicAssert.AreEqual(QueryOperator.StrEndsWith, q.Operator);
+                ClassicAssert.AreEqual("john", q.Value.StringValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
             }
 
             {
@@ -437,9 +438,9 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "name");
 
-                Assert.AreEqual(QueryOperator.StrContains, q.Operator);
-                Assert.AreEqual("john", q.Value.StringValue);
-                Assert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
+                ClassicAssert.AreEqual(QueryOperator.StrContains, q.Operator);
+                ClassicAssert.AreEqual("john", q.Value.StringValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.String, q.Value.Type);
             }
         }
 
@@ -459,13 +460,13 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.GetValues().Count);
-                Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                ClassicAssert.AreEqual(3, q.GetValues().Count);
+                ClassicAssert.AreEqual(QueryOperator.In, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
 
-                Assert.AreEqual(2, query.SelectClause.Count);
-                Assert.AreEqual("fx", query.SelectClause[0].Name);
-                Assert.AreEqual("fx", query.SelectClause[0].Alias);
+                ClassicAssert.AreEqual(2, query.SelectClause.Count);
+                ClassicAssert.AreEqual("fx", query.SelectClause[0].Name);
+                ClassicAssert.AreEqual("fx", query.SelectClause[0].Alias);
             }
 
             {
@@ -475,13 +476,13 @@ namespace Tests.UnitTests
 
                 var q = FindAtomicQuery(query, "a");
 
-                Assert.AreEqual(3, q.GetValues().Count);
-                Assert.AreEqual(QueryOperator.In, q.Operator);
-                Assert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
+                ClassicAssert.AreEqual(3, q.GetValues().Count);
+                ClassicAssert.AreEqual(QueryOperator.In, q.Operator);
+                ClassicAssert.IsTrue(q.GetValues().All(v => v.Type == KeyValue.OriginalType.SomeInteger));
 
-                Assert.AreEqual(2, query.SelectClause.Count);
-                Assert.AreEqual("fx", query.SelectClause[0].Name);
-                Assert.AreEqual("forex", query.SelectClause[0].Alias);
+                ClassicAssert.AreEqual(2, query.SelectClause.Count);
+                ClassicAssert.AreEqual("fx", query.SelectClause[0].Name);
+                ClassicAssert.AreEqual("forex", query.SelectClause[0].Alias);
             }
         }
 
@@ -500,36 +501,36 @@ namespace Tests.UnitTests
                 var query = new Parser().ParseSql("select * from collection order by age take 10").ToQuery(schema);
 
                 // no where clause
-                Assert.AreEqual(0, query.Elements.Count);
+                ClassicAssert.AreEqual(0, query.Elements.Count);
 
-                Assert.AreEqual(10, query.Take);
-                Assert.AreEqual("age", query.OrderByProperty);
-                Assert.IsFalse(query.OrderByIsDescending);
+                ClassicAssert.AreEqual(10, query.Take);
+                ClassicAssert.AreEqual("age", query.OrderByProperty);
+                ClassicAssert.IsFalse(query.OrderByIsDescending);
             }
 
             {
                 var query = new Parser().ParseSql("select * from collection order by age descending").ToQuery(schema);
 
                 // no where clause
-                Assert.AreEqual(0, query.Elements.Count);
+                ClassicAssert.AreEqual(0, query.Elements.Count);
 
-                Assert.AreEqual(0, query.Take); // no take clause
-                Assert.AreEqual("age", query.OrderByProperty);
-                Assert.IsTrue(query.OrderByIsDescending);
+                ClassicAssert.AreEqual(0, query.Take); // no take clause
+                ClassicAssert.AreEqual("age", query.OrderByProperty);
+                ClassicAssert.IsTrue(query.OrderByIsDescending);
             }
 
             {
                 var query = new Parser().ParseSql("select distinct a, x from collection").ToQuery(schema);
 
                 // no where clause
-                Assert.AreEqual(0, query.Elements.Count);
+                ClassicAssert.AreEqual(0, query.Elements.Count);
 
-                Assert.AreEqual(0, query.Take); // no take clause
+                ClassicAssert.AreEqual(0, query.Take); // no take clause
 
-                Assert.AreEqual(2, query.SelectClause.Count);
-                Assert.AreEqual("a", query.SelectClause[0].Name);
-                Assert.AreEqual("x", query.SelectClause[1].Name);
-                Assert.IsTrue(query.Distinct);
+                ClassicAssert.AreEqual(2, query.SelectClause.Count);
+                ClassicAssert.AreEqual("a", query.SelectClause[0].Name);
+                ClassicAssert.AreEqual("x", query.SelectClause[1].Name);
+                ClassicAssert.IsTrue(query.Distinct);
             }
         }
 
@@ -551,7 +552,7 @@ namespace Tests.UnitTests
                     $"select * from {schema.CollectionName} where  isdelivered = true and category in (geek, games) or amount > 100 and amount < 200")
                 .ToQuery(schema);
 
-            Assert.AreEqual(query1.ToString().ToLower(), query2.ToString().ToLower());
+            ClassicAssert.AreEqual(query1.ToString().ToLower(), query2.ToString().ToLower());
 
 
             const int iterations = 1000;

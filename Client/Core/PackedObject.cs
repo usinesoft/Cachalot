@@ -3,15 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Client.Messages;
 using Client.Tools;
 using ICSharpCode.SharpZipLib.GZip;
 using JetBrains.Annotations;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+
 using ProtoBuf;
+// ReSharper disable PropertyCanBeMadeInitOnly.Local
 
 namespace Client.Core;
 
@@ -155,32 +156,22 @@ public sealed class PackedObject
 
     public string GetJson(CollectionSchema schema)
     {
-        if (Layout != Layout.Flat)
-        {
-            var stream = new MemoryStream(ObjectData);
-            if (Layout == Layout.Compressed)
-            {
-                var zInStream = new GZipInputStream(stream);
-                return new StreamReader(zInStream).ReadToEnd();
-            }
-
-
-            return new StreamReader(stream).ReadToEnd();
-        }
-
-
-        return ToJObjectForFlatLayout(schema).ToString(Formatting.None);
+        if (Layout == Layout.Flat) return ToJsonObjectForFlatLayout(schema).ToString();
+        
+        var stream = new MemoryStream(ObjectData);
+        
+        if (Layout != Layout.Compressed) return new StreamReader(stream).ReadToEnd();
+        
+        var zInStream = new GZipInputStream(stream);
+        return new StreamReader(zInStream).ReadToEnd();
+        
     }
 
-    /// <summary>
-    ///     Transform selected properties to a JObject. Alias names cam be specified
-    /// </summary>
-    /// <param name="valuesOrder"></param>
-    /// <param name="valueNames">names in the returned json</param>
-    /// <returns></returns>
-    private JObject ToJObject(int[] valuesOrder, [CanBeNull] string[] valueNames)
+    
+
+    private JsonObject ToJsonObject(int[] valuesOrder, string[] valueNames)
     {
-        var result = new JObject();
+        var result = new JsonObject();
 
         var index = 0;
         foreach (var i in valuesOrder)
@@ -188,10 +179,10 @@ public sealed class PackedObject
             if (i < Values.Length) // scalar value
             {
                 var kv = Values[i];
-                var jp = kv.ToJson(valueNames[index]);
+                var jp = kv.ToJsonValue();
 
 
-                result.Add(jp);
+                result.Add(valueNames[index], jp);
             }
             else // collections
             {
@@ -199,8 +190,11 @@ public sealed class PackedObject
 
                 var collection = CollectionValues[collectionIndex];
 
-                var array = new JArray();
-                foreach (var keyValue in collection.Values) array.Add(keyValue.ToJson(collection.Name).Value);
+                var array = new JsonArray();
+                foreach (var keyValue in collection.Values)
+                {
+                    array.Add(keyValue.ToJsonValue());
+                }
 
                 result.Add(collection.Name, array);
             }
@@ -211,16 +205,18 @@ public sealed class PackedObject
         return result;
     }
 
-    private JObject ToJObjectForFlatLayout(CollectionSchema schema)
+    public JsonObject ToJsonObjectForFlatLayout(CollectionSchema schema)
     {
-        var result = new JObject();
+        var result = new JsonObject();
 
         var index = 0;
         foreach (var kv in Values)
         {
-            var jp = kv.ToJson(schema.ServerSide[index].Name);
+            var name = schema.ServerSide[index].Name;
+            
+            var jv = kv.ToJsonValue();
 
-            result.Add(jp);
+            result.Add(name, jv);
 
             index++;
         }
@@ -238,66 +234,25 @@ public sealed class PackedObject
     public byte[] GetData(int[] valuesOrder, string[] valueNames)
     {
         if (valuesOrder.Length > 0)
-            return SerializationHelper.ObjectToBytes(ToJObject(valuesOrder, valueNames), SerializationMode.Json,
+            return SerializationHelper.ObjectToBytes(ToJsonObject(valuesOrder, valueNames), SerializationMode.Json,
                 Layout == Layout.Compressed);
 
         return ObjectData;
     }
 
-
-    public byte[] GetServerSideData(CollectionSchema schema)
-    {
-        var result = new JObject();
-
-        foreach (var info in schema.ServerSide)
-            if (!info.IsCollection)
-            {
-                var jp = Values[info.Order].ToJson(info.Name);
-                result.Add(jp);
-            }
-            else
-            {
-                var values = CollectionValues[info.Order];
-                var array = new JArray();
-
-                foreach (var keyValue in values.Values) array.Add(keyValue.ToJson(info.Name).Value);
-
-                result.Add(info.Name, array);
-            }
-
-
-        return SerializationHelper.ObjectToBytes(result, SerializationMode.Json, Layout == Layout.Compressed);
-    }
-
-
-    /// <summary>
-    ///     Pack data that is not represented as a dotnet object
-    /// </summary>
-    /// <param name="propertyValues"></param>
-    /// <param name="description"></param>
-    /// <returns></returns>
-    public static PackedObject PackDictionary(IDictionary<string, object> propertyValues,
-                                              CollectionSchema description)
-    {
-        var json = JsonConvert.SerializeObject(propertyValues);
-
-        return PackJson(json, description);
-    }
+    
 
     public static PackedObject PackJson(string json, CollectionSchema collectionSchema)
     {
-        JsonReader reader = new JsonTextReader(new StringReader(json));
-        reader.DateParseHandling = DateParseHandling.DateTime;
-
-        var jObject = JObject.Load(reader);
-        return PackJson(jObject, collectionSchema);
+        var jDoc = JsonDocument.Parse(json);
+        
+        return PackJson(jDoc, collectionSchema);
     }
 
-    public static PackedObject PackJson(JObject jObject, CollectionSchema collectionSchema,
+    public static PackedObject PackJson(JsonDocument jObject, CollectionSchema collectionSchema,
                                         string collectionName = null)
     {
-        if (jObject.Type == JTokenType.Array) throw new NotSupportedException("Pack called on a json array");
-
+        
         var result = new PackedObject
         {
             // scalar values that are visible server-side
@@ -311,33 +266,37 @@ public sealed class PackedObject
         var collectionPos = 0;
         foreach (var metadata in collectionSchema.ServerSide)
         {
-            var jKey = jObject.Property(metadata.JsonName);
-
+            if (!jObject.RootElement.TryGetProperty(metadata.JsonName, out var jKey) && !metadata.IsCollection)
+            {
+                // as default values are ignored in json set 0 if primary key, null otherwise
+                result.Values[pos++] = metadata.IndexType == IndexType.Primary?new KeyValue(0): new KeyValue(null);
+                continue;
+            }
 
             if (!metadata.IsCollection)
             {
-                result.Values[pos++] = jKey.JTokenToKeyValue(metadata);
+                result.Values[pos++] = jObject.RootElement.JsonPropertyToKeyValue(metadata);
             }
             else
             {
-                if (jKey?.Value.Type == JTokenType.Array)
+                if (jKey.ValueKind == JsonValueKind.Array)
                 {
                     if (metadata.IndexType == IndexType.Ordered)
                         throw new NotSupportedException(
                             $"The property {metadata.Name} is a collection. It can be indexed as a dictionary but not as an ordered index");
 
-                    var keyValues = jKey.Value.Children().Select(j => j.JTokenToKeyValue(metadata));
+                    var keyValues = jKey.JsonPropertyToKeyValues(metadata);
 
-                    result.CollectionValues[collectionPos++] = new(metadata.Name, keyValues);
+                    result.CollectionValues[collectionPos++] = keyValues;
                 }
-                else if (jKey?.Value == null) // create an empty collection if no data
+                else if (jKey.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined) // create an empty collection if no data
                 {
                     result.CollectionValues[collectionPos++] = new(metadata.Name, Enumerable.Empty<KeyValue>());
                 }
                 else
                 {
                     throw new NotSupportedException(
-                        $"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {jKey?.Name} ");
+                        $"The property {metadata.Name} is declared as a collection in the schema but the value is not a collection: {metadata.JsonName} ");
                 }
             }
         }
@@ -348,35 +307,18 @@ public sealed class PackedObject
 
         foreach (var fulltext in collectionSchema.FullText)
         {
-            var jKey = jObject.Property(fulltext);
-
-            if (jKey == null)
+            if(!jObject.RootElement.TryGetProperty(fulltext, out var jKey))
+            {
                 continue;
+            }
 
-            if (jKey.Value.Type == JTokenType.Array)
-                foreach (var jToken in jKey.Value.Children())
-                    if (jToken.Type == JTokenType.String)
-                    {
-                        lines.Add((string)jToken);
-                    }
-                    else
-                    {
-                        var child = (JObject)jToken;
-
-                        foreach (var jToken1 in child.Children())
-                        {
-                            var field = (JProperty)jToken1;
-                            if (field.Value.Type == JTokenType.String && !field.Name.StartsWith('$'))
-                                lines.Add((string)field);
-                        }
-                    }
-            else
-                lines.Add((string)jKey);
+            jKey.ExtractTextFromJsonElement(lines);
+            
         }
 
         result.FullText = lines.ToArray();
 
-
+         
         if (collectionSchema.StorageLayout != Layout.Flat)
             result.ObjectData = SerializationHelper.ObjectToBytes(jObject, SerializationMode.Json,
                 collectionSchema.StorageLayout == Layout.Compressed);
@@ -479,7 +421,11 @@ public sealed class PackedObject
     /// <returns> </returns>
     public static T Unpack<T>(PackedObject packedObject, CollectionSchema schema)
     {
-        if (packedObject.Layout == Layout.Flat) return JsonConvert.DeserializeObject<T>(packedObject.GetJson(schema));
+        if (packedObject.Layout == Layout.Flat)
+        {
+            var json = packedObject.GetJson(schema);
+            return SerializationHelper.ObjectFromCompactJson<T>(json);
+        }
 
         return SerializationHelper.ObjectFromBytes<T>(packedObject.ObjectData, SerializationMode.Json,
             packedObject.Layout == Layout.Compressed);
@@ -487,8 +433,7 @@ public sealed class PackedObject
 
     /// <summary>
     ///     Repack an object with a new schema. Old schema is required only for flat layout as the json is not stored in the
-    ///     object
-    ///     and it has to be regenerated
+    ///     object, and it has to be regenerated
     /// </summary>
     /// <param name="packedObject"></param>
     /// <param name="oldSchema"></param>
@@ -500,36 +445,7 @@ public sealed class PackedObject
         return PackJson(json, newSchema);
     }
 
-    private bool Equals(PackedObject other)
-    {
-        return PrimaryKey.Equals(other.PrimaryKey);
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (ReferenceEquals(null, obj))
-            return false;
-        if (ReferenceEquals(this, obj))
-            return true;
-        if (obj.GetType() != GetType())
-            return false;
-        return Equals((PackedObject)obj);
-    }
-
-    public override int GetHashCode()
-    {
-        return PrimaryKey.GetHashCode();
-    }
-
-    public static bool operator ==(PackedObject left, PackedObject right)
-    {
-        return Equals(left, right);
-    }
-
-    public static bool operator !=(PackedObject left, PackedObject right)
-    {
-        return !Equals(left, right);
-    }
+    
 
     public KeyValues Collection(int order)
     {

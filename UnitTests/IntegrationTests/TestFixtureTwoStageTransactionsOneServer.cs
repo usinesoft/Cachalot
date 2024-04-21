@@ -10,6 +10,7 @@ using Client;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData.MoneyTransfer;
 
@@ -141,15 +142,15 @@ namespace Tests.IntegrationTests
                     var src = accounts[accountIds[0]];
                     var dst = accounts[accountIds[1]];
 
-                    Assert.AreEqual(666, src.Balance);
-                    Assert.AreEqual(334, dst.Balance);
+                    ClassicAssert.AreEqual(666, src.Balance);
+                    ClassicAssert.AreEqual(334, dst.Balance);
 
                     var transfers = connector.DataSource<MoneyTransfer>();
 
                     var transfer = transfers.Single();
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
 
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
                 }
 
 
@@ -179,8 +180,8 @@ namespace Tests.IntegrationTests
                     }
                     catch (CacheException e)
                     {
-                        Assert.IsTrue(e.IsTransactionException);
-                        Assert.AreEqual(ExceptionType.ConditionNotSatisfied, e.ExceptionType);
+                        ClassicAssert.IsTrue(e.IsTransactionException);
+                        ClassicAssert.AreEqual(ExceptionType.ConditionNotSatisfied, e.ExceptionType);
 
                         Console.WriteLine(e);
                     }
@@ -190,15 +191,15 @@ namespace Tests.IntegrationTests
                     var src = accounts[accountIds[0]];
                     var dst = accounts[accountIds[1]];
 
-                    Assert.AreEqual(666, src.Balance);
-                    Assert.AreEqual(334, dst.Balance);
+                    ClassicAssert.AreEqual(666, src.Balance);
+                    ClassicAssert.AreEqual(334, dst.Balance);
 
                     var transfers = connector.DataSource<MoneyTransfer>();
 
                     var transfer = transfers.Single();
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
 
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
                 }
             }
 
@@ -213,14 +214,14 @@ namespace Tests.IntegrationTests
                 var src = accounts[accountIds[0]];
                 var dst = accounts[accountIds[1]];
 
-                Assert.AreEqual(666, src.Balance);
-                Assert.AreEqual(334, dst.Balance);
+                ClassicAssert.AreEqual(666, src.Balance);
+                ClassicAssert.AreEqual(334, dst.Balance);
 
                 var transfers = connector.DataSource<MoneyTransfer>();
 
                 var transfer = transfers.Single();
 
-                Assert.AreEqual(334, transfer.Amount);
+                ClassicAssert.AreEqual(334, transfer.Amount);
             }
         }
 
@@ -240,7 +241,7 @@ namespace Tests.IntegrationTests
                 accounts.Put(new Account { Id = accountIds[1], Balance = 0 });
 
                 var all = accounts.ToList();
-                Assert.AreEqual(2, all.Count);
+                ClassicAssert.AreEqual(2, all.Count);
 
                 // run in parallel a sequence of transactions and clients that check that the sum of the balances of the two accounts is 
                 // always the same (thus proving that the two accounts are updated transactionally)
@@ -250,12 +251,12 @@ namespace Tests.IntegrationTests
                     {
                         Parallel.For(0, 100, i =>
                         {
-                            // check the some of two balances is always 1000
+                            // check the sum of two balances is always 1000
                             var myAccounts = accounts.ToList();
-                            Assert.AreEqual(2, myAccounts.Count);
+                            ClassicAssert.AreEqual(2, myAccounts.Count);
 
                             var sum = myAccounts.Sum(acc => acc.Balance);
-                            Assert.AreEqual(1000, sum);
+                            ClassicAssert.AreEqual(1000, sum);
 
                             //Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
                         });
@@ -285,11 +286,17 @@ namespace Tests.IntegrationTests
                             //Console.WriteLine("transfer done");
                         }
                     });
+
+                all = accounts.ToList();
+                var sum = all.Sum(acc => acc.Balance);
+                Console.WriteLine($"sum is {sum}");
             }
 
             // check that the data is persistent (force the external server to reload data)
             StopServers();
             StartServers();
+
+            
             using (var connector = new Connector(_clientConfig))
             {
                 connector.DeclareCollection<Account>();
@@ -297,13 +304,16 @@ namespace Tests.IntegrationTests
 
                 var accounts = connector.DataSource<Account>();
                 var myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
+                ClassicAssert.AreEqual(2, myAccounts.Count);
 
 
                 var sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
+                Console.WriteLine($"sum is {sum}");
+                Console.WriteLine($"first is {myAccounts[0].Balance}");
+                Console.WriteLine($"second is {myAccounts[1].Balance}");
+                ClassicAssert.AreEqual(1000, sum);
 
-                Assert.IsTrue(myAccounts.All(acc => acc.Balance < 1000),
+                ClassicAssert.IsTrue(myAccounts.All(acc => acc.Balance < 1000),
                     "The balance is unchanged when reloading data");
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
@@ -332,10 +342,10 @@ namespace Tests.IntegrationTests
 
                 // check the sum of two balances is always 1000
                 var myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
+                ClassicAssert.AreEqual(2, myAccounts.Count);
 
                 var sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
+                ClassicAssert.AreEqual(1000, sum);
 
                 srcAccount.Balance -= 10;
                 dstAccount.Balance += 10;
@@ -357,12 +367,12 @@ namespace Tests.IntegrationTests
 
                 // check the some of two balances is always 1000
                 myAccounts = accounts.ToList();
-                Assert.AreEqual(2, myAccounts.Count);
+                ClassicAssert.AreEqual(2, myAccounts.Count);
 
                 sum = myAccounts.Sum(acc => acc.Balance);
-                Assert.AreEqual(1000, sum);
+                ClassicAssert.AreEqual(1000, sum);
 
-                Assert.IsFalse(myAccounts.Any(acc => acc.Balance == 0));
+                ClassicAssert.IsFalse(myAccounts.Any(acc => acc.Balance == 0));
 
                 Console.WriteLine($"balance1={myAccounts[0].Balance} balance2={myAccounts[1].Balance}");
             }

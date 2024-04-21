@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Client.ChannelInterface;
 using Client.Interface;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
+
 
 #endregion
 
@@ -299,7 +299,7 @@ public static class Streamer
         
     }
 
-    public static void ToStreamMany(Stream stream, ICollection<JObject> items)
+    public static void ToStreamMany(Stream stream, ICollection<JsonDocument> items)
     {
         var bufferedStream = new BufferedStream(stream);
         var writer = new BinaryWriter(bufferedStream);
@@ -310,8 +310,8 @@ public static class Streamer
 
         foreach (var item in items)
         {
-            var data = SerializationHelper.ObjectToBytes(item, SerializationMode.Json, false);
-
+            var data = JsonSerializer.SerializeToUtf8Bytes(item);
+            
             writer.Write(false);
             writer.Write(false);
             writer.Write((double)0); // no rank
@@ -323,56 +323,9 @@ public static class Streamer
     }
 
 
-    public static IEnumerable<RankedItem> EnumerableFromStream(Stream stream)
-    {
-        var reader = new BinaryReader(stream);
+    
 
-        var items = reader.ReadInt32();
-        for (var i = 0; i < items; i++)
-        {
-            var useProtocolBuffers = reader.ReadBoolean();
-            var useCompression = reader.ReadBoolean();
-            var rank = reader.ReadDouble();
-            var dataSize = reader.ReadInt32();
-            var data = reader.ReadBytes(dataSize);
-
-            using var memStream = new MemoryStream(data);
-
-            var mode = SerializationMode.Json;
-            if (useProtocolBuffers)
-                mode = SerializationMode.ProtocolBuffers;
-
-            var deserializationFailure = false;
-            JObject result = null;
-            try
-            {
-                result = SerializationHelper.ObjectFromStream<JObject>(memStream, mode, useCompression);
-                if (!result.HasValues)
-                    deserializationFailure = true;
-            }
-            catch (Exception)
-            {
-                deserializationFailure = true;
-            }
-
-            if (deserializationFailure)
-            {
-                memStream.Seek(0, SeekOrigin.Begin);
-                var exception = SerializationHelper.ObjectFromStream<ExceptionResponse>(memStream, mode,
-                    useCompression);
-
-                if (exception != null) throw new CacheException("Exception from server:" + exception.Message);
-
-                var message = "Received an unknown item type while expecting JObject";
-                throw new StreamingException(message);
-            }
-
-
-            yield return new(rank, result);
-        }
-    }
-
-    public static IEnumerable<RankedItem2> EnumerableFromStream2(Stream stream)
+    public static IEnumerable<RankedItem> EnumerableFromStream2(Stream stream)
     {
         var reader = new BinaryReader(stream);
 

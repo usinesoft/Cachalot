@@ -1,42 +1,43 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Client.Core;
 using Client.Interface;
-using Newtonsoft.Json;
+
 
 namespace Tests.TestData
 {
     public class Business
     {
         [ServerSideValue(IndexType.Primary)]
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
 
         [FullTextIndexation]
-        [JsonProperty("streetAddress")]
+        [JsonPropertyName("streetAddress")]
         public string StreetAddress { get; set; }
 
         [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
-        [JsonProperty("city")]
+        [JsonPropertyName("city")]
         public string City { get; set; }
 
         [FullTextIndexation]
         [ServerSideValue(IndexType.Dictionary)]
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
 
         [ServerSideValue(IndexType.Dictionary)]
-        [JsonProperty("stars")]
+        [JsonPropertyName("stars")]
         public double Stars { get; set; }
 
         [ServerSideValue(IndexType.Dictionary)]
         [FullTextIndexation]
-        [JsonProperty("categories")]
+        [JsonPropertyName("categories")]
         public List<string> Categories { get; set; }
 
         [FullTextIndexation]
-        [JsonProperty("reviews")]
+        [JsonPropertyName("reviews")]
         public List<Review> Reviews { get; set; }
     }
 }

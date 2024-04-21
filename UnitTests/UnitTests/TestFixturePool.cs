@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Tests.UnitTests
 {
@@ -14,18 +15,18 @@ namespace Tests.UnitTests
 
             //this call will claim an external resource
             pool.Get();
-            Assert.AreEqual(1, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(1, pool.NewResourceClaims);
 
             //this one too
             var res2 = pool.Get();
-            Assert.AreEqual(2, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(2, pool.NewResourceClaims);
 
             //now we put a resource back to the pool
             pool.Put(res2);
 
             //this call should be served with the pooled resource
             _ = pool.Get();
-            Assert.AreEqual(2, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(2, pool.NewResourceClaims);
         }
 
         [Test]
@@ -51,7 +52,7 @@ namespace Tests.UnitTests
 
             //as consumer threads are much faster than the resource provider, most of the connections
             //are recycled ones not new ones
-            Assert.IsTrue(claimCount <= pool.MaxPendingClaims);
+            ClassicAssert.IsTrue(claimCount <= pool.MaxPendingClaims);
         }
 
         [Test]
@@ -59,24 +60,24 @@ namespace Tests.UnitTests
         {
             var pool = new SlowProviderPool(4, 3);
 
-            Assert.AreEqual(3, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(3, pool.NewResourceClaims);
 
-            Assert.AreEqual(3, pool.ResourcesInPool);
+            ClassicAssert.AreEqual(3, pool.ResourcesInPool);
 
             //three requests should be served by the pool without claiming external resource
             var res1 = pool.Get();
             var res2 = pool.Get();
             var res3 = pool.Get();
 
-            Assert.AreEqual(3, pool.NewResourceClaims, 3);
+            ClassicAssert.AreEqual(3, pool.NewResourceClaims, 3);
 
             //this one is claimed from outside
             var res4 = pool.Get();
-            Assert.AreEqual(4, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(4, pool.NewResourceClaims);
 
             //this one too
             var res5 = pool.Get();
-            Assert.AreEqual(5, pool.NewResourceClaims);
+            ClassicAssert.AreEqual(5, pool.NewResourceClaims);
 
             //put back 5 resources ( the first one should be released as capacity is exceeded)
             pool.Put(res1);
@@ -85,10 +86,10 @@ namespace Tests.UnitTests
             pool.Put(res4);
             pool.Put(res5);
 
-            Assert.AreEqual(4, pool.ResourcesInPool, 4);
+            ClassicAssert.AreEqual(4, pool.ResourcesInPool, 4);
             //res1 was released, the next returned one should be res2
             var res2Again = pool.Get();
-            Assert.AreSame(res2, res2Again);
+            ClassicAssert.AreSame(res2, res2Again);
         }
 
         [Test]
@@ -96,7 +97,7 @@ namespace Tests.UnitTests
         {
             using var pool = new UnreliableProviderPool(4);
 
-            Assert.IsTrue(pool.NewResourceClaims <= 3);
+            ClassicAssert.IsTrue(pool.NewResourceClaims <= 3);
 
             var validCount = 0;
             var nonNull = 0;
@@ -120,10 +121,10 @@ namespace Tests.UnitTests
             }
 
 
-            Assert.IsTrue(validCount == nonNull && nonNull < 5000);
-            Assert.IsTrue(validCount > 1000); //around 90% of the resources should be valid
+            ClassicAssert.IsTrue(validCount == nonNull && nonNull < 5000);
+            ClassicAssert.IsTrue(validCount > 1000); //around 90% of the resources should be valid
 
-            Assert.IsTrue(pool.NewResourceClaims > 3);
+            ClassicAssert.IsTrue(pool.NewResourceClaims > 3);
 
             pool.ClearAll();
         }

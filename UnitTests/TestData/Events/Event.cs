@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 using Client.Core;
 using Client.Interface;
 
@@ -6,6 +7,9 @@ using Client.Interface;
 
 namespace Tests.TestData.Events
 {
+    [JsonDerivedType(typeof(FixingEvent), 1)]
+    [JsonDerivedType(typeof(Increase),2)]
+    [JsonDerivedType(typeof(Create), 3)]
     public abstract class Event
     {
         [ServerSideValue(IndexType.Primary)] public int EventId { get; set; }

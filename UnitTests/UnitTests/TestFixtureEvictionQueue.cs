@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Client.Core;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -32,17 +33,17 @@ namespace Tests.UnitTests
                 queue.AddNew(packedItem);
             }
 
-            Assert.IsTrue(queue.EvictionRequired);
-            Assert.AreEqual(queue.Count, 10000);
+            ClassicAssert.IsTrue(queue.EvictionRequired);
+            ClassicAssert.AreEqual(queue.Count, 10000);
             ICollection<PackedObject> evicted = queue.Go();
 
             //should have removed 100 more than ( 10000 - 1000 )
-            Assert.AreEqual(queue.Count, 900);
-            Assert.IsFalse(queue.EvictionRequired);
-            Assert.AreEqual(evicted.Count, 9100);
+            ClassicAssert.AreEqual(queue.Count, 900);
+            ClassicAssert.IsFalse(queue.EvictionRequired);
+            ClassicAssert.AreEqual(evicted.Count, 9100);
             //asking for eviction when bellow maximum capacity will not remove any item
             evicted = queue.Go();
-            Assert.AreEqual(evicted.Count, 0);
+            ClassicAssert.AreEqual(evicted.Count, 0);
         }
 
         [Test]
@@ -78,15 +79,15 @@ namespace Tests.UnitTests
 
             //items in queue now: 0 1 2 3 4 5 6 7 8 9 
 
-            Assert.IsTrue(queue.EvictionRequired);
+            ClassicAssert.IsTrue(queue.EvictionRequired);
             var evicted = queue.Go();
 
             //items in queue: 3 4 5 6 7 8 9 
 
-            Assert.AreEqual(evicted.Count, 3);
+            ClassicAssert.AreEqual(evicted.Count, 3);
 
-            Assert.AreEqual(evicted[0].PrimaryKey, 0);
-            Assert.AreEqual(evicted[1].PrimaryKey, 1);
+            ClassicAssert.AreEqual(evicted[0].PrimaryKey, 0);
+            ClassicAssert.AreEqual(evicted[1].PrimaryKey, 1);
 
             queue.Touch(allItems[3]);
             //items in queue: 4 5 6 7 8 9 3
@@ -97,10 +98,10 @@ namespace Tests.UnitTests
             queue.Capacity = 7;
             evicted = queue.Go();
 
-            Assert.AreEqual(evicted.Count, 2);
+            ClassicAssert.AreEqual(evicted.Count, 2);
 
-            Assert.AreEqual(evicted[0].PrimaryKey, 5);
-            Assert.AreEqual(evicted[1].PrimaryKey, 6);
+            ClassicAssert.AreEqual(evicted[0].PrimaryKey, 5);
+            ClassicAssert.AreEqual(evicted[1].PrimaryKey, 6);
         }
 
 
@@ -126,15 +127,15 @@ namespace Tests.UnitTests
             queue.TryRemove(allItems[2]);
 
             //items in queue now: 1 3 4 5 6 7 8 9 
-            Assert.IsTrue(queue.EvictionRequired);
+            ClassicAssert.IsTrue(queue.EvictionRequired);
             var evicted = queue.Go();
 
             //items in queue now: 5 6 7 8 9 
 
-            Assert.AreEqual(evicted.Count, 3);
+            ClassicAssert.AreEqual(evicted.Count, 3);
 
-            Assert.AreEqual(evicted[0].PrimaryKey, 1);
-            Assert.AreEqual(evicted[1].PrimaryKey, 3);
+            ClassicAssert.AreEqual(evicted[0].PrimaryKey, 1);
+            ClassicAssert.AreEqual(evicted[1].PrimaryKey, 3);
         }
     }
 }

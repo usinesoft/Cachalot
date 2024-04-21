@@ -4,10 +4,10 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Nodes;
 using Client.Interface;
 using Client.Tools;
 using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
 using ProtoBuf;
 
 #endregion
@@ -93,10 +93,10 @@ public sealed class KeyValue : IComparable<KeyValue>
             case DateTime dt when dt == default:
                 FromDateTimeWithTimeZone(default);
                 return;
-            // ignore the offset if simple date (tough but I think good decision)
+            // ignore the offset if simple date (tough, but I think good decision)
             case DateTime dt:
             {
-                if (dt == dt.Date)
+                if (dt == dt.Date || dt.Kind == DateTimeKind.Unspecified)
                 {
                     FromDateTimeWithTimeZone(new(dt.Ticks, TimeSpan.Zero));
                 }
@@ -215,10 +215,17 @@ public sealed class KeyValue : IComparable<KeyValue>
 
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
-                    return SmartDateTimeConverter.FormatDate(new(IntValue, DateTimeKind.Utc));
+                {
+                    var date = new DateTime(IntValue);
+                    
+                    return date == date.Date
+                        ? date.ToString("yyyy-MM-dd")
+                        : date.ToString("yyyy-MM-dd HH:mm:ss");
+                    
+                }
 
                 var offset = BitConverter.ToInt64(_data, 0);
-                return SmartDateTimeConverter.FormatDate(new DateTimeOffset(IntValue, new(offset)).DateTime);
+                return new DateTimeOffset(IntValue, new(offset)).ToString("o");
 
             case OriginalType.String:
                 return StringValue;
@@ -231,37 +238,39 @@ public sealed class KeyValue : IComparable<KeyValue>
         }
     }
 
-    public JProperty ToJson(string name)
+    
+
+    public JsonValue ToJsonValue()
     {
         var type = Type;
 
         switch (type)
         {
             case OriginalType.SomeInteger:
-                return new(name, IntValue);
+                return JsonValue.Create(IntValue);
 
             case OriginalType.SomeFloat:
-                return new(name, NumericValue);
+                return JsonValue.Create(NumericValue);
 
             case OriginalType.Boolean:
-                return new(name, IntValue != 0);
+                return JsonValue.Create(IntValue != 0);
 
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
-                    return new(name, new DateTime(IntValue, DateTimeKind.Utc));
+                    return JsonValue.Create(new DateTime(IntValue, DateTimeKind.Unspecified));
 
                 var offset = BitConverter.ToInt64(_data, 0);
 
-                return new(name, new DateTimeOffset(IntValue, new(offset)));
+                return JsonValue.Create(new DateTimeOffset(IntValue, new(offset)));
 
             case OriginalType.String:
-                return new(name, StringValue);
+                return JsonValue.Create(StringValue);
 
             case OriginalType.Null:
-                return new(name, null!);
+                return null;
 
             default:
-                return new(name, StringValue);
+                return JsonValue.Create(StringValue);
         }
     }
 

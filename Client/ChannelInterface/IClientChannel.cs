@@ -29,8 +29,8 @@ public interface IClientChannel : IDisposable
     void ReleaseConnection(Guid sessionId);
 
 
-    IEnumerable<RankedItem> SendStreamRequest(Request request);
-    IEnumerable<RankedItem2> SendStreamRequest2(Request request);
+    
+    IEnumerable<RankedItem> SendStreamRequest2(Request request);
 
     //Start a complex communication session
     Session BeginSession();

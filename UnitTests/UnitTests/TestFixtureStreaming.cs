@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
 using Client.Queries;
 using Client.Tools;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using ProtoBuf;
 using Tests.TestData;
 
@@ -18,6 +20,12 @@ namespace Tests.UnitTests
     [TestFixture]
     public class TestFixtureStreaming
     {
+
+        static int Value(JsonDocument jd)
+        {
+            return jd.RootElement.GetProperty("value").GetInt32();
+        }
+
         [OneTimeSetUp]
         public void Init()
         {
@@ -39,7 +47,7 @@ namespace Tests.UnitTests
             var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.ProtocolBuffers, false);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<ProtoData>(b1, SerializationMode.ProtocolBuffers, false);
-            Assert.IsNotNull(item1Reloaded);
+            ClassicAssert.IsNotNull(item1Reloaded);
 
             using (var ms = new MemoryStream())
             {
@@ -47,7 +55,7 @@ namespace Tests.UnitTests
                 ms.Seek(0, SeekOrigin.Begin);
                 item1Reloaded =
                     SerializationHelper.ObjectFromStream<ProtoData>(ms, SerializationMode.ProtocolBuffers, false);
-                Assert.IsNotNull(item1Reloaded);
+                ClassicAssert.IsNotNull(item1Reloaded);
             }
         }
 
@@ -61,7 +69,7 @@ namespace Tests.UnitTests
             var b1 = SerializationHelper.ObjectToBytes(item1, SerializationMode.Json, true);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, true);
-            Assert.IsNotNull(item1Reloaded);
+            ClassicAssert.IsNotNull(item1Reloaded);
 
             using (var ms = new MemoryStream())
             {
@@ -69,11 +77,11 @@ namespace Tests.UnitTests
                 ms.Seek(0, SeekOrigin.Begin);
                 item1Reloaded =
                     SerializationHelper.ObjectFromStream<CacheableTypeOk>(ms, SerializationMode.Json, true);
-                Assert.IsNotNull(item1Reloaded);
+                ClassicAssert.IsNotNull(item1Reloaded);
                 ms.Seek(0, SeekOrigin.Begin);
                 item1Reloaded =
                     SerializationHelper.ObjectFromStream<CacheableTypeOk>(ms, SerializationMode.Json, true);
-                Assert.IsNotNull(item1Reloaded);
+                ClassicAssert.IsNotNull(item1Reloaded);
             }
         }
 
@@ -87,7 +95,7 @@ namespace Tests.UnitTests
                 desc.StorageLayout == Layout.Compressed);
             var item1Reloaded =
                 SerializationHelper.ObjectFromBytes<CacheableTypeOk>(b1, SerializationMode.Json, false);
-            Assert.IsNotNull(item1Reloaded);
+            ClassicAssert.IsNotNull(item1Reloaded);
 
             using (var ms = new MemoryStream())
             {
@@ -95,7 +103,7 @@ namespace Tests.UnitTests
                 ms.Seek(0, SeekOrigin.Begin);
                 item1Reloaded =
                     SerializationHelper.ObjectFromStream<CacheableTypeOk>(ms, SerializationMode.Json, false);
-                Assert.IsNotNull(item1Reloaded);
+                ClassicAssert.IsNotNull(item1Reloaded);
             }
         }
 
@@ -118,7 +126,7 @@ namespace Tests.UnitTests
                     SerializationHelper.ObjectFromBytes<PackedObject>(data, SerializationMode.ProtocolBuffers, false);
 
 
-                Assert.AreEqual(reloaded.Values[2], packed.Values[2]);
+                ClassicAssert.AreEqual(reloaded.Values[2], packed.Values[2]);
 
                 Console.WriteLine(reloaded);
             }
@@ -152,7 +160,7 @@ namespace Tests.UnitTests
             evt.WaitOne();
 
 
-            for (var i = 0; i < 1000; i++) Assert.AreEqual(itemsReloaded[i].Values[2], items[i].Values[2]);
+            for (var i = 0; i < 1000; i++) ClassicAssert.AreEqual(itemsReloaded[i].Values[2], items[i].Values[2]);
         }
 
         [Test]
@@ -181,16 +189,16 @@ namespace Tests.UnitTests
                 Streamer.FromStream(stream,
                     delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
-                        Assert.IsTrue(currentItem > 0);
-                        Assert.IsTrue(currentItem <= totalItems);
+                        ClassicAssert.IsTrue(currentItem > 0);
+                        ClassicAssert.IsTrue(currentItem <= totalItems);
 
                         itemsReceived++;
 
-                        Assert.AreEqual(itemsReceived, data.PrimaryKey);
+                        ClassicAssert.AreEqual(itemsReceived, data.PrimaryKey);
                     },
                     delegate { Assert.Fail(); });
 
-                Assert.AreEqual(itemsReceived, 3);
+                ClassicAssert.AreEqual(itemsReceived, 3);
             }
         }
 
@@ -207,8 +215,8 @@ namespace Tests.UnitTests
                 stream.Seek(0, SeekOrigin.Begin);
 
                 var itemReloaded = Streamer.FromStream<CacheableTypeOk>(stream);
-                Assert.IsNotNull(itemReloaded);
-                Assert.AreEqual(itemReloaded, item);
+                ClassicAssert.IsNotNull(itemReloaded);
+                ClassicAssert.AreEqual(itemReloaded, item);
             }
         }
 
@@ -227,8 +235,8 @@ namespace Tests.UnitTests
                 stream.Seek(0, SeekOrigin.Begin);
 
                 var itemReloaded = Streamer.FromStream<CacheableTypeOk>(stream);
-                Assert.IsNotNull(itemReloaded);
-                Assert.AreEqual(itemReloaded, item);
+                ClassicAssert.IsNotNull(itemReloaded);
+                ClassicAssert.AreEqual(itemReloaded, item);
             }
         }
 
@@ -246,14 +254,14 @@ namespace Tests.UnitTests
                 Streamer.FromStream(stream,
                     delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
-                        Assert.IsTrue(currentItem > 0);
-                        Assert.IsTrue(currentItem <= totalItems);
+                        ClassicAssert.IsTrue(currentItem > 0);
+                        ClassicAssert.IsTrue(currentItem <= totalItems);
 
                         itemsReceived++;
                     },
                     delegate { Assert.Fail(); });
 
-                Assert.AreEqual(itemsReceived, 1);
+                ClassicAssert.AreEqual(itemsReceived, 1);
             }
         }
 
@@ -289,16 +297,16 @@ namespace Tests.UnitTests
                 Streamer.FromStream(stream,
                     delegate(CacheableTypeOk data, int currentItem, int totalItems)
                     {
-                        Assert.IsTrue(currentItem > 0);
-                        Assert.IsTrue(currentItem <= totalItems);
+                        ClassicAssert.IsTrue(currentItem > 0);
+                        ClassicAssert.IsTrue(currentItem <= totalItems);
 
                         itemsReceived++;
 
-                        Assert.AreEqual(itemsReceived, data.PrimaryKey);
+                        ClassicAssert.AreEqual(itemsReceived, data.PrimaryKey);
                     },
                     delegate { Assert.Fail(); });
 
-                Assert.AreEqual(itemsReceived, 3);
+                ClassicAssert.AreEqual(itemsReceived, 3);
             }
         }
 
@@ -339,27 +347,27 @@ namespace Tests.UnitTests
 
                 stream.Seek(0, SeekOrigin.Begin);
                 object reloaded = Streamer.FromStream<Request>(stream);
-                Assert.IsTrue(reloaded is GetRequest);
+                ClassicAssert.IsTrue(reloaded is GetRequest);
 
                 //request
                 reloaded = Streamer.FromStream<Request>(stream);
-                Assert.IsTrue(reloaded is PutRequest);
+                ClassicAssert.IsTrue(reloaded is PutRequest);
 
                 reloaded = Streamer.FromStream<Request>(stream);
-                Assert.IsTrue(reloaded is RemoveRequest);
+                ClassicAssert.IsTrue(reloaded is RemoveRequest);
 
                 reloaded = Streamer.FromStream<Request>(stream);
-                Assert.IsTrue(reloaded is RegisterTypeRequest);
+                ClassicAssert.IsTrue(reloaded is RegisterTypeRequest);
 
                 ////response
                 reloaded = Streamer.FromStream<Response>(stream);
-                Assert.IsTrue(reloaded is NullResponse);
+                ClassicAssert.IsTrue(reloaded is NullResponse);
 
                 reloaded = Streamer.FromStream<Response>(stream);
-                Assert.IsTrue(reloaded is ExceptionResponse);
+                ClassicAssert.IsTrue(reloaded is ExceptionResponse);
 
                 reloaded = Streamer.FromStream<Response>(stream);
-                Assert.IsTrue(reloaded is ServerDescriptionResponse);
+                ClassicAssert.IsTrue(reloaded is ServerDescriptionResponse);
             }
         }
 
@@ -381,7 +389,7 @@ namespace Tests.UnitTests
             var original = PackedObject.Unpack<CacheableTypeOk>(reloaded, schema);
 
 
-            Assert.IsTrue(original is CacheableTypeOk);
+            ClassicAssert.IsTrue(original is CacheableTypeOk);
         }
 
 
@@ -395,7 +403,7 @@ namespace Tests.UnitTests
             Serializer.Serialize(stream, kval);
             stream.Seek(0, SeekOrigin.Begin);
             var reloaded = Serializer.Deserialize<KeyValue>(stream);
-            Assert.AreEqual(kval, reloaded);
+            ClassicAssert.AreEqual(kval, reloaded);
 
             stream.Seek(0, SeekOrigin.Begin);
             var obj = new TradeLike(1, 1001, "aaa", new DateTime(2009, 10, 10), 0);
@@ -405,9 +413,9 @@ namespace Tests.UnitTests
             Serializer.SerializeWithLengthPrefix(stream, packed, PrefixStyle.Fixed32);
             stream.Seek(0, SeekOrigin.Begin);
             var t1 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t1.Values[4].ToString(), "0");
+            ClassicAssert.AreEqual(t1.Values[4].ToString(), "0");
             var t2 = Serializer.DeserializeWithLengthPrefix<PackedObject>(stream, PrefixStyle.Fixed32);
-            Assert.AreEqual(t2.Values[4].ToString(), "0");
+            ClassicAssert.AreEqual(t2.Values[4].ToString(), "0");
         }
 
 
@@ -415,24 +423,27 @@ namespace Tests.UnitTests
         {
             foreach (var value in values)
             {
-                var jobj = new JObject { { "value", new JValue(value) } };
+                var jsonObject = new JsonObject{ { "value", value } };
 
-                yield return new RankedItem(0, jobj);
+
+                yield return new RankedItem(0, jsonObject.Deserialize<JsonDocument>());
             }
         }
 
         [Test]
         public void TestMergingSortedEnumerableAscending()
         {
+            
+
             {
                 var ordered = OrderByHelper.MixOrderedEnumerators("value", false, MakeEnumerable(1, 2, 4),
                     MakeEnumerable(1, 3, 5),
                     MakeEnumerable(1, 5, 6, 18)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.LessOrEqual(Value(ordered[i].Item), Value(ordered[i+1].Item));
             }
 
             {
@@ -440,10 +451,10 @@ namespace Tests.UnitTests
                     MakeEnumerable(15, 15, 15),
                     MakeEnumerable(2, 2, 2, 2)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.LessOrEqual(Value(ordered[i].Item), Value(ordered[i + 1].Item));
             }
 
             {
@@ -451,10 +462,10 @@ namespace Tests.UnitTests
                     MakeEnumerable(1, 2, 3),
                     MakeEnumerable(21, 22, 23, 24)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.LessOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.LessOrEqual(Value(ordered[i].Item), Value(ordered[i + 1].Item));
             }
         }
 
@@ -466,10 +477,10 @@ namespace Tests.UnitTests
                     MakeEnumerable(5, 3, 1),
                     MakeEnumerable(18, 6, 5, 1)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.GreaterOrEqual(Value(ordered[i].Item), Value(ordered[i + 1].Item));
             }
 
             {
@@ -477,10 +488,10 @@ namespace Tests.UnitTests
                     MakeEnumerable(15, 15, 15),
                     MakeEnumerable(2, 2, 2, 2)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.GreaterOrEqual(Value(ordered[i].Item), Value(ordered[i + 1].Item));
             }
 
             {
@@ -488,10 +499,10 @@ namespace Tests.UnitTests
                     MakeEnumerable(3, 2, 1),
                     MakeEnumerable(24, 23, 22, 21)).ToList();
 
-                Assert.AreEqual(10, ordered.Count);
+                ClassicAssert.AreEqual(10, ordered.Count);
 
                 for (var i = 0; i < ordered.Count - 1; i++)
-                    Assert.GreaterOrEqual((int)ordered[i].Item["value"], (int)ordered[i + 1].Item["value"]);
+                    ClassicAssert.GreaterOrEqual(Value(ordered[i].Item), Value(ordered[i + 1].Item));
             }
         }
     }

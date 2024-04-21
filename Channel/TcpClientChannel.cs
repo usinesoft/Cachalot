@@ -76,39 +76,9 @@ public sealed class TcpClientChannel : IClientChannel
 
     #region IClientChannel Members
 
-    public IEnumerable<RankedItem> SendStreamRequest(Request request)
-    {
-        if (request == null)
-            throw new ArgumentNullException(nameof(request));
+    
 
-        var sessionId = Guid.Empty;
-        if (request is IHasSession hasSession) sessionId = hasSession.SessionId;
-
-        var connection = InternalGetConnection(sessionId);
-
-
-        if (connection is not { Connected: true })
-            throw new CacheException("Not connected to server");
-
-        var stream = connection.GetStream();
-        try
-        {
-            stream.WriteByte(Constants.RequestCookie);
-            Streamer.ToStream(stream, request);
-
-
-            var enumerable = Streamer.EnumerableFromStream(stream);
-            foreach (var item in enumerable)
-                yield return item;
-        }
-        finally
-        {
-            
-            if (sessionId == Guid.Empty) _connectionPool.Put(connection);
-        }
-    }
-
-    public IEnumerable<RankedItem2> SendStreamRequest2(Request request)
+    public IEnumerable<RankedItem> SendStreamRequest2(Request request)
     {
         if (request == null)
             throw new ArgumentNullException(nameof(request));

@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Client;
 using Client.Core;
 using Client.Interface;
-using Newtonsoft.Json.Linq;
+
 
 namespace AdminConsole.Commands;
 
@@ -17,7 +18,7 @@ public class CommandSearch : CommandBase
 
         Dbg.CheckThat(Params.Count == 2);
 
-        IList<JObject> listResult = null;
+        IList<JsonDocument> listResult = null;
 
         try
         {

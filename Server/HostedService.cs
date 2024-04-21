@@ -1,10 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using Channel;
-using Client.Core;
-using Newtonsoft.Json;
 using Constants = Server.Persistence.Constants;
 
 namespace Server;
@@ -45,8 +44,8 @@ public class HostedService
             {
                 try
                 {
-                    var configFromFile = SerializationHelper.FormattedSerializer.Deserialize<NodeConfig>(
-                        new JsonTextReader(new StringReader(File.ReadAllText(configFile))));
+                    var configFromFile = JsonSerializer.Deserialize<NodeConfig>(File.ReadAllText(configFile));
+
 
                     nodeConfig = configFromFile;
 
@@ -90,7 +89,7 @@ public class HostedService
             Log.LogInfo(
                 $"Starting hosted service on port {nodeConfig.TcpPort} persistent = {persistentDescription}");
 
-            _cacheServer.StopRequired += (sender, args) =>
+            _cacheServer.StopRequired += (_, _) =>
             {
                 Stop();
 

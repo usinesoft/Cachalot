@@ -12,6 +12,7 @@ using Client;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 using Tests.TestData.Events;
@@ -137,12 +138,12 @@ namespace Tests.IntegrationTests
                 // this one can be served from cache
                 var result = homes.Where(h => h.Town == "Paris" && h.Rooms >= 2).OnlyIfComplete().ToList();
 
-                Assert.AreEqual(2, result.Count);
+                ClassicAssert.AreEqual(2, result.Count);
 
                 // this one too
                 result = homes.Where(h => h.Town == "Nice" && h.Rooms == 2).OnlyIfComplete().ToList();
 
-                Assert.AreEqual(1, result.Count);
+                ClassicAssert.AreEqual(1, result.Count);
 
                 // this one thrown an exception as the query is not a subset of the domain
                 Assert.Throws<CacheException>(() =>
@@ -196,12 +197,12 @@ namespace Tests.IntegrationTests
                 var res = trades
                     .Where(t => t.IsDestroyed == false && t.TradeDate == DateTime.Today.AddDays(-1)).OnlyIfComplete()
                     .ToList();
-                Assert.AreEqual(1, res.Count);
+                ClassicAssert.AreEqual(1, res.Count);
 
                 // this one too
                 res = trades.Where(t => t.IsDestroyed == false && t.MaturityDate == DateTime.Today)
                     .OnlyIfComplete().ToList();
-                Assert.AreEqual(1, res.Count);
+                ClassicAssert.AreEqual(1, res.Count);
 
                 // this one thrown an exception as the query is not a subset of the domain
                 Assert.Throws<CacheException>(() =>
@@ -247,7 +248,7 @@ namespace Tests.IntegrationTests
                 dataSource.DeclareFullyLoaded();
 
                 var fixings = dataSource.Where(e => e.EventType == "FIXING").OnlyIfComplete().ToList();
-                Assert.Greater(fixings.Count, 0);
+                ClassicAssert.Greater(fixings.Count, 0);
 
 
                 // declare that data is not available again
@@ -263,7 +264,7 @@ namespace Tests.IntegrationTests
                 dataSource.DeclareLoadedDomain(p => p.EventType == "FIXING");
                 fixings = dataSource
                     .Where(e => e.EventType == "FIXING" && e.EventDate == DateTime.Today).OnlyIfComplete().ToList();
-                Assert.Greater(fixings.Count, 0);
+                ClassicAssert.Greater(fixings.Count, 0);
 
                 // the next query can not be guaranteed to be complete
 
@@ -303,11 +304,11 @@ namespace Tests.IntegrationTests
                 dataSource.PutMany(events);
 
                 var fixings = dataSource.Count(e => e.EventType == "FIXING");
-                Assert.IsTrue(fixings > 50, "fixings > 50");
+                ClassicAssert.IsTrue(fixings > 50, "fixings > 50");
 
 
                 var list = dataSource.Where(e => e.EventType == "FIXING").Take(10).ToList();
-                Assert.AreEqual(10, list.Count);
+                ClassicAssert.AreEqual(10, list.Count);
             }
         }
 
@@ -337,7 +338,7 @@ namespace Tests.IntegrationTests
                 }
 
                 var count = trades.Count();
-                Assert.LessOrEqual(count, 50);
+                ClassicAssert.LessOrEqual(count, 50);
 
                 // check that eviction is triggered by PUT MANY operations
                 var list = new List<Trade>();
@@ -357,7 +358,7 @@ namespace Tests.IntegrationTests
                 trades.PutMany(list);
 
                 count = trades.Count();
-                Assert.LessOrEqual(count, 50);
+                ClassicAssert.LessOrEqual(count, 50);
             }
         }
 
@@ -373,13 +374,13 @@ namespace Tests.IntegrationTests
 
                 var trade = provider.GetTrade(11);
 
-                Assert.IsNotNull(trade);
-                Assert.IsFalse(provider.LastOneWasFromCache);
+                ClassicAssert.IsNotNull(trade);
+                ClassicAssert.IsFalse(provider.LastOneWasFromCache);
 
                 trade = provider.GetTrade(11);
 
-                Assert.IsNotNull(trade);
-                Assert.IsTrue(provider.LastOneWasFromCache);
+                ClassicAssert.IsNotNull(trade);
+                ClassicAssert.IsTrue(provider.LastOneWasFromCache);
             }
             finally
             {
@@ -438,7 +439,7 @@ namespace Tests.IntegrationTests
             Console.WriteLine(
                 $"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
 
-            Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
+            ClassicAssert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
 
             pivot.CheckPivot();
 

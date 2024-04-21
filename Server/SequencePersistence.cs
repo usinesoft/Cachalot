@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Server.Persistence;
 
 namespace Server;
@@ -12,20 +11,18 @@ internal class SequencePersistence : ISequencePersistence
     private readonly INodeConfig _config;
 
 
-    private readonly JsonSerializer _jsonSerializer;
-
-    private readonly JsonSerializerSettings _schemaSerializerSettings = new()
+    private readonly JsonSerializerOptions _schemaSerializerSettings = new()
     {
-        Formatting = Formatting.Indented
-    };
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
 
+    };
     private readonly object _syncRoot = new();
 
     public SequencePersistence(INodeConfig config)
     {
         _config = config;
-        _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
-        _jsonSerializer.Converters.Add(new StringEnumConverter());
+      
     }
 
     public Dictionary<string, int> LoadValues(string fullPath)
@@ -45,8 +42,7 @@ internal class SequencePersistence : ISequencePersistence
 
             var json = File.ReadAllText(path);
 
-            return _jsonSerializer.Deserialize<Dictionary<string, int>>(
-                new JsonTextReader(new StringReader(json)));
+            return JsonSerializer.Deserialize<Dictionary<string, int>>(json);
         }
     }
 
@@ -71,11 +67,9 @@ internal class SequencePersistence : ISequencePersistence
 
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
 
-            var sb = new StringBuilder();
+            
+            var json = JsonSerializer.Serialize(lastValueByName, _schemaSerializerSettings);
 
-            _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), lastValueByName);
-
-            var json = sb.ToString();
 
             File.WriteAllText(filePath, json);
         }

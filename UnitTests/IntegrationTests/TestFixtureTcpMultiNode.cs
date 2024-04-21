@@ -7,6 +7,7 @@ using System.Threading;
 using Channel;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -92,7 +93,7 @@ namespace Tests.IntegrationTests
 
             var itemsReloaded = _aggregator.GetMany<CacheableTypeOk>(x => x.IndexKeyFolder == "aaa").ToList();
 
-            Assert.AreEqual(113, itemsReloaded.Count);
+            ClassicAssert.AreEqual(113, itemsReloaded.Count);
         }
     }
 }

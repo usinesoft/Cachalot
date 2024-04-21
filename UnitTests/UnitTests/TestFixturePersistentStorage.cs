@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 
 namespace Tests.UnitTests
@@ -59,7 +60,7 @@ namespace Tests.UnitTests
                 storage.StoreBlock(data, "a1", 150);
                 storage.StoreBlock(data, "a2", 150);
 
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
             }
 
             var processor = new NullProcessor();
@@ -68,7 +69,7 @@ namespace Tests.UnitTests
                 storage.LoadPersistentData();
 
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
                 storage.DeleteBlock("a1", 44);
             }
@@ -77,11 +78,11 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount); // deleted blocks are counted too
+                ClassicAssert.AreEqual(2, storage.BlockCount); // deleted blocks are counted too
             }
 
-            Assert.AreEqual(1, processor.ProcessedBlocks.Count);
-            CollectionAssert.AreEqual(data, processor.ProcessedBlocks[0]);
+            ClassicAssert.AreEqual(1, processor.ProcessedBlocks.Count);
+            ClassicAssert.AreEqual(data, processor.ProcessedBlocks[0]);
         }
 
         [Test]
@@ -165,7 +166,7 @@ namespace Tests.UnitTests
                     storage.LoadPersistentData();
                     w.Stop();
 
-                    Assert.AreEqual(10000, storage.InactiveBlockCount);
+                    ClassicAssert.AreEqual(10000, storage.InactiveBlockCount);
                 }
 
 
@@ -191,7 +192,7 @@ namespace Tests.UnitTests
                 storage.CleanStorage();
                 w.Stop();
 
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
 
                 Console.WriteLine(
                     $"Storage cleaning took {w.ElapsedMilliseconds} milliseconds");
@@ -211,7 +212,7 @@ namespace Tests.UnitTests
                     storage.LoadPersistentData();
                     w.Stop();
 
-                    Assert.AreEqual(0, storage.InactiveBlockCount);
+                    ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
                 }
 
 
@@ -232,7 +233,7 @@ namespace Tests.UnitTests
 
             Console.WriteLine("min size is " + stream.Position);
 
-            Assert.AreEqual(35, stream.Position,
+            ClassicAssert.AreEqual(35, stream.Position,
                 "smallest block size changed (was 35). Code must be updated: PersistentBlock.MinSize constant ");
         }
 
@@ -244,14 +245,14 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
                 storage.StoreBlock(new byte[] { 1, 2, 3, 4, 5 }, "a2", 151);
                 storage.StoreBlock(new byte[] { 21, 22, 23, 24, 25 }, "a3", 152);
 
-                Assert.AreEqual(3, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
 
                 storage.MakeCorruptedBlock("a2");
             }
@@ -261,16 +262,16 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.AreEqual(2, storage.Keys.Count);
+                ClassicAssert.AreEqual(2, storage.Keys.Count);
 
-                Assert.AreEqual(1, storage.CorruptedBlocks);
+                ClassicAssert.AreEqual(1, storage.CorruptedBlocks);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
             }
 
 
@@ -278,14 +279,14 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.AreEqual(0, storage.CorruptedBlocks);
+                ClassicAssert.AreEqual(0, storage.CorruptedBlocks);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
             }
         }
 
@@ -297,14 +298,14 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
                 storage.StoreBlock(new byte[] { 1, 2, 3, 4, 5 }, "a2", 151);
                 storage.StoreBlock(new byte[] { 21, 22, 23, 24, 25 }, "a3", 152);
 
-                Assert.AreEqual(3, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
 
                 storage.MakeCorruptedBlock("a2");
             }
@@ -313,17 +314,17 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor(), null, "backup"))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
 
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.AreEqual(3, storage.Keys.Count);
+                ClassicAssert.AreEqual(3, storage.Keys.Count);
 
-                Assert.AreEqual(1, storage.CorruptedBlocks);
+                ClassicAssert.AreEqual(1, storage.CorruptedBlocks);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
             }
 
 
@@ -332,15 +333,15 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
 
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.AreEqual(0, storage.CorruptedBlocks);
+                ClassicAssert.AreEqual(0, storage.CorruptedBlocks);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
 
 
                 // do some updates after recovery
@@ -354,15 +355,15 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(4, storage.BlockCount); // deleted blocks are counted too
+                ClassicAssert.AreEqual(4, storage.BlockCount); // deleted blocks are counted too
 
-                Assert.AreEqual(2, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.InactiveBlockCount);
 
-                Assert.AreEqual(0, storage.CorruptedBlocks);
+                ClassicAssert.AreEqual(0, storage.CorruptedBlocks);
 
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
-                Assert.IsTrue(storage.Keys.Contains("a4"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a4"));
             }
 
             // check the backup storage
@@ -370,11 +371,11 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(4, storage.BlockCount); // deleted blocks are counted too
+                ClassicAssert.AreEqual(4, storage.BlockCount); // deleted blocks are counted too
 
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
-                Assert.IsTrue(storage.Keys.Contains("a4"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a4"));
             }
         }
 
@@ -452,7 +453,7 @@ namespace Tests.UnitTests
             var info1 = new FileInfo(Path.Combine(Constants.DataPath, ReliableStorage.StorageFileName));
             var info2 = new FileInfo(Path.Combine("backup", ReliableStorage.StorageFileName));
 
-            Assert.AreEqual(info1.Length, info2.Length);
+            ClassicAssert.AreEqual(info1.Length, info2.Length);
         }
 
 
@@ -464,12 +465,12 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
                 storage.StoreBlock(new byte[] { 11, 12, 13, 14 }, "a2", 151);
 
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
             }
 
 
@@ -478,25 +479,25 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 21, 22, 23 }, "a3", 150); // new block
 
                 storage.StoreBlock(new byte[] { 11, 12, 13, 14, 15 }, "a2", 155); // in place update of old block
 
-                Assert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
             }
 
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(3, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
             }
 
             // load again and make an update that can not be done in-place
@@ -504,12 +505,12 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 11, 12, 13, 14, 15, 16, 17, 18 }, "a2", 155);
 
-                Assert.AreEqual(3, storage.BlockCount);
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
             }
 
 
@@ -517,12 +518,12 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(3, storage.BlockCount);
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(3, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.IsTrue(storage.Keys.Contains("a1"));
-                Assert.IsTrue(storage.Keys.Contains("a2"));
-                Assert.IsTrue(storage.Keys.Contains("a3"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a1"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a2"));
+                ClassicAssert.IsTrue(storage.Keys.Contains("a3"));
             }
         }
 
@@ -576,23 +577,23 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
                 storage.StoreBlock(new byte[] { 1, 2, 3 }, "a1", 150);
 
 
-                Assert.AreEqual(1, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(1, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
             }
 
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(1, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.BlockCount);
 
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
             }
         }
 
@@ -618,14 +619,14 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(smallArray1, "a1", 150);
                 storage.StoreBlock(smallArray2, "a2", 150);
 
 
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
             }
 
             var processor = new NullProcessor();
@@ -634,13 +635,13 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
-                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+                ClassicAssert.AreEqual(2, processor.ProcessedBlocks.Count);
 
 
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
 
 
                 // We store resized blocks. The first one should be written at the end
@@ -652,8 +653,8 @@ namespace Tests.UnitTests
                 storage.StoreBlock(largerArray2, "a2", 150);
 
 
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
             }
 
             processor = new NullProcessor();
@@ -661,14 +662,14 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(1, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.InactiveBlockCount);
 
-                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+                ClassicAssert.AreEqual(2, processor.ProcessedBlocks.Count);
 
                 // the large one will be at the end as it was written to a new block at the end
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], largeArray1);
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largerArray2);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[1], largeArray1);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[0], largerArray2);
             }
         }
 
@@ -685,14 +686,14 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(new NullProcessor()))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(0, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.BlockCount);
 
                 storage.StoreBlock(largeArray1, "a1", 150);
                 storage.StoreBlock(smallArray2, "a2", 150);
 
 
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
             }
 
             var processor = new NullProcessor();
@@ -701,13 +702,13 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
 
-                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+                ClassicAssert.AreEqual(2, processor.ProcessedBlocks.Count);
 
 
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], largeArray1);
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[0], largeArray1);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
 
 
                 // We store one resized block and one unchanged
@@ -718,8 +719,8 @@ namespace Tests.UnitTests
                 storage.StoreBlock(smallArray2, "a2", 150);
 
 
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
             }
 
             processor = new NullProcessor();
@@ -727,14 +728,14 @@ namespace Tests.UnitTests
             using (var storage = new ReliableStorage(processor))
             {
                 storage.LoadPersistentData();
-                Assert.AreEqual(2, storage.BlockCount);
-                Assert.AreEqual(0, storage.InactiveBlockCount);
+                ClassicAssert.AreEqual(2, storage.BlockCount);
+                ClassicAssert.AreEqual(0, storage.InactiveBlockCount);
 
-                Assert.AreEqual(2, processor.ProcessedBlocks.Count);
+                ClassicAssert.AreEqual(2, processor.ProcessedBlocks.Count);
 
 
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
-                CollectionAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[0], smallArray1);
+                ClassicAssert.AreEqual(processor.ProcessedBlocks[1], smallArray2);
             }
         }
 
@@ -750,7 +751,7 @@ namespace Tests.UnitTests
 
                 storage.StoreBlock(data, "a1", 150);
 
-                Assert.AreEqual(1, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.BlockCount);
             }
 
             var processor = new NullProcessor();
@@ -758,11 +759,11 @@ namespace Tests.UnitTests
             {
                 storage.LoadPersistentData();
 
-                Assert.AreEqual(1, storage.BlockCount);
+                ClassicAssert.AreEqual(1, storage.BlockCount);
             }
 
-            Assert.AreEqual(1, processor.ProcessedBlocks.Count);
-            CollectionAssert.AreEqual(data, processor.ProcessedBlocks[0]);
+            ClassicAssert.AreEqual(1, processor.ProcessedBlocks.Count);
+            ClassicAssert.AreEqual(data, processor.ProcessedBlocks[0]);
         }
 
 
@@ -802,7 +803,7 @@ namespace Tests.UnitTests
 
                     var reloaded = processor.ProcessedBlocks.Single(x => x[0] == key1);
 
-                    CollectionAssert.AreEqual(data1, reloaded);
+                    ClassicAssert.AreEqual(data1, reloaded);
 
                     storage.CleanStorage();
                 }

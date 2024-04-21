@@ -3,19 +3,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using Client.ChannelInterface;
 using Client.Core;
-using Newtonsoft.Json.Linq;
 
 #endregion
 
 namespace Channel;
 
 /// <summary>
-///     In process channel (for tests only)
+///     In process channel
 /// </summary>
-public class InProcessChannel : IClientChannel, IServerChannel
+public sealed class InProcessChannel : IClientChannel, IServerChannel
 {
     #region IDisposable Members
 
@@ -37,9 +37,10 @@ public class InProcessChannel : IClientChannel, IServerChannel
         // nothing to do in this case
     }
 
-    private class ClientData : IClient
+    private sealed class ClientData : IClient
     {
         private readonly ManualResetEvent _dataReceived;
+        
         private readonly MemoryStream _stream;
 
         public ClientData()
@@ -64,7 +65,8 @@ public class InProcessChannel : IClientChannel, IServerChannel
             _dataReceived.Set();
         }
 
-        public void SendMany(ICollection<JObject> items)
+        
+        public void SendMany(ICollection<JsonDocument> items)
         {
             Streamer.ToStreamMany(_stream, items);
             _stream.Seek(0, SeekOrigin.Begin);
@@ -124,21 +126,9 @@ public class InProcessChannel : IClientChannel, IServerChannel
     }
 
 
-    public IEnumerable<RankedItem> SendStreamRequest(Request request)
-    {
-        if (RequestReceived != null)
-        {
-            var client = new ClientData();
-            RequestReceived(this, new(request, client));
-            var stream = client.WaitForData();
-            return Streamer.EnumerableFromStream(stream);
-        }
+    
 
-        // otherwise return empty collection
-        return new List<RankedItem>();
-    }
-
-    public IEnumerable<RankedItem2> SendStreamRequest2(Request request)
+    public IEnumerable<RankedItem> SendStreamRequest2(Request request)
     {
         if (RequestReceived != null)
         {
@@ -149,7 +139,7 @@ public class InProcessChannel : IClientChannel, IServerChannel
         }
 
         // otherwise return empty collection
-        return new List<RankedItem2>();
+        return new List<RankedItem>();
     }
 
 

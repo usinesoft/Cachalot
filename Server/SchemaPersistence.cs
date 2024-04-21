@@ -1,8 +1,8 @@
 using System.IO;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Client.Core;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
 using Constants = Server.Persistence.Constants;
 
 namespace Server;
@@ -11,23 +11,26 @@ internal class SchemaPersistence : ISchemaPersistence
 {
     private readonly INodeConfig _config;
 
-    private readonly JsonSerializer _jsonSerializer;
+    
 
-    private readonly JsonSerializerSettings _schemaSerializerSettings = new()
+    private readonly JsonSerializerOptions _schemaSerializerSettings = new()
     {
-        Formatting = Formatting.Indented
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+
     };
 
     public SchemaPersistence(INodeConfig config)
     {
         _config = config;
-        _jsonSerializer = JsonSerializer.Create(_schemaSerializerSettings);
-        _jsonSerializer.Converters.Add(new StringEnumConverter());
+        
     }
 
     public Schema LoadSchema(string fullPath = null)
     {
         var path = fullPath;
+
+
         if (fullPath == null) path = Path.Combine(_config.DataPath, Constants.DataPath);
 
 
@@ -35,17 +38,13 @@ internal class SchemaPersistence : ISchemaPersistence
 
         var json = File.ReadAllText(path);
 
-        return _jsonSerializer.Deserialize<Schema>(
-            new JsonTextReader(new StringReader(json)));
+        return JsonSerializer.Deserialize<Schema>(json, _schemaSerializerSettings);
     }
 
     public void SaveSchema(Schema schema, string schemaDirectory = null)
     {
-        var sb = new StringBuilder();
 
-        _jsonSerializer.Serialize(new JsonTextWriter(new StringWriter(sb)), schema);
-
-        var json = sb.ToString();
+        var json = JsonSerializer.Serialize(schema, _schemaSerializerSettings);
 
 
         var path = schemaDirectory;

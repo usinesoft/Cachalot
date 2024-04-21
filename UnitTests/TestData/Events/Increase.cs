@@ -4,6 +4,7 @@ namespace Tests.TestData.Events
 {
     public class Increase : NegotiatedEvent
     {
+        public Increase() { }
         public Increase(int id, decimal delta, string dealId)
         {
             EventId = id;

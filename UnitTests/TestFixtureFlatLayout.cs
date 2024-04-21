@@ -1,6 +1,7 @@
 ﻿using System;
 using Client.Core;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -14,7 +15,9 @@ namespace Tests.UnitTests
         public void Pack_and_unpack_an_object_with_flat_layout()
         {
             var schema1 = TypedSchemaFactory.FromType(typeof(FlatWithAllKindsOfProperties));
-            Assert.AreEqual(Layout.Flat, schema1.StorageLayout);
+            
+            Assert.That(schema1.StorageLayout, Is.EqualTo(Layout.Flat));
+            ClassicAssert.AreEqual(Layout.Flat, schema1.StorageLayout);
 
             var today = DateTime.Today;
             var now = DateTime.Now;
@@ -36,14 +39,14 @@ namespace Tests.UnitTests
 
             var data1 = SerializationHelper.ObjectToBytes(packed1, SerializationMode.ProtocolBuffers, false);
 
-            Assert.IsNull(packed1.ObjectData);
+            Assert.That(packed1.ObjectData, Is.Null);
 
             var json1 = packed1.GetJson(schema1);
 
             var packed2 = PackedObject.PackJson(json1, schema1);
             var json2 = packed2.GetJson(schema1);
 
-            Assert.AreEqual(json1, json2);
+            Assert.That(json1, Is.EqualTo(json2));
 
             // alter the schema to switch to default layout
             schema1.StorageLayout = Layout.Default;
@@ -51,7 +54,7 @@ namespace Tests.UnitTests
 
             var data2 = SerializationHelper.ObjectToBytes(packed3, SerializationMode.ProtocolBuffers, false);
 
-            Assert.Greater(data2.Length, data1.Length);
+            Assert.That(data2.Length, Is.GreaterThan( data1.Length));
 
             // compare with compressed layout
             schema1.StorageLayout = Layout.Compressed;
@@ -59,7 +62,7 @@ namespace Tests.UnitTests
 
             var data3 = SerializationHelper.ObjectToBytes(packed4, SerializationMode.ProtocolBuffers, false);
 
-            Assert.Greater(data2.Length, data3.Length);
+            ClassicAssert.Greater(data2.Length, data3.Length);
         }
     }
 }

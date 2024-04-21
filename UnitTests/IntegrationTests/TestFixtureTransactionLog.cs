@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 
 namespace Tests.IntegrationTests
@@ -29,7 +30,7 @@ namespace Tests.IntegrationTests
                 var transaction = log.StartProcessing();
 
                 // when released by a dispose the result is empty
-                Assert.IsNull(transaction);
+                ClassicAssert.IsNull(transaction);
 
                 workerFinished = true;
             });
@@ -39,7 +40,7 @@ namespace Tests.IntegrationTests
             Thread.Sleep(300);
 
             // check that the worker is blocked
-            Assert.IsFalse(workerFinished);
+            ClassicAssert.IsFalse(workerFinished);
 
             log.Dispose();
 
@@ -81,17 +82,17 @@ namespace Tests.IntegrationTests
             Thread.Sleep(300);
 
             // check that the worker is blocked
-            Assert.IsFalse(workerFinished);
+            ClassicAssert.IsFalse(workerFinished);
 
             log.NewTransaction(new byte[] { 1, 2, 3 });
             Thread.Sleep(100);
-            Assert.AreEqual(1, processed);
-            Assert.IsFalse(workerFinished);
+            ClassicAssert.AreEqual(1, processed);
+            ClassicAssert.IsFalse(workerFinished);
 
             log.NewTransaction(new byte[] { 2, 3, 4 });
             Thread.Sleep(100);
-            Assert.AreEqual(2, processed);
-            Assert.IsFalse(workerFinished);
+            ClassicAssert.AreEqual(2, processed);
+            ClassicAssert.IsFalse(workerFinished);
 
             log.Dispose();
 
@@ -134,7 +135,7 @@ namespace Tests.IntegrationTests
             log = new TransactionLog();
 
             // process all the transactions
-            Assert.AreEqual(3000, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(3000, log.PendingTransactionsCount);
 
             {
                 var sw = new Stopwatch();
@@ -159,7 +160,7 @@ namespace Tests.IntegrationTests
 
             //reload
             log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
 
             // check that is still works after cleanup
             log.NewTransaction(t1);
@@ -171,7 +172,7 @@ namespace Tests.IntegrationTests
             log.Dispose();
 
             log = new TransactionLog();
-            Assert.AreEqual(2, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(2, log.PendingTransactionsCount);
             log.Dispose();
 
             Console.WriteLine(log.FileAsString());
@@ -209,7 +210,7 @@ namespace Tests.IntegrationTests
 
             log.CancelTransaction();
 
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
 
             log.Dispose();
 
@@ -217,7 +218,7 @@ namespace Tests.IntegrationTests
 
             // canceled transactions should not be reloaded
             log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
 
             // cancel a delayed transaction while it is processed
             log.NewTransaction(t1, 100);
@@ -231,7 +232,7 @@ namespace Tests.IntegrationTests
             {
                 var transaction = log.StartProcessing();
 
-                Assert.IsNull(transaction);
+                ClassicAssert.IsNull(transaction);
             }
             finally
             {
@@ -250,7 +251,7 @@ namespace Tests.IntegrationTests
 
             var transaction = log.StartProcessing();
 
-            Assert.IsTrue(DateTime.Now - transaction.TimeStamp > TimeSpan.FromMilliseconds(10),
+            ClassicAssert.IsTrue(DateTime.Now - transaction.TimeStamp > TimeSpan.FromMilliseconds(10),
                 "The transaction log should wait for a delayed transaction");
 
             log.EndProcessing(transaction);
@@ -260,7 +261,7 @@ namespace Tests.IntegrationTests
             Console.WriteLine(log.FileAsString());
 
             log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
             log.Dispose();
         }
 
@@ -282,19 +283,19 @@ namespace Tests.IntegrationTests
             //reload
             log = new TransactionLog();
 
-            Assert.AreEqual(2, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(2, log.PendingTransactionsCount);
 
             var data1 = log.StartProcessing();
             log.EndProcessing(data1);
 
-            Assert.AreEqual(1, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(1, log.PendingTransactionsCount);
 
             log.Dispose();
             Console.WriteLine(log.FileAsString());
 
             //reload
             log = new TransactionLog();
-            Assert.AreEqual(1, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(1, log.PendingTransactionsCount);
 
             log.Dispose();
         }

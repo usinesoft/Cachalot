@@ -2,13 +2,12 @@
 
 using System.IO;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ICSharpCode.SharpZipLib.GZip;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
 using ProtoBuf;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 #endregion
 
@@ -16,103 +15,83 @@ namespace Client.Core;
 
 public static class SerializationHelper
 {
-    public static readonly JsonSerializer Serializer = JsonSerializer.Create(JsonSettings());
 
     /// <summary>
-    ///     Create a serializer that produces human readable json
+    /// To serialize human readable Json
     /// </summary>
-    public static JsonSerializer FormattedSerializer
+    static readonly JsonSerializerOptions Options = new()
     {
-        get
-        {
-            var serializer = JsonSerializer.Create(new()
-            {
-                Formatting = Formatting.Indented,
-                TypeNameHandling = TypeNameHandling.None
-            });
-            serializer.Converters.Add(new StringEnumConverter());
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+        Converters = { new JsonStringEnumConverter() },
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        WriteIndented = true,
+    };
 
-            return serializer;
-        }
-    }
-
-
-    private static JsonSerializerSettings JsonSettings()
+    /// <summary>
+    /// To serialize compact Json
+    /// </summary>
+    static readonly JsonSerializerOptions CompactOptions = new()
     {
-        return new()
-        {
-            TypeNameHandling = TypeNameHandling.Objects,
-            Formatting = Formatting.None,
-            NullValueHandling = NullValueHandling.Ignore,
-            DefaultValueHandling = DefaultValueHandling.Include,
-            //DateParseHandling = DateParseHandling.DateTimeOffset,
-            DateFormatHandling = DateFormatHandling.IsoDateFormat
-            //DateTimeZoneHandling = DateTimeZoneHandling.Utc
-        };
-    }
-
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     public static TItem ObjectFromStream<TItem>(Stream stream, SerializationMode mode, bool compress)
 
     {
         if (mode != SerializationMode.Json)
-            return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
+            return Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
 
 
-        JsonTextReader reader;
         if (compress)
         {
             var zInStream = new GZipInputStream(stream);
-            reader = new(new StreamReader(zInStream));
 
-
-            return Serializer.Deserialize<TItem>(reader);
+            return JsonSerializer.Deserialize<TItem>(zInStream, CompactOptions);
         }
 
-
-        reader = new(new StreamReader(stream));
-        return Serializer.Deserialize<TItem>(reader);
+        return JsonSerializer.Deserialize<TItem>(stream, CompactOptions);
     }
 
-    
+
     public static JsonDocument JsonDocumentFromStream(Stream stream, bool compress)
     {
-
         if (compress)
         {
             var zInStream = new GZipInputStream(stream);
-            
+
             return JsonDocument.Parse(zInStream);
         }
 
         return JsonDocument.Parse(stream);
-
     }
 
 
     public static string AsJson(this PackedObject obj, CollectionSchema schema)
     {
-        if (obj.Layout == Layout.Compressed)
+        switch (obj.Layout)
         {
-            var stream = new MemoryStream(obj.ObjectData);
-            using var zInStream = new GZipInputStream(stream);
+            case Layout.Compressed:
+            {
+                var stream = new MemoryStream(obj.ObjectData);
+                using var zInStream = new GZipInputStream(stream);
 
-            var stream2 = new MemoryStream();
-            zInStream.CopyTo(stream2);
+                var stream2 = new MemoryStream();
+                zInStream.CopyTo(stream2);
 
-            var json = Encoding.UTF8.GetString(stream2.ToArray());
+                var json = Encoding.UTF8.GetString(stream2.ToArray());
 
-            return JToken.Parse(json).ToString(Formatting.Indented);
+                return json;
+            }
+            case Layout.Default:
+            {
+                var json = Encoding.UTF8.GetString(obj.ObjectData);
+
+                return json;
+            }
+            default: // flat layout: we need to build the json
+                return obj.GetJson(schema);
         }
-
-        if (obj.Layout == Layout.Default)
-        {
-            var json = Encoding.UTF8.GetString(obj.ObjectData);
-
-            return JToken.Parse(json).ToString(Formatting.Indented);
-        }
-
-        return obj.GetJson(schema);
     }
 
     public static TItem ObjectFromBytes<TItem>(byte[] bytes, SerializationMode mode, bool compress)
@@ -122,7 +101,7 @@ public static class SerializationHelper
 
         if (mode == SerializationMode.Json) return ObjectFromStream<TItem>(stream, mode, compress);
 
-        return ProtoBuf.Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
+        return Serializer.DeserializeWithLengthPrefix<TItem>(stream, PrefixStyle.Base128);
     }
 
     public static void ObjectToStream<TItem>(TItem obj, Stream stream, SerializationMode mode, bool compress)
@@ -133,20 +112,16 @@ public static class SerializationHelper
             {
                 using var outZStream = new GZipOutputStream(stream) { IsStreamOwner = false };
 
-                var writer = new JsonTextWriter(new StreamWriter(outZStream));
-                Serializer.Serialize(writer, obj);
-                writer.Flush();
+                JsonSerializer.Serialize(outZStream, obj, CompactOptions);
             }
             else
             {
-                var writer = new JsonTextWriter(new StreamWriter(stream));
-                Serializer.Serialize(writer, obj);
-                writer.Flush();
+                JsonSerializer.Serialize(stream, obj, CompactOptions);
             }
         }
         else
         {
-            ProtoBuf.Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Base128);
+            Serializer.SerializeWithLengthPrefix(stream, obj, PrefixStyle.Base128);
         }
     }
 
@@ -156,7 +131,7 @@ public static class SerializationHelper
         if (mode == SerializationMode.Json)
             ObjectToStream(obj, output, mode, useCompression);
         else
-            ProtoBuf.Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Base128);
+            Serializer.SerializeWithLengthPrefix(output, obj, PrefixStyle.Base128);
 
         return output.ToArray();
     }
@@ -172,12 +147,34 @@ public static class SerializationHelper
     /// <returns></returns>
     public static string ObjectToJson<TItem>(TItem obj)
     {
-        return JsonConvert.SerializeObject(obj, JsonSettings());
+        return JsonSerializer.Serialize(obj, Options);
+    }
+
+    public static TItem ObjectFromJson<TItem>(string json)
+    {
+        return JsonSerializer.Deserialize<TItem>(json, CompactOptions);
+    }
+
+    public static string ObjectToCompactJson<TItem>(TItem obj)
+    {
+        return JsonSerializer.Serialize(obj, CompactOptions);
+    }
+
+    public static TItem ObjectFromCompactJson<TItem>(string json)
+    {
+        return JsonSerializer.Deserialize<TItem>(json, CompactOptions);
     }
 
 
     public static T DeserializeJson<T>(string json)
     {
-        return FormattedSerializer.Deserialize<T>(new JsonTextReader(new StringReader(json)));
+        return JsonSerializer.Deserialize<T>(json, Options);
     }
+
+    public static T DeserializeJson<T>(JsonDocument jDoc)
+    {
+        return jDoc.Deserialize<T>(Options);
+        
+    }
+    
 }

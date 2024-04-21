@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.Json;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
@@ -77,7 +78,7 @@ public class DataSource<T> : QueryableBase<T>
         {
             var query = new QueryBuilder(_collectionSchema).GetOne(primaryKey);
             query.CollectionName = _collectionName;
-            return _client.GetMany(query).Select(ri => ri.Item.ToObject<T>(SerializationHelper.Serializer))
+            return _client.GetMany(query).Select(ri => ri.Item.Deserialize<T>())
                 .FirstOrDefault();
         }
     }

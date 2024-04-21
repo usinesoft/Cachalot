@@ -1,34 +1,114 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text.Json;
 using Client.Messages;
-using Newtonsoft.Json.Linq;
 
 namespace Client.Core;
 
 public static class JExtensions
 {
-    public static KeyValue JTokenToKeyValue(this JToken jToken, KeyInfo info)
+
+    public static KeyValues JsonPropertyToKeyValues(this JsonElement parent, KeyInfo info)
     {
-        // as we ignore default values on json serialization 
-        // the value can be absent because it is an int value 0
-
-        if (jToken == null) return info.IndexType == IndexType.Primary ? new(0) : new KeyValue(null);
-
-        var valueToken = jToken.HasValues ? jToken.First : jToken;
-
-        if (valueToken?.Type == JTokenType.Integer) return new((long)valueToken);
-
-        if (valueToken?.Type == JTokenType.Float) return new((double)valueToken);
-
-
-        if (valueToken?.Type == JTokenType.Boolean) return new((bool)valueToken);
-
-        if (valueToken?.Type == JTokenType.Date)
+        if (parent.ValueKind != JsonValueKind.Array)
         {
-            return new((DateTime)valueToken);
+            throw new ArgumentException("Not a json array", nameof(parent));
         }
 
-        return new((string)valueToken);
+        return new KeyValues(info.Name, parent.EnumerateArray().Select(x => JsonElementToKeyValue(info, x)));
+
+    }
+
+    public static void ExtractTextFromJsonElement(this JsonElement parent, List<string> lines)
+    {
+        switch (parent.ValueKind)
+        {
+            case JsonValueKind.String:
+            {
+                var txt = parent.GetString();
+                if (!string.IsNullOrWhiteSpace(txt))
+                {
+                    lines.Add(txt);
+                }
+
+                return;
+            }
+            case JsonValueKind.Object:
+            {
+                foreach (var child in parent.EnumerateObject())
+                {
+                    child.Value.ExtractTextFromJsonElement(lines);
+                }
+
+                return;
+            }
+            case JsonValueKind.Array:
+            {
+                foreach (var child in parent.EnumerateArray())
+                {
+                    child.ExtractTextFromJsonElement(lines);
+                }
+
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Convert child element to key value. Can be done only for scalar properties
+    /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="info"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public static KeyValue JsonPropertyToKeyValue(this JsonElement parent, KeyInfo info)
+    {
+
+        if (parent.ValueKind != JsonValueKind.Object)
+        {
+            throw new ArgumentException("Not a json object", nameof(parent));
+        }
+
+        // as we ignore default values on json serialization 
+        // the value can be absent because it is an int value 0
+        if (!parent.TryGetProperty(info.JsonName, out var property))
+        {
+            return info.IndexType == IndexType.Primary ? new(0) : new KeyValue(null);
+        }
+
+        
+        return JsonElementToKeyValue(info, property);
+
+        
+    }
+
+    private static KeyValue JsonElementToKeyValue(KeyInfo info, JsonElement property)
+    {
+        switch (property.ValueKind)
+        {
+            case JsonValueKind.String:
+                return property.TryGetDateTime(out var date) ? new KeyValue(date) : new KeyValue(property.GetString());
+
+            case JsonValueKind.Number:
+                var value = property.GetDecimal();
+                return value == (int)value ? new KeyValue((int)value) : new KeyValue(value);
+
+            case JsonValueKind.True:
+                return new KeyValue(true);
+
+            case JsonValueKind.False:
+                return new KeyValue(false);
+
+            case JsonValueKind.Null:
+                return new KeyValue(null);
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    $"Poperty {info.JsonName} = {property.GetString()} can not be parsed");
+        }
     }
 
     public static object SmartParse(string valueAsString)

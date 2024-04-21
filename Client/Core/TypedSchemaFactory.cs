@@ -4,9 +4,10 @@ using System;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using Client.Interface;
 using Client.Messages;
-using Newtonsoft.Json;
+
 
 #endregion
 
@@ -41,10 +42,10 @@ public static class TypedSchemaFactory
         string jsonName = null;
 
         // the name can be altered by a [JsonProperty] attribute
-        var jsonAttribute = propertyInfo.GetCustomAttributes(typeof(JsonPropertyAttribute), true)
-            .Cast<JsonPropertyAttribute>().FirstOrDefault();
+        var jsonAttribute = propertyInfo.GetCustomAttributes(typeof(JsonPropertyNameAttribute), true)
+            .Cast<JsonPropertyNameAttribute>().FirstOrDefault();
 
-        if (jsonAttribute != null) jsonName = jsonAttribute.PropertyName;
+        if (jsonAttribute != null) jsonName = jsonAttribute.Name;
 
 
         //check if it is visible server-side

@@ -8,6 +8,7 @@ using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 using Tests.TestData.Events;
 using Trade = Tests.TestData.Instruments.Trade;
@@ -45,7 +46,7 @@ namespace Tests.IntegrationTests
 
             var started = _process.Start();
 
-            Assert.IsTrue(started, "failed to run external server");
+            ClassicAssert.IsTrue(started, "failed to run external server");
         }
 
 
@@ -170,8 +171,8 @@ namespace Tests.IntegrationTests
                 var tradeReloaded = trades.Single(t => t.ContractId == trade.ContractId);
                 var eventReloaded = events.Single(e => e.DealId == trade.ContractId);
 
-                Assert.AreEqual(tradeReloaded.Id, trade.Id);
-                Assert.AreEqual(eventReloaded.EventId, evt.EventId);
+                ClassicAssert.AreEqual(tradeReloaded.Id, trade.Id);
+                ClassicAssert.AreEqual(eventReloaded.EventId, evt.EventId);
 
                 // apply an increase event
                 var (newVersion, increase) =
@@ -184,11 +185,11 @@ namespace Tests.IntegrationTests
                 var allVersions = trades.Where(t => t.ContractId == trade.ContractId).ToList()
                     .OrderBy(t => t.Version).ToList();
 
-                Assert.AreEqual(2, allVersions.Count);
-                Assert.AreEqual(1, allVersions[0].Version);
-                Assert.AreEqual(2, allVersions[1].Version);
-                Assert.IsTrue(allVersions[1].IsLastVersion);
-                Assert.IsFalse(allVersions[0].IsLastVersion);
+                ClassicAssert.AreEqual(2, allVersions.Count);
+                ClassicAssert.AreEqual(1, allVersions[0].Version);
+                ClassicAssert.AreEqual(2, allVersions[1].Version);
+                ClassicAssert.IsTrue(allVersions[1].IsLastVersion);
+                ClassicAssert.IsFalse(allVersions[0].IsLastVersion);
             }
         }
 
@@ -309,10 +310,10 @@ namespace Tests.IntegrationTests
                 homes.Put(h3);
 
                 var result = homes.FullTextSearch("gral le clerc");
-                Assert.AreEqual(h3.Id, result.First().Id);
+                ClassicAssert.AreEqual(h3.Id, result.First().Id);
 
                 result = homes.FullTextSearch("amour");
-                Assert.AreEqual(h2.Id, result.First().Id);
+                ClassicAssert.AreEqual(h2.Id, result.First().Id);
             }
         }
 
@@ -357,7 +358,7 @@ namespace Tests.IntegrationTests
 
 
                 var list = dataSource.Where(e => e.EventType == "FIXING").Take(10).ToList();
-                Assert.AreEqual(10, list.Count);
+                ClassicAssert.AreEqual(10, list.Count);
             }
         }
 
@@ -410,7 +411,7 @@ namespace Tests.IntegrationTests
                 Console.WriteLine(
                     $"Computing pivot table for {items} objects took {watch.ElapsedMilliseconds} milliseconds");
 
-                Assert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
+                ClassicAssert.AreEqual(3, pivot.Children.Count, "3 categories should have been returned");
 
                 pivot.CheckPivot();
 
@@ -454,7 +455,7 @@ namespace Tests.IntegrationTests
             Console.WriteLine(
                 $"Getting {ascending.Count} objects with order-by took {watch.ElapsedMilliseconds} milliseconds");
 
-            Assert.AreEqual(noOrder.Count, ascending.Count);
+            ClassicAssert.AreEqual(noOrder.Count, ascending.Count);
 
             watch.Restart();
 
@@ -463,17 +464,17 @@ namespace Tests.IntegrationTests
             Console.WriteLine(
                 $"Getting {descending.Count} objects with order-by descending took {watch.ElapsedMilliseconds} milliseconds");
 
-            Assert.AreEqual(noOrder.Count, descending.Count);
+            ClassicAssert.AreEqual(noOrder.Count, descending.Count);
 
             // check that they are ordered
 
             // check sorted ascending
             for (var i = 0; i < ascending.Count - 1; i++)
-                Assert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
+                ClassicAssert.LessOrEqual((int)ascending[i].Amount * 10000, (int)ascending[i + 1].Amount * 10000);
 
             // check sorted descending
             for (var i = 0; i < descending.Count - 1; i++)
-                Assert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
+                ClassicAssert.GreaterOrEqual((int)descending[i].Amount * 10000, (int)descending[i + 1].Amount * 10000);
 
             watch.Stop();
         }

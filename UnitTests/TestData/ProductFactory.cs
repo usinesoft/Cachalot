@@ -1,5 +1,6 @@
 ﻿using System;
 using Cachalot.Linq;
+using Client.Core;
 using Tests.TestData.Events;
 using Tests.TestData.Instruments;
 
@@ -64,7 +65,8 @@ namespace Tests.TestData
         public (Instruments.Trade trade, Event increaseEvent) IncreaseOption(Instruments.Trade trade,
                                                                              decimal deltaQuantity)
         {
-            var newVersion = trade.Clone();
+            // clone the trade
+            var newVersion = SerializationHelper.ObjectFromCompactJson<Instruments.Trade>(SerializationHelper.ObjectToCompactJson(trade));
 
             var tid = _connector.GenerateUniqueIds("trade_id", 1);
             newVersion.Version++;

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Client.Core;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 using Tests.TestData;
 
@@ -28,15 +29,15 @@ namespace Tests.UnitTests
                 policy.AddItem(packed);
             }
 
-            Assert.IsTrue(policy.IsEvictionRequired);
+            ClassicAssert.IsTrue(policy.IsEvictionRequired);
             var toRemove = policy.DoEviction();
-            Assert.AreEqual(92, toRemove.Count);
+            ClassicAssert.AreEqual(92, toRemove.Count);
 
             var item93 = new CacheableTypeOk(93, 93 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed93 = PackedObject.Pack(item93, schema);
 
             // check that the 93rd item was not removed
-            Assert.IsFalse(toRemove.Any(i => i == packed93));
+            ClassicAssert.IsFalse(toRemove.Any(i => i == packed93));
             policy.Touch(packed93);
 
             var item100 = new CacheableTypeOk(100, 100 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
@@ -51,10 +52,10 @@ namespace Tests.UnitTests
 
             toRemove = policy.DoEviction();
 
-            Assert.AreEqual(2, toRemove.Count);
+            ClassicAssert.AreEqual(2, toRemove.Count);
 
             // item 93 was not removed because it was recently used (the call to Touch)
-            Assert.IsFalse(toRemove.Any(i => i == packed93));
+            ClassicAssert.IsFalse(toRemove.Any(i => i == packed93));
         }
 
         [Test]
@@ -72,9 +73,9 @@ namespace Tests.UnitTests
                 policy.AddItem(packed);
             }
 
-            Assert.IsFalse(policy.IsEvictionRequired);
+            ClassicAssert.IsFalse(policy.IsEvictionRequired);
             var toRemove = policy.DoEviction();
-            Assert.AreEqual(0, toRemove.Count);
+            ClassicAssert.AreEqual(0, toRemove.Count);
 
             var item1 = new CacheableTypeOk(1, 1 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed1 = PackedObject.Pack(item1, schema);
@@ -90,7 +91,7 @@ namespace Tests.UnitTests
 
             // as one item was removed explicitly the eviction should not be triggered yet
             toRemove = policy.DoEviction();
-            Assert.AreEqual(0, toRemove.Count);
+            ClassicAssert.AreEqual(0, toRemove.Count);
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed11 = PackedObject.Pack(item11, schema);
@@ -98,10 +99,10 @@ namespace Tests.UnitTests
             policy.AddItem(packed11);
             // now the eviction should be triggered
             toRemove = policy.DoEviction();
-            Assert.AreEqual(2, toRemove.Count);
+            ClassicAssert.AreEqual(2, toRemove.Count);
 
             // the explicitly removed item should not be in the list
-            Assert.IsFalse(toRemove.Any(i => i == packed1));
+            ClassicAssert.IsFalse(toRemove.Any(i => i == packed1));
         }
 
 
@@ -120,7 +121,7 @@ namespace Tests.UnitTests
             // calling DoEviction on an empty policy should do nothing
             var policy = new LruEvictionPolicy(10, 2);
             var toRemove = policy.DoEviction();
-            Assert.AreEqual(0, toRemove.Count);
+            ClassicAssert.AreEqual(0, toRemove.Count);
         }
 
 
@@ -138,24 +139,24 @@ namespace Tests.UnitTests
                 policy.AddItem(packed);
             }
 
-            Assert.IsFalse(policy.IsEvictionRequired);
+            ClassicAssert.IsFalse(policy.IsEvictionRequired);
 
             Thread.Sleep(1010);
 
             var toRemove = policy.DoEviction();
-            Assert.AreEqual(10, toRemove.Count);
+            ClassicAssert.AreEqual(10, toRemove.Count);
 
             var item11 = new CacheableTypeOk(11, 11 + 1000, "aaa", new DateTime(2010, 10, 10), 1500);
             var packed11 = PackedObject.Pack(item11, schema);
 
             policy.AddItem(packed11);
             toRemove = policy.DoEviction();
-            Assert.AreEqual(0, toRemove.Count);
+            ClassicAssert.AreEqual(0, toRemove.Count);
 
             Thread.Sleep(1010);
 
             toRemove = policy.DoEviction();
-            Assert.AreEqual(1, toRemove.Count);
+            ClassicAssert.AreEqual(1, toRemove.Count);
         }
 
         [Test]
@@ -178,8 +179,8 @@ namespace Tests.UnitTests
             Thread.Sleep(1010);
 
             var toRemove = policy.DoEviction();
-            Assert.AreEqual(1, toRemove.Count);
-            Assert.AreEqual(packed12, toRemove.Single());
+            ClassicAssert.AreEqual(1, toRemove.Count);
+            ClassicAssert.AreEqual(packed12, toRemove.Single());
         }
     }
 }

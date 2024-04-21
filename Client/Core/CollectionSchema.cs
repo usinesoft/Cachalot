@@ -3,8 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Xml;
 using Client.Messages;
-using Newtonsoft.Json;
 using ProtoBuf;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -48,7 +50,7 @@ public sealed class CollectionSchema : IEquatable<CollectionSchema>
         NeedsRepacking
     }
 
-    internal CollectionSchema()
+    public CollectionSchema()
     {
     }
 
@@ -68,7 +70,7 @@ public sealed class CollectionSchema : IEquatable<CollectionSchema>
     ///     Fields that will be indexed for full text search
     /// </summary>
     [field: ProtoMember(5)]
-    public ISet<string> FullText { get; } = new HashSet<string>();
+    public ISet<string> FullText { get; set; } = new HashSet<string>();
 
 
     /// <summary>
@@ -76,7 +78,7 @@ public sealed class CollectionSchema : IEquatable<CollectionSchema>
     /// </summary>
     [JsonIgnore]
     public IList<KeyInfo> IndexFields => ServerSide
-        .Where(v => v.IndexType == IndexType.Dictionary || v.IndexType == IndexType.Ordered).ToList();
+        .Where(v => v.IndexType is IndexType.Dictionary or IndexType.Ordered).ToList();
 
 
     [JsonIgnore] public KeyInfo PrimaryKeyField => ServerSide.Count > 0 ? ServerSide[0] : null;
@@ -222,8 +224,4 @@ public sealed class CollectionSchema : IEquatable<CollectionSchema>
     }
 
 
-    public override string ToString()
-    {
-        return JsonConvert.SerializeObject(this, Formatting.Indented);
-    }
 }

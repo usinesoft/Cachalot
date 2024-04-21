@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using Client.Core;
 using Client.Interface;
-using Newtonsoft.Json;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 using Tests.TestData;
 using Constants = Server.Persistence.Constants;
@@ -121,18 +121,18 @@ namespace Tests.UnitTests
             unused.LoadPersistentData();
             unused.Dispose();
 
-            Assert.AreEqual(1, processor.LoadedObjects.Count);
+            ClassicAssert.AreEqual(1, processor.LoadedObjects.Count);
 
             var schema = TypedSchemaFactory.FromType(typeof(Trade));
 
             var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
                 .First(t => t.Id == 2);
 
-            Assert.AreEqual("TOTO", reloaded.Folder);
+            ClassicAssert.AreEqual("TOTO", reloaded.Folder);
 
             //reload data from transaction log. Check no more pending transactions
             var log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
             log.Dispose();
         }
 
@@ -159,11 +159,11 @@ namespace Tests.UnitTests
             unused.LoadPersistentData();
             unused.Dispose();
 
-            Assert.AreEqual(1, processor.LoadedObjects.Count);
+            ClassicAssert.AreEqual(1, processor.LoadedObjects.Count);
 
             var reloaded = PackedObject.Unpack<Trade>(processor.LoadedObjects[0], schema);
 
-            Assert.AreEqual("TATA", reloaded.Folder);
+            ClassicAssert.AreEqual("TATA", reloaded.Folder);
         }
 
         [Test]
@@ -202,16 +202,16 @@ namespace Tests.UnitTests
             unused.LoadPersistentData();
             unused.Dispose();
 
-            Assert.AreEqual(2, processor.LoadedObjects.Count);
+            ClassicAssert.AreEqual(2, processor.LoadedObjects.Count);
 
             var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
                 .First(t => t.Id == 2);
 
-            Assert.AreEqual("TOTO", reloaded.Folder);
+            ClassicAssert.AreEqual("TOTO", reloaded.Folder);
 
             //reload data from transaction log. Check no more pending transactions
             log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
             log.Dispose();
         }
 
@@ -252,16 +252,16 @@ namespace Tests.UnitTests
             unused.LoadPersistentData();
             unused.Dispose();
 
-            Assert.AreEqual(2, processor.LoadedObjects.Count);
+            ClassicAssert.AreEqual(2, processor.LoadedObjects.Count);
 
             var reloaded = processor.LoadedObjects.Select(x => PackedObject.Unpack<Trade>(x, schema))
                 .First(t => t.Id == 2);
 
-            Assert.AreEqual("TOTO", reloaded.Folder);
+            ClassicAssert.AreEqual("TOTO", reloaded.Folder);
 
             //reload data from transaction log. Check no more pending transactions
             log = new TransactionLog();
-            Assert.AreEqual(0, log.PendingTransactionsCount);
+            ClassicAssert.AreEqual(0, log.PendingTransactionsCount);
             log.Dispose();
         }
 
@@ -271,11 +271,11 @@ namespace Tests.UnitTests
         {
             var schema = TypedSchemaFactory.FromType<Trade>();
 
-            var json = JsonConvert.SerializeObject(schema);
+            var json = SerializationHelper.ObjectToJson(schema);
 
-            var schema1 = JsonConvert.DeserializeObject<CollectionSchema>(json);
+            var schema1 = SerializationHelper.ObjectFromJson<Schema>(json);
 
-            Assert.AreEqual(schema, schema1, "The schema can not be serialized to json");
+            ClassicAssert.AreEqual(schema, schema1, "The schema can not be serialized to json");
         }
     }
 }

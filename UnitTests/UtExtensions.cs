@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.Json;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
@@ -96,7 +97,7 @@ namespace Tests
             var query = PredicateToQuery(where);
 
 
-            return @this.GetMany(query).Select(ri => ri.Item.ToObject<T>(SerializationHelper.Serializer));
+            return @this.GetMany(query).Select(ri => ri.Item.Deserialize<T>());
         }
 
         public static T GetOne<T>(this IDataClient @this, Expression<Func<T, bool>> where)

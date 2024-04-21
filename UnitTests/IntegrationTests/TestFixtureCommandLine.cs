@@ -44,7 +44,7 @@
 
 
 //            var serverDesc = client.GetClusterInformation();
-//            Assert.AreEqual(serverDesc.Schema.Length, 1);
+//            ClassicAssert.AreEqual(serverDesc.Schema.Length, 1);
 //            var parser = new CommandLineParser(serverDesc);
 
 //            var cmd = parser.Parse("desc");
@@ -65,11 +65,11 @@
 //            var parser = new CommandLineParser(_serverDescription);
 
 //            var cmd = parser.Parse("count from TRADELIKE where folder=aaa ");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Count);
-//            Assert.AreEqual(cmd.Params.Count, 2);
-//            Assert.AreEqual(cmd.Params[0], "TRADELIKE");
-//            Assert.IsNotNull(cmd.Query);
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Count);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 2);
+//            ClassicAssert.AreEqual(cmd.Params[0], "TRADELIKE");
+//            ClassicAssert.IsNotNull(cmd.Query);
 //        }
 
 //        [Test]
@@ -79,46 +79,46 @@
 
 //            //this one should fail
 //            var cmd = parser.Parse("unknown lkjljk kjlkj ");
-//            Assert.IsFalse(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Unknown);
+//            ClassicAssert.IsFalse(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Unknown);
 
 //            //////////////////////////////////////////////////////
 //            // DUMP: valid syntax DUMP or DUMP file_name
 
 //            cmd = parser.Parse("DUMP c:/temp");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Dump);
-//            Assert.AreEqual(cmd.Params.Count, 1);
-//            Assert.AreEqual(cmd.Params[0], "c:/temp");
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Dump);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 1);
+//            ClassicAssert.AreEqual(cmd.Params[0], "c:/temp");
 
 
 //            ///////////////////////////////////////////////////////////
 //            // LAST / LAST n
 //            cmd = parser.Parse("last ");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Log);
-//            Assert.AreEqual(cmd.Params.Count, 1);
-//            Assert.AreEqual(cmd.Params[0], "1"); //last <==> last 1
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Log);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 1);
+//            ClassicAssert.AreEqual(cmd.Params[0], "1"); //last <==> last 1
 
 //            cmd = parser.Parse("last 15");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Log);
-//            Assert.AreEqual(cmd.Params.Count, 1);
-//            Assert.AreEqual(cmd.Params[0], "15");
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Log);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 1);
+//            ClassicAssert.AreEqual(cmd.Params[0], "15");
 
 //            ///////////////////////////////////////////////////////////
 //            // DESC / DESC table
 //            cmd = parser.Parse("desc");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Desc);
-//            Assert.AreEqual(cmd.Params.Count, 0);
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Desc);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 0);
 
 
 //            cmd = parser.Parse("desc TABLE");
-//            Assert.IsTrue(cmd.Success);
-//            Assert.AreEqual(cmd.CmdType, CommandType.Desc);
-//            Assert.AreEqual(cmd.Params.Count, 1);
-//            Assert.AreEqual(cmd.Params[0], "TABLE");
+//            ClassicAssert.IsTrue(cmd.Success);
+//            ClassicAssert.AreEqual(cmd.CmdType, CommandType.Desc);
+//            ClassicAssert.AreEqual(cmd.Params.Count, 1);
+//            ClassicAssert.AreEqual(cmd.Params[0], "TABLE");
 //        }
 //    }
 //}

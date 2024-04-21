@@ -4,6 +4,7 @@ using System.Linq;
 using Cachalot.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 using Tests.TestData;
 
@@ -45,7 +46,7 @@ namespace Tests.IntegrationTests
 
                 var reloaded = persons.First(t => t.First == "Dan");
 
-                Assert.AreEqual("IONESCU", reloaded.Last);
+                ClassicAssert.AreEqual("IONESCU", reloaded.Last);
             }
         }
 
@@ -83,11 +84,11 @@ namespace Tests.IntegrationTests
 
                 var reloaded = items.FirstOrDefault(t => t.Nominal < 150);
 
-                Assert.IsNotNull(reloaded);
-                Assert.AreEqual(13, reloaded.Id);
+                ClassicAssert.IsNotNull(reloaded);
+                ClassicAssert.AreEqual(13, reloaded.Id);
 
-                var result = connector.SqlQueryAsJson("select from AllKindsOfProperties where nominal < 150").ToList();
-                Assert.AreEqual(1, result.Count);
+                var result = connector.SqlQueryAsJson2("select from AllKindsOfProperties where nominal < 150").ToList();
+                ClassicAssert.AreEqual(1, result.Count);
             }
         }
 
@@ -128,8 +129,8 @@ namespace Tests.IntegrationTests
 
             invoices.PutMany(data);
 
-            var result = connector.SqlQueryAsJson("select from invoice where TotalAmount < 1005").ToList();
-            Assert.AreEqual(2, result.Count);
+            var result = connector.SqlQueryAsJson2("select from invoice where TotalAmount < 1005").ToList();
+            ClassicAssert.AreEqual(2, result.Count);
         }
     }
 }

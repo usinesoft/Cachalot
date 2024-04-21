@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FakeItEasy;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server;
 
 namespace Tests.UnitTests
@@ -84,7 +85,7 @@ namespace Tests.UnitTests
 
             var locks = mgr.GetCurrentlyHoldLocks();
 
-            Assert.AreEqual(0, locks);
+            ClassicAssert.AreEqual(0, locks);
         }
 
         [Test]
@@ -122,7 +123,7 @@ namespace Tests.UnitTests
 
             var locks = mgr.GetCurrentlyHoldLocks();
 
-            Assert.AreEqual(0, locks);
+            ClassicAssert.AreEqual(0, locks);
         }
 
 
@@ -177,7 +178,7 @@ namespace Tests.UnitTests
 
             var locks = mgr.GetCurrentlyHoldLocks();
 
-            Assert.AreEqual(0, locks);
+            ClassicAssert.AreEqual(0, locks);
         }
 
         [Test]
@@ -261,7 +262,7 @@ namespace Tests.UnitTests
 
             var locks = mgr.GetCurrentlyHoldLocks();
 
-            Assert.AreEqual(0, locks);
+            ClassicAssert.AreEqual(0, locks);
         }
 
         [Test]
@@ -276,36 +277,36 @@ namespace Tests.UnitTests
 
             lockManager.AcquireLock(sessionId, false, "x", "y", "z");
 
-            Assert.AreEqual(3, lockManager.GetCurrentlyHoldLocks());
+            ClassicAssert.AreEqual(3, lockManager.GetCurrentlyHoldLocks());
 
-            Assert.IsTrue(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
+            ClassicAssert.IsTrue(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
 
             // false because it is a read-only lock
-            Assert.False(lockManager.CheckLock(sessionId, true, "x", "y", "z"));
+            ClassicAssert.False(lockManager.CheckLock(sessionId, true, "x", "y", "z"));
 
             lockManager.CloseSession(sessionId);
 
-            Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
+            ClassicAssert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
 
             // session no longer active
-            Assert.IsFalse(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
+            ClassicAssert.IsFalse(lockManager.CheckLock(sessionId, false, "x", "y", "z"));
 
 
             lockManager.AcquireLock(sessionId, true, "tony", "tara");
-            Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks());
+            ClassicAssert.AreEqual(2, lockManager.GetCurrentlyHoldLocks());
 
 
             Thread.Sleep(500);
 
-            Assert.AreEqual(2, lockManager.GetCurrentlyHoldLocks(100));
+            ClassicAssert.AreEqual(2, lockManager.GetCurrentlyHoldLocks(100));
 
             var locks = lockManager.ForceRemoveAllLocks(100);
 
             A.CallTo(() => log.LogEvent(EventType.LockRemoved, null, 0)).MustHaveHappened();
 
-            Assert.AreEqual(2, locks);
+            ClassicAssert.AreEqual(2, locks);
 
-            Assert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
+            ClassicAssert.AreEqual(0, lockManager.GetCurrentlyHoldLocks());
         }
 
         [Test]
@@ -319,20 +320,20 @@ namespace Tests.UnitTests
 
 
             var success = lockManager.CheckLock(session, false, "x");
-            Assert.IsTrue(success);
+            ClassicAssert.IsTrue(success);
 
 
             // try with a new session (should not work)
             success = lockManager.CheckLock(Guid.NewGuid(), false, "x");
-            Assert.IsFalse(success);
+            ClassicAssert.IsFalse(success);
 
             // read-only lock so it should not work
             success = lockManager.CheckLock(session, true, "x");
-            Assert.IsFalse(success);
+            ClassicAssert.IsFalse(success);
 
             // different resource so it should not work
             success = lockManager.CheckLock(session, true, "nope");
-            Assert.IsFalse(success);
+            ClassicAssert.IsFalse(success);
 
 
             // trying to close an inactive session throws an exception

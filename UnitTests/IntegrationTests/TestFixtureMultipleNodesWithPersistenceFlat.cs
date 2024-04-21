@@ -6,6 +6,7 @@ using Cachalot.Linq;
 using Client.Core;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Tests.TestData;
 
 namespace Tests.IntegrationTests
@@ -71,19 +72,19 @@ namespace Tests.IntegrationTests
 
                 var reloaded = dataSource[13];
 
-                Assert.IsNotNull(reloaded);
+                ClassicAssert.IsNotNull(reloaded);
 
                 var q2 = dataSource.Where(x => x.Quantity == 2).ToList();
 
-                Assert.AreEqual(20, q2.Count);
+                ClassicAssert.AreEqual(20, q2.Count);
 
                 var projection1 = dataSource.Where(x => x.Quantity == 2).Select(x => x.Id).ToList();
 
-                Assert.AreEqual(20, projection1.Count);
+                ClassicAssert.AreEqual(20, projection1.Count);
 
                 var projection2 = dataSource.Where(x => x.Quantity == 2).Select(x => new { x.Id, x.Quantity }).ToList();
 
-                Assert.AreEqual(20, projection2.Count);
+                ClassicAssert.AreEqual(20, projection2.Count);
             }
 
             StopServers();
@@ -99,19 +100,19 @@ namespace Tests.IntegrationTests
 
                 var reloaded = dataSource[13];
 
-                Assert.IsNotNull(reloaded);
+                ClassicAssert.IsNotNull(reloaded);
 
                 var q2 = dataSource.Where(x => x.Quantity == 2).ToList();
 
-                Assert.AreEqual(20, q2.Count);
+                ClassicAssert.AreEqual(20, q2.Count);
 
                 var projection1 = dataSource.Where(x => x.Quantity == 2).Select(x => x.Id).ToList();
 
-                Assert.AreEqual(20, projection1.Count);
+                ClassicAssert.AreEqual(20, projection1.Count);
 
                 var projection2 = dataSource.Where(x => x.Quantity == 2).Select(x => new { x.Id, x.Quantity }).ToList();
 
-                Assert.AreEqual(20, projection2.Count);
+                ClassicAssert.AreEqual(20, projection2.Count);
             }
         }
 
@@ -176,7 +177,7 @@ namespace Tests.IntegrationTests
 
                 var allOrdered = dataSource.OrderBy(x => x.Nominal).ToList();
 
-                Assert.AreEqual(100, allOrdered.Count);
+                ClassicAssert.AreEqual(100, allOrdered.Count);
             }
         }
 
@@ -187,27 +188,27 @@ namespace Tests.IntegrationTests
             {
                 connector.FeedCsvWithAutomaticSchema("TestData/csv/20klines.csv", "20k");
 
-                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
+                var result = connector.SqlQueryAsJson2("select from 20k where dealid=25958469").ToList();
 
-                Assert.AreEqual(12, result.Count);
+                ClassicAssert.AreEqual(12, result.Count);
             }
 
             // check they are found after reload
             using (var connector = new Connector(_clientConfig))
             {
-                var result = connector.SqlQueryAsJson("select from 20k where dealid=25958469").ToList();
+                var result = connector.SqlQueryAsJson2("select from 20k where dealid=25958469").ToList();
 
-                Assert.AreEqual(12, result.Count);
+                ClassicAssert.AreEqual(12, result.Count);
 
                 //MonthBucket
-                result = connector.SqlQueryAsJson("select  distinct ClientName from 20k").ToList();
-                Assert.AreEqual(61, result.Count);
+                result = connector.SqlQueryAsJson2("select  distinct ClientName from 20k").ToList();
+                ClassicAssert.AreEqual(61, result.Count);
 
-                var count = connector.SqlQueryAsJson("count from 20k where dealid=25958469").ToList();
+                var count = connector.SqlQueryAsJson2("count from 20k where dealid=25958469").ToList();
 
                 // should return a single object with the count property
-                Assert.AreEqual(1, count.Count);
-                Assert.AreEqual(12, count[0].Value<int>("count"));
+                ClassicAssert.AreEqual(1, count.Count);
+                ClassicAssert.AreEqual(12, count[0].RootElement.GetProperty("count").GetInt32());
             }
         }
     }

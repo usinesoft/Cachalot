@@ -92,20 +92,12 @@ internal interface IDataClient : IDisposable
 
     /// <summary>
     ///     Retrieve multiple objects a json using a precompiled query.
-    /// </summary>
-    /// <param name="query"></param>
-    /// <param name="sessionId">optional session id for consistent reads</param>
-    /// <returns></returns>
-    IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default);
-
-    /// <summary>
-    ///     Retrieve multiple objects a json using a precompiled query.
     ///     This version uses System.Text.Json
     /// </summary>
     /// <param name="query"></param>
     /// <param name="sessionId">optional session id for consistent reads</param>
     /// <returns></returns>
-    IEnumerable<RankedItem2> GetMany2(OrQuery query, Guid sessionId = default);
+    IEnumerable<RankedItem> GetMany(OrQuery query, Guid sessionId = default);
 
 
     /// <summary>

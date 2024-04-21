@@ -2,18 +2,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
-using Newtonsoft.Json.Linq;
+
 
 namespace Channel;
 
@@ -261,7 +261,7 @@ public class TcpServerChannel : IServerChannel
             
         }
 
-        public void SendMany(ICollection<JObject> items)
+        public void SendMany(ICollection<JsonDocument> items)
         {
             Stream stream = _tcpClient.GetStream();
 

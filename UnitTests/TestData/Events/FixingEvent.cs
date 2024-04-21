@@ -4,6 +4,8 @@ namespace Tests.TestData.Events
 {
     public class FixingEvent : Event
     {
+        public FixingEvent() { }
+
         public FixingEvent(int id, string underlying, decimal value, string dealId)
         {
             EventId = id;

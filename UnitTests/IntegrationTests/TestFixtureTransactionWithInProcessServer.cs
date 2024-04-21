@@ -4,6 +4,7 @@ using System.Linq;
 using Cachalot.Linq;
 using Client.Interface;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Server.Persistence;
 using Tests.TestData.MoneyTransfer;
 
@@ -70,15 +71,15 @@ namespace Tests.IntegrationTests
                     var src = accounts[accountIds[0]];
                     var dst = accounts[accountIds[1]];
 
-                    Assert.AreEqual(666, src.Balance);
-                    Assert.AreEqual(334, dst.Balance);
+                    ClassicAssert.AreEqual(666, src.Balance);
+                    ClassicAssert.AreEqual(334, dst.Balance);
 
                     var transfers = connector.DataSource<MoneyTransfer>();
 
                     var transfer = transfers.Single();
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
 
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
                 }
 
 
@@ -108,8 +109,8 @@ namespace Tests.IntegrationTests
                     }
                     catch (CacheException e)
                     {
-                        Assert.IsTrue(e.IsTransactionException);
-                        Assert.AreEqual(ExceptionType.ConditionNotSatisfied, e.ExceptionType);
+                        ClassicAssert.IsTrue(e.IsTransactionException);
+                        ClassicAssert.AreEqual(ExceptionType.ConditionNotSatisfied, e.ExceptionType);
 
                         Console.WriteLine(e);
                     }
@@ -119,15 +120,15 @@ namespace Tests.IntegrationTests
                     var src = accounts[accountIds[0]];
                     var dst = accounts[accountIds[1]];
 
-                    Assert.AreEqual(666, src.Balance);
-                    Assert.AreEqual(334, dst.Balance);
+                    ClassicAssert.AreEqual(666, src.Balance);
+                    ClassicAssert.AreEqual(334, dst.Balance);
 
                     var transfers = connector.DataSource<MoneyTransfer>();
 
                     var transfer = transfers.Single();
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
 
-                    Assert.AreEqual(334, transfer.Amount);
+                    ClassicAssert.AreEqual(334, transfer.Amount);
                 }
             }
 
@@ -142,14 +143,14 @@ namespace Tests.IntegrationTests
                 var src = accounts[accountIds[0]];
                 var dst = accounts[accountIds[1]];
 
-                Assert.AreEqual(666, src.Balance);
-                Assert.AreEqual(334, dst.Balance);
+                ClassicAssert.AreEqual(666, src.Balance);
+                ClassicAssert.AreEqual(334, dst.Balance);
 
                 var transfers = connector.DataSource<MoneyTransfer>();
 
                 var transfer = transfers.Single();
 
-                Assert.AreEqual(334, transfer.Amount);
+                ClassicAssert.AreEqual(334, transfer.Amount);
             }
         }
     }

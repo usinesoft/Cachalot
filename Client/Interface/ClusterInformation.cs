@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,7 +24,7 @@ public class ClusterInformation
         Ok,
 
         /// <summary>
-        ///     Non blocking consistency checks failed
+        ///     Non-blocking consistency checks failed
         /// </summary>
         Warning,
 
@@ -61,7 +62,7 @@ public class ClusterInformation
 
         ServersStatus = serverDescriptions.Select(d => d.ServerProcessInfo).ToArray();
 
-        if (serverDescriptions.All(s => s.ConnectionError))
+        if (Array.TrueForAll(serverDescriptions, s => s.ConnectionError))
         {
             Status = ClusterStatus.ConnectionError;
             StatusReason = "Connection error";
@@ -71,7 +72,7 @@ public class ClusterInformation
 
 
         // at this point there is at least one connected server
-        Schema = serverDescriptions.FirstOrDefault(x => !x.ConnectionError)?.KnownTypesByFullName.Values.ToArray();
+        Schema = Array.Find(serverDescriptions, x => !x.ConnectionError)?.KnownTypesByFullName.Values.ToArray();
 
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -81,19 +82,21 @@ public class ClusterInformation
 
         // aggregate information for collections on each server
         foreach (var description in serverDescriptions.Where(x => !x.ConnectionError))
-        foreach (var dataStoreInfo in description.DataStoreInfoByFullName)
         {
-            var name = dataStoreInfo.Key;
-            if (!collectionSummaries.TryGetValue(name, out var info))
+            foreach (var dataStoreInfo in description.DataStoreInfoByFullName)
             {
-                info = new();
-                collectionSummaries[name] = info;
-                info.Name = name;
+                var name = dataStoreInfo.Key;
+                if (!collectionSummaries.TryGetValue(name, out var info))
+                {
+                    info = new();
+                    collectionSummaries[name] = info;
+                    info.Name = name;
+                }
+
+                info.ItemsCount += dataStoreInfo.Value.Count;
+
+                info.EvictionType = dataStoreInfo.Value.EvictionPolicy;
             }
-
-            info.ItemsCount += dataStoreInfo.Value.Count;
-
-            info.EvictionType = dataStoreInfo.Value.EvictionPolicy;
         }
 
         // get the layout and full-text indexation information from the schema
@@ -109,7 +112,7 @@ public class ClusterInformation
 
         CollectionsSummary = collectionSummaries.Values.ToArray();
 
-        var allGood = serverDescriptions.All(r => !r.ConnectionError);
+        var allGood = Array.TrueForAll(serverDescriptions, r => !r.ConnectionError);
 
         // If all servers are connected perform a sanity check for cluster consistency
         if (allGood)
@@ -117,11 +120,11 @@ public class ClusterInformation
             CheckClusterSanity(serverDescriptions);
 
             var cxString = new StringBuilder();
-            foreach (var serverDescription in serverDescriptions)
+            foreach (var info in serverDescriptions.Select(x=>x.ServerProcessInfo))
             {
-                cxString.Append(serverDescription.ServerProcessInfo.Host);
+                cxString.Append(info.Host);
                 cxString.Append(":");
-                cxString.Append(serverDescription.ServerProcessInfo.Port);
+                cxString.Append(info.Port);
                 cxString.Append("+");
             }
 
@@ -138,6 +141,11 @@ public class ClusterInformation
 
     public ServerInfo[] ServersStatus { get; }
     public CollectionSchema[] Schema { get; }
+
+    public CollectionSchema TryGetCollectionSchema(string collectionName)
+    {
+        return Array.Find(Schema, x => x.CollectionName.Equals(collectionName, StringComparison.OrdinalIgnoreCase));
+    }
 
     public CollectionSummary[] CollectionsSummary { get; }
 

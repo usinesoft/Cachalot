@@ -25,7 +25,7 @@ public class SmartDateTimeConverter : JsonConverter<DateTime>
             }
             else
             {
-                writer.WriteStringValue(value.ToString("yyyy-MM-dd hh:mm:ss"));
+                writer.WriteStringValue(value.ToString("o"));
             }
             
             
@@ -59,7 +59,7 @@ public class SmartDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
             }
             else
             {
-                writer.WriteStringValue(value.ToString("yyyy-MM-dd hh:mm:ss"));
+                writer.WriteStringValue(value.ToString("o"));
             }
             
         }

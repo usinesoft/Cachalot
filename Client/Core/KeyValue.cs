@@ -257,11 +257,12 @@ public sealed class KeyValue : IComparable<KeyValue>
 
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
-                    return JsonValue.Create(new DateTime(IntValue, DateTimeKind.Unspecified));
+                    return JsonValue.Create(DateHelper.FormatDateTime( new DateTime(IntValue, DateTimeKind.Unspecified)));
 
                 var offset = BitConverter.ToInt64(_data, 0);
+                var dateTimeOffset = new DateTimeOffset(IntValue, new(offset));
 
-                return JsonValue.Create(new DateTimeOffset(IntValue, new(offset)));
+                return JsonValue.Create(dateTimeOffset);
 
             case OriginalType.String:
                 return JsonValue.Create(StringValue);

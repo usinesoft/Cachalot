@@ -17,25 +17,8 @@ public class SmartDateTimeConverter : JsonConverter<DateTime>
 
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
     {
-        if (value.Kind is DateTimeKind.Unspecified or DateTimeKind.Utc)
-        {
-            if (value == value.Date)
-            {
-                writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
-            }
-            else
-            {
-                writer.WriteStringValue(value.ToString("o"));
-            }
-            
-            
-        }
-        else
-        {
-            writer.WriteStringValue(value.ToString("o"));
-        }
-
-        
+        var str = DateHelper.FormatDateTime(value);
+        writer.WriteStringValue(str);
     }
 }
 
@@ -51,27 +34,51 @@ public class SmartDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
 
     public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
     {
+
+        var str = DateHelper.FormatDateTimeOffset(value);
+        writer.WriteStringValue(str);
+
+    }
+}
+
+public static class DateHelper
+{
+    public static string FormatDateTime(DateTime value)
+    {
+
+        if (value.Kind is DateTimeKind.Unspecified or DateTimeKind.Utc)
+        {
+            if (value == value.Date)
+            {
+                return value.ToString("yyyy-MM-dd");
+            }
+            
+        }
+        
+        return value.ToString("o");
+        
+    }
+
+    public static string FormatDateTimeOffset(DateTimeOffset value)
+    {
         if (value.Offset.TotalSeconds == 0)
         {
             if (value == default)
             {
-                writer.WriteStringValue(value.ToString("o"));
+                return value.ToString("o");
             }
-            else if (value == value.Date)
+
+            if (value == value.Date)
             {
-                writer.WriteStringValue(value.ToString("yyyy-MM-dd"));
-            }
-            else
-            {
-                writer.WriteStringValue(value.ToString("o"));
+                return value.ToString("yyyy-MM-dd");
             }
             
-        }
-        else
-        {
-            writer.WriteStringValue(value.ToString("o"));
+            return value.ToString("o");
+            
+
         }
 
-        
+        return value.ToString("o");
+
     }
 }

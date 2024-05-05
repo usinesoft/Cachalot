@@ -5,7 +5,15 @@
 ![cachalot db](https://github.com/usinesoft/Cachalot/blob/master/Media/cachalot.svg?raw=true) 
 # Cachalot DB v2.5
 
- 
+
+## What's new in the last version
+
+This is a major version with lots of exciting features.
+
+- A new graphical monitoring tool.
+- A new table layout specialized for flat-data, like a csv file or the lines in a classical SQL database. It uses almost ten times less memory for this kind of data.
+- Switched from **Newtonsoft** to **System.Text.Json** providing significantly faster serialization
+- Last but not least: adopting the more permissive MIT license
 
 ## What is Cachalot DB?
 #### An in-memory database for dotnet applications
@@ -28,38 +36,25 @@ All data is available in memory and distributed on multiple nodes, allowing for 
 You can test it yourself at https://cachalot-db.com/
 
 Two demo applications are available in the release package:
+
 -	**BookingMarketplace** is testing feeding data and query capabilities
 -	**Accounts** is testing the transactional capabilities
 
-Feel free to check by yourself. Here are some typical results on a reasonably powerful machine.
-These results are for a cluster with two nodes. Most operations are faster as the number of nodes increases.
-- Feeding one million objects into the database
+A bencnhmark is also included in the solution.
+Here are the results on windows with a local single-node cluster.
 
-	- 2678 milliseconds
 
--	Reading 1000 objects one by one  by primary key (out of one million)
+| Method                                                                                                                           | Mean       | Error    | StdDev    |
+|--------------------------------------------------------------------------------------------------------------------------------- |-----------:|---------:|----------:|
+| '1   item:SELECT FROM Invoice WHERE Id = '50011''                                                                                |   133.9 us |  2.67 us |   2.50 us |
+| '27  items:SELECT FROM Invoice WHERE Date = '2023-04-23' AND DiscountPercentage > 0'                                             |   808.4 us | 12.69 us |  11.87 us |
+| '57  items:SELECT FROM Invoice WHERE Date in ('2023-04-22','2023-04-23') AND  IsPayed = false'                                   | 1,499.2 us | 25.61 us |  22.70 us |
+| '86  items:SELECT FROM Client WHERE LastName = 'Corwin''                                                                         |   774.8 us | 14.06 us |  13.15 us |
+| '314 items:SELECT FROM Home WHERE Town = 'Paris' AND  AvailableDates contains '2024-05-05' AND Rooms = 2 ORDER BY PriceInEuros ' | 3,910.1 us | 78.09 us | 190.08 us |
+| 'SELECT DISTINCT Town from Home'                                                                                                 |   158.0 us |  0.45 us |   0.40 us |
 
-    - 219 milliseconds
 
--	Reading 6000 objects (out of one million) with this query 
-
-	```sql
-	select from home where town = Paris
-	```
-    - 113 milliseconds
-
--	Running this query on one million objects 
-	```sql
-	select from home where town=Paris and AvailableDates contains 2021-10-19 order by 
-	PriceInEuros descending take 10
-	```
-    - 22 milliseconds
-
--	Computing a full  pivot table  (no filter) with two axes and two aggregations
-    - 28 milliseconds
-
--	Running a transaction with a conditional update 
-    - Less than two milliseconds
+Feel free to check by yourself. 
 
 ## What is Cachalot DB good at?
 

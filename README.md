@@ -41,7 +41,7 @@ Two demo applications are available in the release package:
 -	**Accounts** is testing the transactional capabilities
 
 A bencnhmark is also included in the solution.
-Here are the results on windows with a local single-node cluster.
+Here are the results on windows with a local single-node cluster (results are **microseconds**).
 
 
 | Method                                                                                                                           | Mean       | Error    | StdDev    |

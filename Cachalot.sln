@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\Unit
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{44884EF3-0331-4AD8-B8C2-CECE04A18773}"
 	ProjectSection(SolutionItems) = preProject
-		publish.cmd = publish.cmd
+		build_pipeline.ps1 = build_pipeline.ps1
 		readme.html = readme.html
 		README.md = README.md
 	EndProjectSection
@@ -37,6 +37,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsService", "WindowsService\WindowsService.csproj", "{725E763C-91F8-4865-A0ED-C9C4E91A3D06}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CashalotMonitor.Tests", "CashalotMonitot.Tests\CashalotMonitor.Tests.csproj", "{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmark", "Benchmark\Benchmark.csproj", "{8EF7BCB0-4D42-429F-AB49-D11C88105074}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -100,6 +102,10 @@ Global
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

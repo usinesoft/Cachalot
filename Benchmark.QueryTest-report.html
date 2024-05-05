@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>Benchmark.QueryTest-20240505-162244</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.13.12, Windows 10 (10.0.19045.4291/22H2/2022Update)
+Intel Core i9-9900K CPU 3.60GHz (Coffee Lake), 1 CPU, 16 logical and 8 physical cores
+.NET SDK 8.0.200-preview.23624.5
+  [Host]     : .NET 8.0.1 (8.0.123.58001), X64 RyuJIT AVX2
+  DefaultJob : .NET 8.0.1 (8.0.123.58001), X64 RyuJIT AVX2
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method                                                                                                                    </th><th>Mean</th><th>Error</th><th>StdDev</th>
+</tr>
+</thead><tbody><tr><td>&#39;1   item:SELECT FROM Invoice WHERE Id = &#39;50011&#39;&#39;</td><td>133.9 &mu;s</td><td>2.67 &mu;s</td><td>2.50 &mu;s</td>
+</tr><tr><td>&#39;27  items:SELECT FROM Invoice WHERE Date = &#39;2023-04-23&#39; AND DiscountPercentage &gt; 0&#39;</td><td>808.4 &mu;s</td><td>12.69 &mu;s</td><td>11.87 &mu;s</td>
+</tr><tr><td>&#39;57  items:SELECT FROM Invoice WHERE Date in (&#39;2023-04-22&#39;,&#39;2023-04-23&#39;) AND  IsPayed = false&#39;</td><td>1,499.2 &mu;s</td><td>25.61 &mu;s</td><td>22.70 &mu;s</td>
+</tr><tr><td>&#39;86  items:SELECT FROM Client WHERE LastName = &#39;Corwin&#39;&#39;</td><td>774.8 &mu;s</td><td>14.06 &mu;s</td><td>13.15 &mu;s</td>
+</tr><tr><td>&#39;314 items:SELECT FROM Home WHERE Town = &#39;Paris&#39; AND  AvailableDates contains &#39;2024-05-05&#39; AND Rooms = 2 ORDER BY PriceInEuros &#39;</td><td>3,910.1 &mu;s</td><td>78.09 &mu;s</td><td>190.08 &mu;s</td>
+</tr><tr><td>&#39;SELECT DISTINCT Town from Home&#39;</td><td>158.0 &mu;s</td><td>0.45 &mu;s</td><td>0.40 &mu;s</td>
+</tr></tbody></table>
+</body>
+</html>

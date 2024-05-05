@@ -252,7 +252,7 @@ namespace Tests.UnitTests
 
             ClassicAssert.IsTrue(vd is DateTime);
 
-            // looks like a data but it is not correct so it will be parsed like a string
+            // looks like a date, but it is not correct, so it will be parsed like a string
             vd = JExtensions.SmartParse("45/15/2012");
 
             ClassicAssert.IsTrue(vd is string);

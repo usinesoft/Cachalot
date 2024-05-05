@@ -1,17 +1,33 @@
 ﻿using System;
+using System.Globalization;
 using Client.Core;
-using Client.Messages;
-using Client.Tools;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using Tests.TestTools;
 using static System.DateTime;
+#pragma warning disable S1199
 
 namespace Tests.UnitTests
 {
     [TestFixture]
     public class TestFixtureKeyValue
     {
+
+        /// <summary>
+        /// All kinds of dates
+        /// </summary>
+        public class Dates
+        {
+            public DateTime DateOnly1 { get; set; }
+            public DateTime DateTime1 { get; set; }
+
+            public DateTimeOffset DateOnly2 { get; set; }
+            public DateTimeOffset DateTime2 { get; set; }
+
+            public DateOnly DateOnly { get; set; }
+        }
+
+
         [Test]
         public void Compare_same_type()
         {
@@ -118,12 +134,12 @@ namespace Tests.UnitTests
             {
                 var tst = date!.DateValue!.Value!.UtcDateTime;
 
-                ClassicAssert.AreEqual(testValue, tst);
-
-
+                Assert.That(testValue, Is.EqualTo(tst));
+                
                 var date2 = new KeyValue(Today);
 
                 ClassicAssert.AreEqual(date, date2);
+                Assert.That(date, Is.EqualTo(date2));
             }
         }
 
@@ -150,26 +166,130 @@ namespace Tests.UnitTests
             }
         }
 
+        /// <summary>
+        /// DateOnly is always formatted as yyyy-MM-dd
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="kind"></param>
+        /// <param name="output"></param>
+        [Test]
+        [TestCase("2010-12-24", "2010-12-24")]
+        [TestCase("24/12/2010", "2010-12-24")]
+        [TestCase("24-12-2010", "2010-12-24")]
+        public void Parsing_and_formatting_date_only(string input, string output)
+        {
+            var dt1 = DateHelper.ParseDateOnly(input);
+
+            Assert.That(dt1, Is.Not.Null);
+            
+            var str1 = DateHelper.FormatDateOnly(dt1.Value);
+            
+
+            Assert.That(str1, Is.EqualTo(output));
+            
+
+        }
+
+        /// <summary>
+        /// DateTime is always parsed as UTC if no offset is specified, or converted to UTC otherwise
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="kind"></param>
+        /// <param name="output"></param>
+        [Test]
+        [TestCase("2010-12-24", DateTimeKind.Utc, "2010-12-24")]
+        [TestCase("24/12/2010", DateTimeKind.Utc, "2010-12-24")]
+        [TestCase("24-12-2010", DateTimeKind.Utc, "2010-12-24")]
+        [TestCase("2010-12-24 10:03:45", DateTimeKind.Utc, "2010-12-24T10:03:45.0000000Z")]
+        [TestCase("2010-12-24 10:03", DateTimeKind.Utc, "2010-12-24T10:03:00.0000000Z")]
+        [TestCase("2010-12-24T10:30:06.456+02:00", DateTimeKind.Utc, "2010-12-24T08:30:06.4560000Z")]
+        public void Parsing_and_formatting_date_time(string input, DateTimeKind kind, string output)
+        {
+            var dt1 = DateHelper.ParseDateTime(input);
+
+            Assert.That(dt1, Is.Not.Null);
+            Assert.That(dt1.Value.Kind, Is.EqualTo(kind));
+
+            var str1 = DateHelper.FormatDateTime(dt1.Value);
+            
+
+            Assert.That(str1, Is.EqualTo(output));
+            
+
+        }
+
+        /// <summary>
+        /// DateTimeOffset is always parsed as UTC if no offset is specified.
+        /// If an offset is specified it is restored as is
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="offset"> offset as HH.mm</param>
+        /// <param name="output"></param>
+        [Test]
+        [TestCase("2010-12-24", "00:00", "2010-12-24")]
+        [TestCase("24/12/2010", "00:00", "2010-12-24")]
+        [TestCase("24-12-2010", "00:00", "2010-12-24")]
+        [TestCase("2010-12-24 10:03:45", "00:00", "2010-12-24T10:03:45.0000000+00:00")]
+        [TestCase("2010-12-24 10:03", "00:00", "2010-12-24T10:03:00.0000000+00:00")]
+        [TestCase("2010-12-24T10:30:06.456+02:00", "02:00", "2010-12-24T10:30:06.4560000+02:00")]
+        public void Parsing_and_formatting_date_time_offset(string input, string offset, string output)
+        {
+            var dt1 = DateHelper.ParseDateTimeOffset(input);
+
+            Assert.That(dt1, Is.Not.Null);
+            Assert.That(dt1.Value.Offset, Is.EqualTo(TimeSpan.ParseExact(offset, "g",CultureInfo.InvariantCulture)));
+
+            var str1 = DateHelper.FormatDateTimeOffset(dt1.Value);
+            
+
+            Assert.That(str1, Is.EqualTo(output));
+            
+
+        }
+
+        [Test]
+        public void Format_then_parse_produces_the_original_value()
+        {
+            var dt1 = Today;
+            Assert.That(dt1, Is.EqualTo(DateHelper.ParseDateTime(DateHelper.FormatDateTime(dt1))));
+            
+            var dt2 = Now;
+            Assert.That(dt2.ToUniversalTime(), Is.EqualTo(DateHelper.ParseDateTime(DateHelper.FormatDateTime(dt2))));
+
+            var dt3 = UtcNow;
+            Assert.That(dt3, Is.EqualTo(DateHelper.ParseDateTime(DateHelper.FormatDateTime(dt3))));
+
+            DateTimeOffset dto1 = UtcNow.Date;
+            Assert.That(dto1, Is.EqualTo(DateHelper.ParseDateTimeOffset(DateHelper.FormatDateTimeOffset(dto1))));
+
+        }
+
         [Test]
         public void Format_datetime_as_string_and_json()
         {
-            var date1 = DateTime.UtcNow; 
-            var date2 = DateTime.Today;
 
-            var kv1 = new KeyValue(date1);
-            var kv2 = new KeyValue(date2);
+            var dates = new Dates
+            {
+                DateOnly = new DateOnly(2010, 05, 04),
+                DateOnly1 = Today,
+                DateOnly2 = UtcNow.Date,
+                DateTime1 = Now,
+                DateTime2 = DateTimeOffset.UtcNow
+            };
 
-            var str1 = kv1.ToString();
-            var str2 = kv2.ToString();
+            var json = SerializationHelper.ObjectToCompactJson(dates);
 
-            var json1 = kv1.ToJsonValue();
-            var json2 = kv2.ToJsonValue();
+            var dates1 = SerializationHelper.ObjectFromCompactJson<Dates>(json);
 
-            var fromJson1 = json1.GetValue<DateTime>();
-            var fromJson2 = json2.GetValue<DateTime>();
+            var json1 = SerializationHelper.ObjectToCompactJson(dates1);
 
-            ClassicAssert.AreEqual(date1, fromJson1);
-            ClassicAssert.AreEqual(date2, fromJson2);
+            Assert.That(dates.DateOnly, Is.EqualTo(dates1.DateOnly));
+            Assert.That(dates.DateOnly1, Is.EqualTo(dates1.DateOnly1));
+            Assert.That(dates.DateOnly2, Is.EqualTo(dates1.DateOnly2));
+            Assert.That(dates.DateTime1.ToUniversalTime(), Is.EqualTo(dates1.DateTime1));
+            Assert.That(dates.DateTime2, Is.EqualTo(dates1.DateTime2));
+
+            Assert.That(json, Is.EqualTo(json1));
 
         }
 

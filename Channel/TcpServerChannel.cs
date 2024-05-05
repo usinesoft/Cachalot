@@ -13,6 +13,7 @@ using Client;
 using Client.ChannelInterface;
 using Client.Core;
 using Client.Messages;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 
 namespace Channel;
@@ -20,7 +21,9 @@ namespace Channel;
 public class TcpServerChannel : IServerChannel
 {
     private readonly List<TcpClient> _connectedClients = new();
-    private Thread _acceptThread;
+    private Task _acceptThread;
+
+    CancellationTokenSource _cancellationTokenSource = new();
 
 
     private long _connections;
@@ -56,21 +59,25 @@ public class TcpServerChannel : IServerChannel
 
     public void Start()
     {
+        _cancellationTokenSource = new CancellationTokenSource();
+
         if (_listener == null)
             throw new NotSupportedException("Call Init before calling Start");
 
-
-        _acceptThread = new(WaitForClients);
-        _acceptThread.Start();
+        
+        _acceptThread = Task.Run(()=> WaitForClients(_cancellationTokenSource.Token));
+        
     }
 
     public void Stop()
     {
         try
         {
-            Dbg.Trace("before _listener.Server.Disconnect();");
-            _listener.Server.Disconnect(false);
-            Dbg.Trace("after _listener.Server.Disconnect();");
+            _cancellationTokenSource.Cancel();
+            
+            _acceptThread.Wait(TimeSpan.FromMilliseconds(200));
+
+            
             
         }
         catch (Exception)
@@ -85,12 +92,13 @@ public class TcpServerChannel : IServerChannel
         }
     }
 
-    private void WaitForClients()
+    private async Task WaitForClients(CancellationToken ct)
     {
-        while (true)
+        while (!ct.IsCancellationRequested)
+        {
             try
             {
-                var client = _listener.AcceptTcpClient();
+                var client = await _listener.AcceptTcpClientAsync(ct);
                 client.Client.NoDelay = true;
                 lock (_connectedClients)
                 {
@@ -99,13 +107,19 @@ public class TcpServerChannel : IServerChannel
 
                 Interlocked.Increment(ref _connections);
 
-                Task.Run(async () => { await ClientLoop(client); });
+                Task.Run(async () => { await ClientLoop(client, ct); }, ct);
+            }
+            catch(TaskCanceledException)
+            {
+                Dbg.Trace("stop accepting clients");
             }
             catch (Exception ex)
             {
                 Dbg.Trace("error in WaitForClients:" + ex.Message);
                 break;
             }
+        }
+            
 
 
         lock (_connectedClients)
@@ -114,27 +128,26 @@ public class TcpServerChannel : IServerChannel
         }
     }
 
-    private async Task ClientLoop(object state)
+    private async Task ClientLoop(TcpClient client, CancellationToken ct)
     {
-        var client = (TcpClient)state;
-
+        
         Stream clientStream = client.GetStream();
 
         Thread.CurrentThread.Name = "client loop (server thread)";
 
         try
         {
-            while (true)
+            while (!ct.IsCancellationRequested)
             {
                 var buffer = new byte[1];
-                var bytesCount = await clientStream.ReadAsync(buffer, 0, 1);
+                var bytesCount = await clientStream.ReadAsync(buffer, 0, 1, ct);
 
                 if (bytesCount == 0) // connection closed
                 {
-                    Dbg.Trace("0 bytes received:connection closed by client",true);
+                    Dbg.Trace("0 bytes received:connection closed by client", true);
                     break;
                 }
-                    
+
 
                 var inputType = buffer[0];
 
@@ -149,12 +162,12 @@ public class TcpServerChannel : IServerChannel
                 }
                 else if (inputType == Constants.CloseCookie)
                 {
-                    Dbg.Trace($"received close cookie", true);
+                    Dbg.Trace("received close cookie", true);
                     break;
                 }
                 else
                 {
-                    Dbg.Trace($"received request cookie");
+                    Dbg.Trace("received request cookie");
 
                     var request = await Streamer.FromStreamAsync<Request>(clientStream);
 
@@ -170,9 +183,13 @@ public class TcpServerChannel : IServerChannel
                         break;
                     }
 
-                  
+
                 }
             }
+        }
+        catch (TaskCanceledException)
+        {
+            Dbg.Trace("cancelled client loop");
         }
         catch (IOException)
         {

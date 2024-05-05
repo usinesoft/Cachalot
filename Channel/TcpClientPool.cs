@@ -110,19 +110,11 @@ public class
 
             int pingAnswer = 0;
 
-            try
-            {
-                var stream = tcp.GetStream();
-                stream.WriteByte(Constants.PingCookie); // ping 
-                stream.Flush();
-                pingAnswer = stream.ReadByte();
-            }
-            catch (Exception )
-            {
-                Console.WriteLine();
-                throw;
-            }
-
+            var stream = tcp.GetStream();
+            stream.WriteByte(Constants.PingCookie); // ping 
+            stream.Flush();
+            pingAnswer = stream.ReadByte();
+        
             // this should never happen. 
             if (pingAnswer != Constants.PingCookie)
             {

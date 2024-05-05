@@ -59,7 +59,8 @@ namespace Tests.UnitTests
                 var dt = DateTime.Now;
                 var kv = new KeyValue(dt);
 
-                ClassicAssert.AreEqual(dt.Ticks, kv.IntValue);
+                // local dates are converted internally to UTC
+                ClassicAssert.AreEqual(dt.ToUniversalTime().Ticks, kv.IntValue);
                 ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
             }
 
@@ -67,7 +68,7 @@ namespace Tests.UnitTests
                 DateTime? dt = DateTime.Now;
                 var kv = new KeyValue(dt);
 
-                ClassicAssert.AreEqual(dt.Value.Ticks, kv.IntValue);
+                ClassicAssert.AreEqual(dt.Value.ToUniversalTime().Ticks, kv.IntValue);
                 ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
             }
 
@@ -85,6 +86,43 @@ namespace Tests.UnitTests
 
                 ClassicAssert.AreEqual(0, kv.IntValue);
                 ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+            }
+
+            {
+                DateTimeOffset dt = DateTime.Now;
+                var kv = new KeyValue(dt);
+
+                // local dates are converted internally to UTC
+                ClassicAssert.AreEqual(dt.ToUniversalTime().Ticks, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                Assert.That(kv.ExtraBytes, Is.EqualTo(0));
+            }
+
+            {
+                DateTimeOffset? dt = DateTime.Now;
+                var kv = new KeyValue(dt);
+
+                ClassicAssert.AreEqual(dt.Value.ToUniversalTime().Ticks, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                Assert.That(kv.ExtraBytes, Is.EqualTo(0));
+            }
+
+            {
+                DateTimeOffset? dt = null;
+                var kv = new KeyValue(dt);
+
+                ClassicAssert.AreEqual(0, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Null, kv.Type);
+                Assert.That(kv.ExtraBytes, Is.EqualTo(0));
+            }
+
+            {
+                DateTimeOffset dt = default;
+                var kv = new KeyValue(dt);
+
+                ClassicAssert.AreEqual(0, kv.IntValue);
+                ClassicAssert.AreEqual(KeyValue.OriginalType.Date, kv.Type);
+                Assert.That(kv.ExtraBytes, Is.EqualTo(0));
             }
 
             {

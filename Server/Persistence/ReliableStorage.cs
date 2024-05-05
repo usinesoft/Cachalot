@@ -320,7 +320,7 @@ public class ReliableStorage : IDisposable
             var block = new PersistentBlock();
             block.Read(reader);
             if (block.BlockStatus != BlockStatus.Active)
-                // if the same id ok. We are re executing a transaction that was not marked as Processed. 
+                // if the same id ok. We are re-executing a transaction that was not marked as Processed. 
                 // It happens if the server crashes during the update of persistence blocks. The transaction is simply played
                 // again when the server is restarted
                 if (block.LastTransactionId != transactionId)

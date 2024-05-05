@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -75,7 +76,7 @@ public class QueryManager : IRequestManager
 
             if (atomicQuery.Operator is QueryOperator.Eq or QueryOperator.In or QueryOperator.Contains)
             {
-                // For primary or unique key we do not need more than one index. 
+                // For primary key we do not need more than one index. 
                 // No need to count for the primary index. Waste of time as it wil always be the only index used
                 if (index.IndexType == IndexType.Primary)
                     return new List<IndexRanking> { new(index, atomicQuery, -1) };
@@ -96,16 +97,42 @@ public class QueryManager : IRequestManager
         return result;
     }
 
+
+    private readonly Dictionary<string, IndexRanking> _executionPlanCache = new Dictionary<string, IndexRanking>();
+
     private List<PackedObject> ProcessAndQuery(AndQuery query, QueryExecutionPlan queryExecutionPlan,
                                                OrQuery parentQuery)
     {
         queryExecutionPlan.StartPlanning();
-        var indexesThatCanBeUsed = GetIndexesForQuery(query);
 
-        // A difficult decision after many tests. Using more than one index is almost always slower than 
-        // using only the most efficient index and scan the result to check for the rest of the conditions.
-        // This is probably true only for in-memory databases
-        var indexesUsed = indexesThatCanBeUsed.MinBy(p => p.Ranking);
+        var queryDescription = query.Description();
+
+        AtomicQuery toUseWithIndex;
+
+        // cache the execution plan
+        if (!_executionPlanCache.TryGetValue(queryDescription, out var indexesUsed))
+        {
+            var indexesThatCanBeUsed = GetIndexesForQuery(query);
+
+            // A difficult decision after many tests. Using more than one index is almost always slower than 
+            // using only the most efficient index and scan the result to check for the rest of the conditions.
+            // This is probably true only for in-memory databases
+            indexesUsed = indexesThatCanBeUsed.MinBy(p => p.Ranking);
+
+            // do not cache execution plans that produce zero results as sey are not representative
+            if (indexesUsed != null &&  indexesUsed.Ranking != 0)
+            {
+                _executionPlanCache[queryDescription] = indexesUsed;
+            }
+
+            toUseWithIndex = indexesUsed?.ResolvedQuery;
+        }
+        else // cached execution plan (use the values from the actual query not the cached one)
+        {
+            toUseWithIndex = query.Elements.Find(x =>
+                x.Metadata.Name.Equals(indexesUsed.ResolvedQuery.Metadata.Name, StringComparison.OrdinalIgnoreCase));
+        }
+
 
         var usedIndexes = new List<string>();
         if (indexesUsed != null) usedIndexes.Add(indexesUsed.Index.Name);
@@ -127,7 +154,7 @@ public class QueryManager : IRequestManager
 
             queryExecutionPlan.Trace($"single index: {plan.ResolvedQuery.PropertyName}");
 
-            result = plan.Index.GetMany(plan.ResolvedQuery.GetValues(), plan.ResolvedQuery.Operator);
+            result = plan.Index.GetMany(toUseWithIndex!.GetValues(), plan.ResolvedQuery.Operator);
 
             // this query was resolved by an index so no need to check it manually
             restOfTheQuery.Elements.Remove(plan.ResolvedQuery);

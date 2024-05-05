@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using Client.Interface;
-using Client.Tools;
 using JetBrains.Annotations;
 using ProtoBuf;
 
@@ -102,6 +101,13 @@ public sealed class KeyValue : IComparable<KeyValue>
                 }
                 else
                 {
+                    // Always convert DateTime to UTC as comparison between dates with different 
+                    // timezones is not supported for this type
+                    if (dt.Kind == DateTimeKind.Local)
+                    {
+                        dt = dt.ToUniversalTime();
+                    }
+
                     DateTimeOffset offset = dt;
                     FromDateTimeWithTimeZone(new(offset.Ticks, offset.Offset));
                 }
@@ -109,7 +115,10 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return;
             }
             case DateTimeOffset dto:
-                FromDateTimeWithTimeZone(dto);
+                FromDateTimeWithTimeZone(dto.ToUniversalTime());
+                return;
+            case DateOnly dto:
+                FromDateTimeWithTimeZone( new DateTimeOffset(dto.ToDateTime(new TimeOnly(0)), TimeSpan.Zero ));
                 return;
             default:
                 FromString(value.ToString());
@@ -216,7 +225,7 @@ public sealed class KeyValue : IComparable<KeyValue>
             case OriginalType.Date:
                 if (_data.Length == 0) //no offset
                 {
-                    var date = new DateTime(IntValue);
+                    var date = new DateTime(IntValue,DateTimeKind.Unspecified);
                     
                     return date == date.Date
                         ? date.ToString("yyyy-MM-dd")
@@ -256,13 +265,17 @@ public sealed class KeyValue : IComparable<KeyValue>
                 return JsonValue.Create(IntValue != 0);
 
             case OriginalType.Date:
-                if (_data.Length == 0) //no offset
-                    return JsonValue.Create(DateHelper.FormatDateTime( new DateTime(IntValue, DateTimeKind.Unspecified)));
-
-                var offset = BitConverter.ToInt64(_data, 0);
+                
+                var offset = _data.Length == 0 ? 0 :BitConverter.ToInt64(_data, 0);
                 var dateTimeOffset = new DateTimeOffset(IntValue, new(offset));
+                // simple format if date only
+                if (dateTimeOffset is { Hour: 0, Minute: 0, Second: 0 })
+                {
+                    return JsonValue.Create(dateTimeOffset.ToString("yyyy-MM-dd"));
+                }
 
                 return JsonValue.Create(dateTimeOffset);
+
 
             case OriginalType.String:
                 return JsonValue.Create(StringValue);

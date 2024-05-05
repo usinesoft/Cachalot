@@ -116,6 +116,21 @@ public static class JExtensions
         }
     }
 
+
+    public static object StringToDate(string valueAsString)
+    {
+        var trimmed = valueAsString.Trim('\'', '"');
+        var dt = DateHelper.ParseDateTime(trimmed);
+        if (dt.HasValue)
+            return dt;
+
+        var dto = DateHelper.ParseDateTimeOffset(trimmed);
+        if (dto.HasValue) return dto;
+
+        return valueAsString;
+
+    }
+
     public static object SmartParse(string valueAsString)
     {
         var type = KeyValue.OriginalType.SomeInteger;
@@ -127,7 +142,7 @@ public static class JExtensions
             if (char.IsLetter(c) || c == '\'') // strings may be quoted or not
             {
                 type = KeyValue.OriginalType.String;
-                break;
+                
             }
 
             if (!firstPosition && c is '-' or '/')
@@ -158,11 +173,7 @@ public static class JExtensions
 
             KeyValue.OriginalType.SomeFloat => valueAsString,
 
-            KeyValue.OriginalType.Date when DateTime.TryParse(valueAsString, out var dt) => dt,
-
-            KeyValue.OriginalType.Date when DateTimeOffset.TryParse(valueAsString, out var dv) => dv,
-
-            KeyValue.OriginalType.Date => valueAsString,
+            KeyValue.OriginalType.Date  => StringToDate(valueAsString),
 
             KeyValue.OriginalType.SomeInteger when int.TryParse(valueAsString, out var vi) => vi,
 

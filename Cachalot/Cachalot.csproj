@@ -16,6 +16,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageId>Cachalot.Client</PackageId>
 		<PackageProjectUrl>https://github.com/usinesoft/Cachalot</PackageProjectUrl>
+		<PackageReadmeFile>client_ReadMe.md</PackageReadmeFile>
 		<PackageIcon>cachalot_64.png</PackageIcon>
 		<RepositoryUrl>https://github.com/usinesoft/Cachalot</RepositoryUrl>
 		<PackageTags>nosql;cache;distributed;database</PackageTags>

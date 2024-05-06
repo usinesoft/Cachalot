@@ -7,8 +7,9 @@ Cachalot Client
  
 This is the code required to connect to a Cachalot cluster. 
 
-It is packaged as a multi-target nugget containing both netstandard2.1 and net6.0 libraries.
+Cachalot DB is a very fast in-memory database for dotnet applications. It can also be used as a distributed cache.
 
+It is packaged as a multi-target nugget containing both net8.0 and net6.0 libraries.
 
-Usually it is referenced as a nuget package. It is freely available at  [nuget.org](https://www.nuget.org/packages?q=cachalot)
+Usually, it is referenced as a nugget package. It is freely available at  [nuget.org](https://www.nuget.org/packages?q=cachalot)
 

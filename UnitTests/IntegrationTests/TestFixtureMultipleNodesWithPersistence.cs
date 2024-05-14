@@ -10,7 +10,6 @@ using Client;
 using Client.Core;
 using Client.Core.Linq;
 using Client.Interface;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using Tests.TestData;
@@ -1049,10 +1048,9 @@ namespace Tests.IntegrationTests
         {
             var schema = TypedSchemaFactory.FromType(typeof(Business));
 
-            var serializer = new JsonSerializer();
+            var json = File.ReadAllText("TestData/yelp.json");
 
-            var businesses = serializer.Deserialize<List<Business>>(
-                new JsonTextReader(new StreamReader(new FileStream("TestData/yelp.json", FileMode.Open))));
+            var businesses = SerializationHelper.ObjectFromCompactJson<List<Business>>(json);
 
             ClassicAssert.IsTrue(businesses?.Count > 0);
 

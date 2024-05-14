@@ -124,6 +124,7 @@ public static class JExtensions
         if (dt.HasValue)
             return dt;
 
+
         var dto = DateHelper.ParseDateTimeOffset(trimmed);
         if (dto.HasValue) return dto;
 
@@ -142,7 +143,7 @@ public static class JExtensions
             if (char.IsLetter(c) || c == '\'') // strings may be quoted or not
             {
                 type = KeyValue.OriginalType.String;
-                
+                break;
             }
 
             if (!firstPosition && c is '-' or '/')

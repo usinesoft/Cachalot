@@ -38,7 +38,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsService", "WindowsSe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CashalotMonitor.Tests", "CashalotMonitot.Tests\CashalotMonitor.Tests.csproj", "{C649B3AB-7D75-409E-A9B9-BA32A09FD7D1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmark", "Benchmark\Benchmark.csproj", "{8EF7BCB0-4D42-429F-AB49-D11C88105074}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmark", "Benchmark\Benchmark.csproj", "{8EF7BCB0-4D42-429F-AB49-D11C88105074}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewIntegrationTests", "NewIntegrationTests\NewIntegrationTests.csproj", "{5E2208AC-F08E-40DD-A6A2-D04ABE16F73C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,6 +108,10 @@ Global
 		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8EF7BCB0-4D42-429F-AB49-D11C88105074}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E2208AC-F08E-40DD-A6A2-D04ABE16F73C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E2208AC-F08E-40DD-A6A2-D04ABE16F73C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E2208AC-F08E-40DD-A6A2-D04ABE16F73C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E2208AC-F08E-40DD-A6A2-D04ABE16F73C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

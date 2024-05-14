@@ -478,7 +478,7 @@ public partial class DataAggregator : IDataClient
 
     
     /// <summary>
-    /// Same but using System.Text.Json instead of Newtonsoft
+    /// Get the result of the query as ranked json. The rank is used for full-text search
     /// </summary>
     /// <param name="query"></param>
     /// <param name="sessionId"></param>

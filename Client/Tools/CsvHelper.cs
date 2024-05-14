@@ -79,7 +79,7 @@ public static class CsvHelper
         {
             var stringValue = currentValue.ToString();
 
-            stringValues.Add(stringValue);
+            stringValues.Add(stringValue.Trim());
         }
 
         return stringValues;

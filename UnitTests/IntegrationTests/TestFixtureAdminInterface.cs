@@ -3,13 +3,13 @@ using System.IO;
 using System.Linq;
 using Cachalot.Linq;
 using Client;
+using Client.Core;
 using Client.Interface;
 using Client.Tools;
-using Newtonsoft.Json;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
-using Server.Persistence;
 using Tests.TestData;
+using Constants = Server.Persistence.Constants;
 
 namespace Tests.IntegrationTests
 {
@@ -65,7 +65,7 @@ namespace Tests.IntegrationTests
 
             var trades = dataSource.ToList();
 
-            var json = JsonConvert.SerializeObject(trades);
+            var json =  SerializationHelper.ObjectToCompactJson(trades);
 
             var path = Path.Combine(dumpPath, "trades.json");
 

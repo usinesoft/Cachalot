@@ -13,7 +13,6 @@
 		<Version>2.5.13</Version>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageId>Cachalot.Client</PackageId>
 		<PackageProjectUrl>https://github.com/usinesoft/Cachalot</PackageProjectUrl>
 		<PackageReadmeFile>client_ReadMe.md</PackageReadmeFile>
@@ -43,6 +42,7 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+		<None Include="client_ReadMe.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -63,7 +63,7 @@
 
 	<ItemGroup>
 		<None Update="client_ReadMe.md">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 	<Target Name="PrePackage" BeforeTargets="BuildPackage">

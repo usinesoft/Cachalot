@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Client.Core;
 using JetBrains.Annotations;
 
@@ -51,7 +52,7 @@ public class CsvSchemaBuilder
 
         if (!File.Exists(FilePath)) throw new($"The specified file was not found: {FilePath}");
 
-        using var reader = new StreamReader(FilePath);
+        using var reader = new StreamReader(FilePath, Encoding.UTF8);
 
         var header = reader.ReadLine();
 
@@ -137,37 +138,39 @@ public class CsvSchemaBuilder
         var col2 = 0;
 
         for (var i = 0; i < ordered.Length; i++)
-        for (var j = i + 1; j < ordered.Length; j++)
         {
-            var countByCompositeKey = new Dictionary<string, int>();
-
-            var colIndex1 = ordered[i].ColumnIndex;
-            var colIndex2 = ordered[j].ColumnIndex;
-
-            foreach (var line in LinesCache)
+            for (var j = i + 1; j < ordered.Length; j++)
             {
-                var val1 = line[colIndex1];
-                var val2 = line[colIndex2];
+                var countByCompositeKey = new Dictionary<string, int>();
 
-                var composite = $"{val1}-{val2}";
+                var colIndex1 = ordered[i].ColumnIndex;
+                var colIndex2 = ordered[j].ColumnIndex;
 
-                countByCompositeKey.TryGetValue(composite, out var count);
-                countByCompositeKey[composite] = count + 1;
+                foreach (var line in LinesCache)
+                {
+                    var val1 = line[colIndex1];
+                    var val2 = line[colIndex2];
+
+                    var composite = $"{val1}-{val2}";
+
+                    countByCompositeKey.TryGetValue(composite, out var count);
+                    countByCompositeKey[composite] = count + 1;
+                }
+
+                var max = countByCompositeKey.Max(x => x.Value);
+                var avg = countByCompositeKey.Average(x => x.Value);
+
+                if (max < minMax)
+                {
+                    minMax = max;
+
+                    col1 = colIndex1;
+                    col2 = colIndex2;
+                }
+
+                if (max == 1) // found a unique key, no need to continue
+                    return (col1, col2, 1);
             }
-
-            var max = countByCompositeKey.Max(x => x.Value);
-            var avg = countByCompositeKey.Average(x => x.Value);
-
-            if (max < minMax)
-            {
-                minMax = max;
-
-                col1 = colIndex1;
-                col2 = colIndex2;
-            }
-
-            if (max == 1) // found a unique key, no need to continue
-                return (col1, col2, 1);
         }
 
 
@@ -216,8 +219,8 @@ public class CsvSchemaBuilder
                     // nothing to do it's ok
                     continue;
 
-                throw new FormatException(
-                    $"Inconsistent type:value '{values[i]}' of type {newType} found on column of type {oldType} ");
+                schema.Columns[i].ColumnType = KeyValue.OriginalType.String;
+                
             }
         }
     }

@@ -60,22 +60,22 @@ public static class DateHelper
                 return dt;
             }
 
-            if (DateTime.TryParseExact(strValue, new[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm" },
+            if (DateTime.TryParseExact(strValue, new[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "o" },
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
             {
                 if (dt.Kind == DateTimeKind.Unspecified) return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
                 return dt;
             }
 
+            return null;
 
-#pragma warning disable S6580
-            return DateTime.Parse(strValue).ToUniversalTime();
-#pragma warning restore S6580
         }
         catch (Exception)
         {
             return null;
         }
+
+        
     }
 
     public static DateTimeOffset? ParseDateTimeOffset([NotNull] string strValue)
@@ -90,13 +90,10 @@ public static class DateHelper
             if (DateTimeOffset.TryParseExact(strValue, new[] { "yyyy-MM-dd", "dd/MM/yyyy", "dd-MM-yyyy" },
                     CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dt)) return dt;
 
-            if (DateTimeOffset.TryParseExact(strValue, new[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm" },
+            if (DateTimeOffset.TryParseExact(strValue, new[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "o" },
                     CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out dt)) return dt;
 
-
-#pragma warning disable S6580
-            return DateTimeOffset.Parse(strValue);
-#pragma warning restore S6580
+            return null;
         }
         catch (Exception)
         {

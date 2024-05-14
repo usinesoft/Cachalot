@@ -98,6 +98,7 @@ try
     Console.WriteLine($"Analyzing the first {linesToAnalyze} lines from the csv file...");
 
     watch.Start();
+    
     // analyze the csv data
     var csvSchema = new CsvSchemaBuilder(csvFile).InferSchema(linesToAnalyze, false);
     watch.Stop();
@@ -110,8 +111,7 @@ try
     {
         Console.WriteLine($"No schema defined for collection {collection}. It will be inferred from data");
 
-        //Console.Write(csvSchema.AnalysisReport());
-
+        
         schema = csvSchema.ToCollectionSchema();
         connector.DeclareCollection(collection, schema);
     }

@@ -170,6 +170,7 @@ export class DataComponent implements OnInit {
 
   ngOnInit(): void {
 
+    this.fetchingData = false;
     this.collections = this.monitoringService.clusterInformation.getValue()?.schema.map(s => s.collectionName) ?? [];
 
     if (this.selectedCollection) {
@@ -291,9 +292,10 @@ export class DataComponent implements OnInit {
           this.lastQueryId = data.queryId;
           console.log(`client time (ms)= ${this.clientTimeInMilliseconds} query id= ${this.lastQueryId}`);
 
-          this.fetchingData = false;
+          
 
         }
+        this.fetchingData = false;
 
       },
       error => {

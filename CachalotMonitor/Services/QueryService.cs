@@ -351,6 +351,13 @@ internal class QueryService : IQueryService
                 _ => PropertyType.String
             };
 
+            // the json identifies some dates as string
+            if (ct == PropertyType.String && DateHelper.ParseDateTime(jp.Value.GetString()) != null)
+            {
+                ct = PropertyType.Date;
+            }
+
+
             // discriminate between float and integer
             if (ct == PropertyType.SomeFloat)
             {

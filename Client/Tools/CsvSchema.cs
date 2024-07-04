@@ -17,13 +17,18 @@ public class CsvSchema
     public IList<CsvColumnInformation> Columns { get; } = new List<CsvColumnInformation>();
 
     /// <summary>
-    ///     The columns that will be combined to produce the most discriminant key (ideally unique)
+    ///     The
+    /// that will be combined to produce the most discriminant key (ideally unique)
     /// </summary>
     public IList<CsvColumnInformation> MostDiscriminantColumns { get; } = new List<CsvColumnInformation>();
 
     public char Separator { get; internal set; }
 
+    
     private List<Func<string, object>> Parsers { get; } = new();
+    
+    // if true, parse dates as US dates MM/dd...
+    public bool UsFormat { get; set; }
 
 
     /// <summary>
@@ -81,11 +86,8 @@ public class CsvSchema
     {
         if (string.IsNullOrWhiteSpace(value)) return null;
 
-        if (DateTime.TryParse(value, out var result)) return result;
-
-        if (DateTimeOffset.TryParse(value, out var resultOff)) return resultOff;
-
-        return null;
+        return DateHelper.ParseDateTime(value, UsFormat) ?? DateHelper.ParseDateTimeOffset(value);
+        
     }
 
     /// <summary>
@@ -125,6 +127,12 @@ public class CsvSchema
         var result = new List<KeyValue>();
 
         var stringValues = CsvHelper.SplitCsvLine(line, Separator);
+
+        // in case line ends with separator and column missing
+        if (stringValues.Count == Parsers.Count - 1)
+        {
+            stringValues.Add(string.Empty);
+        }
 
         if (stringValues.Count != Parsers.Count)
             throw new ArgumentException(

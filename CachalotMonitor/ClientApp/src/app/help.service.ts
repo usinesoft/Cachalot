@@ -60,8 +60,12 @@ export class HelpService {
       Delete the query result !!!
     `
     ,
-    'schema.upgrade':`    
-      Upgrade the index
+    'schema.upgrade.dictionary':`    
+      Create a dictionary index
+    `
+    ,
+    'schema.upgrade.ordered':`    
+      Create an ordered index
     `
     ,
     'layout.default':`    
@@ -193,13 +197,27 @@ export class HelpService {
     (admin only)
     `
     ,
-    'schema.upgrade':`    
-    <h3>Upgrade the index</h3>
+    'schema.upgrade.ordered':`    
+    <h3>Create ordered index</h3>
     <div class="tooltip-left">         
       <p>Any queryable property can be indexed</p>
-      <p>The primary key is always indexed. No upgrade is possible</p>
-      <p>A non-indexed property can be upgraded to <b>dictionary index</b></p>
-      <p>A dictionary indexed can be upgraded to <b>ordered index</b></p>
+      <p>The primary key is always indexed. It can not be changed</p>
+      Dictionary indexes are very fast for equlity tests. Inserting new items is fast.
+      <br>
+      <br>
+      Ordered indexes are required to enable server-side ORDER BY clause.  
+      They can also be used by queries with comparison operators.
+      Insertions are more expensive.  
+    </div>
+    `
+    ,
+    'schema.upgrade.dictionary':`    
+    <h3>Create dictionary index</h3>
+    <div class="tooltip-left">         
+      <p>Any queryable property can be indexed</p>
+      <p>The primary key is always indexed. It can not be changed</p>
+      Dictionary indexes are very fast for equlity tests. Inserting new items is fast.
+      <br>
       <br>
       Ordered indexes are required to enable server-side ORDER BY clause.  
       They can also be used by queries with comparison operators.

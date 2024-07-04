@@ -3,11 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Client;
 using Client.Core;
 using Client.Interface;
+using Client.Messages;
 using Client.Tools;
 using Server.FullTextSearch;
 using Constants = Server.Persistence.Constants;
@@ -465,6 +467,35 @@ public class DataStore
 
 
         return reindexed;
+    }
+
+    public void AddIndexes(CollectionSchema newDescription)
+    {
+        List<KeyInfo> indexesToGenerate = new();
+
+        foreach (var keyInfo in newDescription.IndexFields)
+        {
+            var existent = CollectionSchema.IndexFields.FirstOrDefault(x => x.Name == keyInfo.Name);
+            if (existent != null)
+            {
+                if (existent.IndexType != keyInfo.IndexType) // remove old index 
+                {
+                    _dataByIndexKey.Remove(existent.Name);
+                    indexesToGenerate.Add(keyInfo);
+                }
+            }
+            else
+            {
+                indexesToGenerate.Add(keyInfo);
+            }
+        }
+
+        foreach (var keyInfo in indexesToGenerate)
+        {
+            var index = IndexFactory.CreateIndex(keyInfo);
+            _dataByIndexKey[keyInfo.Name] = index;
+        }
+        
     }
 
 

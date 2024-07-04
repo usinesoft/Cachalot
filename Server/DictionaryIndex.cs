@@ -117,13 +117,13 @@ public sealed class DictionaryIndex : IndexBase
         if (!KeyInfo.IsCollection)
         {
             var keyValue = item.Values[_keyIndex];
-            if (_data.ContainsKey(keyValue)) _data[keyValue].Remove(item);
+            if (_data.TryGetValue(keyValue, out var value)) value.Remove(item);
         }
         else
         {
             foreach (var listValue in item.CollectionValues[_keyIndex].Values)
-                if (_data.ContainsKey(listValue))
-                    _data[listValue].Remove(item);
+                if (_data.TryGetValue(listValue, out var value))
+                    value.Remove(item);
         }
     }
 

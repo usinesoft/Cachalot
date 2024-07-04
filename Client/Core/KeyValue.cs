@@ -274,7 +274,7 @@ public sealed class KeyValue : IComparable<KeyValue>
                     return JsonValue.Create(dateTimeOffset.ToString("yyyy-MM-dd"));
                 }
 
-                return JsonValue.Create(dateTimeOffset);
+                return JsonValue.Create(dateTimeOffset.UtcDateTime.ToString("o"));
 
 
             case OriginalType.String:

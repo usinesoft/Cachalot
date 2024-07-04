@@ -117,10 +117,10 @@ public static class JExtensions
     }
 
 
-    public static object StringToDate(string valueAsString)
+    public static object StringToDate(string valueAsString, bool usFormat= false)
     {
         var trimmed = valueAsString.Trim('\'', '"');
-        var dt = DateHelper.ParseDateTime(trimmed);
+        var dt = DateHelper.ParseDateTime(trimmed, usFormat);
         if (dt.HasValue)
             return dt;
 
@@ -132,7 +132,7 @@ public static class JExtensions
 
     }
 
-    public static object SmartParse(string valueAsString)
+    public static object SmartParse(string valueAsString, bool usFormat = false)
     {
         var type = KeyValue.OriginalType.SomeInteger;
 
@@ -174,7 +174,7 @@ public static class JExtensions
 
             KeyValue.OriginalType.SomeFloat => valueAsString,
 
-            KeyValue.OriginalType.Date  => StringToDate(valueAsString),
+            KeyValue.OriginalType.Date  => StringToDate(valueAsString, usFormat),
 
             KeyValue.OriginalType.SomeInteger when int.TryParse(valueAsString, out var vi) => vi,
 

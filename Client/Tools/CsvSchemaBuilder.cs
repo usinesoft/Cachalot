@@ -43,12 +43,16 @@ public class CsvSchemaBuilder
     ///     Generate a schema based on heuristics that process a fragment of the file
     /// </summary>
     /// <param name="linesToUse"></param>
+    /// <param name="usFormat">Parse US dates </param>
     /// <param name="findCompositeKey">If true also find the most discriminant combination of two keys</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
-    public CsvSchema InferSchema(int linesToUse = 10_000, bool findCompositeKey = true)
+    public CsvSchema InferSchema(int linesToUse = 10_000, bool usFormat = false, bool findCompositeKey = true)
     {
-        var schema = new CsvSchema();
+        var schema = new CsvSchema
+        {
+            UsFormat = usFormat
+        };
 
         if (!File.Exists(FilePath)) throw new($"The specified file was not found: {FilePath}");
 
@@ -231,7 +235,7 @@ public class CsvSchemaBuilder
         var stringValues = CsvHelper.SplitCsvLine(line, Separator);
         LinesCache.Add(stringValues);
 
-        var values = stringValues.Select(CsvHelper.GetTypedValue).ToList();
+        var values = stringValues.Select(x=> CsvHelper.GetTypedValue(x, schema.UsFormat)).ToList();
 
         if (schema.Columns.Count != values.Count)
             throw new FormatException(

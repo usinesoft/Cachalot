@@ -257,3 +257,6 @@ paket-files/
 
 #nuget
 Cachealot/nuget.exe
+
+#mkdocs
+mkdocs/site

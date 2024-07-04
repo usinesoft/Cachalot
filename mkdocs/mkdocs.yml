@@ -1,0 +1,29 @@
+site_name: Cachalot-DB
+nav:
+    - Home: index.md
+    - Whats New: whats_new.md
+    - Quick Start: quick.md
+    - SQL-LINQ: sqllinq.md
+    - Administration: admin.md
+site_url: https://cachalotdb.com
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+theme:
+  name: material
+  palette:
+    primary: blue
+  logo: images/cachalot.svg
+  favicon: images/cachalot.ico
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+ 
+    

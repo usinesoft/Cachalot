@@ -11,12 +11,13 @@ public static class CsvHelper
     ///     Parse a string value
     /// </summary>
     /// <param name="stringValue"></param>
+    /// <param name="usFormat">true if the dates are in US format</param>
     /// <returns></returns>
-    public static KeyValue GetTypedValue(string stringValue)
+    public static KeyValue GetTypedValue(string stringValue, bool usFormat=false)
     {
         if (string.IsNullOrWhiteSpace(stringValue)) return new(null);
 
-        return new(JExtensions.SmartParse(stringValue));
+        return new(JExtensions.SmartParse(stringValue, usFormat));
     }
 
     /// <summary>

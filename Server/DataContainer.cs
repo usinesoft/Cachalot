@@ -175,9 +175,9 @@ public class DataContainer
     {
         try
         {
-            var typeDescription = request.CollectionSchema;
+            var newSchema = request.CollectionSchema;
 
-            var collectionName = typeDescription.CollectionName;
+            var collectionName = newSchema.CollectionName;
 
             var dataStore = DataStores.TryGetValue(collectionName);
 
@@ -197,28 +197,33 @@ public class DataContainer
             if (dataStore != null) //type already registered
             {
                 //if schema changed reindex if the new one is more complex
-                var compatibility = CollectionSchema.AreCompatible(typeDescription, dataStore.CollectionSchema);
-                if (compatibility != CollectionSchema.CompatibilityLevel.Ok)
+                var compatibility = CollectionSchema.AreCompatible(newSchema, dataStore.CollectionSchema);
+                switch (compatibility)
                 {
-                    var newDataStore = DataStore.Reindex(dataStore, typeDescription,
-                        compatibility == CollectionSchema.CompatibilityLevel.NeedsRepacking);
+                    case CollectionSchema.CompatibilityLevel.NeedsRepacking:
+                    {
+                        var newDataStore = DataStore.Reindex(dataStore, newSchema,true);
 
-                    DataStores[collectionName] = newDataStore;
-
-                    _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
+                        DataStores[collectionName] = newDataStore;
+                        break;
+                    }
+                    case CollectionSchema.CompatibilityLevel.NeedsReindex:
+                        dataStore.AddIndexes(newSchema);
+                        break;
                 }
             }
             else // new type, store it in the type dictionary and initialize its DataStore
             {
                 var newDataStore =
-                    new DataStore(typeDescription, new NullEvictionPolicy(),
+                    new DataStore(newSchema, new NullEvictionPolicy(),
                         _serviceContainer.NodeConfig.FullTextConfig);
 
 
                 DataStores.Add(collectionName, newDataStore);
 
-                _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
             }
+
+            _serviceContainer.SchemaPersistence.SaveSchema(GenerateSchema());
 
             client?.SendResponse(new NullResponse());
         }
@@ -541,7 +546,7 @@ public class DataContainer
 
 
             // add the special @ACTIVITY table (it may not be initialized in test environments)
-            if (_serviceContainer.Log != null)
+            if (_serviceContainer.Log != null && !response.DataStoreInfoByFullName.ContainsKey("@ACTIVITY"))
             {
                 var activityInfo = new DataStoreInfo
                 {

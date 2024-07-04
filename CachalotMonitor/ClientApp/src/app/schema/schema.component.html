@@ -113,9 +113,15 @@
           </td>
           <td class="cell" data-title="Actions">
             <ng-container *ngIf="!working">
-              <button [tooltip]="helpService.tooltip('schema.upgrade')" mat-icon-button color="primary" (click)="prop.confirmMode=true" *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || (prop.indexType == 'Dictionary' && !prop.isCollection))">
+              <button [tooltip]="helpService.tooltip('schema.upgrade.dictionary')" mat-icon-button color="primary" (click)="confirmDictionary(prop)" *ngIf="!prop.confirmMode  && (prop.indexType == 'None' && !prop.isCollection)">
                 <mat-icon color="primary"                  
-                  aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="arrow_upward"
+                  aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="list"
+                  >
+                </mat-icon>
+              </button>
+              <button [tooltip]="helpService.tooltip('schema.upgrade.ordered')" mat-icon-button color="primary" (click)="confirmOrdered(prop)" *ngIf="!prop.confirmMode  && (prop.indexType == 'None' || (prop.indexType == 'Dictionary' && !prop.isCollection))">
+                <mat-icon color="primary"                  
+                  aria-hidden="false" style="cursor: pointer; font-weight: bold;" fontIcon="sort"
                   >
                 </mat-icon>
               </button>

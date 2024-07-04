@@ -96,12 +96,21 @@ export class SchemaComponent implements OnInit {
 
   working = false;
 
+  confirmDictionary(prop:ServerSide){
+    prop.confirmMode = true;
+    prop.upgradeTo = 'Dictionary';
+  }
+
+  confirmOrdered(prop:ServerSide){
+    prop.confirmMode = true;
+    prop.upgradeTo = 'Ordered';
+  }
 
   upgrade(prop: ServerSide) {
-    if (prop.indexType == "Dictionary") {
-      prop.indexType = "Ordered";
-    } else {
+    if (prop.upgradeTo == "Dictionary") {
       prop.indexType = "Dictionary";
+    } else {
+      prop.indexType = "Ordered";
     }
 
     this.editedProperty = prop.name;

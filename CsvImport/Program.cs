@@ -14,7 +14,8 @@ Console.WriteLine(Logo);
 if (args.Length == 1)
 {
     Console.WriteLine("In this mode you will only simulate reading a csv file. No data will be sent to the server");
-    Console.WriteLine("SYNTAX: csvimport connection_string csv_file target_collection");
+    Console.WriteLine("SYNTAX: csvimport connection_string csv_file target_collection [--us]");
+    Console.WriteLine("the last optional parameter can be used to force date parsing in US format MM/dd...");
 
     var watch = new Stopwatch();
 
@@ -41,9 +42,9 @@ if (args.Length == 1)
     return;
 }
 
-if (args.Length != 3)
+if (args.Length != 3 && args.Length != 4)
 {
-    Console.WriteLine("SYNTAX: csvimport connection_string csv_file target_collection");
+    Console.WriteLine("SYNTAX: csvimport connection_string csv_file target_collection [--us]");
 
     return;
 }
@@ -52,6 +53,8 @@ if (args.Length != 3)
 var connectionString = args[0];
 var csvFile = args[1];
 var collection = args[2];
+
+bool usFormat = args.Length == 4 && args[3].ToLowerInvariant()== "--us";
 
 IEnumerable<PackedObject> PackCsv(IEnumerable<string> lines, string collectionName, CsvSchema csvSchema)
 {
@@ -100,8 +103,10 @@ try
     watch.Start();
     
     // analyze the csv data
-    var csvSchema = new CsvSchemaBuilder(csvFile).InferSchema(linesToAnalyze, false);
+    var csvSchema = new CsvSchemaBuilder(csvFile).InferSchema(linesToAnalyze, usFormat, false);
     watch.Stop();
+
+    csvSchema.UsFormat = usFormat;
 
     Console.WriteLine($"Done.Took {watch.ElapsedMilliseconds:F2} ms");
 

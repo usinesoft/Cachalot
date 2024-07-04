@@ -12,6 +12,7 @@ export interface ServerSide {
   order: number;
   isCollection: boolean;
   confirmMode: boolean;
+  upgradeTo:string;
 }
 
 export interface SchemaUpdateRequest {

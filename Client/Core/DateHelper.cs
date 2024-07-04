@@ -44,7 +44,7 @@ public static class DateHelper
         return value.ToString("o", CultureInfo.InvariantCulture);
     }
 
-    public static DateTime? ParseDateTime([NotNull] string strValue)
+    public static DateTime? ParseDateTime([NotNull] string strValue, bool usFormat = false)
     {
         if (string.IsNullOrWhiteSpace(strValue))
             return null;
@@ -62,6 +62,20 @@ public static class DateHelper
 
             if (DateTime.TryParseExact(strValue, new[] { "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "o" },
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+            {
+                if (dt.Kind == DateTimeKind.Unspecified) return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                return dt;
+            }
+
+            var culture = CultureInfo.InvariantCulture;
+            if (usFormat)
+            {
+                culture = new CultureInfo("en-US", false);
+            }
+
+
+            if (DateTime.TryParseExact(strValue, new[] { "G", "g"},
+                    culture, DateTimeStyles.None, out dt))
             {
                 if (dt.Kind == DateTimeKind.Unspecified) return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
                 return dt;
